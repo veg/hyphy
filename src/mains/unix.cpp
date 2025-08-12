@@ -227,6 +227,18 @@ void hyphy_sigstop_handler(int sig) {
 
 #define _HYPHY_MAX_PATH_LENGTH 8192L
 
+/**
+ * @brief Get the HyPhy library path.
+ * @return The HyPhy library path as a _String object.
+ * @note This function first tries to get the path from the HYPHY_PATH
+ * environment variable. If that's not set, it checks for a 'res' directory in
+ * the current working directory. If that's not found, it falls back to the
+ * compile-time defined _HYPHY_LIBDIRECTORY_ or the current working directory.
+ * @code
+ *  _String libPath = getLibraryPath();
+ *  printf("Library path: %s\n", libPath.get_str());
+ * @endcode
+ */
 _String getLibraryPath() {
   char dirSlash = get_platform_directory_char();
 
@@ -292,6 +304,14 @@ _String getLibraryPath() {
 
 //__________________________________________________________________________________
 
+/**
+ * @brief Clears the console screen.
+ * @note This function is platform-dependent. It uses `cls` on Windows and ANSI
+ * escape codes on other systems.
+ * @code
+ *  _helper_clear_screen();
+ * @endcode
+ */
 void _helper_clear_screen(void) {
 #ifdef __MINGW32__
   system("cls");
@@ -301,6 +321,12 @@ void _helper_clear_screen(void) {
 }
 
 //__________________________________________________________________________________
+/**
+ * @brief Reads in the template files from the files.lst file.
+ * @note This function reads the `files.lst` file, which contains a list of
+ * template files for standard analyses. The information is stored in the global
+ * `availableTemplateFiles` list.
+ */
 void ReadInTemplateFiles(void) {
   _String dir_sep(get_platform_directory_char()),
       fileIndex = *((_String *)pathNames(0)) & hy_standard_library_directory &
@@ -357,18 +383,24 @@ void ReadInTemplateFiles(void) {
 }
 
 //__________________________________________________________________________________
+/**
+ * @brief Displays a list of available standard analyses and prompts the user to
+ * select one.
+ * @return The index of the selected analysis in the `availableTemplateFiles`
+ * list, or -1 if the user chooses to enter a custom file path.
+ */
 long DisplayListOfChoices(void) {
 
   if (!availableTemplateFiles.lLength) {
     return -1;
   }
 
-  long choice = -1L;
+  long choice = -1L, choice_count = availableTemplateFiles.countitems();
 
   _SimpleList categoryDelimiters;
   _List categoryHeadings;
 
-  for (choice = 0; choice < availableTemplateFiles.countitems(); choice++) {
+  for (choice = 0; choice < choice_count; choice++) {
     _String const *this_line =
         (_String const *)availableTemplateFiles.GetItem(choice, 2);
 
@@ -383,7 +415,7 @@ long DisplayListOfChoices(void) {
   choice = -1;
   if (categoryDelimiters.lLength == 0) {
     while (choice == -1) {
-      for (choice = 0; choice < availableTemplateFiles.lLength; choice++) {
+      for (choice = 0; choice < choice_count; choice++) {
         printf("\n\t(%s):%s",
                ((_String const *)availableTemplateFiles.GetItem(choice, 0))
                    ->get_str(),
@@ -400,14 +432,14 @@ long DisplayListOfChoices(void) {
         return -1;
       }
 
-      for (choice = 0; choice < availableTemplateFiles.lLength; choice++) {
+      for (choice = 0; choice < choice_count; choice++) {
         if (user_input ==
             *(_String const *)availableTemplateFiles.GetItem(choice, 0)) {
           break;
         }
       }
 
-      if (choice == availableTemplateFiles.lLength) {
+      if (choice == choice_count) {
         choice = -1;
       }
     }
@@ -427,7 +459,7 @@ long DisplayListOfChoices(void) {
         }
         _helper_clear_screen();
         printf("%s\n%s\n\n", verString.get_str(), header.get_str());
-        for (choice = 0; choice < categoryHeadings.lLength; choice++) {
+        for (choice = 0; choice < (long)categoryHeadings.lLength; choice++) {
           printf("\n\t(%ld) %s", choice + 1,
                  ((_String *)categoryHeadings(choice))->get_str());
         }
@@ -447,7 +479,7 @@ long DisplayListOfChoices(void) {
 
         choice = user_input.to_long();
 
-        if (choice > 0 && choice <= categoryHeadings.lLength) {
+        if (choice > 0 && choice <= (long)categoryHeadings.lLength) {
           categNumber = choice - 1;
         }
       } else {
@@ -455,7 +487,7 @@ long DisplayListOfChoices(void) {
         printf("***************** FILES IN '%s' ***************** \n\n",
                ((_String *)categoryHeadings(categNumber))->get_str());
         long start = categoryDelimiters.list_data[categNumber] + 1,
-             end = categNumber == categoryDelimiters.lLength - 1
+             end = categNumber == (long)categoryDelimiters.lLength - 1
                        ? availableTemplateFiles.lLength
                        : categoryDelimiters.list_data[categNumber + 1];
 
@@ -490,15 +522,21 @@ long DisplayListOfChoices(void) {
 }
 
 //__________________________________________________________________________________
+/**
+ * @brief Displays a list of available post-processing tools and prompts the
+ * user to select one.
+ * @return The index of the selected tool in the `availablePostProcessors` list,
+ * or -1 if the user chooses to quit.
+ */
 long DisplayListOfPostChoices(void) {
-  long choice = -1;
+  long choice = -1, option_count = availablePostProcessors.lLength;
 
-  if (availablePostProcessors.lLength) {
+  if (option_count) {
     _helper_clear_screen();
     printf("\n\t Available Result Processing Tools\n\t "
            "---------------------------------\n\n");
     while (choice == -1) {
-      for (choice = 0; choice < availablePostProcessors.lLength; choice++) {
+      for (choice = 0; choice < option_count; choice++) {
         printf("\n\t(%ld):%s", choice + 1,
                ((_String *)(*(_List *)availablePostProcessors(choice))(0))
                    ->get_str());
@@ -517,7 +555,7 @@ long DisplayListOfPostChoices(void) {
       }
       choice = user_input.to_long();
 
-      if (choice <= 0 || choice > availablePostProcessors.lLength) {
+      if (choice <= 0 || choice > option_count) {
         choice = -1;
       }
     }
@@ -525,6 +563,10 @@ long DisplayListOfPostChoices(void) {
   return choice;
 }
 
+/**
+ * @brief Displays the main help message for HyPhy, including usage,
+ * command-line options, and available standard analyses.
+ */
 void DisplayHelpMessage(void) {
   printf("%s\n%s", hy_usage, hy_help_message);
   printf("Available standard keyword analyses (located in %s)\n",
@@ -538,10 +580,12 @@ void DisplayHelpMessage(void) {
             ->get_str());
   }
   printf("\n");
-  // fprintf( stderr, "%s\n%s\n%s", hy_usage, hy_help_message,
-  // hy_available_cli_analyses ); exit (0);
 }
 
+/**
+ * @brief Processes single-character command-line options.
+ * @param conf A string containing the command-line options (e.g., "-cdi").
+ */
 void ProcessConfigStr(_String const &conf) {
   for (unsigned long i = 1UL; i < conf.length(); i++) {
     switch (char c = conf.char_at(i)) {
@@ -593,7 +637,13 @@ void ProcessConfigStr(_String const &conf) {
 }
 
 //__________________________________________________________________________________
-
+/**
+ * @brief Processes keyword command-line arguments.
+ * @param conf The keyword argument (e.g., "--alignment").
+ * @param conf2 The value for the keyword argument.
+ * @param kwargs The associative list where the keyword and value will be
+ * stored.
+ */
 void ProcessKWStr(_String const &conf, _String const &conf2,
                   _AssociativeList &kwargs) {
   if (conf.length() == 2) {
@@ -621,7 +671,12 @@ void ProcessKWStr(_String const &conf, _String const &conf2,
 }
 
 //__________________________________________________________________________________
-
+/**
+ * @brief Signal handler for interrupts.
+ * @param signo The signal number.
+ * @note This function prints a message indicating that an interrupt was
+ * received and that HyPhy will break into calculator mode.
+ */
 void hyphyBreak(int signo) {
   // terminate_execution = false;
   printf("\nInterrupt received %d. HYPHY will break into calculator mode at "
@@ -630,9 +685,21 @@ void hyphyBreak(int signo) {
 }
 
 //__________________________________________________________________________________
+/**
+ * @brief A stub function for setting a status bar value.
+ * @param l A long integer (unused).
+ * @param h1 A hyFloat (unused).
+ * @param h2 A hyFloat (unused).
+ */
 void SetStatusBarValue(long, hyFloat, hyFloat) {}
 //__________________________________________________________________________________
-void SetStatusLine(_String s) {
+/**
+ * @brief Sets the status line text.
+ * @param s The string to display in the status line.
+ * @note On Windows with MEGA, this function writes to a named pipe. Otherwise,
+ * it prints to the console.
+ */
+void SetStatusLine(_String) {
 #ifdef _MINGW32_MEGA_
   if (_HY_MEGA_Pipe != INVALID_HANDLE_VALUE) {
     DWORD bytesWritten = 0;
@@ -662,6 +729,12 @@ EM_JS(void, _jsSendStatusUpdate, (const char *status_update), {
 #endif
 
 //__________________________________________________________________________________
+/**
+ * @brief Sets the status line text for the user.
+ * @param s The string to display.
+ * @note This function prints to stderr if it's a terminal, allowing it to
+ * overwrite the current line. On Emscripten, it sends a status update message.
+ */
 void SetStatusLineUser(_String const s) {
 #ifndef _USE_EMSCRIPTEN_
   if (has_terminal_stderr) { // only print to terminal devices
@@ -682,6 +755,15 @@ void SetStatusLineUser(_String const s) {
 #include <chrono>
 
 #ifndef __UNITTEST__
+/**
+ * @brief The main entry point for the HyPhy application.
+ * @param argc The number of command-line arguments.
+ * @param argv An array of command-line arguments.
+ * @return 0 on successful execution, non-zero otherwise.
+ * @note This function handles command-line argument parsing, initializes the
+ * HyPhy environment, and starts the appropriate execution mode (batch,
+ * interactive, or calculator).
+ */
 int main(int argc, char *argv[]) {
 
 #ifdef _COMPARATIVE_LF_DEBUG_DUMP
@@ -801,7 +883,7 @@ int main(int argc, char *argv[]) {
   const _String path_consts[] = {
       "BASEPATH=", "LIBPATH=", "USEPATH=", "CPU=", "ENV="};
 
-  for (unsigned long i = 1UL; i < argc; i++) {
+  for (long i = 1; i < argc; i++) {
     _String thisArg(argv[i]);
 
     if (thisArg.get_char(0) == '-') { // -[LETTER] arguments

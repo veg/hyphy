@@ -74,7 +74,7 @@ _TreeTopology::_TreeTopology(_TheTree const *top)
     _TreeTopologyParseSettings parse_settings = CollectParseSettings();
 
     ConditionalTraverser(
-        [&](node<long> *iterator, node_iterator<long> const &ni) -> bool {
+        [&](node<long> *iterator, node_iterator<long> const &) -> bool {
           _String nodeVS(top->GetBranchValue(iterator)),
               *nodeSpec = map_node_to_calcnode(iterator)->GetBranchSpec();
 
@@ -248,7 +248,7 @@ struct _any_char_in_set {
   bool valid[256];
   _any_char_in_set(const char *accept) {
     InitializeArray(valid, 256, false);
-    long c = strlen(accept);
+    unsigned long c = strlen(accept);
     for (unsigned long i = 0UL; i < c; i++) {
       valid[(unsigned char)accept[i]] = true;
     }
@@ -291,7 +291,7 @@ const _TreeTopologyParseSettings _TreeTopology::CollectParseSettings(void) {
 _AssociativeList *
 _TreeTopology::MainTreeConstructor(_String const &parms,
                                    _TreeTopologyParseSettings &parse_settings,
-                                   bool checkNames, _AssociativeList *mapping) {
+                                   bool, _AssociativeList *mapping) {
 
   /** TODO SLKP 20171211 this parser needs to be checked
    It admits invalid strings like
@@ -344,7 +344,7 @@ _TreeTopology::MainTreeConstructor(_String const &parms,
       nodeName.Reset();
     };
 
-    for (i = 0; i < parms.length(); i++) {
+    for (i = 0; i < (long)parms.length(); i++) {
 
       char look_at_me = parms.char_at(i);
 
@@ -504,7 +504,7 @@ _TreeTopology::MainTreeConstructor(_String const &parms,
         int end_at;
         hyFloat length = 0.;
 
-        if (i + kBLLookahead < parms.length()) {
+        if (i + kBLLookahead < (long)parms.length()) {
           char buffer[kBLLookahead + 1];
           memcpy(buffer, parms.get_str() + i + 1, kBLLookahead);
           buffer[kBLLookahead] = 0;
@@ -908,7 +908,7 @@ _String const _TreeTopology::GetNodeStringForTree(node<long> *n,
     // check to see if the node name has any chars that are a part of the Newick
     // spec, and if so, enquote the string
     _any_char_in_set newick_delimiter(" (),{}[];:'\"");
-    if (node_desc.Any([&newick_delimiter](char c, unsigned long i) -> bool {
+    if (node_desc.Any([&newick_delimiter](char c, unsigned long) -> bool {
           return newick_delimiter == c;
         }) != kNotFound) {
       node_desc = _StringBuffer()
@@ -1084,7 +1084,7 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp(long opCode, _List *arguments,
 
         ref_manager < cc;
 
-        long size = cc->Value() / arg0->Value();
+        long size = (long)(cc->Value() / arg0->Value());
 
         if (size <= 4 || size * 2 > cc->Value()) {
           throw _String("Poor choice of the 2nd numeric argument in to $ "
@@ -1099,7 +1099,7 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp(long opCode, _List *arguments,
 
           ref_manager < resL;
 
-          checkSize = cc->Value();
+          checkSize = (long)cc->Value();
 
           if (resL->nonempty()) {
             _Matrix *mRes = new _Matrix(resL->lLength, 2, false, true);
@@ -1107,7 +1107,7 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp(long opCode, _List *arguments,
                 [&](BaseRefConst cluster, unsigned long index) -> void {
                   _List *cluster_list = (_List *)cluster;
                   long node_count =
-                      ((_Constant *)cluster_list->GetItem(1))->Value();
+                      (long)((_Constant *)cluster_list->GetItem(1))->Value();
                   mRes->Store(index, 0, node_count);
                   mRes->Store(index, 1, -2L + cluster_list->countitems());
                 });
@@ -1202,7 +1202,7 @@ const _List _TreeTopology::RetrieveNodeNames(bool doTips, bool doInternals,
 void _TreeTopology::FindCOTHelper(node<long> *aNode, long parentIndex,
                                   _Matrix &distances, _Matrix &rootDistances,
                                   _Matrix &branchLengths, _List &childLists,
-                                  _AVLListX &addressToIndexMap2, hyFloat d) {
+                                  _AVLListX &addressToIndexMap2, hyFloat) {
 
   /** TODO: SLKP 20171218, the whole FindCOT stack  needs review **/
 
@@ -1223,7 +1223,7 @@ void _TreeTopology::FindCOTHelper(node<long> *aNode, long parentIndex,
 
   for (long ci = 0L; ci < leafCount; ci++) {
     if (ci == childLeaves->list_data[ci2]) {
-      if (ci2 < childLeaves->lLength - 1) {
+      if (ci2 + 1 < (long)childLeaves->lLength) {
         ci2++;
       }
     } else {
@@ -1275,7 +1275,7 @@ void _TreeTopology::FindCOTHelper2(node<long> *aNode, _Matrix &branchSpans,
 //__________________________________________________________________________________
 
 HBLObjectRef _TreeTopology::MaximumParsimony(HBLObjectRef parameters,
-                                             HBLObjectRef cache) {
+                                             HBLObjectRef) {
   static const _String kMPScore("score"), kMPLabels("labels"),
       kMPOutNodeScore("node-scores"), kMPOutSubstitutions("substitutions");
 
@@ -1515,7 +1515,7 @@ HBLObjectRef _TreeTopology::MaximumParsimony(HBLObjectRef parameters,
 }
 //__________________________________________________________________________________
 
-_AssociativeList *_TreeTopology::FindCOT(HBLObjectRef p, HBLObjectRef cache) {
+_AssociativeList *_TreeTopology::FindCOT(HBLObjectRef p, HBLObjectRef) {
   // Find the Center of the Tree (COT) location
   // using an L_p metric (L_2 works well)
 
@@ -1603,7 +1603,7 @@ _AssociativeList *_TreeTopology::FindCOT(HBLObjectRef p, HBLObjectRef cache) {
 
         myLength = branchLengths.theData[childIndex];
 
-        for (long ci2 = 0; ci2 < childLeaves->lLength; ci2++) {
+        for (long ci2 = 0; ci2 < (long)childLeaves->lLength; ci2++) {
           long ttIndex = childLeaves->list_data[ci2];
           mappedLeaves.list_data[ttIndex] = 1;
           distances.Store(myIndex, ttIndex,
@@ -1631,7 +1631,7 @@ _AssociativeList *_TreeTopology::FindCOT(HBLObjectRef p, HBLObjectRef cache) {
         addressToIndexMap2.Find((BaseRef)theRoot->go_down(ci)));
     _SimpleList *childLeaves = (_SimpleList *)childLists(childIndex);
     hyFloat myLength = branchLengths.theData[childIndex];
-    for (long ci2 = 0; ci2 < childLeaves->lLength; ci2++) {
+    for (long ci2 = 0; ci2 < (long)childLeaves->lLength; ci2++) {
       tIndex = childLeaves->list_data[ci2];
       rootDistances.Store(0, tIndex, distances(childIndex, tIndex) + myLength);
       // printf ("root->%s = %g\n", ((_String*)leafNames(tIndex))->sData,
@@ -1672,7 +1672,7 @@ _AssociativeList *_TreeTopology::FindCOT(HBLObjectRef p, HBLObjectRef cache) {
         */
 
         if (ci3 == childLeaves->list_data[ci2]) {
-          if (ci2 < childLeaves->lLength - 1) {
+          if (ci2 + 1 < (long)childLeaves->lLength) {
             ci2++;
           }
 
@@ -1710,7 +1710,7 @@ _AssociativeList *_TreeTopology::FindCOT(HBLObjectRef p, HBLObjectRef cache) {
         for (long ci3 = 0; ci3 < leafCount; ci3++) {
           hyFloat tt = distances(ci, ci3);
           if (ci3 == childLeaves->get(ci2)) {
-            if (ci2 < childLeaves->lLength - 1) {
+            if (ci2 + 1 < (long)childLeaves->lLength) {
               ci2++;
             }
 
@@ -1797,12 +1797,12 @@ _AssociativeList *_TreeTopology::FindCOT(HBLObjectRef p, HBLObjectRef cache) {
     _String nn = buffer;
     tcache.Clear();
     long startingPos = timeSplitsAVL.Find(&nn, tcache),
-         k = timeSplitsAVL.Next(startingPos, tcache);
+         kidx = timeSplitsAVL.Next(startingPos, tcache);
 
-    for (long pc = timeSplitsAVL.GetXtra(k); k >= 0;
-         k = timeSplitsAVL.Next(k, tcache), pc++) {
+    for (long pc = timeSplitsAVL.GetXtra(kidx); kidx >= 0;
+         kidx = timeSplitsAVL.Next(kidx, tcache), pc++) {
       hyFloat ub =
-          ((_String *)(*((_List *)timeSplitsAVL.dataList))(k))->to_float();
+          ((_String *)(*((_List *)timeSplitsAVL.dataList))(kidx))->to_float();
       if (ub < T1 || CheckEqual(T1, ub)) {
         cotCDFPoints.Store(pc, 1, cotCDFPoints(pc, 1) + 1);
       } else {
@@ -1811,7 +1811,7 @@ _AssociativeList *_TreeTopology::FindCOT(HBLObjectRef p, HBLObjectRef cache) {
     }
   }
 
-  for (long mxc = 1; mxc < cotCDFPoints.GetHDim(); mxc++) {
+  for (unsigned long mxc = 1; mxc < cotCDFPoints.GetHDim(); mxc++) {
     cotCDFPoints.Store(mxc, 1,
                        cotCDFPoints(mxc, 1) *
                            (cotCDFPoints(mxc, 0) - cotCDFPoints(mxc - 1, 0)) /
@@ -1827,7 +1827,7 @@ _AssociativeList *_TreeTopology::FindCOT(HBLObjectRef p, HBLObjectRef cache) {
   if (totalTreeLength > 0.0) {
     hyFloat sampler = EnvVariableGetNumber(kCOTSamples, 0.0);
 
-    tIndex = sampler;
+    tIndex = (long)sampler;
     if (tIndex >= 1) {
       _Matrix sampledDs(tIndex, 1, false, true);
 
@@ -1851,7 +1851,7 @@ _AssociativeList *_TreeTopology::FindCOT(HBLObjectRef p, HBLObjectRef cache) {
         for (long ci3 = 0; ci3 < leafCount; ci3++) {
           hyFloat tt = distances(branchIndex, ci3);
           if (ci3 == childLeaves->list_data[ci2]) {
-            if (ci2 < childLeaves->lLength - 1) {
+            if (ci2 + 1 < (long)childLeaves->lLength) {
               ci2++;
             }
 
@@ -1897,7 +1897,7 @@ bool _TreeTopology::internalNodeCompare(node<long> *n1, node<long> *n2,
                                         _SimpleList &subTreeMap,
                                         _SimpleList *reindexer, bool cangoup,
                                         long totalSize, node<long> *n22,
-                                        _TreeTopology const *tree2,
+                                        _TreeTopology const *,
                                         bool isPattern) const {
   // compares whether the nodes create the same subpartition
 
@@ -1933,7 +1933,7 @@ bool _TreeTopology::internalNodeCompare(node<long> *n1, node<long> *n2,
       if (kth_child == n22) {
         if (complement) {
           if (reindexer) {
-            childLeaves->Each([&](long value, unsigned long index) -> void {
+            childLeaves->Each([&](long value, unsigned long) -> void {
               long lookup = reindexer->get(value);
               if (lookup >= 0) {
                 (*complement)[lookup] = 0L;
@@ -1942,7 +1942,7 @@ bool _TreeTopology::internalNodeCompare(node<long> *n1, node<long> *n2,
               }
             });
           } else {
-            childLeaves->Each([&](long value, unsigned long index) -> void {
+            childLeaves->Each([&](long value, unsigned long) -> void {
               (*complement)[value] = 0L;
             });
           }
@@ -1981,7 +1981,7 @@ bool _TreeTopology::internalNodeCompare(node<long> *n1, node<long> *n2,
       nodeMap < complement;
       stSizes << totalSize;
 
-      for (long k4 = 0; k4 < stSizes.lLength - 1; k4++) {
+      for (long k4 = 0; k4 < (long)stSizes.lLength - 1; k4++) {
         stSizes.list_data[stSizes.lLength - 1] -= stSizes.list_data[k4];
       }
 
@@ -1999,21 +1999,21 @@ bool _TreeTopology::internalNodeCompare(node<long> *n1, node<long> *n2,
     for (int k5 = 1; k5 <= nc1; k5++) {
       _SimpleList *childNodes = (_SimpleList *)n1->go_down(k5)->in_object;
       long k6;
-      for (k6 = 0; k6 < stSizes.lLength; k6++)
-        if (stSizes.list_data[k6] == childNodes->lLength)
+      for (k6 = 0; k6 < (long)stSizes.lLength; k6++)
+        if (stSizes.list_data[k6] == (long)childNodes->lLength)
         // potential subtree match
         {
           _SimpleList *potMap = (_SimpleList *)nodeMap(k6);
           long k7;
-          for (k7 = 0; k7 < childNodes->lLength; k7++)
+          for (k7 = 0; k7 < (long)childNodes->lLength; k7++)
             if (potMap->list_data[childNodes->list_data[k7]] == 0) {
               break;
             }
 
-          if (k7 == childNodes->lLength) {
+          if (k7 == (long)childNodes->lLength) {
             stSizes.list_data[k6] = -1;
 
-            if (complement && (k6 == stSizes.lLength - 1)) {
+            if (complement && (k6 + 1 == (long)stSizes.lLength)) {
               subTreeMap << -1;
             } else {
               if (n22 && (k6 >= skipped_child)) {
@@ -2026,7 +2026,7 @@ bool _TreeTopology::internalNodeCompare(node<long> *n1, node<long> *n2,
           }
         }
 
-      if (k6 == stSizes.lLength) {
+      if (k6 == (long)stSizes.lLength) {
         if (isPattern) {
           unmatchedPatterns << k5;
           subTreeMap << -2;
@@ -2037,32 +2037,29 @@ bool _TreeTopology::internalNodeCompare(node<long> *n1, node<long> *n2,
     }
 
     if (isPattern && unmatchedPatterns.lLength) {
-      _SimpleList rematchedPatterns;
-      for (long k7 = 0; k7 < unmatchedPatterns.lLength; k7++) {
-        rematchedPatterns << -1;
-      }
+      _SimpleList rematchedPatterns(unmatchedPatterns.lLength, -1, 0);
 
-      for (long k8 = 0; k8 < stSizes.lLength; k8++) {
+      for (unsigned long k8 = 0; k8 < stSizes.lLength; k8++) {
         if (stSizes.list_data[k8] > 0) {
           _SimpleList *potMap = (_SimpleList *)nodeMap(k8);
-          for (long k9 = 0; k9 < unmatchedPatterns.lLength; k9++) {
+          for (unsigned long k9 = 0; k9 < unmatchedPatterns.lLength; k9++) {
             if (rematchedPatterns.list_data[k9] < 0) {
               _SimpleList *childNodes =
                   (_SimpleList *)n1
                       ->go_down((int)unmatchedPatterns.list_data[k9])
                       ->in_object;
               long k10 = 0;
-              for (; k10 < childNodes->lLength; k10++)
+              for (; k10 < (long)childNodes->lLength; k10++)
                 if (potMap->list_data[childNodes->list_data[k10]] == 0) {
                   break;
                 }
-              if (k10 == childNodes->lLength) {
+              if (k10 == (long)childNodes->lLength) {
                 rematchedPatterns.list_data[k9] = k8;
                 if (complement && (k8 == stSizes.lLength - 1)) {
                   subTreeMap.list_data[unmatchedPatterns.list_data[k9] - 1] =
                       -(0xfffffff);
                 } else {
-                  if (n22 && (k8 >= skipped_child)) {
+                  if (n22 && ((long)k8 >= skipped_child)) {
                     subTreeMap.list_data[unmatchedPatterns.list_data[k9] - 1] =
                         -k8 - 3;
                   } else {
@@ -2082,17 +2079,16 @@ bool _TreeTopology::internalNodeCompare(node<long> *n1, node<long> *n2,
         return 0;
       }
 
-      for (long k11 = 0; k11 < rematchedPatterns.lLength; k11++) {
+      for (unsigned long k11 = 0; k11 < rematchedPatterns.lLength; k11++) {
         stSizes.list_data[rematchedPatterns.list_data[k11]] -=
             ((_SimpleList *)n1->go_down((int)unmatchedPatterns.list_data[k11])
                  ->in_object)
                 ->lLength;
       }
 
-      for (long k12 = 0; k12 < stSizes.lLength; k12++)
-        if (stSizes.list_data[k12]) {
-          return 0;
-        }
+      if (stSizes.Any([](long v, unsigned long) -> bool { return v != 0; })) {
+        return 0;
+      }
     }
     return 1;
   }
@@ -2149,7 +2145,7 @@ char _TreeTopology::internalTreeCompare(node<long> *n1, node<long> *n2,
           (*patched) << k1;
         }
       }
-      for (long k2 = 0; k2 < furtherMatchedPatterns.lLength; k2++) {
+      for (unsigned long k2 = 0; k2 < furtherMatchedPatterns.lLength; k2++) {
         node<long> *dummy = new node<long>;
         dummy->parent = n1->parent;
         _SimpleList *children = (_SimpleList *)patternList(k2),
@@ -2157,7 +2153,7 @@ char _TreeTopology::internalTreeCompare(node<long> *n1, node<long> *n2,
 
         dummy->in_object = (long)newLeaves;
 
-        for (long k3 = 0; k3 < children->lLength; k3++) {
+        for (unsigned long k3 = 0; k3 < children->lLength; k3++) {
           node<long> *aChild = n1->go_down((int)children->list_data[k3] + 1);
           dummy->add_node(*aChild);
           _SimpleList t;
@@ -2225,13 +2221,13 @@ HBLObjectRef _TreeTopology::BranchCount(HBLObjectRef cache) {
 
 //__________________________________________________________________________________
 HBLObjectRef _TreeTopology::FlatRepresentation(HBLObjectRef cache) {
-  _SimpleList flatTree;
+  _SimpleList flat_representation;
 
   unsigned long count = 0UL;
   node_iterator<long> ni(theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
 
   while (node<long> *iterator = ni.Next()) {
-    flatTree << iterator->in_object;
+    flat_representation << iterator->in_object;
     iterator->in_object = count++;
   }
 
@@ -2248,14 +2244,14 @@ HBLObjectRef _TreeTopology::FlatRepresentation(HBLObjectRef cache) {
       res->theData[count] = iterator->parent->in_object;
     }
 
-    iterator->in_object = flatTree.list_data[count++];
+    iterator->in_object = flat_representation.list_data[count++];
   }
   return res;
 }
 
 //__________________________________________________________________________________
 HBLObjectRef _TreeTopology::AVLRepresentation(HBLObjectRef layoutOption,
-                                              HBLObjectRef cache) {
+                                              HBLObjectRef) {
 
   if (layoutOption->ObjectClass() == NUMBER) {
     bool preOrder = layoutOption->Compute()->Value() > 0.5;
@@ -2283,16 +2279,17 @@ HBLObjectRef _TreeTopology::AVLRepresentation(HBLObjectRef layoutOption,
     ni.Reset(theRoot);
 
     while (node<long> *iterator = ni.Next()) {
-      _AssociativeList *nodeList = new _AssociativeList();
-      nodeList->MStore("Name", new _FString(GetNodeName(iterator)), false);
-      nodeList->MStore("Length", new _Constant(GetBranchLength(iterator)),
-                       false);
-      nodeList->MStore("Depth", new _Constant(ni.Level()), false);
+      _AssociativeList *lift_of_nodes = new _AssociativeList();
+      lift_of_nodes->MStore("Name", new _FString(GetNodeName(iterator)), false);
+      lift_of_nodes->MStore("Length", new _Constant(GetBranchLength(iterator)),
+                            false);
+      lift_of_nodes->MStore("Depth", new _Constant(ni.Level()), false);
       if (!iterator->is_root()) {
-        nodeList->MStore("Parent",
-                         new _Constant(nodeIndexList.GetXtra(
-                             nodeIndexList.Find((BaseObj *)iterator->parent))),
-                         false);
+        lift_of_nodes->MStore(
+            "Parent",
+            new _Constant(nodeIndexList.GetXtra(
+                nodeIndexList.Find((BaseObj *)iterator->parent))),
+            false);
       }
 
       long nCount = iterator->get_num_nodes();
@@ -2305,11 +2302,11 @@ HBLObjectRef _TreeTopology::AVLRepresentation(HBLObjectRef layoutOption,
                   nodeIndexList.Find((BaseObj *)iterator->go_down(k)))),
               false);
         }
-        nodeList->MStore("Children", childList, false);
+        lift_of_nodes->MStore("Children", childList, false);
       }
       masterList->MStore(_String((long)nodeIndexList.GetXtra(
                              nodeIndexList.Find((BaseObj *)iterator))),
-                         nodeList, false);
+                         lift_of_nodes, false);
     }
 
     _AssociativeList *headerList = new _AssociativeList();
@@ -2327,7 +2324,7 @@ HBLObjectRef _TreeTopology::AVLRepresentation(HBLObjectRef layoutOption,
 HBLObjectRef _TreeTopology::TipName(HBLObjectRef p, HBLObjectRef cache) {
 
   if (p && p->ObjectClass() == NUMBER) {
-    long tip_index = p->Value(), count = -1L;
+    long tip_index = (long)p->Value(), count = -1L;
 
     if (tip_index < 0L) {
       return new _Matrix(
@@ -2407,8 +2404,7 @@ bool _recurse_and_reshuffle(node<long> *root, long &from, long &to,
   return false;
 }
 //__________________________________________________________________________________
-HBLObjectRef _TreeTopology::RandomizeTips(HBLObjectRef rate,
-                                          HBLObjectRef cache) {
+HBLObjectRef _TreeTopology::RandomizeTips(HBLObjectRef rate, HBLObjectRef) {
   _TreeTopology *reshuffled = nil;
 
   try {
@@ -2490,7 +2486,7 @@ HBLObjectRef _TreeTopology::BranchLength(HBLObjectRef p, HBLObjectRef cache) {
   if (p) {
     node_iterator<long> ni(theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
     if (p->ObjectClass() == NUMBER) {
-      long res = p->Value();
+      long res = (long)p->Value();
 
       if (res < 0L) {
         // get ALL branch lengths
@@ -2600,12 +2596,12 @@ HBLObjectRef _TreeTopology::TreeBranchName(HBLObjectRef node_ref,
   if (node_ref) {
     if (node_ref->ObjectClass() == NUMBER) { // get by index
 
-      long argument = node_ref->Value(), count = -1L;
+      long argument = (long)node_ref->Value(), count = -1L;
 
       if (argument >= 0L) { // get a specific internal node name/subtree
 
         node<long> *ith_internal_node = ConditionalTraverser(
-            [&](node<long> *iterator, node_iterator<long> &ni) -> bool {
+            [&](node<long> *iterator, node_iterator<long> &) -> bool {
               if (iterator->is_leaf() == false) {
                 return (++count == argument);
               }
@@ -3124,15 +3120,15 @@ _String _TreeTopology::CompareTrees(_TreeTopology *compareTo) const {
       }
 
       if (meNode != otherCT) {
-        node_iterator<long> ni(compareTo->theRoot,
-                               _HY_TREE_TRAVERSAL_POSTORDER);
-        while (node<long> *meNode = ni.Next()) {
-          if (meNode == theRoot) {
+        node_iterator<long> node_iterator(compareTo->theRoot,
+                                          _HY_TREE_TRAVERSAL_POSTORDER);
+        while (node<long> *current_node = node_iterator.Next()) {
+          if (current_node == theRoot) {
             break;
           }
           if (tCount == 1) {
             rerootAt = kCompareEqualWithReroot &
-                       *LocateVar(meNode->in_object)->GetName() & '.';
+                       *LocateVar(current_node->in_object)->GetName() & '.';
             break;
           } else {
             tCount--;
@@ -3299,7 +3295,7 @@ _TreeTopology::MatchTreePattern(_TreeTopology const *compareTo) const {
 
       inverted.Populate(indexer, _SimpleList::action_invert);
 
-      for (long padresSuck = 0; padresSuck < matchedLeaves.lLength;
+      for (unsigned long padresSuck = 0; padresSuck < matchedLeaves.lLength;
            padresSuck++) {
         allowedLeaves.list_data[inverted.get(matchedLeaves.get(padresSuck))] =
             1;
@@ -3307,7 +3303,8 @@ _TreeTopology::MatchTreePattern(_TreeTopology const *compareTo) const {
 
       long slider = 0L;
 
-      for (long dodgersSuck = 0L; dodgersSuck < my_leaf_count; dodgersSuck++)
+      for (unsigned long dodgersSuck = 0L; dodgersSuck < my_leaf_count;
+           dodgersSuck++)
         if (allowedLeaves.get(dodgersSuck)) {
           recordTransfer.list_data[dodgersSuck] = slider++;
         }
@@ -3381,7 +3378,7 @@ _TreeTopology::MatchTreePattern(_TreeTopology const *compareTo) const {
       recordTransfer.Clear();
       inverted.Clear();
 
-      for (long lc = 0; lc < allowedLeaves.lLength; lc++)
+      for (unsigned long lc = 0; lc < allowedLeaves.lLength; lc++)
         if (allowedLeaves.get(lc)) {
           recordTransfer << newLeaves.lLength;
           inverted << newLeaves.lLength;
@@ -3642,7 +3639,7 @@ bool _TreeTopology::ConvertToPSW(_AVLListX &nodeMap, _List *inames,
   while (node<long> *currentNode = ni.Next()) {
     _String nodeName = GetNodeName(currentNode);
 
-    if (levelBuffer.countitems() <= ni.Level()) {
+    if ((long)levelBuffer.countitems() <= ni.Level()) {
       levelBuffer.AppendRange(ni.Level() - levelBuffer.countitems() + 1, 0, 0);
     }
 
@@ -3680,7 +3677,8 @@ bool _TreeTopology::ConvertToPSW(_AVLListX &nodeMap, _List *inames,
     levelBuffer[ni.Level()] = 0;
   }
 
-  for (long k = 0; k < pswRepresentation.lLength; k += (reference ? 3 : 2)) {
+  for (unsigned long k = 0; k < pswRepresentation.lLength;
+       k += (reference ? 3 : 2)) {
     if (pswRepresentation.get(k) < 0L) {
       pswRepresentation[k] = leafIndex - pswRepresentation.get(k) - 1;
     }
@@ -3694,7 +3692,7 @@ bool _TreeTopology::ConvertToPSW(_AVLListX &nodeMap, _List *inames,
 //__________________________________________________________________________________
 
 _AssociativeList *_TreeTopology::SplitsIdentity(HBLObjectRef p,
-                                                HBLObjectRef cache) const {
+                                                HBLObjectRef) const {
   // compare tree topologies
   _Matrix *result = new _Matrix(2, 1, false, true), *result2 = nil;
 
@@ -3806,7 +3804,7 @@ _AssociativeList *_TreeTopology::SplitsIdentity(HBLObjectRef p,
       tree_repr = ConvertFromPSW(nameMap, psw2);
 
       _List sharedNames;
-      for (long k = 0; k < iNodesTouched.lLength; k++) {
+      for (unsigned long k = 0; k < iNodesTouched.lLength; k++) {
         sharedNames << iNames(iNodesTouched(k) - leafCount);
       }
 
@@ -3856,7 +3854,7 @@ _TreeTopology::FindMaxCommonSubTree(_TreeTopology const *compare_to,
 
     _SimpleList reindexer(otherLeaves.countitems(), -1L, 0L), ldx1, ldx2;
 
-    for (long k2 = 0L; k2 < sharedLeaves.countitems(); k2++) {
+    for (unsigned long k2 = 0L; k2 < sharedLeaves.countitems(); k2++) {
       reindexer[other_inverted_index.get(sharedLeavesIDin2.get(k2))] =
           my_inverted_index.get(sharedLeavesIDin1.get(k2));
       //          the original index of shared leaf k2  -> the original index of
@@ -3884,7 +3882,7 @@ _TreeTopology::FindMaxCommonSubTree(_TreeTopology const *compare_to,
 
     _SimpleList matchedTops, matchedSize;
 
-    for (long k3 = 0UL; k3 < sharedLeaves.countitems() - 1L; k3++) {
+    for (long k3 = 0UL; k3 < (long)sharedLeaves.countitems() - 1L; k3++) {
       long try_leaf_index = other_inverted_index.get(sharedLeavesIDin2.get(k3));
 
       if (reindexer.get(try_leaf_index) >= 0L) {
@@ -3949,7 +3947,7 @@ _TreeTopology::FindMaxCommonSubTree(_TreeTopology const *compare_to,
 
       if (forest) {
         size_tracker = 0L;
-        for (long k6 = 0L; k6 < matchedSize.lLength; k6++) {
+        for (unsigned long k6 = 0L; k6 < matchedSize.lLength; k6++) {
           (*forest) << handle_subtree((node<long> *)matchedTops.get(k6));
           size_tracker += matchedSize.get(k6);
         }
@@ -4002,11 +4000,11 @@ const _String _TreeTopology::CompareSubTrees(_TreeTopology const *compareTo,
 
     ilist.Populate(myLeaves.countitems(), -1L, 0L);
 
-    for (long k2 = 0L; k2 < otherIndexer.countitems(); k2++) {
+    for (unsigned long k2 = 0L; k2 < otherIndexer.countitems(); k2++) {
       ilist[sharedLeavesID.get(otherIndexer.get(k2))] = k2;
     }
 
-    for (long k2 = 0L; k2 < indexer.countitems(); k2++) {
+    for (unsigned long k2 = 0L; k2 < indexer.countitems(); k2++) {
       long lidx = ilist.list_data[indexer.get(k2)];
       indexer[k2] = lidx >= 0L ? lidx : -1L;
     }

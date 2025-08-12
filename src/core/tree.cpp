@@ -204,14 +204,14 @@ _computeBoostScaler(hyFloat currentScaler, hyFloat sum, long &didScale) {
 
 hyFloat acquireScalerMultiplier(long s) {
   if (s > 0) {
-    if (s >= _scalerMultipliers.get_used())
+    if (s >= (long)_scalerMultipliers.get_used())
       for (long k = _scalerMultipliers.get_used(); k <= s; k++) {
         _scalerMultipliers.Store(exp(-_logLFScaler * k));
       }
     return _scalerMultipliers.theData[s];
   }
   s = -s;
-  if (s >= _scalerDividers.get_used())
+  if (s >= (long)_scalerDividers.get_used())
     for (long k = _scalerDividers.get_used(); k <= s; k++) {
       _scalerDividers.Store(exp(_logLFScaler * k));
     }
@@ -266,7 +266,7 @@ _TheTree::_TheTree(_String const &name, _TreeTopology *top)
     parse_settings.AllocateCache();
 
     ConditionalTraverser(
-        [&](node<long> *iterator, node_iterator<long> const &ni) -> bool {
+        [&](node<long> *iterator, node_iterator<long> const &) -> bool {
           hyFloat stored_branch_length = top->GetBranchLength(iterator);
 
           _String nodeVS, nodeName(top->GetNodeName(iterator, false)),
@@ -484,16 +484,14 @@ node<long> *_TheTree::DuplicateTreeStructure(node<long> *source_node_object,
   locNode->init(node_var.get_index());
 
   sourceNode->ForEachLocalVariable(
-      sourceNode->iVariables,
-      [&](long var_idx, long ref_idx, long array_index) {
+      sourceNode->iVariables, [&](long var_idx, long, long array_index) {
         _Variable new_node_var(LocateVar(var_idx)->GetName()->Replace(
             replace_me, *new_name, false));
         (*sourceNode->iVariables)[array_index] = new_node_var.get_index();
       });
 
   sourceNode->ForEachLocalVariable(
-      sourceNode->dVariables,
-      [&](long var_idx, long ref_idx, long array_index) {
+      sourceNode->dVariables, [&](long var_idx, long, long array_index) {
         _Variable new_node_var(LocateVar(var_idx)->GetName()->Replace(
             replace_me, *new_name, false));
         (*sourceNode->dVariables)[array_index] = new_node_var.get_index();
@@ -777,7 +775,7 @@ bool _TheTree::AllBranchesHaveModels(long matchSize) const {
 
   while (_CalcNode *iterator = ti.Next()) {
     _Matrix *model = iterator->GetModelMatrix();
-    if (!(model && (matchSize < 0L || model->GetHDim() == matchSize))) {
+    if (!(model && (matchSize < 0L || (long)model->GetHDim() == matchSize))) {
       return false;
     }
   }
@@ -882,8 +880,7 @@ _String const _TheTree::GetBranchVarValue(node<long> *n, long idx) const {
     _String query = _String('.') & *LocateVar(idx)->GetName();
 
     long local_idx = tree_node->FindLocalVariable(
-        tree_node->iVariables,
-        [&](long local, long template_var, unsigned long i) -> bool {
+        tree_node->iVariables, [&](long local, long, unsigned long) -> bool {
           return LocateVar(local)->GetName()->EndsWith(query);
         });
 
@@ -1008,8 +1005,7 @@ hyFloat _TheTree::DetermineBranchLengthGivenScalingParameter(
       branchLength = HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS;
     }
   } else {
-    auto match_pattern = [&](long local_idx, long template_index,
-                             unsigned long index) -> void {
+    auto match_pattern = [&](long local_idx, long, unsigned long) -> void {
       _Variable *local_parameter = LocateVar(local_idx);
       if (local_parameter->GetName()->EndsWith(matchString)) {
         branchLength = local_parameter->Compute()->Value();
@@ -1273,15 +1269,15 @@ HBLObjectRef _TheTree::PlainTreeString(HBLObjectRef p, HBLObjectRef p2,
       if (toptions) {
         HBLObjectRef lc = toptions->GetByKey(kTreeOutputLayout, NUMBER);
         if (lc) {
-          treeLayout = lc->Value();
+          treeLayout = (long)lc->Value();
         }
         lc = toptions->GetByKey(kTreeOutputEmbed, NUMBER);
         if (lc) {
-          doEmbed = lc->Value();
+          doEmbed = (long)lc->Value();
         }
         lc = toptions->GetByKey(kTreeOutputSymbols, NUMBER);
         if (lc) {
-          doSymbol = lc->Value();
+          doSymbol = (long)lc->Value();
         }
 
         lc = toptions->GetByKey(kTreeOutputExtraPS, STRING);
@@ -1296,7 +1292,7 @@ HBLObjectRef _TheTree::PlainTreeString(HBLObjectRef p, HBLObjectRef p2,
 
         lc = toptions->GetByKey(kTreeOutputSymbolSize, NUMBER);
         if (lc) {
-          symbolsize = lc->Value();
+          symbolsize = (long)lc->Value();
         }
       }
 
@@ -1400,7 +1396,7 @@ HBLObjectRef _TheTree::PlainTreeString(HBLObjectRef p, HBLObjectRef p2,
         _Constant *fontSizeIn =
             (_Constant *)(toptions)->GetByKey(kTreeOutputFSPlaceH, NUMBER);
         if (fontSizeIn) {
-          fontSize = fontSizeIn->Value();
+          fontSize = (long)fontSizeIn->Value();
         }
 
         fontSizeIn =
@@ -1412,7 +1408,7 @@ HBLObjectRef _TheTree::PlainTreeString(HBLObjectRef p, HBLObjectRef p2,
 
         if ((fontSizeIn = (_Constant *)(toptions)->GetByKey(
                  kTreeOutputXtraMargin, NUMBER))) {
-          xtraChars = fontSizeIn->Value();
+          xtraChars = (long)fontSizeIn->Value();
         }
       }
 
@@ -1468,7 +1464,7 @@ HBLObjectRef _TheTree::PlainTreeString(HBLObjectRef p, HBLObjectRef p2,
       // 36 is max and 2 is min;
 
       if (fontSize < 0) {
-        fontSize = treeHeight / (tipCount + 1 + (scaling > 0) * 1.5);
+        fontSize = (long)(treeHeight / (tipCount + 1 + (scaling > 0) * 1.5));
 
         if (fontSize > 36) {
           fontSize = 36;
@@ -1543,7 +1539,7 @@ HBLObjectRef _TheTree::PlainTreeString(HBLObjectRef p, HBLObjectRef p2,
                   currentNd->in_object.label1 / (2. * hScale) * treeRadius;
 
               chordLength = chordLength / nnWidth;
-              fontSize = fontSize * chordLength;
+              fontSize = (long)(fontSize * chordLength);
 
               if (fontSize < 2) {
                 fontSize = 2;
@@ -1555,7 +1551,7 @@ HBLObjectRef _TheTree::PlainTreeString(HBLObjectRef p, HBLObjectRef p2,
             }
           } else {
             if (nnWidth > treeWidth * .5) {
-              fontSize = fontSize / (2. * nnWidth / treeWidth);
+              fontSize = (long)(fontSize / (2. * nnWidth / treeWidth));
               if (fontSize < 2) {
                 fontSize = 2;
               }
@@ -1609,13 +1605,15 @@ HBLObjectRef _TheTree::PlainTreeString(HBLObjectRef p, HBLObjectRef p2,
         newRoot->in_object.v = treeRadius;
         vScale = 0.;
 
-        TreePSRecurse(newRoot, (*res), hScale, vScale, ceil(treeWidth),
-                      ceil(treeHeight), fontSize / 2, labelWidth - fontSize / 2,
-                      parse_settings, toptions, 1, &treeRadius);
+        TreePSRecurse(newRoot, (*res), hScale, vScale, (long)ceil(treeWidth),
+                      (long)ceil(treeHeight), fontSize / 2,
+                      (long)(labelWidth - fontSize / 2), parse_settings,
+                      toptions, 1, &treeRadius);
       } else {
-        TreePSRecurse(newRoot, (*res), hScale, vScale, ceil(treeWidth),
-                      ceil(treeHeight), fontSize / 2, labelWidth - fontSize / 2,
-                      parse_settings, toptions);
+        TreePSRecurse(newRoot, (*res), hScale, vScale, (long)ceil(treeWidth),
+                      (long)ceil(treeHeight), fontSize / 2,
+                      (long)(labelWidth - fontSize / 2), parse_settings,
+                      toptions);
       }
 
       if (scaling) { /* ruler */
@@ -1653,12 +1651,12 @@ HBLObjectRef _TheTree::PlainTreeString(HBLObjectRef p, HBLObjectRef p2,
           rulerLabel = vScale;
         }
 
-        long lm = newRoot->in_object.h, rm = lw + vScale * hScale;
+        long lm = (long)newRoot->in_object.h, rm = (long)(lw + vScale * hScale);
 
         if (treeLayout == 1) {
           treeHeight = 2 * treeRadius - 2 * fontSize;
-          lm = treeWidth - fontSize - rm;
-          rm = treeWidth - fontSize - lw;
+          lm = (long)(treeWidth - fontSize - rm);
+          rm = (long)(treeWidth - fontSize - lw);
         }
 
         (*res) << "newpath\n"
@@ -1741,7 +1739,7 @@ void _TheTree::TreePSRecurse(node<nodeCoord> *iterator, _StringBuffer &res,
 
   // 20180618 TODO:  SLKP this needs review and possibly deprecation
 
-  unsigned long descendants = iterator->get_num_nodes();
+  long descendants = iterator->get_num_nodes();
   bool is_leaf = descendants == 0UL;
   // lineW    = halfFontSize/3+1;
 
@@ -1756,7 +1754,7 @@ void _TheTree::TreePSRecurse(node<nodeCoord> *iterator, _StringBuffer &res,
   } else {
     hc = GetRoot().in_object;
     if (hc >= 0.) {
-      varName = (*LocateVar(hc)->GetName());
+      varName = (*LocateVar((long)hc)->GetName());
     }
     if (layout == 1) {
       res << (_String(iterator->in_object.h) & ' ' &
@@ -1783,7 +1781,7 @@ void _TheTree::TreePSRecurse(node<nodeCoord> *iterator, _StringBuffer &res,
     hcl = iterator->in_object.h * hScale;
     vcl = iterator->in_object.v * hScale;
   } else {
-    vcl = vSize - iterator->in_object.v * vScale,
+    vcl = vSize - iterator->in_object.v * vScale;
     hcl = hSize + iterator->in_object.h * hScale - shift;
   }
 
@@ -1873,7 +1871,7 @@ void _TheTree::TreePSRecurse(node<nodeCoord> *iterator, _StringBuffer &res,
         t = kEmptyString;
       }
 
-      newV += child->in_object.v;
+      newV += (long)child->in_object.v;
 
       _AssociativeList *childOptions = nil;
 
@@ -2010,13 +2008,13 @@ void _TheTree::TreePSRecurse(node<nodeCoord> *iterator, _StringBuffer &res,
 
           res << (_String(currentX) & ' ' & _String(child->in_object.v) &
                   " moveto\n");
-          for (long seg = 0; seg < multiColor->GetHDim(); seg++) {
+          for (unsigned long seg = 0; seg < multiColor->GetHDim(); seg++) {
             res << (_String((*multiColor)(seg, 0)) & " " &
                     _String((*multiColor)(seg, 1)) & " " &
                     _String((*multiColor)(seg, 2)) & " setrgbcolor\n");
             hyFloat mySpan = span * (*multiColor)(seg, 3);
             res << (_String(mySpan) & " 0 rlineto\n");
-            if (seg < multiColor->GetHDim() - 1) {
+            if (seg + 1 < multiColor->GetHDim()) {
               currentX += mySpan;
               res << "stroke\nnewpath\n"
                   << ((_String(currentX) & ' ' & _String(child->in_object.v) &
@@ -2032,9 +2030,9 @@ void _TheTree::TreePSRecurse(node<nodeCoord> *iterator, _StringBuffer &res,
               _String(child->in_object.v + lineWidthInset) & " lineto\n";
         }
         if (layout == 1) {
-          minChildHC = MIN(child->in_object.label1, minChildHC);
+          minChildHC = MIN((long)child->in_object.label1, minChildHC);
         } else {
-          minChildHC = MIN(child->in_object.h, minChildHC);
+          minChildHC = MIN((long)child->in_object.h, minChildHC);
         }
       }
       res << t << "stroke\n" << linecap2 << linewidth2;
@@ -2064,7 +2062,7 @@ void _TheTree::TreePSRecurse(node<nodeCoord> *iterator, _StringBuffer &res,
       if (notches) {
         notches->CheckIfSparseEnough(true);
         res << notchColor;
-        for (long l = 0; l < notches->GetSize(); l++) {
+        for (unsigned long l = 0; l < notches->GetSize(); l++) {
           hyFloat aNotch = (*notches)[l];
           if (aNotch >= 0. && aNotch <= 1.) {
             res << "newpath\n";
@@ -2347,10 +2345,12 @@ void _TheTree::ScanForGVariables(_AVLList &li, _AVLList &ld, _AVLListX *tagger,
 
   while (_CalcNode *iterator = ti.Next()) {
 
-    _Formula *explicitFormMExp = iterator->GetExplicitFormModel();
-    _Matrix *modelM = explicitFormMExp ? nil : iterator->GetModelMatrix();
+    _Formula *explicitFormM_expression = iterator->GetExplicitFormModel();
+    _Matrix *modelM =
+        explicitFormM_expression ? nil : iterator->GetModelMatrix();
 
-    if ((explicitFormMExp && cLL.Find((BaseRef)explicitFormMExp) < 0) ||
+    if ((explicitFormM_expression &&
+         cLL.Find((BaseRef)explicitFormM_expression) < 0) ||
         (modelM && cLL.Find(modelM) < 0)) {
       _SimpleList temp;
       _AVLList tempA(&temp);
@@ -2373,11 +2373,11 @@ void _TheTree::ScanForGVariables(_AVLList &li, _AVLList &ld, _AVLListX *tagger,
           }
         }
       } else {
-        explicitFormMExp->ScanFForVariables(tempA, true, false, true, true,
-                                            tagger, weight, weight >> 2);
+        explicitFormM_expression->ScanFForVariables(
+            tempA, true, false, true, true, tagger, weight, weight >> 2);
       }
 
-      cLL.Insert(modelM ? (BaseRef)modelM : (BaseRef)explicitFormMExp);
+      cLL.Insert(modelM ? (BaseRef)modelM : (BaseRef)explicitFormM_expression);
     }
     iterator->ScanForGVariables(li, ld);
   }
@@ -2490,7 +2490,8 @@ bool _TheTree::IntPopulateLeaves(_DataSetFilter const *dsf,
 
   _String *buffer = dsf->MakeSiteBuffer();
 
-  for (long leaf_index = 0; leaf_index < flatLeaves.lLength; leaf_index++) {
+  for (unsigned long leaf_index = 0; leaf_index < flatLeaves.lLength;
+       leaf_index++) {
     _CalcNode *iterator = (_CalcNode *)flatCLeaves.GetItem(leaf_index);
     dsf->RetrieveState(site_index, leaf_index, *buffer, false);
 
@@ -2557,7 +2558,8 @@ void _TheTree::RecoverNodeSupportStates(_DataSetFilter const *dsf,
                                   catShifer * catCount,
             *vecPointer = currentStateVector;
 
-    for (long nodeCount = 0L; nodeCount < flatCLeaves.lLength; nodeCount++) {
+    for (unsigned long nodeCount = 0L; nodeCount < flatCLeaves.lLength;
+         nodeCount++) {
       hyFloat *leafVec =
           ((_CalcNode *)(((BaseRef *)flatCLeaves.list_data)[nodeCount]))
               ->theProbs;
@@ -2568,7 +2570,7 @@ void _TheTree::RecoverNodeSupportStates(_DataSetFilter const *dsf,
     // TODO SLKP 20180703: ugly fix for underflow which WON'T work if category
     // count > 1
 
-    for (long iNodeCount = 0L; iNodeCount < flatTree.lLength - 1;
+    for (long iNodeCount = 0L; iNodeCount < (long)flatTree.lLength - 1;
          iNodeCount++) {
       node<long> *thisINode = (node<long> *)flatNodes.list_data[iNodeCount];
 
@@ -2759,7 +2761,8 @@ long _TheTree::ComputeReleafingCostChar(_DataSetFilter const *dsf,
   // InitializeArray(marked_nodes, flatTree.lLength, false);
   // memset (marked_nodes, 0, sizeof(bool) * flatTree.lLength);
 
-  for (long node_index = 0L; node_index < flatLeaves.lLength; node_index++) {
+  for (unsigned long node_index = 0L; node_index < flatLeaves.lLength;
+       node_index++) {
     long seq_index = dsf->theNodeMap.list_data[node_index];
     if (thisState[seq_index] != pastState[seq_index]) {
       /*long parentIndex = flatParents.list_data[node_index];
@@ -2773,7 +2776,7 @@ long _TheTree::ComputeReleafingCostChar(_DataSetFilter const *dsf,
   }
 
   // the root will always be changed, so don't need to check it
-  for (long i = 0; i < flatTree.lLength - 1; i++) {
+  for (long i = 0; i < (long)flatTree.lLength - 1; i++) {
     if (marked_nodes[i]) {
       marked_nodes[flatParents.list_data[i + offset]] = true;
       theCost += child_count->list_data[i];
@@ -2808,7 +2811,7 @@ long _TheTree::ComputeReleafingCost(_DataSetFilter const *dsf, long firstIndex,
 
   dsf->CompareTwoSitesCallback(
       firstIndex, secondIndex,
-      [marked_nodes, this](long idx, unsigned long di) -> void {
+      [marked_nodes, this](long, unsigned long di) -> void {
         marked_nodes[this->flatParents.list_data[di]] = true;
       });
 
@@ -2987,7 +2990,7 @@ void _TheTree::ExponentiateMatrices(_List &expNodes, long tc, long catID) {
   unsigned long nt =
       cBase < 20
           ? 1
-          : (MIN(tc,
+          : (MIN((unsigned long)tc,
                  (cBase < 60 ? parallel.lLength >> 1 : parallel.lLength) + 1));
 
   // printf ("_TheTree::ExponentiateMatrices %d total, %d no update, (block
@@ -3006,7 +3009,7 @@ void _TheTree::ExponentiateMatrices(_List &expNodes, long tc, long catID) {
 #endif
 #endif
 #endif
-    for (long id = 0L; id < parallel.lLength; id++) {
+    for (unsigned long id = 0L; id < parallel.lLength; id++) {
       long matrixID = parallel.get(id);
       if (isExplicitForm.list_data[matrixID] == 0 ||
           !hasExpForm) { // normal matrix to exponentiate
@@ -3019,7 +3022,7 @@ void _TheTree::ExponentiateMatrices(_List &expNodes, long tc, long catID) {
     }
   }
 
-  for (long id = 0L; id < serial.lLength; id++) {
+  for (unsigned long id = 0L; id < serial.lLength; id++) {
     long matrixID = serial.get(id);
     _Matrix *already_computed = ((_Matrix *)matrixQueue(matrixID));
     (*computedExponentials)[matrixID] = already_computed;
@@ -3113,7 +3116,7 @@ long _TheTree::DetermineNodesForUpdate(_SimpleList &updateNodes,
 #define DIRECT_INDEX(N) (flatParents.list_data[N] + flatLeaves.lLength)
 
   auto _handle_node = [&](long node_id, bool do_list) -> void {
-    bool isLeaf = node_id < flatLeaves.lLength;
+    bool isLeaf = node_id < (long)flatLeaves.lLength;
 
     if (isLeaf) {
       currentTreeNode = (((_CalcNode **)flatCLeaves.list_data)[node_id]);
@@ -3154,7 +3157,7 @@ long _TheTree::DetermineNodesForUpdate(_SimpleList &updateNodes,
     updateNodes.RequestSpace(changed_variables->countitems());
     _AVLList uniques(&updateNodes);
 
-    for (long i = 0L; i < changed_variables->dataList->lLength; i++) {
+    for (unsigned long i = 0L; i < changed_variables->dataList->lLength; i++) {
       long var_index = changed_variables->dataList->list_data[i];
       long node_index =
           var_to_node_map->FindAndGetXtra((BaseRefConst)var_index, -1L);
@@ -3174,7 +3177,7 @@ long _TheTree::DetermineNodesForUpdate(_SimpleList &updateNodes,
         uniques.InsertNumber(addOne);
       }
       long i = 0L;
-      for (; i < updateNodes.lLength; i++) {
+      for (; i < (long)updateNodes.lLength; i++) {
         _handle_node(updateNodes.get(i), false);
       }
       // if (likeFuncEvalCallCount == 7) {
@@ -3214,15 +3217,15 @@ long _TheTree::DetermineNodesForUpdate(_SimpleList &updateNodes,
           }
       }*/
 
-      for (long i = 0; i < flatParents.lLength - 1; i++) {
-        long my_parent = flatParents.list_data[i] + flatLeaves.lLength;
+      for (long index = 0; index < (long)flatParents.lLength - 1; index++) {
+        long my_parent = flatParents.list_data[index] + flatLeaves.lLength;
         if (uniques.FindLong(my_parent) >= 0) {
-          children << i;
+          children << index;
         }
       }
 
-      for (long i = 0; i < children.lLength; i++) {
-        uniques.InsertNumber(children.get(i));
+      for (unsigned long index = 0; index < children.lLength; index++) {
+        uniques.InsertNumber(children.get(index));
       }
 
       if (uniques.countitems() <= 32) {
@@ -3328,7 +3331,7 @@ void _TheTree::FillInConditionals(_DataSetFilter const *theFilter,
   long alphabetDimension = theFilter->GetDimension(),
        siteCount = theFilter->GetPatternCount();
 
-  for (long nodeID = 0; nodeID < flatTree.lLength; nodeID++) {
+  for (unsigned long nodeID = 0; nodeID < flatTree.lLength; nodeID++) {
     hyFloat *conditionals =
         iNodeCache + (nodeID * siteCount) * alphabetDimension;
     long currentTCCIndex = siteCount * nodeID,
@@ -3354,7 +3357,7 @@ void _TheTree::FillInConditionals(_DataSetFilter const *theFilter,
 /*----------------------------------------------------------------------------------------------------------*/
 
 const _CalcNode *_TheTree::GetNodeFromFlatIndex(long index) const {
-  return index < flatLeaves.lLength
+  return index < (long)flatLeaves.lLength
              ? (((_CalcNode **)flatCLeaves.list_data)[index])
              : (((_CalcNode **)flatTree.list_data)[index - flatLeaves.lLength]);
 }
@@ -3412,7 +3415,7 @@ hyFloat _TheTree::ComputeLLWithBranchCache(_SimpleList &siteOrdering, long brID,
   const unsigned long alphabetDimension = theFilter->GetDimension(),
                       siteCount = theFilter->GetPatternCount();
 
-  if (siteTo > siteCount) {
+  if (siteTo > (long)siteCount) {
     siteTo = siteCount;
   }
 
@@ -3468,7 +3471,7 @@ hyFloat _TheTree::ComputeLLWithBranchCache(_SimpleList &siteOrdering, long brID,
                           transitionMatrix[11], transitionMatrix[15]}};
 #endif
 
-      for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
+      for (long siteID = siteFrom; siteID < siteTo; siteID++) {
         hyFloat accumulator = 0.;
         /*if (likeFuncEvalCallCount == 328 && siteID == 30) {
             fprintf (stderr, "CACHE, %ld, %ld, %20.15lg/%20.15lg,
@@ -3595,7 +3598,7 @@ hyFloat _TheTree::ComputeLLWithBranchCache(_SimpleList &siteOrdering, long brID,
 
        ****/
     case 20UL: {
-      for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
+      for (long siteID = siteFrom; siteID < siteTo; siteID++) {
         hyFloat accumulator = 0.;
 #ifdef _SLKP_USE_AVX_INTRINSICS
         __m256d bc_vector[5] = {_mm256_loadu_pd(branchConditionals),
@@ -3693,7 +3696,7 @@ hyFloat _TheTree::ComputeLLWithBranchCache(_SimpleList &siteOrdering, long brID,
     case 61UL:
     case 62UL:
     case 63UL: {
-      for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
+      for (long siteID = siteFrom; siteID < siteTo; siteID++) {
         hyFloat accumulator = 0.;
 
         unsigned long rmx = 0UL;
@@ -3768,7 +3771,7 @@ hyFloat _TheTree::ComputeLLWithBranchCache(_SimpleList &siteOrdering, long brID,
 
       if (alphabetDimension % 2) { // odd
         unsigned long alphabetDimension_minus1 = alphabetDimension - 1;
-        for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
+        for (long siteID = siteFrom; siteID < siteTo; siteID++) {
           hyFloat accumulator = 0.;
 
           unsigned long rmx = 0UL;
@@ -3792,7 +3795,7 @@ hyFloat _TheTree::ComputeLLWithBranchCache(_SimpleList &siteOrdering, long brID,
           bookkeeping(siteID, accumulator, correction, result);
         }
       } else {
-        for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
+        for (long siteID = siteFrom; siteID < siteTo; siteID++) {
           hyFloat accumulator = 0.;
 
           unsigned long rmx = 0UL;
@@ -4029,7 +4032,7 @@ void _TheTree::SampleAncestorsBySequence(
       _SimpleList *patternMap =
           (_SimpleList *)expandedSiteMap(siteOrdering.list_data[pattern]);
       if (catAssignments) {
-        long localCatID = catAssignments[siteOrdering.list_data[pattern]];
+        long localCatID = (long)catAssignments[siteOrdering.list_data[pattern]];
         if (parentStates) {
           transitionMatrix = currentTreeNode->GetCompExp(localCatID)->theData;
         }
@@ -4039,7 +4042,7 @@ void _TheTree::SampleAncestorsBySequence(
                        (pattern + nodeIndex * siteCount) * alphabetDimension;
       }
 
-      for (long site = 0; site < patternMap->lLength; site++) {
+      for (unsigned long site = 0; site < patternMap->lLength; site++) {
         long siteID = patternMap->list_data[site];
 
         hyFloat randVal = genrand_real2(), totalSum = 0.;
@@ -4080,11 +4083,11 @@ void _TheTree::SampleAncestorsBySequence(
 
     _StringBuffer *sampledSequence = new _StringBuffer(siteCount * unitLength);
     _String letterValue((unsigned long)unitLength);
-    for (long charIndexer = 0; charIndexer < sampledStates.countitems();
-         charIndexer++) {
+    for (unsigned long charIndexer = 0;
+         charIndexer < sampledStates.countitems(); charIndexer++) {
       dsf->ConvertCodeToLettersBuffered(
-          dsf->CorrectCode(sampledStates.list_data[charIndexer]), unitLength,
-          letterValue, &conversionAVL);
+          dsf->CorrectCode(sampledStates.list_data[charIndexer]),
+          (unsigned char)unitLength, letterValue, &conversionAVL);
       (*sampledSequence) << letterValue;
     }
     sampledSequence->TrimSpace();
@@ -4104,7 +4107,7 @@ void _TheTree::SampleAncestorsBySequence(
 _List *_TheTree::RecoverAncestralSequences(
     _DataSetFilter const *dsf, _SimpleList const &siteOrdering,
     _List const &expandedSiteMap, hyFloat *iNodeCache,
-    hyFloat const *catAssignments, long catCount, long *lNodeFlags,
+    hyFloat const *catAssignments, long, long *lNodeFlags,
     _Vector *lNodeResolutions, bool alsoDoLeaves)
 
 // dsf:                         the filter to sample from
@@ -4148,7 +4151,7 @@ _List *_TheTree::RecoverAncestralSequences(
     for (long nodeID = 0; nodeID < allNodeCount; nodeID++) {
       long parent_index = flatParents.get(nodeID), node_index = nodeID;
 
-      bool is_leaf = nodeID < flatLeaves.countitems();
+      bool is_leaf = nodeID < (long)flatLeaves.countitems();
 
       if (!is_leaf) {
         node_index -= flatLeaves.countitems();
@@ -4198,7 +4201,8 @@ _List *_TheTree::RecoverAncestralSequences(
         if (catAssignments) {
           transition_matrix =
               tree_node_object
-                  ->GetCompExp(catAssignments[siteOrdering.list_data[siteID]])
+                  ->GetCompExp(
+                      (long)catAssignments[siteOrdering.list_data[siteID]])
                   ->theData;
         }
 
@@ -4381,12 +4385,12 @@ _List *_TheTree::RecoverAncestralSequences(
 
       for (long nodeID = 0; nodeID < stateCacheDim; nodeID++) {
         dsf->ConvertCodeToLettersBuffered(
-            dsf->CorrectCode(parentStates.list_data[nodeID]), unitLength,
-            codeBuffer, &conversionAVL);
+            dsf->CorrectCode(parentStates.list_data[nodeID]),
+            (unsigned char)unitLength, codeBuffer, &conversionAVL);
         _String *sequence = (_String *)(*result)(
             nodeID < iNodeCount ? postToIn.list_data[nodeID] : nodeID);
 
-        for (long site = 0; site < patternMap->lLength; site++) {
+        for (unsigned long site = 0; site < patternMap->lLength; site++) {
           unsigned long offset = patternMap->list_data[site] * unitLength;
           for (long charS = 0; charS < unitLength; charS++) {
             sequence->set_char(offset + charS, codeBuffer.char_at(charS));

@@ -324,7 +324,7 @@ bool _ElementaryCommand::HandleDifferentiate(_ExecutionList &current_program) {
 
     long times = 1L;
     if (parameter_count() >= 4UL) {
-      times = _ProcessNumericArgumentWithExceptions(
+      times = (long)_ProcessNumericArgumentWithExceptions(
           *GetIthParameter(3), current_program.nameSpacePrefix);
       if (times <= 0L) {
         throw(GetIthParameter(3UL)->Enquote() &
@@ -635,7 +635,7 @@ bool _ElementaryCommand::HandleGetDataInfo(_ExecutionList &current_program) {
 
             for (unsigned long idx = 0UL; idx < character_count; idx++) {
               characters < new _String(filter_source->ConvertCodeToLetters(
-                               filter_source->CorrectCode(idx), fd));
+                               filter_source->CorrectCode(idx), (char)fd));
             }
           } else {
             _String alphabet_string =
@@ -701,11 +701,11 @@ bool _ElementaryCommand::HandleGetDataInfo(_ExecutionList &current_program) {
           }
         }
       } else {
-        long seqID = _ProcessNumericArgumentWithExceptions(
+        long seqID = (long)_ProcessNumericArgumentWithExceptions(
             *GetIthParameter(2), current_program.nameSpacePrefix);
 
         if (filter_source) {
-          if (seqID >= 0 && seqID < filter_source->NumberSpecies()) {
+          if (seqID >= 0 && seqID < (long)filter_source->NumberSpecies()) {
             receptacle->SetValue(
                 new _FString(filter_source->GetSequenceCharacters(seqID)),
                 false, true, NULL);
@@ -735,7 +735,7 @@ bool _ElementaryCommand::HandleGetDataInfo(_ExecutionList &current_program) {
             receptacle->SetValue(parameterInfo, false, true, NULL);
           }
         } else { // filter_source
-          if (seqID >= 0 && seqID < dataset_source->NoOfSpecies()) {
+          if (seqID >= 0 && seqID < (long)dataset_source->NoOfSpecies()) {
             receptacle->SetValue(
                 new _FString(dataset_source->GetSequenceCharacters(seqID)),
                 false, true, NULL);
@@ -746,13 +746,13 @@ bool _ElementaryCommand::HandleGetDataInfo(_ExecutionList &current_program) {
 
     case 4UL: {
       if (filter_source) {
-        long seq = _ProcessNumericArgumentWithExceptions(
+        long seq = (long)_ProcessNumericArgumentWithExceptions(
                  *GetIthParameter(2), current_program.nameSpacePrefix),
-             site = _ProcessNumericArgumentWithExceptions(
+             site = (long)_ProcessNumericArgumentWithExceptions(
                  *GetIthParameter(3), current_program.nameSpacePrefix);
 
-        if (site >= 0 && site < filter_source->GetPatternCount()) {
-          if (seq >= 0 && seq < filter_source->NumberSpecies()) {
+        if (site >= 0 && site < (long)filter_source->GetPatternCount()) {
+          if (seq >= 0 && seq < (long)filter_source->NumberSpecies()) {
             bool count_gaps = hy_env::EnvVariableTrue(
                 hy_env::harvest_frequencies_gap_options);
             _Matrix *res =
@@ -813,7 +813,8 @@ bool _ElementaryCommand::HandleGetDataInfo(_ExecutionList &current_program) {
           }
         } else {
 
-          if (site == -1L && seq >= 0 && seq < filter_source->NumberSpecies()) {
+          if (site == -1L && seq >= 0 &&
+              seq < (long)filter_source->NumberSpecies()) {
             bool count_gaps = hy_env::EnvVariableTrue(
                 hy_env::harvest_frequencies_gap_options);
             long filter_dimension = filter_source->GetDimension(true);
@@ -847,13 +848,14 @@ bool _ElementaryCommand::HandleGetDataInfo(_ExecutionList &current_program) {
 
     case 5UL: {
       if (filter_source) {
-        long seq1 = _ProcessNumericArgumentWithExceptions(
+        long seq1 = (long)_ProcessNumericArgumentWithExceptions(
                  *GetIthParameter(2), current_program.nameSpacePrefix),
-             seq2 = _ProcessNumericArgumentWithExceptions(
+             seq2 = (long)_ProcessNumericArgumentWithExceptions(
                  *GetIthParameter(3), current_program.nameSpacePrefix);
 
-        if (seq1 >= 0 && seq2 >= 0 && seq1 < filter_source->NumberSpecies() &&
-            seq2 < filter_source->NumberSpecies()) {
+        if (seq1 >= 0 && seq2 >= 0 &&
+            seq1 < (long)filter_source->NumberSpecies() &&
+            seq2 < (long)filter_source->NumberSpecies()) {
           _String const *res_flag = GetIthParameter(4);
           _Matrix *res;
 
@@ -945,15 +947,18 @@ bool _ElementaryCommand::HandleGetInformation(_ExecutionList &current_program) {
       } break;
       }
     } else {
-      _Variable *source_object = FetchVar(LocateVarByName(source_name));
+      _Variable *source_object_variable =
+          FetchVar(LocateVarByName(source_name));
 
-      if (source_object && source_object->ObjectClass() == STRING) {
-        source_object = FetchVar(LocateVarByName(
-            _String((_String *)source_object->Compute()->toStr())));
+      if (source_object_variable &&
+          source_object_variable->ObjectClass() == STRING) {
+        source_object_variable = FetchVar(LocateVarByName(
+            _String((_String *)source_object_variable->Compute()->toStr())));
       }
-      if (source_object) {
-        if (source_object->IsCategory()) {
-          _CategoryVariable *thisCV = (_CategoryVariable *)source_object;
+      if (source_object_variable) {
+        if (source_object_variable->IsCategory()) {
+          _CategoryVariable *thisCV =
+              (_CategoryVariable *)source_object_variable;
           thisCV->Refresh();
 
           _Matrix *values = thisCV->GetValues(),
@@ -962,22 +967,23 @@ bool _ElementaryCommand::HandleGetInformation(_ExecutionList &current_program) {
           long size = values->GetHDim() * values->GetVDim();
           result = new _Matrix(2, size, false, true);
 
-          for (unsigned long k = 0UL; k < size; k++) {
+          for (long k = 0; k < size; k++) {
             result->theData[k] = values->theData[k];
             result->theData[size + k] = weights->theData[k];
           }
         } else {
-          if (source_object->ObjectClass() == TREE_NODE) {
-            _CalcNode *theNode = (_CalcNode *)source_object;
+          if (source_object_variable->ObjectClass() == TREE_NODE) {
+            _CalcNode *theNode = (_CalcNode *)source_object_variable;
             if (theNode->GetModelIndex() != HY_NO_MODEL) {
               result = new _Matrix;
               theNode->RecomputeMatrix(0, 1, result);
             }
           } else {
-            if (source_object->ObjectClass() == TOPOLOGY ||
-                source_object->ObjectClass() == TREE) {
+            if (source_object_variable->ObjectClass() == TOPOLOGY ||
+                source_object_variable->ObjectClass() == TREE) {
 
-              _List *map = ((_TreeTopology *)source_object)->MapNodesToModels();
+              _List *map =
+                  ((_TreeTopology *)source_object_variable)->MapNodesToModels();
               _AssociativeList *return_this = new _AssociativeList();
 
               for (unsigned long i = 0; i < map->lLength; i++) {
@@ -990,11 +996,11 @@ bool _ElementaryCommand::HandleGetInformation(_ExecutionList &current_program) {
             }
           }
 
-          if ((!result) && source_object->ObjectClass() == NUMBER) {
+          if ((!result) && source_object_variable->ObjectClass() == NUMBER) {
             result = new _Matrix(1, 3, false, true);
-            result->theData[0] = source_object->Compute()->Value();
-            result->theData[1] = source_object->GetLowerBound();
-            result->theData[2] = source_object->GetUpperBound();
+            result->theData[0] = source_object_variable->Compute()->Value();
+            result->theData[1] = source_object_variable->GetLowerBound();
+            result->theData[2] = source_object_variable->GetUpperBound();
           }
         }
       } else {
@@ -1126,7 +1132,7 @@ bool _ElementaryCommand::HandleConstructCategoryMatrix(
 
         leaf_names << internal_names;
 
-        for (unsigned long site = 0UL; site < patterns; site++) {
+        for (long site = 0UL; site < patterns; site++) {
           source_tree->RecoverNodeSupportStates(filter, site,
                                                 *conditional_matrix);
         }
@@ -1306,16 +1312,16 @@ bool _ElementaryCommand::HandleAlignSequences(_ExecutionList &current_program) {
 
     _StringBuffer settings_report(256L);
 
-    settings_report << "\n\tGap character               : " << gap_character
-                    << "\n\tGap open cost [reference]   : " << gap_open
-                    << "\n\tGap open cost [query]       : " << gap_open2
-                    << "\n\tGap extend cost [reference] : " << gap_extend
-                    << "\n\tGap extend cost [query]     : " << gap_extend2
-                    << "\n\tCodon frameshift cost       : " << gap_frameshift
-                    << "\n\tIgnore terminal gaps        : "
-                    << (do_local ? "Yes" : "No")
-                    << "\n\tPerform local alignment     : "
-                    << (do_full_local ? "Yes" : "No");
+    settings_report
+        << "\n\tGap character               : " << gap_character
+        << "\n\tGap open cost [reference]   : " << _String(gap_open)
+        << "\n\tGap open cost [query]       : " << _String(gap_open2)
+        << "\n\tGap extend cost [reference] : " << _String(gap_extend)
+        << "\n\tGap extend cost [query]     : " << _String(gap_extend2)
+        << "\n\tCodon frameshift cost       : " << _String(gap_frameshift)
+        << "\n\tIgnore terminal gaps        : " << (do_local ? "Yes" : "No")
+        << "\n\tPerform local alignment     : "
+        << (do_full_local ? "Yes" : "No");
 
     if (do_codon) {
       settings_report << "\n\tUse codon alignment with frameshift routines";
@@ -1338,11 +1344,11 @@ bool _ElementaryCommand::HandleAlignSequences(_ExecutionList &current_program) {
         _Matrix *buffers[6] = {nil};
         double *data_buffers[6] = {nil};
 
-        ArrayForEach(buffers, 6, [=](_Matrix *m, unsigned long) -> _Matrix * {
+        ArrayForEach(buffers, 6, [=](_Matrix *, unsigned long) -> _Matrix * {
           return new _Matrix(size_allocation, 1, false, true);
         });
         ArrayForEach(data_buffers, 6,
-                     [=](double *m, unsigned long i) -> double * {
+                     [=](double *, unsigned long i) -> double * {
                        return buffers[i]->theData;
                      });
 
@@ -1357,7 +1363,7 @@ bool _ElementaryCommand::HandleAlignSequences(_ExecutionList &current_program) {
             reference_sequence->length(), sequence2->length(),
             character_map_to_integers, score_matrix->theData,
             score_matrix->GetVDim(), gap_open, gap_extend, gap_open2,
-            gap_extend2, do_local, do_affine, ops.list_data, score, 0,
+            gap_extend2, do_local, do_affine, ops.list_data, 0,
             reference_sequence->length(), 0, sequence2->length(), data_buffers,
             0, alignment_route);
 
@@ -1501,9 +1507,9 @@ bool _ElementaryCommand::HandleHarvestFrequencies(
                             current_program.nameSpacePrefix),
         object_type, nil, &current_program);
 
-    long unit = _ProcessNumericArgumentWithExceptions(
+    long unit = (long)_ProcessNumericArgumentWithExceptions(
              *GetIthParameter(2), current_program.nameSpacePrefix),
-         atom = _ProcessNumericArgumentWithExceptions(
+         atom = (long)_ProcessNumericArgumentWithExceptions(
              *GetIthParameter(3), current_program.nameSpacePrefix);
 
     bool position_specific =
@@ -1526,16 +1532,17 @@ bool _ElementaryCommand::HandleHarvestFrequencies(
       dataset->ProcessPartition(vertical_partition, processed_site_partition,
                                 true, 1);
 
-      receptacle->SetValue(
-          dataset->HarvestFrequencies(unit, atom, position_specific,
-                                      processed_sequence_partition,
-                                      processed_site_partition, include_gaps),
-          false, true, NULL);
+      receptacle->SetValue(dataset->HarvestFrequencies(
+                               (unsigned char)unit, (unsigned char)atom,
+                               position_specific, processed_sequence_partition,
+                               processed_site_partition, include_gaps),
+                           false, true, NULL);
     } break;
     case HY_BL_DATASET_FILTER: {
       receptacle->SetValue(
           ((_DataSetFilter const *)source_object)
-              ->HarvestFrequencies(unit, atom, position_specific, include_gaps),
+              ->HarvestFrequencies((unsigned char)unit, (unsigned char)atom,
+                                   position_specific, include_gaps),
           false, true, NULL);
     } break;
     }
@@ -1671,7 +1678,7 @@ bool _ElementaryCommand::HandleReplicateConstraint(
 
   auto cleanup = [template_parameter_count](_TreeIterator **t) -> void {
     if (t) {
-      for (long k = 0L; k < template_parameter_count; k++) {
+      for (unsigned long k = 0L; k < template_parameter_count; k++) {
         if (t[k]) {
           delete t[k];
         }
@@ -1694,7 +1701,7 @@ bool _ElementaryCommand::HandleReplicateConstraint(
 
     traversers = new _TreeIterator *[template_parameter_count]();
 
-    for (long k = 1L; k < parameter_count(); k++) {
+    for (unsigned long k = 1L; k < parameter_count(); k++) {
       _CalcNode *this_object = (_CalcNode *)_CheckForExistingVariableByType(
           *GetIthParameter(k), current_program, TREE | TREE_NODE);
       if (this_object->ObjectClass() == TREE) {
@@ -1795,7 +1802,7 @@ bool _ElementaryCommand::HandleReplicateConstraint(
       f->GetList().ForEach([&templated_operations, is_lhs, &reference_argument,
                             &substitution_variables,
                             &substitution_variable_by_index](
-                               BaseRef op, unsigned long index) -> void {
+                               BaseRef op, unsigned long) -> void {
         _Variable const *operation_var = ((_Operation *)op)->RetrieveVar();
         if (operation_var) {
           _SimpleList pattern_match(operation_var->GetName()->RegExpMatch(
@@ -1906,7 +1913,8 @@ bool _ElementaryCommand::HandleReplicateConstraint(
             // ((_String*)parent_object_names.GetItem(condition_index))->get_str());
             *parameter_set << local_k;
             _List *subexpressions = new _List;
-            for (long k = 0L; k < matched_conditions.countitems(); k += 2) {
+            for (unsigned long k = 0L; k < matched_conditions.countitems();
+                 k += 2) {
               subexpressions->AppendNewInstance(
                   new _String(local_name, matched_conditions(k),
                               matched_conditions(k + 1)));
@@ -2028,7 +2036,7 @@ bool _ElementaryCommand::HandleReplicateConstraint(
                             _List *check_subs =
                                 (_List *)matched_template_subexpressions
                                     ->GetItem(i3);
-                            for (long i = 0;
+                            for (unsigned long i = 0;
                                  i <
                                  Minimum(
                                      check_subs->countitems(),
@@ -2312,15 +2320,15 @@ bool _ElementaryCommand::HandleNestedList(_ExecutionList &current_program) {
       kNamespaceName,
       new _FString((_String *)GetIthParameter(1)->toStr(), false), false);
 
-  _ExecutionList *code = (_ExecutionList *)parameters.GetItem(0);
+  _ExecutionList *code_block = (_ExecutionList *)parameters.GetItem(0);
   if (current_program.IsDryRun()) {
-    code->SetDryRun(true);
+    code_block->SetDryRun(true);
     DeleteObject(current_program.result);
-    current_program.result = new _FString(
-        code->GenerateHelpMessage((_List *)simpleParameters.GetElement(-2),
-                                  (_List *)simpleParameters.GetElement(-1)));
+    current_program.result = new _FString(code_block->GenerateHelpMessage(
+        (_List *)simpleParameters.GetElement(-2),
+        (_List *)simpleParameters.GetElement(-1)));
   } else {
-    code->Execute(&current_program);
+    code_block->Execute(&current_program);
   }
   if (stash_current) {
     hy_env::EnvVariableSet(kNamespaceName, stash_current, false);
@@ -2369,7 +2377,7 @@ bool _ElementaryCommand::HandleAdvanceIterator(
           "Iterators over dictionaries do not support the 3 argument form"));
     }
 
-    if (parameters.countitems() == reciever_count ||
+    if ((long)parameters.countitems() == reciever_count ||
         parameters.GetItem(reciever_count) !=
             init_command->parameters.GetItem(1)) {
       parameters.DeleteTail(reciever_count, true);
@@ -2394,13 +2402,14 @@ bool _ElementaryCommand::HandleAdvanceIterator(
 
       if (!first_in) {
         column++;
-        if (column >= source_object->GetVDim()) {
+        if (column >= (long)source_object->GetVDim()) {
           column = 0;
           row++;
         }
       }
 
-      if (row >= source_object->GetHDim() || source_object->GetVDim() == 0) {
+      if (row >= (long)source_object->GetHDim() ||
+          source_object->GetVDim() == 0) {
         ((_Variable *)parameters.GetItem(reciever_count << 1))
             ->SetValue(new _FString(kEndIteration), false, false,
                        NULL); // end loop
@@ -2765,7 +2774,7 @@ bool _ElementaryCommand::HandleSelectTemplateModel(
         if (data_type == *(_String *)model_components->GetItem(3)) {
           _String *dim = (_String *)model_components->GetItem(2);
           if (*dim == _String("*") ||
-              source_filter->GetDimension() == dim->to_long()) {
+              (long)source_filter->GetDimension() == dim->to_long()) {
             matching_models << model_index;
           }
         }
@@ -2820,7 +2829,8 @@ bool _ElementaryCommand::HandleSelectTemplateModel(
           printf("               | %s. |\n", kPromptText.get_str());
           printf("               +--------------------------+\n\n\n");
 
-          for (model_id = 0; model_id < matching_models.lLength; model_id++) {
+          for (model_id = 0; model_id < (long)matching_models.lLength;
+               model_id++) {
             printf("\n\t(%s):%s",
                    ((_String *)templateModelList.GetItem(
                         matching_models(model_id), 0))
@@ -3038,16 +3048,19 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &current_program) {
       hy_env::EnvVariableSet(
           hy_env::random_seed,
           new _Constant(
-              hy_random_seed = _ProcessNumericArgumentWithExceptions(
-                  *GetIthParameter(1), current_program.nameSpacePrefix)),
+              hy_random_seed =
+                  (unsigned long)_ProcessNumericArgumentWithExceptions(
+                      *GetIthParameter(1), current_program.nameSpacePrefix)),
           false);
       init_genrand(hy_random_seed);
       return true;
     }
 
     if (object_to_change == hy_env::defer_constrain_assignment) {
-      bool defer_status = _ProcessNumericArgumentWithExceptions(
-          *GetIthParameter(1), current_program.nameSpacePrefix);
+      bool defer_status =
+          !CheckEqual(_ProcessNumericArgumentWithExceptions(
+                          *GetIthParameter(1), current_program.nameSpacePrefix),
+                      0.0);
       if (defer_status) {
         deferSetFormula = new _SimpleList;
         deferClearConstraint = new _AVLList(new _SimpleList);
@@ -3058,8 +3071,9 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &current_program) {
     }
 
     if (object_to_change == hy_env::execution_mode) {
-      current_program.errorHandlingMode = _ProcessNumericArgumentWithExceptions(
-          *GetIthParameter(1), current_program.nameSpacePrefix);
+      current_program.errorHandlingMode =
+          (int)_ProcessNumericArgumentWithExceptions(
+              *GetIthParameter(1), current_program.nameSpacePrefix);
       return true;
     }
 
@@ -3179,7 +3193,7 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &current_program) {
             *GetIthParameter(2UL), MATRIX, current_program,
             &dynamic_variable_manager);
 
-        if (data_mx->GetVDim() == num_nodes) {
+        if ((long)data_mx->GetVDim() == num_nodes) {
           bgm->SetDataMatrix(data_mx);
         } else {
           throw(_String("Data matrix columns (") & data_mx->GetVDim() &
@@ -3260,7 +3274,7 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &current_program) {
         }
       } else {
         _LikelihoodFunction *lkf = (_LikelihoodFunction *)source_object;
-        long parameter_index = _ProcessNumericArgumentWithExceptions(
+        long parameter_index = (long)_ProcessNumericArgumentWithExceptions(
             set_this_attribute, current_program.nameSpacePrefix);
         if (lkf->GetIndependentVars().Map(parameter_index) < 0L) {
           throw(GetIthParameter(1)->Enquote() & " (=" & parameter_index &
@@ -3280,7 +3294,7 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &current_program) {
         ReleaseDataFilterLock(object_index);
       }
 
-      long sequence_index = _ProcessNumericArgumentWithExceptions(
+      long sequence_index = (long)_ProcessNumericArgumentWithExceptions(
           *GetIthParameter(1), current_program.nameSpacePrefix);
       _DataSet *ds = nil;
       if (object_type == HY_BL_DATASET) {
@@ -3355,7 +3369,7 @@ bool _ElementaryCommand::HandleFprintf(_ExecutionList &current_program) {
     }
 
     print_digit_specification =
-        hy_env::EnvVariableGetDefaultNumber(hy_env::print_float_digits);
+        (long)hy_env::EnvVariableGetDefaultNumber(hy_env::print_float_digits);
 
     if (!print_to_stdout) {
       if (destination == kFprintfMessagesLog) {
@@ -3706,13 +3720,14 @@ bool _ElementaryCommand::HandleExecuteCommandsCases(
     } else {
       bool result = false;
 
-      _ExecutionList code(*source_code, use_this_namespace, false, &result);
+      _ExecutionList code_block(*source_code, use_this_namespace, false,
+                                &result);
       if (current_program.IsDryRun()) {
-        code.SetDryRun(true);
+        code_block.SetDryRun(true);
         DeleteObject(current_program.result);
-        current_program.result = new _FString(
-            code.GenerateHelpMessage((_List *)simpleParameters.GetElement(-2),
-                                     (_List *)simpleParameters.GetElement(-1)));
+        current_program.result = new _FString(code_block.GenerateHelpMessage(
+            (_List *)simpleParameters.GetElement(-2),
+            (_List *)simpleParameters.GetElement(-1)));
       } else {
 
         if (!result) {
@@ -3727,8 +3742,8 @@ bool _ElementaryCommand::HandleExecuteCommandsCases(
           bool update_kw = false;
 
           if (has_redirected_input) {
-            code.stdinRedirectAux = &_aux_argument_list;
-            code.stdinRedirect = &argument_list;
+            code_block.stdinRedirectAux = &_aux_argument_list;
+            code_block.stdinRedirect = &argument_list;
           } else {
             if (current_program.has_stdin_redirect()) {
               stash1 = current_program.stdinRedirect;
@@ -3736,35 +3751,36 @@ bool _ElementaryCommand::HandleExecuteCommandsCases(
               current_program.stdinRedirect->AddAReference();
               current_program.stdinRedirectAux->AddAReference();
             }
-            code.stdinRedirect = current_program.stdinRedirect;
-            code.stdinRedirectAux = current_program.stdinRedirectAux;
+            code_block.stdinRedirect = current_program.stdinRedirect;
+            code_block.stdinRedirectAux = current_program.stdinRedirectAux;
           }
 
           bool ignore_ces_args = false;
 
           if (has_user_kwargs) {
-            code.SetKWArgs(user_kwargs);
+            code_block.SetKWArgs(user_kwargs);
             ignore_ces_args = true;
           } else {
             if (current_program.has_keyword_arguments()) {
-              code.kwarg_tags = stash_kw_tags = current_program.kwarg_tags;
-              code.kwargs = stash_kw = current_program.kwargs;
+              code_block.kwarg_tags = stash_kw_tags =
+                  current_program.kwarg_tags;
+              code_block.kwargs = stash_kw = current_program.kwargs;
               if (stash_kw_tags)
                 current_program.kwarg_tags->AddAReference();
               if (stash_kw)
                 current_program.kwargs->AddAReference();
-              code.currentKwarg = current_program.currentKwarg;
+              code_block.currentKwarg = current_program.currentKwarg;
               update_kw = true;
             }
           }
 
-          if (!simpleParameters.empty() && code.TryToMakeSimple(true)) {
+          if (!simpleParameters.empty() && code_block.TryToMakeSimple(true)) {
             ReportWarning(_String("Successfully compiled an execution list "
                                   "(possibly partially).\n") &
-                          _String((_String *)code.toStr()));
-            code.ExecuteSimple();
+                          _String((_String *)code_block.toStr()));
+            code_block.ExecuteSimple();
           } else {
-            code.Execute(nil, ignore_ces_args);
+            code_block.Execute(nil, ignore_ces_args);
           }
 
           if (stash1) {
@@ -3777,18 +3793,18 @@ bool _ElementaryCommand::HandleExecuteCommandsCases(
           if (stash_kw)
             stash_kw->RemoveAReference();
 
-          code.stdinRedirectAux = nil;
-          code.stdinRedirect = nil;
+          code_block.stdinRedirectAux = nil;
+          code_block.stdinRedirect = nil;
           if (update_kw) {
-            code.kwarg_tags = nil;
-            code.kwargs = nil;
-            current_program.currentKwarg = code.currentKwarg;
+            code_block.kwarg_tags = nil;
+            code_block.kwargs = nil;
+            current_program.currentKwarg = code_block.currentKwarg;
           }
 
-          if (code.result) {
+          if (code_block.result) {
             DeleteObject(current_program.result);
-            current_program.result = code.result;
-            code.result = nil;
+            current_program.result = code_block.result;
+            code_block.result = nil;
           }
         }
       }
@@ -3906,12 +3922,13 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &current_program) {
   try {
     receptacle = _ValidateStorageVariable(current_program);
 
-    long index1 = _ProcessNumericArgumentWithExceptions(
+    long index1 = (long)_ProcessNumericArgumentWithExceptions(
              *GetIthParameter(2), current_program.nameSpacePrefix),
-         index2 = parameter_count() > 3 ? _ProcessNumericArgumentWithExceptions(
-                                              *GetIthParameter(3),
-                                              current_program.nameSpacePrefix)
-                                        : -1L;
+         index2 =
+             parameter_count() > 3
+                 ? (long)_ProcessNumericArgumentWithExceptions(
+                       *GetIthParameter(3), current_program.nameSpacePrefix)
+                 : -1L;
 
     // first, handle special, hardcoded cases
 
@@ -3975,13 +3992,13 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &current_program) {
 
           if (currentLevel->kwarg_tags &&
               currentLevel->kwarg_tags->countitems()) {
-            currentLevel->kwarg_tags->ForEach(
-                [&kwargs, &count](BaseRef item, unsigned long index) {
-                  _List *kwarg = (_List *)item;
-                  (*kwargs) < (_associative_list_key_value){
-                                  _String(count), new _Matrix(*kwarg)};
-                  count++;
-                });
+            currentLevel->kwarg_tags->ForEach([&kwargs, &count](BaseRef item,
+                                                                unsigned long) {
+              _List *kwarg = (_List *)item;
+              (*kwargs) < (_associative_list_key_value){_String(count),
+                                                        new _Matrix(*kwarg)};
+              count++;
+            });
           }
         }
       }
@@ -4048,7 +4065,7 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &current_program) {
       case HY_BL_DATASET: {
         _DataSet const *data_set_object = (_DataSet const *)source_object;
         if (index1 >= 0) { // get a specific sequence name
-          if (index1 < data_set_object->NoOfSpecies()) {
+          if (index1 < (long)data_set_object->NoOfSpecies()) {
             return_value = make_fstring(
                 *(_String *)(data_set_object->GetNames().GetItem(index1)));
           } else {
@@ -4066,7 +4083,7 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &current_program) {
             (_DataSetFilter const *)source_object;
         ReleaseDataFilterLock(object_index);
         if (index1 >= 0) { // get a specific sequence name
-          if (index1 < data_filter->NumberSpecies()) {
+          if (index1 < (long)data_filter->NumberSpecies()) {
             return_value = make_fstring(
                 *(_String *)data_filter->GetData()->GetNames().GetItem(
                     data_filter->theNodeMap.Element(index1)));
@@ -4105,13 +4122,13 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &current_program) {
         _LikelihoodFunction const *lf =
             (_LikelihoodFunction const *)source_object;
         if (index1 >= 0L) {
-          if (index1 < lf->GetIndependentVars().countitems()) {
+          if (index1 < (long)lf->GetIndependentVars().countitems()) {
             return_value = make_fstring(
                 *LocateVar(lf->GetIndependentVars().GetElement(index1))
                      ->GetName());
           } else {
-            if (index1 < lf->GetIndependentVars().countitems() +
-                             lf->GetDependentVars().countitems()) {
+            if (index1 < (long)(lf->GetIndependentVars().countitems() +
+                                lf->GetDependentVars().countitems())) {
               return_value = make_fstring(
                   *LocateVar(
                        lf->GetDependentVars().GetElement(
@@ -4408,7 +4425,7 @@ bool _ElementaryCommand::HandleFscanf(_ExecutionList &current_program,
         } else {
           current_stream_position = last_call_stream_position;
           started_here_position = last_call_stream_position;
-          if (last_call_stream_position >= input_data->length()) {
+          if (last_call_stream_position >= (long)input_data->length()) {
             // run out of input chars, set EOF and bail
             hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_TRUE,
                                    false);
@@ -4520,7 +4537,7 @@ bool _ElementaryCommand::HandleFscanf(_ExecutionList &current_program,
     }
 
     while (argument_index < upper_bound &&
-           current_stream_position < input_data->length()) {
+           current_stream_position < (long)input_data->length()) {
       _Variable *store_here =
           _ValidateStorageVariable(current_program, argument_index + 1UL);
 
@@ -4549,7 +4566,8 @@ bool _ElementaryCommand::HandleFscanf(_ExecutionList &current_program,
       case 3L: { // string
         lookahead = 0L;
         bool start_found = false;
-        while (current_stream_position + lookahead < input_data->length()) {
+        while (current_stream_position + lookahead <
+               (long)input_data->length()) {
           char c = input_data->char_at(current_stream_position + lookahead);
           if (!start_found) {
             if (!isspace(c)) {
@@ -4599,7 +4617,7 @@ bool _ElementaryCommand::HandleFscanf(_ExecutionList &current_program,
           }
         };
 
-        for (long i = 0UL; i < line_block.length(); i++) {
+        for (long i = 0UL; i < (long)line_block.length(); i++) {
           char current_char = line_block.char_at(i);
           if (current_char == '\n') {
             add_buffer(last_break, i);
@@ -4615,7 +4633,7 @@ bool _ElementaryCommand::HandleFscanf(_ExecutionList &current_program,
           }
         }
 
-        if (last_break < line_block.length()) {
+        if (last_break < (long)line_block.length()) {
           add_buffer(last_break, line_block.length());
         }
 
@@ -4708,7 +4726,7 @@ bool _ElementaryCommand::HandleChoiceList(_ExecutionList &current_program) {
 
     receptacle = _ValidateStorageVariable(current_program);
 
-    long number_of_choices = _ProcessNumericArgumentWithExceptions(
+    long number_of_choices = (long)_ProcessNumericArgumentWithExceptions(
         *GetIthParameter(2UL), current_program.nameSpacePrefix);
     _String dialog_title = _ProcessALiteralArgument(*GetIthParameter(1UL),
                                                     current_program),
@@ -4726,7 +4744,7 @@ bool _ElementaryCommand::HandleChoiceList(_ExecutionList &current_program) {
             _ProcessAnArgumentByType(exclusions, NUMBER | MATRIX,
                                      current_program, &local_dynamic_manager);
         if (exlcusion_argument->ObjectClass() == NUMBER) {
-          excluded << exlcusion_argument->Compute()->Value();
+          excluded << (long)exlcusion_argument->Compute()->Value();
         } else {
           ((_Matrix *)exlcusion_argument)->ConvertToSimpleList(excluded);
           excluded.Sort();
@@ -4894,7 +4912,7 @@ bool _ElementaryCommand::HandleChoiceList(_ExecutionList &current_program) {
         _String choice_list_echo =
             available_choices
                 ->Map(
-                    [](BaseRef object, unsigned long index) -> BaseRef {
+                    [](BaseRef object, unsigned long) -> BaseRef {
                       BaseRef title = ((_List *)object)->GetItem(0);
                       title->AddAReference();
                       return title;
@@ -4914,7 +4932,7 @@ bool _ElementaryCommand::HandleChoiceList(_ExecutionList &current_program) {
             choice_list_echo & "\n";
       };
 
-      while (selections.countitems() < required) {
+      while ((long)selections.countitems() < required) {
         _String user_choice;
         try {
           _FString *redirect = (_FString *)hy_env::EnvVariableGet(
@@ -4958,7 +4976,7 @@ bool _ElementaryCommand::HandleChoiceList(_ExecutionList &current_program) {
       }
 
       need_to_prompt_user =
-          (selections.countitems() != required && !variable_number) ||
+          ((long)selections.countitems() != required && !variable_number) ||
           (variable_number && selections.empty());
     }
 
@@ -4979,7 +4997,7 @@ bool _ElementaryCommand::HandleChoiceList(_ExecutionList &current_program) {
 
       _AVLList selection_tree(&selections);
 
-      while (selections.countitems() < required) {
+      while ((long)selections.countitems() < required) {
 
         for (unsigned long option = 0UL;
              option < available_choices->countitems(); option++) {
@@ -5028,7 +5046,7 @@ bool _ElementaryCommand::HandleChoiceList(_ExecutionList &current_program) {
         long integer_choice = user_choice.to_long();
 
         if (integer_choice > 0L &&
-            integer_choice <= available_choices->countitems()) {
+            integer_choice <= (long)available_choices->countitems()) {
           selection_tree.Insert((BaseRef)(integer_choice - 1));
         } else {
           ++wrong_selections;
@@ -5289,7 +5307,8 @@ void _ElementaryCommand::ExecuteCase31(_ExecutionList &chain) {
     _String *parameterName, errMsg,
         arg0 = chain.AddNameSpaceToID(*(_String *)parameters(0));
 
-    long f, f2 = -1L, matrixDim, f3, multFreqs = 1;
+    long f, f2 = -1L, f3, multFreqs = 1;
+    unsigned long matrixDim;
 
     if (parameters.lLength > 3) {
       parameterName = (_String *)parameters.list_data[3];
@@ -5298,7 +5317,7 @@ void _ElementaryCommand::ExecuteCase31(_ExecutionList &chain) {
         multFreqs = 0;
       } else {
         multFreqs =
-            ProcessNumericArgument(parameterName, chain.nameSpacePrefix);
+            (long)ProcessNumericArgument(parameterName, chain.nameSpacePrefix);
       }
     }
 

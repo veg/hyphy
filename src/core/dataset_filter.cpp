@@ -117,7 +117,7 @@ unsigned long _DataSetFilter::FindUniqueSequences(
           _SimpleList *&sequencesWithSameScore) -> long {
     if (f >= 0) {
       sequencesWithSameScore = (_SimpleList *)sequenceHashes.GetXtra(f);
-      for (long k = 0; k < sequencesWithSameScore->lLength; k++) {
+      for (unsigned long k = 0; k < sequencesWithSameScore->lLength; k++) {
         bool fit = true;
         f = sequencesWithSameScore->list_data[k];
 
@@ -188,7 +188,8 @@ unsigned long _DataSetFilter::FindUniqueSequences(
 
     sites = sites / unit;
 
-    for (long sequenceIndex = 0; sequenceIndex < seqs; sequenceIndex++) {
+    for (unsigned long sequenceIndex = 0; sequenceIndex < seqs;
+         sequenceIndex++) {
       bool check_state = false;
 
       // printf ("%ld (%ld)\n", sequenceIndex, indices.countitems());
@@ -209,15 +210,15 @@ unsigned long _DataSetFilter::FindUniqueSequences(
         continue;
       }
 
-      for (long m = 0L; m < sites; m++) {
+      for (unsigned long m = 0L; m < sites; m++) {
         RetrieveState(m, sequenceIndex, state1, false);
         referenceStates[m] =
             Translate2Frequencies(state1, translatedVector, true);
       }
 
-      for (long idx = 0L; idx < indices.countitems(); idx++) {
+      for (unsigned long idx = 0L; idx < indices.countitems(); idx++) {
         check_state = true;
-        for (long m = 0L; m < sites; m++) {
+        for (unsigned long m = 0L; m < sites; m++) {
 
           RetrieveState(m, sequenceIndex, state1, false);
           RetrieveState(m, indices.get(idx), state2, false);
@@ -409,9 +410,9 @@ void _DataSetFilter::SetFilter(_DataSet const *ds, unsigned char unit,
     verticalList.Clear();
     verticalList.RequestSpace(firstOne->theOriginalOrder.lLength);
 
-    for (i = 0; i < horizontalList.lLength; i++) {
+    for (i = 0; i < (long)horizontalList.lLength; i++) {
       j = horizontalList.list_data[i];
-      if (j >= 0 && j < firstOne->theOriginalOrder.lLength) {
+      if (firstOne->theOriginalOrder.index_in_range(j)) {
         verticalList << firstOne->theOriginalOrder.list_data[j];
       } else {
         _String tooBig(j);
@@ -427,7 +428,7 @@ void _DataSetFilter::SetFilter(_DataSet const *ds, unsigned char unit,
 
   j = ds->NoOfSpecies();
 
-  for (i = 0; i < theNodeMap.lLength; i++) {
+  for (i = 0; i < (long)theNodeMap.lLength; i++) {
     if (theNodeMap.list_data[i] >= j) {
       _String invalid(theNodeMap.list_data[i]);
       ReportWarning((invalid & " exceeds the number of species in the "
@@ -438,7 +439,7 @@ void _DataSetFilter::SetFilter(_DataSet const *ds, unsigned char unit,
   }
 
   j = ds->GetNoTypes();
-  for (i = 0; i < verticalList.lLength; i++)
+  for (i = 0; i < (long)verticalList.lLength; i++)
     if (verticalList.list_data[i] >= j) {
       _String invalid(verticalList.list_data[i]);
       ReportWarning((invalid & " exceeds the number of sites in the underlying "
@@ -475,12 +476,12 @@ void _DataSetFilter::SetFilter(_DataSet const *ds, unsigned char unit,
 
   // bool       startD = false;
 
-  for (i = 0; i < verticalList.lLength; i += unit) {
+  for (i = 0; i < (long)verticalList.lLength; i += unit) {
     long colIndex = 0;
 
     for (j = 0; j < unit; j++) // sweep within one block
       for (
-          long k = 0; k < theNodeMap.lLength;
+          unsigned long k = 0; k < theNodeMap.lLength;
           k++) // sweep down the columns
                // colIndex+=
                //(((_String**)ds->list_data)[ds->theMap.list_data[verticalList.list_data[i+j]]])->sData[theNodeMap.list_data[k]];
@@ -502,16 +503,17 @@ void _DataSetFilter::SetFilter(_DataSet const *ds, unsigned char unit,
 
     if (f >= 0) {
       sameScore = (_SimpleList *)siteIndices.GetXtra(f);
-      for (long k = 0; k < sameScore->lLength; k++) {
+      for (unsigned long k = 0; k < sameScore->lLength; k++) {
         bool fit = true;
         f = sameScore->list_data[k];
-        for (long j = 0; fit && (j < unit); j++) { // sweep within one block
-          _Site *site1 = ds->GetSite(verticalList.list_data[i + j]),
-                *site2 = ds->GetSite(theMap.list_data[unit * f + j]);
+        for (long block_index = 0; fit && (block_index < unit);
+             block_index++) { // sweep within one block
+          _Site *site1 = ds->GetSite(verticalList.list_data[i + block_index]),
+                *site2 = ds->GetSite(theMap.list_data[unit * f + block_index]);
 
-          for (long k = 0L; k < theNodeMap.lLength;
-               k++) { // sweep down the columns
-            long mapped_index = theNodeMap.list_data[k];
+          for (unsigned long col_index = 0L; col_index < theNodeMap.lLength;
+               col_index++) { // sweep down the columns
+            long mapped_index = theNodeMap.list_data[col_index];
             if (site1->char_at(mapped_index) != site2->char_at(mapped_index)) {
               fit = false;
               break;
@@ -557,7 +559,7 @@ void _DataSetFilter::SetFilter(_DataSet const *ds, unsigned char unit,
   FilterDeletions();
 }
 //_______________________________________________________________________
-long _DataSetFilter::FindSpeciesName(_List &s, _SimpleList &r) const {
+unsigned long _DataSetFilter::FindSpeciesName(_List &s, _SimpleList &r) const {
 
   // TODO SLKP 20171002: this is a generic list->list map; should be a method in
   // _List
@@ -584,7 +586,7 @@ long _DataSetFilter::FindSpeciesName(_List &s, _SimpleList &r) const {
     }
   }
 
-  return r.lLength;
+  return r.countitems();
 }
 
 //_______________________________________________________________________
@@ -603,7 +605,7 @@ void _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
       hyFloat *store_vec =
           (hyFloat *)alloca(sizeof(hyFloat) * GetDimension(false));
       patterns_to_be_removed = theFrequencies.FilterIndex(
-          [this, store_vec, theExc](long value, unsigned long index) -> bool {
+          [this, store_vec, theExc](long, unsigned long index) -> bool {
             long invalid_state = HasExclusions(index, theExc, store_vec);
             if (invalid_state != -1) {
               ReportWarning((*this)(index, invalid_state).Enquote() &
@@ -618,7 +620,7 @@ void _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
           });
     }
     if (skip_nfolds) {
-      theFrequencies.Each([&](long value, unsigned long index) -> void {
+      theFrequencies.Each([&](long, unsigned long index) -> void {
         if (HasDeletions(index)) {
           patterns_to_be_removed.BinaryInsert(index);
         }
@@ -660,7 +662,7 @@ void _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
         long delete_this_entry = patterns_to_be_removed.BinaryFind(value);
         if (delete_this_entry >= 0) {
           /** deleting this entry because it maps to a filtered pattern **/
-          if (running_indexer.countitems() <=
+          if ((long)running_indexer.countitems() <=
               value) { // first time across this site pattern
             running_indexer << -1L;
             skip_offset++;
@@ -668,7 +670,7 @@ void _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
           data_sites_to_be_deleted.AppendRange(unitLength, index * unitLength,
                                                1L);
         } else {
-          if (running_indexer.countitems() <= value) {
+          if ((long)running_indexer.countitems() <= value) {
             running_indexer << value - skip_offset;
           }
           remapped_duplicates << running_indexer.get(value);
@@ -711,7 +713,7 @@ void _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
     // TODO SLKP 20171002 : review this
     //_SimpleList saveMap (theMap);
     theMap.DeleteList(filter_sites_to_be_deleted);
-    for (long k = 0; k < theMap.lLength; k++) {
+    for (unsigned long k = 0; k < theMap.lLength; k++) {
       if (theMap.get(k) < 0) {
         HandleApplicationError(_String("Internal Error in ") &
                                __PRETTY_FUNCTION__);
@@ -748,7 +750,7 @@ void _DataSetFilter::MatchStartNEnd(_SimpleList &order, _SimpleList &positions,
 
   if (hy_env::EnvVariableTrue(hy_env::use_traversal_heuristic)) {
     if (parent) {
-      for (long i = 1; i < order.lLength; i++) {
+      for (unsigned long i = 1; i < order.lLength; i++) {
         unsigned long j = 0, n = theNodeMap.lLength - 1,
                       p0 = parent->list_data[i], p1 = order.list_data[i];
 
@@ -763,7 +765,7 @@ void _DataSetFilter::MatchStartNEnd(_SimpleList &order, _SimpleList &positions,
       }
     } else {
       long p0 = order.get(0);
-      for (long i = 1; i < order.lLength; i++) {
+      for (unsigned long i = 1; i < order.lLength; i++) {
         unsigned long j = 0, n = theNodeMap.lLength - 1,
                       p1 = order.list_data[i];
 
@@ -779,7 +781,7 @@ void _DataSetFilter::MatchStartNEnd(_SimpleList &order, _SimpleList &positions,
       }
     }
   } else {
-    for (long i = 1; i < order.lLength; i++) {
+    for (unsigned long i = 1; i < order.lLength; i++) {
       unsigned long j = 0, n = theNodeMap.lLength - 1;
 
       n = (n << 16) + j;
@@ -833,7 +835,7 @@ _String *_DataSetFilter::GetExclusions(void) const {
 
   if (theExclusions.empty() == false) {
     (*res) << ConvertCodeToLetters(theExclusions.get(0L), unitLength);
-    for (long k = 1; k < theExclusions.lLength; k++) {
+    for (unsigned long k = 1; k < theExclusions.lLength; k++) {
       (*res) << ',' << ConvertCodeToLetters(theExclusions.get(k), unitLength);
     }
   }
@@ -921,7 +923,7 @@ _DataSetFilter::SitesForPattern(unsigned long pattern_id) const {
   _SimpleList result;
 
   for (unsigned long s = 0UL; s < duplicateMap.lLength; s++) {
-    if (duplicateMap.get(s) == pattern_id) {
+    if (duplicateMap.get(s) == (long)pattern_id) {
       result << s;
     }
   }
@@ -991,14 +993,14 @@ bool _DataSetFilter::HasDeletions(unsigned long site, _AVLList *storage) const {
 
   bool outcome = false;
 
-  for (unsigned long k = 0UL; k < sequence_count; k++) {
+  for (long k = 0; k < sequence_count; k++) {
 
     RetrieveState(site, k, buffer, false);
     Translate2Frequencies(buffer, store, false);
 
     bool has_ones = false, has_zeros = false;
 
-    for (unsigned long j = 0UL; j < filter_dimension; j++) {
+    for (long j = 0; j < filter_dimension; j++) {
       if (store[j] == 0.0) {
         has_zeros = true;
         if (has_ones) {
@@ -1037,10 +1039,10 @@ _Matrix *_DataSetFilter::GetFilterCharacters(bool flip) const {
   _String char_buffer(unit_length);
 
   if (flip) {
-    for (long k = 0; k < seq_length; k++) {
+    for (unsigned long k = 0; k < seq_length; k++) {
       _StringBuffer *alignment_column =
           new _StringBuffer((unsigned long)seq_count + 1);
-      for (long k2 = 0; k2 < seq_count; k2++) {
+      for (unsigned long k2 = 0; k2 < seq_count; k2++) {
         RetrieveState(k, k2, char_buffer, false);
         (*alignment_column) << char_buffer;
       }
@@ -1048,7 +1050,7 @@ _Matrix *_DataSetFilter::GetFilterCharacters(bool flip) const {
       result < alignment_column;
     }
   } else {
-    for (long k = 0; k < seq_count; k++) {
+    for (unsigned long k = 0; k < seq_count; k++) {
       result < GetSequenceCharacters(k);
     }
   }
@@ -1063,7 +1065,7 @@ _String *_DataSetFilter::GetSequenceCharacters(long seqID) const {
 
   _StringBuffer *aSequence = new _StringBuffer(GetSiteCount());
 
-  if (seqID >= 0 && seqID < theNodeMap.countitems()) {
+  if (theNodeMap.index_in_range(seqID)) {
     _String aState(unitSizeL);
     unsigned long upTo = GetSiteCountInUnits();
     for (unsigned long k2 = 0UL; k2 < upTo; k2++) {
@@ -1158,25 +1160,23 @@ _Matrix *_DataSetFilter::ComputePairwiseDifferences(
 
       long seq_i = theNodeMap.get(i), seq_j = theNodeMap.get(j);
 
-      long c1, c2;
-
-      c1 = direct_index_character(site_pattern, seq_i),
-      c2 = direct_index_character(site_pattern, seq_j);
+      long c1 = direct_index_character(site_pattern, seq_i),
+           c2 = direct_index_character(site_pattern, seq_j);
 
       if (unitLength == 1) {
         s1 = conversionCache
-                 .list_data[(c1 - 40) * (undimension + 1) + undimension],
+                 .list_data[(c1 - 40) * (undimension + 1) + undimension];
         s2 = conversionCache
                  .list_data[(c2 - 40) * (undimension + 1) + undimension];
       } else {
         long c12 = direct_index_character(site_pattern + 1, seq_i),
              c22 = direct_index_character(site_pattern + 1, seq_j);
 
-        state1.set_char(0, c1);
-        state1.set_char(1, c12);
+        state1.set_char(0, (char)c1);
+        state1.set_char(1, (char)c12);
 
-        state2.set_char(0, c2);
-        state2.set_char(1, c22);
+        state2.set_char(0, (char)c2);
+        state2.set_char(1, (char)c22);
 
         c1 = ccodes[c1 - 40];
         c12 = ccodes[c12 - 40];
@@ -1193,15 +1193,15 @@ _Matrix *_DataSetFilter::ComputePairwiseDifferences(
             s2 = tcodes[c2 * ccount + c22];
           }
         } else {
-          long c13 = direct_index_character(site_pattern + 2, seq_i),
+          char c13 = direct_index_character(site_pattern + 2, seq_i),
                c23 = direct_index_character(site_pattern + 2, seq_j);
 
           // printf ("\n%c %c", c13, c23);
           state1.set_char(2, c13);
           state1.set_char(2, c23);
 
-          c13 = ccodes[c13 - 40];
-          c23 = ccodes[c23 - 40];
+          c13 = (char)ccodes[c13 - 40];
+          c23 = (char)ccodes[c23 - 40];
 
           // printf (" %d %d %s %s\n", c13, c23, state1.sData, state2.sData);
 
@@ -1237,7 +1237,7 @@ _Matrix *_DataSetFilter::ComputePairwiseDifferences(
 
               for (long idx = 0; idx < u; idx++) {
                 if (idx == theExclusions.list_data[k] &&
-                    k < theExclusions.lLength) {
+                    k < (long)theExclusions.lLength) {
                   k++;
                   continue;
                 }
@@ -1253,7 +1253,7 @@ _Matrix *_DataSetFilter::ComputePairwiseDifferences(
             if (unitLength > 1) {
               Translate2Frequencies(state2, sm1, false);
             } else {
-              Translate2Frequencies(c2, sm1, false);
+              Translate2Frequencies((char)c2, sm1, false);
             }
 
             if (freqsAtSite) {
@@ -1331,7 +1331,7 @@ _Matrix *_DataSetFilter::ComputePairwiseDifferences(
               if (unitLength > 1) {
                 Translate2Frequencies(state1, sm1, false);
               } else {
-                Translate2Frequencies(c1, sm1, false);
+                Translate2Frequencies((char)c1, sm1, false);
               }
 
               if (freqsAtSite) {
@@ -1400,8 +1400,8 @@ _Matrix *_DataSetFilter::ComputePairwiseDifferences(
                 Translate2Frequencies(state1, sm1, false);
                 Translate2Frequencies(state2, sm2, false);
               } else {
-                Translate2Frequencies(c1, sm1, false);
-                Translate2Frequencies(c2, sm2, false);
+                Translate2Frequencies((char)c1, sm1, false);
+                Translate2Frequencies((char)c2, sm2, false);
               }
 
               if (freqsAtSite) {
@@ -1470,11 +1470,12 @@ _Matrix *_DataSetFilter::ComputePairwiseDifferences(
                   hyFloat addFac = theFrequencies.list_data[site_pattern] /
                                    (hyFloat)(ambCount * ambCount2);
 
-                  for (long m = 0; m < mxDim; m++)
-                    if (sm1[m] > 0)
+                  for (long matrix_index = 0; matrix_index < mxDim;
+                       matrix_index++)
+                    if (sm1[matrix_index] > 0)
                       for (long m2 = 0; m2 < mxDim; m2++)
                         if (sm2[m2] > 0) {
-                          res->theData[m * mxDim + m2] += addFac;
+                          res->theData[matrix_index * mxDim + m2] += addFac;
                         }
                 }
               }
@@ -1721,7 +1722,7 @@ void _DataSetFilter::SetupConversion(void) {
 
       long resolution_count = -1;
 
-      for (unsigned long i = 0UL; i < undimension; i++) {
+      for (long i = 0UL; i < undimension; i++) {
         long character_code_resolution = (long)temp[i];
         conversionCache << character_code_resolution;
         if (character_code_resolution) {
@@ -1760,7 +1761,7 @@ void _DataSetFilter::SetupConversion(void) {
       }
 
       _String s((unsigned long)unitLength);
-      for (unsigned long char_index = 0; char_index < uncorrected_dimension;
+      for (long char_index = 0; char_index < uncorrected_dimension;
            char_index++) {
         _SimpleList components =
             SplitIntoDigits(char_index, unitLength, alphabet_dim);
@@ -1824,8 +1825,7 @@ _DataSetFilter::GenerateConsensusString(bool resolved,
     InitializeArray(translation_buffer, char_states, 0L);
     long max_char_count = 0L;
 
-    for (unsigned long char_index = 0UL; char_index < char_states;
-         char_index++) {
+    for (long char_index = 0UL; char_index < char_states; char_index++) {
       if (StoreIfGreater(max_weight, count_buffer[char_index])) {
         max_char_count = 1;
         translation_buffer[0] = char_index;
@@ -1846,7 +1846,7 @@ _DataSetFilter::GenerateConsensusString(bool resolved,
           theData->theTT->ConvertCodeToLetters(translation_buffer[0], 1)[0]);
     }
     if (majority) {
-      (*majority) << max_weight;
+      (*majority) << (long)max_weight;
     }
   }
 
@@ -1934,21 +1934,23 @@ void _DataSetFilter::internalToStr(hyFile *file, _StringBuffer *string_buffer) {
   };
 
   long outputFormat =
-           hy_env::EnvVariableGetNumber(hy_env::data_file_print_format),
+           (long)hy_env::EnvVariableGetNumber(hy_env::data_file_print_format),
        printWidth =
-           hy_env::EnvVariableGetNumber(hy_env::data_file_default_width),
-       gapWidth = hy_env::EnvVariableGetNumber(hy_env::data_file_gap_width);
+           (long)hy_env::EnvVariableGetNumber(hy_env::data_file_default_width),
+       gapWidth =
+           (long)hy_env::EnvVariableGetNumber(hy_env::data_file_gap_width);
 
   // write out the file with this dataset filter
 
   unsigned long sequence_count = NumberSpecies(), site_count = GetSiteCount();
 
   if (printWidth <= 0) {
-    printWidth =
-        hy_env::EnvVariableGetDefaultNumber(hy_env::data_file_default_width);
+    printWidth = (long)hy_env::EnvVariableGetDefaultNumber(
+        hy_env::data_file_default_width);
   }
   if (gapWidth <= 0) {
-    gapWidth = hy_env::EnvVariableGetDefaultNumber(hy_env::data_file_gap_width);
+    gapWidth =
+        (long)hy_env::EnvVariableGetDefaultNumber(hy_env::data_file_gap_width);
   }
 
   StringFileWrapper write_here(file ? nil : string_buffer, file);
@@ -1962,7 +1964,8 @@ void _DataSetFilter::internalToStr(hyFile *file, _StringBuffer *string_buffer) {
       write_here << "$BASESET:\"" << *bSet << "\"\n";
 
       if (theData->theTT->tokensAdded.nonempty()) {
-        for (long at = 0; at < theData->theTT->tokensAdded.length(); at++) {
+        for (unsigned long at = 0; at < theData->theTT->tokensAdded.length();
+             at++) {
           write_here << "$TOKEN:\"" << theData->theTT->tokensAdded.char_at(at)
                      << "\" = \""
                      << theData->theTT->ExpandToken(
@@ -1986,17 +1989,17 @@ void _DataSetFilter::internalToStr(hyFile *file, _StringBuffer *string_buffer) {
                  << kStringFileWrapperNewLine;
     }
 
-    while (sitesDone < theOriginalOrder.lLength) {
+    while (sitesDone < (long)theOriginalOrder.lLength) {
 
       write_here << kStringFileWrapperNewLine << kStringFileWrapperNewLine;
 
       upTo = sitesDone + printWidth;
-      if (upTo > theOriginalOrder.lLength) {
+      if (upTo > (long)theOriginalOrder.lLength) {
         upTo = theOriginalOrder.lLength;
       }
 
       for (unsigned long i = 0UL; i < theNodeMap.lLength; i++) {
-        for (unsigned long j = sitesDone; j < upTo; j++) {
+        for (long j = sitesDone; j < upTo; j++) {
           if ((j - sitesDone) % gapWidth == 0) {
             write_here << ' ';
           }
@@ -2041,7 +2044,7 @@ void _DataSetFilter::internalToStr(hyFile *file, _StringBuffer *string_buffer) {
 
         write_here << (*theData)(theOriginalOrder(site_index), theNodeMap(i),
                                  1);
-        if (site_index % gapWidth == gapWidth - 1) {
+        if ((long)site_index % gapWidth == gapWidth - 1) {
           write_here << ' ';
         }
       }
@@ -2064,7 +2067,7 @@ void _DataSetFilter::internalToStr(hyFile *file, _StringBuffer *string_buffer) {
       write_here << trim_to_10(*GetSequenceName(i));
 
       for (unsigned long j = 0UL; j < theOriginalOrder.lLength; j++) {
-        if (j == printWidth) {
+        if ((long)j == printWidth) {
           write_here << kStringFileWrapperNewLine;
           break;
         } else {
@@ -2085,7 +2088,7 @@ void _DataSetFilter::internalToStr(hyFile *file, _StringBuffer *string_buffer) {
                       : theOriginalOrder.lLength;
       for (unsigned long i = 0UL; i < theNodeMap.lLength; i++) {
         write_here << "\n           ";
-        for (unsigned long j = completed; j < upTo; j++) {
+        for (long j = completed; j < upTo; j++) {
           if ((j - completed) % gapWidth == 0) {
             write_here << ' ';
           }
@@ -2130,14 +2133,15 @@ void _DataSetFilter::internalToStr(hyFile *file, _StringBuffer *string_buffer) {
         long alphabet_length = theData->theTT->baseSet.length();
 
         write_here << "\t\tSYMBOLS = \"";
-        for (unsigned long bc = 0UL; bc < alphabet_length - 1; bc++) {
+        for (long bc = 0UL; bc < alphabet_length - 1; bc++) {
           write_here << theData->theTT->baseSet.char_at(bc) << ' ';
         }
         write_here << theData->theTT->baseSet.char_at(alphabet_length - 1)
                    << "\"\n";
 
         if (theData->theTT->tokensAdded.nonempty())
-          for (long at = 0; at < theData->theTT->tokensAdded.length(); at++) {
+          for (unsigned long at = 0; at < theData->theTT->tokensAdded.length();
+               at++) {
             write_here << "\nEQUATE =\""
                        << theData->theTT->tokensAdded.char_at(at) << " = "
                        << theData->theTT->ExpandToken(
@@ -2190,13 +2194,14 @@ void _DataSetFilter::internalToStr(hyFile *file, _StringBuffer *string_buffer) {
           write_here << kStringFileWrapperNewLine;
         }
         write_here << ' ';
-        for (long site_index = 0UL; site_index < site_count; site_index++) {
+        for (unsigned long site_index = 0UL; site_index < site_count;
+             site_index++) {
           write_here << (*theData)(theOriginalOrder.list_data[site_index],
                                    theNodeMap.list_data[i], 1);
         }
       }
     } else {
-      long sitesDone = 0, upTo;
+      unsigned long sitesDone = 0, upTo;
 
       while (sitesDone < site_count) {
         upTo = sitesDone + printWidth;
@@ -2214,7 +2219,8 @@ void _DataSetFilter::internalToStr(hyFile *file, _StringBuffer *string_buffer) {
           }
 
           write_here << ' ';
-          for (long site_index = sitesDone; site_index < upTo; site_index++) {
+          for (unsigned long site_index = sitesDone; site_index < upTo;
+               site_index++) {
             write_here << (*theData)(theOriginalOrder.list_data[site_index],
                                      theNodeMap.list_data[i], 1);
           }

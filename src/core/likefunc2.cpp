@@ -105,8 +105,8 @@ void _LikelihoodFunction::FlushLocalUpdatePolicy(void) {
 //_______________________________________________________________________________________
 void _LikelihoodFunction::PartitionCatVars(_SimpleList &storage,
                                            long partIndex) {
-  if (partIndex < blockDependancies.lLength) {
-    for (long bit = 0; bit < 32; bit++)
+  if (partIndex < (long)blockDependancies.lLength) {
+    for (unsigned char bit = 0; bit < 32; bit++)
       if (CheckNthBit(blockDependancies.list_data[partIndex], bit)) {
         storage << indexCat.list_data[bit];
       }
@@ -116,7 +116,7 @@ void _LikelihoodFunction::PartitionCatVars(_SimpleList &storage,
 //_______________________________________________________________________________________
 long _LikelihoodFunction::TotalRateClassesForAPartition(long partIndex,
                                                         char mode) {
-  if (partIndex >= 0 && partIndex < categoryTraversalTemplate.lLength) {
+  if (categoryTraversalTemplate.index_in_range(partIndex)) {
     _List *myList = (_List *)categoryTraversalTemplate(partIndex);
     if (myList->lLength) {
       if (mode == 0) {
@@ -124,7 +124,7 @@ long _LikelihoodFunction::TotalRateClassesForAPartition(long partIndex,
       } else {
         long hmmCats = 1;
         _SimpleList *catVars = (_SimpleList *)(*myList)(0);
-        for (long id = 0; id < catVars->lLength; id++)
+        for (unsigned long id = 0; id < catVars->lLength; id++)
           if (mode == 1) {
             if (((_CategoryVariable *)catVars->list_data[id])
                     ->is_hidden_markov()) {
@@ -142,19 +142,19 @@ long _LikelihoodFunction::TotalRateClassesForAPartition(long partIndex,
   } else if (partIndex < 0) {
     long catCount = 1;
     if (mode == 0)
-      for (long k = 0; k < indexCat.lLength; k++) {
+      for (unsigned long k = 0; k < indexCat.lLength; k++) {
         catCount *= ((_CategoryVariable *)LocateVar(indexCat.list_data[k]))
                         ->GetNumberOfIntervals();
       }
     else {
       if (mode & 1) {
-        for (long k = 0; k < categoryTraversalTemplate.lLength; k++) {
+        for (unsigned long k = 0; k < categoryTraversalTemplate.lLength; k++) {
           long partHMMCount = TotalRateClassesForAPartition(k, 1);
           catCount = MAX(partHMMCount, catCount);
         }
       }
       if (mode & 2) {
-        for (long k = 0; k < categoryTraversalTemplate.lLength; k++) {
+        for (unsigned long k = 0; k < categoryTraversalTemplate.lLength; k++) {
           long partHMMCount = TotalRateClassesForAPartition(k, 2);
           catCount = MAX(partHMMCount, catCount);
         }
@@ -168,7 +168,8 @@ long _LikelihoodFunction::TotalRateClassesForAPartition(long partIndex,
 //_______________________________________________________________________________________
 void _LikelihoodFunction::SetupCategoryCaches(void) {
   categoryTraversalTemplate.Clear();
-  for (long partIndex = 0; partIndex < theDataFilters.lLength; partIndex++)
+  for (unsigned long partIndex = 0; partIndex < theDataFilters.lLength;
+       partIndex++)
     if (blockDependancies.list_data[partIndex] == 0) {
       _List *noCatVarList = new _List;
       noCatVarList->AppendNewInstance(new _List);
@@ -187,8 +188,8 @@ void _LikelihoodFunction::SetupCategoryCaches(void) {
                   *hmmAndCOP = new _SimpleList(),
                   *varType = new _SimpleList(myCats.lLength, 1, 0);
 
-      long totalCatCount = 1L, hmmCatCount = 1L, catVarFlags = 0L, varIndex;
-
+      long totalCatCount = 1L, hmmCatCount = 1L, catVarFlags = 0L;
+      unsigned long varIndex;
       try {
 
         for (varIndex = 0; varIndex < myCats.lLength; varIndex++) {
@@ -229,15 +230,13 @@ void _LikelihoodFunction::SetupCategoryCaches(void) {
         (*catVarCounts) << totalCatCount;
         (*varType) << catVarFlags;
 
-        for (long varIndex = myCats.lLength - 2; varIndex >= 0; varIndex--) {
-          catVarOffsets->list_data[varIndex] =
-              catVarOffsets->list_data[varIndex + 1] *
-              catVarCounts->list_data[varIndex + 1];
+        for (long idx = (long)myCats.lLength - 2; idx >= 0; idx--) {
+          catVarOffsets->list_data[idx] = catVarOffsets->list_data[idx + 1] *
+                                          catVarCounts->list_data[idx + 1];
         }
 
-        for (long varIndex = hmmAndCOP->lLength - 2; varIndex >= 0;
-             varIndex--) {
-          hmmAndCOP->list_data[varIndex] *= hmmAndCOP->list_data[varIndex + 1];
+        for (long idx = (long)hmmAndCOP->lLength - 2; idx >= 0; idx--) {
+          hmmAndCOP->list_data[idx] *= hmmAndCOP->list_data[idx + 1];
         }
 
         if (hmmAndCOP->lLength) {
@@ -361,7 +360,7 @@ assignment of leaves
        // patternOffset      = 0,
       sequenceCount;
 
-  for (long i = 0; i < doTheseOnes.lLength; i++) {
+  for (unsigned long i = 0; i < doTheseOnes.lLength; i++) {
     long partIndex = doTheseOnes.list_data[i];
     _TheTree *tree = GetIthTree(partIndex);
     dsf = GetIthFilter(partIndex);
@@ -945,14 +944,14 @@ _List *_LikelihoodFunction::RecoverAncestralSequencesMarginal(
 
   _TheTree *blockTree = (_TheTree *)LocateVar(theTrees.list_data[index]);
 
-  long patternCount = dsf->GetPatternCount(),
-       alphabetDimension = dsf->GetDimension(),
-       unitLength = dsf->GetUnitLength(),
-       iNodeCount = blockTree->GetINodeCount(),
-       leafCount = blockTree->GetLeafCount(),
-       matrixSize = doLeaves ? leafCount : iNodeCount,
-       siteCount = dsf->GetSiteCountInUnits(),
-       shiftForTheNode = patternCount * alphabetDimension;
+  unsigned long patternCount = dsf->GetPatternCount(),
+                alphabetDimension = dsf->GetDimension(),
+                unitLength = dsf->GetUnitLength(),
+                iNodeCount = blockTree->GetINodeCount(),
+                leafCount = blockTree->GetLeafCount(),
+                matrixSize = doLeaves ? leafCount : iNodeCount,
+                siteCount = dsf->GetSiteCountInUnits(),
+                shiftForTheNode = patternCount * alphabetDimension;
 
   hyFloat *siteLikelihoods = new hyFloat[2 * patternCount],
           *siteLikelihoodsSpecState = new hyFloat[2 * patternCount];
@@ -968,15 +967,16 @@ _List *_LikelihoodFunction::RecoverAncestralSequencesMarginal(
   // establish a baseline likelihood for each site
 
   if (doLeaves) {
-    for (long currentChar = 0; currentChar < alphabetDimension; currentChar++) {
+    for (unsigned long currentChar = 0; currentChar < alphabetDimension;
+         currentChar++) {
       branchValues.Populate(patternCount, currentChar, 0);
-      for (long branchID = 0; branchID < leafCount; branchID++) {
+      for (unsigned long branchID = 0; branchID < leafCount; branchID++) {
         blockTree->AddBranchToForcedRecomputeList(branchID);
         long mappedBranchID = postToIn.list_data[branchID];
         ComputeSiteLikelihoodsForABlock(index, siteLikelihoodsSpecState,
                                         scalersSpecState, branchID + iNodeCount,
                                         &branchValues);
-        for (long siteID = 0; siteID < patternCount; siteID++) {
+        for (unsigned long siteID = 0; siteID < patternCount; siteID++) {
           long scaleDiff = (scalersSpecState.list_data[siteID] -
                             scalersBaseline.list_data[siteID]);
 
@@ -1002,12 +1002,12 @@ _List *_LikelihoodFunction::RecoverAncestralSequencesMarginal(
   }
 
   else {
-    for (long currentChar = 0; currentChar < alphabetDimension - 1;
+    for (long currentChar = 0; currentChar < (long)alphabetDimension - 1;
          currentChar++) {
       // the prob for the last char is  (1 - sum (probs other chars))
       branchValues.Populate(patternCount, currentChar, 0);
 
-      for (long branchID = 0; branchID < iNodeCount; branchID++) {
+      for (unsigned long branchID = 0; branchID < iNodeCount; branchID++) {
         long mappedBranchID = postToIn.get(branchID);
         // if (currentChar == 0)
         //     printf ("ANC: %s (%d)\n", ((_CalcNode*) blockTree->flatTree
@@ -1016,7 +1016,7 @@ _List *_LikelihoodFunction::RecoverAncestralSequencesMarginal(
         ComputeSiteLikelihoodsForABlock(index, siteLikelihoodsSpecState,
                                         scalersSpecState, branchID,
                                         &branchValues);
-        for (long siteID = 0; siteID < patternCount; siteID++) {
+        for (unsigned long siteID = 0; siteID < patternCount; siteID++) {
           long scaleDiff = (scalersSpecState.list_data[siteID] -
                             scalersBaseline.list_data[siteID]);
           hyFloat ratio =
@@ -1044,15 +1044,15 @@ _List *_LikelihoodFunction::RecoverAncestralSequencesMarginal(
   _String codeBuffer((unsigned long)unitLength);
   _List *result = new _List;
 
-  for (long k = 0L; k < matrixSize; k++) {
+  for (unsigned long k = 0L; k < matrixSize; k++) {
     (*result) < new _String((unsigned long)siteCount * unitLength);
   }
 
-  for (long siteID = 0L; siteID < patternCount; siteID++) {
+  for (unsigned long siteID = 0L; siteID < patternCount; siteID++) {
     _SimpleList const *patternMap =
         (_SimpleList *)expandedSiteMap.GetItem(siteID);
 
-    for (long nodeID = 0; nodeID < matrixSize; nodeID++) {
+    for (unsigned long nodeID = 0; nodeID < matrixSize; nodeID++) {
       long mappedNodeID = postToIn.get(nodeID);
       hyFloat max_lik = 0., sum = 0.,
               *scores = supportValues.theData + shiftForTheNode * mappedNodeID +
@@ -1077,7 +1077,7 @@ _List *_LikelihoodFunction::RecoverAncestralSequencesMarginal(
 
       if (doLeaves) {
         sum = 1. / sum;
-        for (long charID = 0; charID < alphabetDimension; charID++) {
+        for (unsigned long charID = 0; charID < alphabetDimension; charID++) {
           scores[charID] *= sum;
           /*if (siteID == 16)
               printf ("Site %ld Leaf %ld (%ld) Char %ld = %g\n", siteID, nodeID,
@@ -1094,8 +1094,9 @@ _List *_LikelihoodFunction::RecoverAncestralSequencesMarginal(
         }
       }
 
-      dsf->ConvertCodeToLettersBuffered(dsf->CorrectCode(max_idx), unitLength,
-                                        codeBuffer, &conversionAVL);
+      dsf->ConvertCodeToLettersBuffered(dsf->CorrectCode(max_idx),
+                                        (unsigned char)unitLength, codeBuffer,
+                                        &conversionAVL);
       _String *sequence = (_String *)(*result)(mappedNodeID);
 
       for (unsigned long site = 0UL; site < patternMap->countitems(); site++) {
@@ -1118,8 +1119,8 @@ _List *_LikelihoodFunction::RecoverAncestralSequencesMarginal(
 hyFloat _LikelihoodFunction::SumUpConstantOnPartition(
     const hyFloat *patternLikelihoods, _Matrix const &categoryWeights,
     const _SimpleList &patternFreqs, const _SimpleList &scalers) const {
-  long category_count = categoryWeights.GetVDim(),
-       bl = patternFreqs.countitems();
+  unsigned long category_count = categoryWeights.GetVDim(),
+                bl = patternFreqs.countitems();
   // mi             = bl-1;
   // siteScaler     = scalers.get(mi);
 
@@ -1127,7 +1128,7 @@ hyFloat _LikelihoodFunction::SumUpConstantOnPartition(
 
   hyFloat maxLL = -__DBL_MAX__;
 
-  for (long m = 0; m < category_count; m++, patternLikelihoods += bl) {
+  for (unsigned long m = 0; m < category_count; m++, patternLikelihoods += bl) {
     hyFloat logL = 0.;
     long cumulativeScaler = 0;
     for (unsigned long patternID = 0UL; patternID < bl; patternID++) {
@@ -1149,7 +1150,7 @@ hyFloat _LikelihoodFunction::SumUpConstantOnPartition(
   }
 
   hyFloat weighted_sum = 0.;
-  for (long m = 0; m < category_count; m++) {
+  for (unsigned long m = 0; m < category_count; m++) {
     weighted_sum += exp(temp.get(m, 0) - maxLL) * categoryWeights.get(0, m);
   }
   return myLog(weighted_sum) + maxLL;
@@ -1199,7 +1200,7 @@ hyFloat _LikelihoodFunction::SumUpHiddenMarkov(
   for (long i = duplicateMap ? duplicateMap->lLength - 2 : bl - 2; i >= 0;
        i--) {
     hyFloat max = 0.;
-    long siteScaler =
+    long site_scaler_factor =
         duplicateMap
             ? scalers->list_data[duplicateMap->list_data[i]]
             : ((_SimpleList *)((_List *)scalers)->list_data[0])->list_data[i];
@@ -1216,20 +1217,23 @@ hyFloat _LikelihoodFunction::SumUpHiddenMarkov(
                                ->list_data[i];
 
         if (currentScaler <
-            siteScaler) { // this class has a _smaller_ scaling factor
-          hyFloat upby = acquireScalerMultiplier(siteScaler - currentScaler);
+            site_scaler_factor) { // this class has a _smaller_ scaling factor
+          hyFloat upby =
+              acquireScalerMultiplier(site_scaler_factor - currentScaler);
           for (long rescale = 0; rescale < k; rescale++) {
             temp.theData[rescale] *= upby;
           }
 
           scrap = scrap * upby + hmm.theData[k * ni + m] *
                                      patternLikelihoods[mi] * temp2.theData[m];
-          siteScaler = currentScaler;
+          site_scaler_factor = currentScaler;
         } else {
-          if (currentScaler > siteScaler) // this is a _larger_ scaling factor
-            scrap += hmm.theData[k * ni + m] * patternLikelihoods[mi] *
-                     temp2.theData[m] *
-                     acquireScalerMultiplier(currentScaler - siteScaler);
+          if (currentScaler >
+              site_scaler_factor) // this is a _larger_ scaling factor
+            scrap +=
+                hmm.theData[k * ni + m] * patternLikelihoods[mi] *
+                temp2.theData[m] *
+                acquireScalerMultiplier(currentScaler - site_scaler_factor);
 
           else { // same scaling factors
             scrap += hmm.theData[k * ni + m] * patternLikelihoods[mi] *
@@ -1250,8 +1254,8 @@ hyFloat _LikelihoodFunction::SumUpHiddenMarkov(
     }
 
     correctionFactor -= log(max);
-    if (siteScaler) {
-      correctionFactor -= siteScaler * _logLFScaler;
+    if (site_scaler_factor) {
+      correctionFactor -= site_scaler_factor * _logLFScaler;
     }
 
     max = 1. / max;
@@ -1391,7 +1395,7 @@ void _LikelihoodFunction::RunViterbi(_Matrix &result,
 
 //_______________________________________________________________________________________________
 
-hyFloat mapParameterToInverval(hyFloat in, char type, bool inverse) {
+hyFloat mapParameterToInverval(hyFloat in, long const type, bool inverse) {
   switch (type) {
   case _hyphyIntervalMapExpit:
     if (inverse) {
@@ -1416,7 +1420,7 @@ hyFloat mapParameterToInverval(hyFloat in, char type, bool inverse) {
 
 //_______________________________________________________________________________________________
 
-hyFloat obtainDerivativeCorrection(hyFloat in, char type) {
+hyFloat obtainDerivativeCorrection(hyFloat in, long const type) {
   switch (type) {
   case _hyphyIntervalMapExpit: {
     // return tan (M_PI * (in - 0.5));
@@ -1583,7 +1587,8 @@ _AssociativeList *_LikelihoodFunction::CollectLFAttributes(void) const {
 
 //_______________________________________________________________________________________________
 
-void _LikelihoodFunction::UpdateBlockResult(long index, hyFloat new_value) {
+void _LikelihoodFunction::UpdateBlockResult(unsigned long index,
+                                            hyFloat new_value) {
   while (computationalResults.get_used() <= index) {
     computationalResults.Store(0.0);
   }

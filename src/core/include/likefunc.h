@@ -375,7 +375,7 @@ protected:
   hyFloat GradientLocateTheBump(hyFloat, hyFloat &, _Matrix &, _Matrix &);
   void GradientDescent(hyFloat &, _Matrix &);
   hyFloat ConjugateGradientDescent(hyFloat, _Matrix &, bool localOnly = false,
-                                   long = 0x7fffffff,
+                                   unsigned long = 0x7fffffff,
                                    _SimpleList *only_these_parameters = nil,
                                    hyFloat check_lf = -INFINITY,
                                    hyFloat min_improvement_to_continue = 0.);
@@ -394,7 +394,7 @@ protected:
                             _SimpleList * = nil) const;
 
   bool HasBlockChanged(long) const;
-  long BlockLength(long) const;
+  unsigned long BlockLength(long) const;
   void PartitionCatVars(_SimpleList &, long);
   // 20090210: extract variable indices for category variables in i-th partition
   // and append them to _SimpleList
@@ -402,7 +402,7 @@ protected:
   static void RandomizeList(_SimpleList &, long);
   static void CheckFibonacci(hyFloat);
 
-  long PartitionLengths(char = 0, _SimpleList const * = nil);
+  unsigned long PartitionLengths(char = 0, _SimpleList const * = nil) const;
   /*
       SLKP: 20090317
 
@@ -435,11 +435,11 @@ protected:
                        _SimpleList * = nil);
   void RecurseConstantOnPartition(long, long, long, long, hyFloat, _Matrix &);
 
-  void SetNthBit(long &, char);
-  bool CheckNthBit(long &, char);
+  static void SetNthBit(long &, unsigned char);
+  static bool CheckNthBit(long &, unsigned char);
   void BuildIncrements(long, _SimpleList &);
-  char HighestBit(long);
-  char LowestBit(long);
+  static unsigned char HighestBit(long);
+  static unsigned char LowestBit(long);
   long HasHiddenMarkov(long, bool hmm = true) const;
   _Matrix *RemapMatrix(_Matrix *, const _SimpleList &) const;
   /* given a matrix where each column corresponds to a site pattern
@@ -528,7 +528,7 @@ protected:
                             unsigned long bracket_evals,
                             unsigned long brent_evals, unsigned long exp_count);
 
-  void UpdateBlockResult(long, hyFloat);
+  void UpdateBlockResult(unsigned long, hyFloat);
   /*
       SLKP 20090318
 
@@ -814,8 +814,8 @@ extern _Vector _scalerMultipliers, _scalerDividers;
 hyFloat acquireScalerMultiplier(long);
 hyFloat myLog(hyFloat);
 long addScaler(hyFloat, long, long);
-hyFloat mapParameterToInverval(hyFloat, char, bool);
-hyFloat obtainDerivativeCorrection(hyFloat, char);
+hyFloat mapParameterToInverval(hyFloat, long const, bool);
+hyFloat obtainDerivativeCorrection(hyFloat, long const);
 
 #ifdef __HYPHYMPI__
 extern _Matrix resTransferMatrix;

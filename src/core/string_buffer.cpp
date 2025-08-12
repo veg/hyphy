@@ -392,7 +392,7 @@ void _StringBuffer::Trim(long start, long end) {
       sa_length -= start;
       // memmove(s_data, s_data + start, resulting_length);
     }
-    if (s_length != resulting_length) {
+    if ((long)s_length != resulting_length) {
       s_length = resulting_length;
       s_data[resulting_length] = '\0';
     }

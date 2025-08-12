@@ -170,7 +170,7 @@ public:
    * @brief Get the number of terms.
    * @return The number of terms.
    */
-  inline long NumberOfTerms(void) { return actTerms; }
+  inline unsigned long NumberOfTerms(void) { return actTerms; }
   /**
    * @brief Get the sum of the powers of a term.
    * @param index The index of the term.
@@ -554,6 +554,16 @@ public:
 
 protected:
   /**
+   * @brief Check if the numeric term is 0, and drop it if so
+   */
+  void DropZeroCoefficient(void);
+
+  /**
+   * @brief Set all coefficients to -coefficient; return self
+   */
+  _Polynomial *NegateCoefficients(void);
+
+  /**
    * @brief Drop small terms from the polynomial.
    */
   void DropSmallTerms(void);
@@ -567,8 +577,9 @@ protected:
   _PolynomialData *theTerms;
 };
 
-extern hyFloat dropPrecision, topPolyCap, dropTerms, enforcePolyCap,
-    polynomialExpPrecision;
+extern hyFloat dropPrecision, topPolyCap, polynomialExpPrecision;
+
+extern bool dropTerms, enforcePolyCap;
 
 extern const unsigned long maximumPolyTermsPerVariable,
     maxPolynomialExpIterates;
@@ -577,4 +588,5 @@ extern const unsigned long maximumPolyTermsPerVariable,
  * @param cap The new cap.
  */
 void SetPolyTermCap(long);
+
 #endif

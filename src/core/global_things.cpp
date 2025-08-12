@@ -114,7 +114,7 @@ _String const kEmptyString, kPromptForFilePlaceholder("PROMPT_FOR_FILE"),
                     "\"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line "
                     "argument. This often resolves the issue, which is "
                     "indicative of numerical instability."),
-    kHyPhyVersion = _String("2.5.75"),
+    kHyPhyVersion = _String("2.5.76"),
 
     kNoneToken = "None", kNullToken = "null",
     kNoKWMatch = "__input_value_not_given__",
@@ -157,7 +157,7 @@ std::regex *hy_float_regex = _String::PrepRegExp(
 
 //____________________________________________________________________________________
 
-hyPointer MemAllocate(long bytes, bool zero, size_t alignment) {
+hyPointer MemAllocate(size_t bytes, bool zero, size_t alignment) {
   hyPointer result = nil;
 
   // #ifdef _ISOC11_SOURCE
@@ -181,7 +181,7 @@ hyPointer MemAllocate(long bytes, bool zero, size_t alignment) {
 
 //____________________________________________________________________________________
 
-hyPointer MemReallocate(hyPointer old_pointer, long new_size) {
+hyPointer MemReallocate(hyPointer old_pointer, size_t new_size) {
   hyPointer result = (hyPointer)realloc(old_pointer, new_size);
 
   if (result == nil) {
@@ -610,9 +610,10 @@ _String *ConstructAnErrorMessage(_String const &theMessage) {
       EnvVariableSet(error_report_format_expression_string,
                      new _Matrix(stdins, false), false);
 
-      HBLObjectRef expr = expression.Compute();
-      if (!terminate_execution && expr && expr->ObjectClass() == STRING) {
-        (*error_message) << ((_FString *)expr)->get_str();
+      HBLObjectRef expr_result = expression.Compute();
+      if (!terminate_execution && expr_result &&
+          expr_result->ObjectClass() == STRING) {
+        (*error_message) << ((_FString *)expr_result)->get_str();
         doDefault = false;
       }
     }
@@ -895,9 +896,8 @@ const _String GetTimeStamp(bool do_gmt) {
 
 //____________________________________________________________________________________
 bool ProcessFileName(_String &path_name, bool isWrite, bool acceptStringVars,
-                     hyPointer theP, bool assume_platform_specific,
-                     _ExecutionList *caller, bool relative_to_base,
-                     bool relative_path_passthrough) {
+                     hyPointer theP, bool, _ExecutionList *caller,
+                     bool relative_to_base, bool relative_path_passthrough) {
 
   static const _String kRelPathPrefix("../");
   _String errMsg;

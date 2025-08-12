@@ -95,7 +95,7 @@ _TranslationTable::operator=(_TranslationTable const &t) {
 
 //_________________________________________________________
 _TranslationTable::_TranslationTable(_String &alphabet) {
-  baseLength = alphabet.length();
+  baseLength = (unsigned char)alphabet.length();
   checkTable = NULL;
   if (_list_of_default_tables.FindObject(&alphabet) < 0L) {
     AddBaseSet(alphabet);
@@ -132,7 +132,7 @@ long _TranslationTable::TokenCode(char token) const {
 
   long theCode = 0L;
 
-  for (unsigned long i = 0; i < resolution_count; i++) {
+  for (long i = 0; i < resolution_count; i++) {
     theCode |= (1L << receptacle[i]); // set the right bit
   }
 
@@ -703,7 +703,7 @@ void _TranslationTable::PrepareForChecks(void) {
     checkSymbols = _String("ABCDEFGHIJKLMNOPQRSTUVWXYZ*?-.") & tokensAdded;
   }
 
-  for (long i = 0; i < checkSymbols.length(); i++) {
+  for (unsigned long i = 0; i < checkSymbols.length(); i++) {
     checkTable[(unsigned char)checkSymbols(i)] = (char)1;
   }
 }
@@ -755,7 +755,7 @@ void _TranslationTable::AddTokenCode(char token, _String const &code) {
 
   if (baseSet.length()) {
     long shifter = 1;
-    for (int j = 0; j < baseSet.length(); j++, shifter *= 2)
+    for (unsigned long j = 0; j < baseSet.length(); j++, shifter *= 2)
       if (code.Find(baseSet.get_char(j)) >= 0) {
         newCode += shifter;
       }
@@ -790,7 +790,7 @@ void _TranslationTable::AddTokenCode(char token, _String const &code) {
 void _TranslationTable::AddBaseSet(_String const &code) {
   baseSet = code;
   baseSet.StripQuotes();
-  baseLength = baseSet.length();
+  baseLength = (unsigned char)baseSet.length();
   if (baseLength > HY_WIDTH_OF_LONG) {
     // longer than the bit size of 'long'
     // can't handle those
@@ -866,7 +866,7 @@ _TranslationTable::ConvertCodeToLetters(long code, unsigned char base) const {
       }
     } else if (baseLength == 20) {
       for (long k = 1; k <= base; k++, code /= baseLength) {
-        char out = code % baseLength;
+        char out = (char)(code % baseLength);
         if (out == 0) {
           res[base - k] = 'A';
         } else if (out <= 7) {
@@ -947,7 +947,7 @@ _TranslationTable::MergeTables(_TranslationTable const *table2) const
 
     _TranslationTable *result = new _TranslationTable(*this);
     if (table2->tokensAdded.length()) {
-      for (long i = 0; i < table2->tokensAdded.length(); i++) {
+      for (unsigned long i = 0; i < table2->tokensAdded.length(); i++) {
         long f = tokensAdded.Find(table2->tokensAdded[i]);
         if (f == -1) {
           result->tokensAdded = result->tokensAdded & table2->tokensAdded[i];

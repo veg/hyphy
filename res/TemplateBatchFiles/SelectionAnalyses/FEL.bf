@@ -764,7 +764,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     } else {
         alternative = estimators.ExtractMLEsOptions (lf, model_mapping, {^"terms.globals_only" : TRUE});
         alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
-        site_match = selection.io.sitelist_matches_pattern (pattern_info[^"terms.data.sites"], (^"fel.site_filter")["site-save-filter"], TRUE);
+        site_match = selection.io.sitelist_matches_pattern (pattern_info[^"terms.data.sites"], (^"fel.site_filter")["site-save-filter"], TRUE, ^"fel.site_offset");
     
         if (site_match) {
             Export  (lfe, ^lf);
@@ -1112,6 +1112,8 @@ fel.site_LRT = {};
 
 fel.output_file_path = fel.codon_data_info[terms.json.json];
 
+fel.site_offset = 0;
+
 for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.partition_index += 1) {
     fel.report.header_done = FALSE;
     fel.table_output_options[terms.table_options.header] = TRUE;
@@ -1174,7 +1176,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
                                    "Models" : {{"fel.site.mg_rev"}},
                                    "Headers" : {{"libv3/all-terms.bf","libv3/tasks/alignments.bf"}},
                                    "Functions" : {{"selection.io.sitelist_matches_pattern"}},
-                                   "Variables" : {{"fel.srv","fel.resample","fel.ci","fel.selected_branches_index","fel.multi_hit","fel.multi_hit_MLES","fel.multi_hit_option","fel.site_filter","fel.output_file_path"}}
+                                   "Variables" : {{"fel.srv","fel.resample","fel.ci","fel.selected_branches_index","fel.multi_hit","fel.multi_hit_MLES","fel.multi_hit_option","fel.site_filter","fel.output_file_path","fel.site_offset"}}
                                  });
 
 
@@ -1183,13 +1185,16 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     fel.pattern_count_all = utility.Array1D (fel.site_patterns);
     fel.pattern_count_this = 0;
     
+    fel.site_count = utility.Array1D ((fel.filter_specification[fel.partition_index])[terms.data.coverage]);
+
+    
     utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
         '
            fel.pattern_count_this += 1;
            io.ReportProgressBar("", "Working on site pattern " + (fel.pattern_count_this) + "/" +  fel.pattern_count_all + " in partition " + (1+fel.partition_index));
            
            
-           fel.run_site = selection.io.sitelist_matches_pattern (_pattern_info_[terms.data.sites], fel.site_filter["site-filter"], FALSE);
+           fel.run_site = selection.io.sitelist_matches_pattern (_pattern_info_[terms.data.sites], fel.site_filter["site-filter"], FALSE, fel.site_offset);
            if (_pattern_info_[terms.data.is_constant] || (!fel.run_site) ) {
                 fel.store_results (-1,None,{"0" : "fel.site_likelihood",
                                                                 "1" : None,
@@ -1225,6 +1230,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
         }
     }
     fel.site_results[fel.partition_index] = fel.partition_matrix;
+    fel.site_offset += fel.site_count;
 
 }
 

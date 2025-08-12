@@ -40,15 +40,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma once
 
 #include "mersenne_twister.h"
-#include "variablecontainer.h"
 #include "parser.h"
+#include "variablecontainer.h"
 
 template <typename ARG_TYPE>
 void checkParameter(_String const &name, ARG_TYPE &dest, const ARG_TYPE def,
                     const _VariableContainer *theP = nil) {
   _Variable *v = FetchVar(
       LocateVarByName(WrapInNamespace(name, theP ? theP->GetName() : nil)));
-  dest = v ? v->Value() : def;
+  dest = v ? (ARG_TYPE)v->Value() : def;
 }
 
 template <typename ARG_TYPE>
@@ -76,11 +76,10 @@ ARG_TYPE Minimum(ARG_TYPE const a, ARG_TYPE const b) {
   return a;
 }
 
-template <typename ARG_TYPE>
-void Exchange (ARG_TYPE & a, ARG_TYPE & b) {
-    ARG_TYPE t = a;
-    a = b;
-    b = t;
+template <typename ARG_TYPE> void Exchange(ARG_TYPE &a, ARG_TYPE &b) {
+  ARG_TYPE t = a;
+  a = b;
+  b = t;
 }
 
 template <typename ARG_TYPE>
@@ -94,12 +93,12 @@ bool StoreIfLess(ARG_TYPE &current_min, ARG_TYPE const &value_to_check) {
 
 template <typename ARG_TYPE>
 ARG_TYPE ComputePower(ARG_TYPE base, unsigned long exponent) {
-  ARG_TYPE result = 1;
+  ARG_TYPE result = 1.;
   unsigned long mask = 1L << (sizeof(unsigned long) * 8 - 2);
   // left shift to left-most position of binary sequence for long integer
   // e.g. 100...0 (30 zeroes for signed long)
 
-  while ((exponent & mask) == 0) {
+  while (exponent && ((exponent & mask) == 0)) {
     mask >>= 1; // bitwise AND, right-shift mask until overlaps with first '1'
   }
 
@@ -156,8 +155,8 @@ void ArrayForEach(ARG_TYPE *array, unsigned long dimension,
 template <typename ARG_TYPE>
 void InitializeArray(ARG_TYPE *array, unsigned long dimension,
                      ARG_TYPE &&value) {
-  //#pragma clang loop unroll_count(8)
-  #pragma GCC unroll 4
+// #pragma clang loop unroll_count(8)
+#pragma GCC unroll 4
   for (unsigned long i = 0UL; i < dimension; i++) {
     array[i] = value;
   }
@@ -228,8 +227,8 @@ template <typename ARG_TYPE> void DeleteAndZeroObject(ARG_TYPE &object) {
       If the object was deleted, set the pointer to NULL
   */
 
-    DeleteObject(object);
-    object = NULL;
+  DeleteObject(object);
+  object = NULL;
 }
 
 template <typename ARG_TYPE>
@@ -251,50 +250,50 @@ unsigned long DrawFromDiscrete(ARG_TYPE const *cdf, unsigned long dimension) {
 }
 
 template <typename FUNCTOR>
-unsigned long DrawFromDiscreteGenerator (FUNCTOR&& generator, unsigned long dimension) {
+unsigned long DrawFromDiscreteGenerator(FUNCTOR &&generator,
+                                        unsigned long dimension) {
   /**
    assuming that cdf is an array of probabilities summing to 1,
    draw a random index from the distribution
-   
+
    */
-  
+
   unsigned long index = 0UL;
-    
-  auto   sum_so_far = generator(0);
+
+  auto sum_so_far = generator(0);
   double random_draw = genrand_real2();
-  
+
   while (sum_so_far < random_draw && index < dimension) {
     sum_so_far += generator(++index);
   }
-  
+
   return index;
 }
 
 template <typename ARG_TYPE> void BatchDelete(ARG_TYPE first) { delete first; }
 
-template <typename ARG_TYPE> void BatchDeleteObject(ARG_TYPE first) { DeleteObject (first); }
+template <typename ARG_TYPE> void BatchDeleteObject(ARG_TYPE first) {
+  DeleteObject(first);
+}
 
 template <typename ARG_TYPE, typename... Args>
-void BatchDelete(ARG_TYPE first, const Args &... args) {
+void BatchDelete(ARG_TYPE first, const Args &...args) {
   delete first;
   BatchDelete(args...);
 }
 
 template <typename ARG_TYPE, typename... Args>
-void BatchDeleteObject(ARG_TYPE first, const Args &... args) {
-    DeleteObject (first);
-    BatchDeleteObject(args...);
+void BatchDeleteObject(ARG_TYPE first, const Args &...args) {
+  DeleteObject(first);
+  BatchDeleteObject(args...);
 }
 
-template <typename ARG_TYPE>
-void BatchDeleteArray (ARG_TYPE first) {
-  delete [] first;
+template <typename ARG_TYPE> void BatchDeleteArray(ARG_TYPE first) {
+  delete[] first;
 }
 
 template <typename ARG_TYPE, typename... Args>
-void BatchDeleteArray (ARG_TYPE first, const Args&... args) {
-  delete [] first;
-  BatchDeleteArray (args...);
+void BatchDeleteArray(ARG_TYPE first, const Args &...args) {
+  delete[] first;
+  BatchDeleteArray(args...);
 }
-
-

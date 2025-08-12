@@ -49,9 +49,22 @@ using namespace hyphy_global_objects;
 
 //_________________________________________________________
 
+/**
+ * @brief Converts a character to uppercase.
+ * @param in The character to convert.
+ * @return The uppercase version of the character, or the original character if
+ * it's not a lowercase letter.
+ *
+ * @example
+ * @code
+ *   char lower = 'a';
+ *   char upper = _uppercase_char(lower);
+ *   // upper is now 'A'
+ * @endcode
+ */
 inline char _uppercase_char(char in) {
   if (in >= 'a' && in <= 'z') {
-    return (char)(in - 32);
+    return (char)(in - 'a' + 'A');
   }
   return in;
 }
@@ -60,24 +73,41 @@ inline char _uppercase_char(char in) {
 
 #define DATA_SET_SWITCH_THRESHOLD 100000
 
-_DataSet::_DataSet(void) {
-  theTT = &hy_default_translation_table;
-  streamThrough = nil;
-  useHorizontalRep = false;
-}
+/**
+ * @brief Default constructor for the _DataSet class.
+ *
+ * Initializes an empty dataset with a default translation table.
+ */
+_DataSet::_DataSet(void)
+    : theTT(&hy_default_translation_table), streamThrough(nullptr),
+      useHorizontalRep(false) {}
 
+/**
+ * @brief Constructs a _DataSet with a pre-allocated capacity.
+ * @param l The initial capacity of the dataset.
+ *
+ * This constructor is used when the number of sites is roughly known
+ * beforehand, allowing for pre-allocation of memory to improve performance.
+ */
 _DataSet::_DataSet(long l)
     : _List((unsigned long)l),
       theFrequencies(
           (unsigned long)l) // with estimated number of sites per file
 {
-  streamThrough = nil;
+  streamThrough = nullptr;
   theTT = &hy_default_translation_table;
   useHorizontalRep = false;
 }
 
 //_______________________________________________________________________
 
+/**
+ * @brief Constructs a _DataSet that streams data to a file.
+ * @param f A pointer to a hyFile object to which the data will be written.
+ *
+ * This constructor is used for creating large datasets that are written
+ * directly to a file to avoid storing them in memory.
+ */
 _DataSet::_DataSet(hyFile *f) {
   useHorizontalRep = false;
   theTT = &hy_default_translation_table;
@@ -89,6 +119,12 @@ _DataSet::_DataSet(hyFile *f) {
 
 //_______________________________________________________________________
 
+/**
+ * @brief Destructor for the _DataSet class.
+ *
+ * Frees the memory allocated for the translation table if it's not the default
+ * one.
+ */
 _DataSet::~_DataSet(void) {
   if (theTT != &hy_default_translation_table) {
     DeleteObject(theTT);
@@ -97,6 +133,12 @@ _DataSet::~_DataSet(void) {
 
 //_______________________________________________________________________
 
+/**
+ * @brief Clears the contents of the dataset.
+ *
+ * Resets the dataset to an empty state, clearing all sequences, names,
+ * frequencies, and the translation table.
+ */
 void _DataSet::Clear(bool) {
   _List::Clear();
   theMap.Clear();
@@ -112,6 +154,16 @@ void _DataSet::Clear(bool) {
 
 //_______________________________________________________________________
 
+/**
+ * @brief Creates a dynamic copy of the dataset.
+ * @return A new _DataSet object that is a copy of the current one.
+ *
+ * This function creates a new _DataSet instance and copies the essential
+ * properties of the current dataset, such as the map, frequencies, names,
+ * and translation table.
+ * @note The caller is responsible for managing the memory of the returned
+ * object.
+ */
 BaseRef _DataSet::makeDynamic(void) const {
   _DataSet *r = new _DataSet;
   r->theMap.Duplicate(&theMap);
@@ -121,8 +173,6 @@ BaseRef _DataSet::makeDynamic(void) const {
   }
   r->theNames.Duplicate(&theNames);
   r->streamThrough = streamThrough;
-  // 20170507: SLKP TODO why do we need an additional reference here?
-  // nInstances++;
 
   r->useHorizontalRep = false;
   return r;
@@ -132,6 +182,15 @@ BaseRef _DataSet::makeDynamic(void) const {
 
 //_______________________________________________________________________
 
+/**
+ * @brief Converts the internal data storage to a horizontal representation.
+ *
+ * This function changes the data storage from a "vertical" representation (a
+ * list of sites, where each site is a column of characters) to a "horizontal"
+ * representation (a list of sequences, where each sequence is a string). This
+ * can be more efficient for certain operations, especially when the number of
+ * sites is large.
+ */
 void _DataSet::ConvertToHorizontalRepresentation(void) {
   if (useHorizontalRep == false) {
     _List horStrings;
@@ -141,33 +200,33 @@ void _DataSet::ConvertToHorizontalRepresentation(void) {
     } else {
       _Site *aSite = (_Site *)list_data[0];
 
-      for (long str = 0; str < aSite->length(); str++) {
+      // Create a new string buffer for each sequence
+      for (unsigned long str = 0; str < aSite->length(); str++) {
         horStrings < new _StringBuffer(DATA_SET_SWITCH_THRESHOLD);
       }
 
-      for (long s = 0; s < lLength; s++) {
-        _Site *aSite = (_Site *)GetItem(s);
+      // Transpose the data from sites to sequences
+      for (unsigned long s = 0; s < lLength; s++) {
+        _Site *site_record = (_Site *)GetItem(s);
 
-        if (aSite->length() > horStrings.lLength || aSite->GetRefNo() != -1) {
-          HandleApplicationError(
-              "Irrecoverable internal error in "
-              "_DataSet::ConvertToHorizontalRepresentation. Sorry "
-              "about that.",
-              true);
+        if (site_record->length() > horStrings.lLength ||
+            site_record->GetRefNo() != -1) {
+          HandleApplicationError("Internal error: Inconsistent data in "
+                                 "_DataSet::ConvertToHorizontalRepresentation.",
+                                 true);
           return;
         }
 
-        for (long s2 = 0L; s2 < aSite->length(); s2++) {
-          (*(_StringBuffer *)horStrings.list_data[s2]) << aSite->get_char(s2);
+        for (unsigned long s2 = 0; s2 < site_record->length(); s2++) {
+          (*(_StringBuffer *)horStrings.list_data[s2])
+              << site_record->get_char(s2);
         }
       }
 
       _List::Clear();
       theFrequencies.Clear();
-
-      for (long s = 0; s < horStrings.lLength; s++) {
-        (*this) << horStrings.GetItem(s);
-      }
+      // Replace the old vertical data with the new horizontal data
+      (*this) << horStrings;
     }
     useHorizontalRep = true;
   }
@@ -175,10 +234,24 @@ void _DataSet::ConvertToHorizontalRepresentation(void) {
 
 //_______________________________________________________________________
 
+/**
+ * @brief Adds a character to a new site in the dataset.
+ * @param c The character to add.
+ *
+ * This function's behavior depends on the dataset's configuration:
+ * - If the dataset is being streamed to a file (`streamThrough` is not null),
+ * the character is written to the file.
+ * - If the dataset is in memory and using the vertical representation, a new
+ * site is created with the given character.
+ * - If the dataset has been converted to the horizontal representation, the
+ * character is appended to the first sequence.
+ * - If the number of sites exceeds `DATA_SET_SWITCH_THRESHOLD`, the dataset is
+ * converted to the horizontal representation.
+ */
 void _DataSet::AddSite(char c) {
   if (streamThrough) {
-    if (theMap.list_data[0] == 0) {
-      if (theMap.list_data[1] == 0) {
+    if (theMap.get(0) == 0) {
+      if (theMap.get(1) == 0) {
         if (theNames.lLength) {
           streamThrough->puts(((_String *)theNames(0))->get_str());
           streamThrough->fputc('\n');
@@ -192,34 +265,53 @@ void _DataSet::AddSite(char c) {
       theMap.list_data[2]++;
       streamThrough->fputc(c);
     } else {
-      HandleApplicationError("Can't add more sites to a file based data set, "
-                             "when more that one sequence has been written!",
-                             true);
+      HandleApplicationError(
+          "Cannot add sites to a file-based dataset with multiple sequences.",
+          true);
     }
   } else {
     if (useHorizontalRep == false) {
       if (lLength < DATA_SET_SWITCH_THRESHOLD) {
-        _Site *nC = new _Site(c);
         theFrequencies << 1L;
-        AppendNewInstance(nC);
+        AppendNewInstance(new _Site(c));
         return;
       } else {
         ConvertToHorizontalRepresentation();
       }
     }
 
-    (*((_StringBuffer *)list_data[0])) << c;
+    (*GetSite(0)) << c;
   }
 }
 //_______________________________________________________________________
 
+/**
+ * @brief Writes a character to a specific position in the dataset.
+ *
+ * @param index The site index (column) to write to.
+ * @param c The character to write.
+ * @param skip_char The character to use for padding if a new sequence is
+ * shorter than existing ones.
+ *
+ * This function writes a character `c` to the specified `index`. The exact
+ * behavior depends on the internal state of the `_DataSet` object:
+ *
+ * - **File-based streaming (`streamThrough` is active):** The function handles
+ * writing sequences one after another to the file. It ensures that sequences
+ * have equal lengths.
+ * - **Horizontal in-memory representation (`useHorizontalRep` is true):** The
+ * function appends the character to the appropriate sequence string. It can
+ * also handle creating new sequences.
+ * - **Vertical in-memory representation (`useHorizontalRep` is false):** The
+ * function appends the character to the `_Site` object at the given `index`.
+ */
 void _DataSet::Write2Site(long index, char c, char skip_char) {
   if (streamThrough) {
     if (index == 0) {
-      if (theMap.list_data[2] == theMap.list_data[1]) {
+      if (theMap.get(2) == theMap.get(1)) {
         theMap.list_data[0]++;
 
-        if (theNames.lLength > theMap.list_data[0]) {
+        if ((long)theNames.lLength > theMap.list_data[0]) {
           streamThrough->puts("\n>");
           streamThrough->puts(
               ((_String *)theNames(theMap.list_data[0]))->get_str());
@@ -230,19 +322,17 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
           snprintf(buffer, 64, "%ld", theMap.list_data[0] + 1);
           streamThrough->puts(buffer);
           streamThrough->fputc('\n');
-          // fprintf(streamThrough, "\n>Sequence %ld\n", theMap.list_data[0] +
-          // 1);
         }
 
         theMap.list_data[1] = 0;
       } else {
-        HandleApplicationError("Can't write sequences of unequal lengths to a "
-                               "file based data set.");
+        HandleApplicationError("Cannot write sequences of unequal lengths to a "
+                               "file-based dataset.");
         return;
       }
     } else if (index != theMap.list_data[1]) {
-      HandleApplicationError("Can't write sites which are not consecutive to a "
-                             "file based data set.");
+      HandleApplicationError(
+          "Sites must be written consecutively to a file-based dataset.");
       return;
     }
 
@@ -253,50 +343,38 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
       long currentWritten = ((_String *)list_data[0])->length();
 
       if (index >= currentWritten) {
-        /** SLKP 20211229
-            When we enter here, this means that the current string is longer
-           that all other strings; they need to be padded
-        */
-        /*HandleApplicationError(_String("Internal Error in 'Write2Site' - index
-        is too " "high (using compact representation) ") & index &'/' &
-        (long)currentWritten); return;*/
-
-        // printf ("\n%ld\n", lLength);
-
-        for (long s = 0; s < lLength - 1; s++) {
-          _StringBuffer *aString = (_StringBuffer *)list_data[s];
-          (*aString) << skip_char;
-          // printf ("\n%ld:%ld\n", s, aString->length());
+        // When we enter here, this means that the current string is longer
+        // that all other strings; they need to be padded
+        for (unsigned long s = 0; s < lLength - 1; s++) {
+          (*GetSite(s)) << skip_char;
         }
 
-        // exit (1);
-
-        (*(_StringBuffer *)list_data[lLength - 1]) << c;
-
+        (*GetSite(lLength - 1)) << c;
       } else {
-
         if (index == 0) {
           _StringBuffer *newString = new _StringBuffer(currentWritten);
           (*newString) << c;
           (*this) < newString;
         } else {
           // check to see if the last sequence has the right length
-          if (((_StringBuffer *)list_data[lLength - 1])->length() == index) {
-            *((_StringBuffer *)list_data[lLength - 1]) << c;
+
+          _StringBuffer *last_record = (_StringBuffer *)GetItem(lLength - 1);
+
+          if ((long)last_record->length() == index) {
+            *last_record << c;
           } else {
-            long s = 1;
+            unsigned long s = 1;
             for (; s < lLength; s++) {
-              _StringBuffer *aString = (_StringBuffer *)list_data[s];
-              if (aString->length() == index) {
-                (*aString) << c;
+              _Site *site_s = GetSite(s);
+              if ((long)site_s->length() == index) {
+                (*site_s) << c;
                 break;
               }
             }
             if (s == lLength) {
               HandleApplicationError(
-                  "Internal Error in 'Write2Site' - no "
-                  "appropriate  string to write too (compact "
-                  "representation)");
+                  "Internal error in 'Write2Site': no appropriate string to "
+                  "write to (compact representation).");
               return;
             }
           }
@@ -304,9 +382,10 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
       }
 
     } else {
-      if (index >= lLength) {
+      if (index >= (long)lLength) {
         HandleApplicationError(
-            _String("Internal Error in 'Write2Site' - index is too high. ") &
+            _String(
+                "Internal error in 'Write2Site': index is out of bounds. ") &
             index & '/' & (long)lLength);
         return;
       }
@@ -352,6 +431,24 @@ void _DataSet::SetTranslationTable(_TranslationTable *newTT) {
   theTT = (_TranslationTable *)newTT->makeDynamic();
 }
 //_______________________________________________________________________
+/**
+ * @brief Finalizes the dataset after all data has been added.
+ *
+ * This function is called after all sequences and sites have been added to the
+ * dataset. Its main purpose is to process the raw data to identify unique site
+ * patterns, calculate their frequencies, and compact the dataset to save
+ * memory.
+ *
+ * The behavior depends on the internal state of the dataset:
+ * - **File-based streaming:** The output file stream is closed.
+ * - **Horizontal in-memory representation:** The function transposes the data
+ * back to a vertical representation (list of sites), finds unique site patterns
+ * using a checksum-based approach, and builds a map from original site indices
+ * to unique pattern indices.
+ * - **Vertical in-memory representation:** The function iterates through the
+ * sites, finds duplicates using an AVL tree, and updates the site frequencies
+ * and mapping accordingly.
+ */
 void _DataSet::Finalize(void) {
   if (streamThrough) {
     streamThrough->close();
@@ -361,10 +458,11 @@ void _DataSet::Finalize(void) {
     if (useHorizontalRep) {
       bool good = true;
 
-      for (long s = 0; s < lLength && good; s++) {
-        // printf ("\n\n%d %d\n", s, ((_String *)list_data[s])->length());
-        good = good && ((_String *)list_data[0])->length() ==
-                           ((_String *)list_data[s])->length();
+      const unsigned long ref_length = ((_String *)list_data[0])->length();
+      _Site **sequence_records = (_Site **)list_data;
+
+      for (long s = 0; s < (long)lLength && good; s++) {
+        good = good && ref_length == sequence_records[s]->length();
       }
 
       if (!good) {
@@ -375,16 +473,14 @@ void _DataSet::Finalize(void) {
         return;
       }
 
-      //_List dups;
       _List uniquePats;
-      //_AVLListX dupsAVL(&dups);
 
       _SimpleList _checkSumBins;
       _AVLListXL checkSumBins(&_checkSumBins);
 
       long siteCounter = ((_String *)list_data[0])->length();
 
-      _String site_holder(lLength, nil);
+      _String site_holder(lLength, nullptr);
 
       auto insert_new_pattern = [&](long index) -> void {
         _SimpleList *indices = (_SimpleList *)checkSumBins.GetXtra(index);
@@ -392,7 +488,6 @@ void _DataSet::Finalize(void) {
         (*indices) << uniquePats.lLength;
         (*tC) << site_holder;
         uniquePats << tC;
-        // dupsAVL.Insert(tC, theFrequencies.lLength);
         theMap << theFrequencies.lLength;
         theFrequencies << 1;
         DeleteObject(tC);
@@ -401,10 +496,8 @@ void _DataSet::Finalize(void) {
       _SimpleList *sites_with_same_checksum = new _SimpleList;
 
       for (long i1 = 0L; i1 < siteCounter; i1++) {
-        for (long i2 = 0L; i2 < lLength; i2++) {
-          site_holder.set_char_no_check(
-              i2, ((_String *)list_data[i2])->get_char(i1));
-          //(*tC) << ;
+        for (unsigned long i2 = 0L; i2 < lLength; i2++) {
+          site_holder.set_char_no_check(i2, sequence_records[i2]->get_char(i1));
         }
 
         long patternChecksum = site_holder.Adler32();
@@ -416,13 +509,12 @@ void _DataSet::Finalize(void) {
           insert_new_pattern(checkSumExists);
           sites_with_same_checksum = new _SimpleList;
         } else {
-          // long ff = dupsAVL.Find(&site_holder);
 
           checkSumExists = -checkSumExists - 1;
 
           _SimpleList *indices =
               (_SimpleList *)checkSumBins.GetXtra(checkSumExists);
-          long i = 0;
+          unsigned long i = 0;
           for (; i < indices->lLength; i++) {
             long pattern_index = indices->get(i);
             _Site *comp = (_Site *)uniquePats.GetItem(pattern_index);
@@ -435,18 +527,9 @@ void _DataSet::Finalize(void) {
           if (i == indices->lLength) {
             insert_new_pattern(checkSumExists);
           }
-
-          /*if (ff < 0) {
-              insert_new_pattern ();
-          } else {
-              ff = dupsAVL.GetXtra(ff);
-              theMap << ff;
-              theFrequencies.list_data[ff]++;
-          }*/
         }
       }
       DeleteObject(sites_with_same_checksum);
-      // dupsAVL.Clear(false);
       _List::Clear();
       _List::Duplicate(&uniquePats);
     } else {
@@ -457,7 +540,7 @@ void _DataSet::Finalize(void) {
         _List dups;
         _AVLListX dupsAVL(&dups);
 
-        for (long i1 = 0; i1 < lLength; i1++) {
+        for (unsigned long i1 = 0; i1 < lLength; i1++) {
           tC = (_Site *)list_data[i1];
           long ff = dupsAVL.Find(tC);
           if (ff < 0) {
@@ -475,7 +558,7 @@ void _DataSet::Finalize(void) {
       _SimpleList refs(lLength), toDelete(lLength);
       j = 0;
 
-      for (long i1 = 0; i1 < lLength; i1++) {
+      for (unsigned long i1 = 0; i1 < lLength; i1++) {
         tC = (_Site *)(*(_List *)this)(i1);
         k = tC->GetRefNo();
         if (k == -1) {
@@ -486,7 +569,7 @@ void _DataSet::Finalize(void) {
         }
       }
 
-      for (long i2 = 0; i2 < lLength; i2++) {
+      for (unsigned long i2 = 0; i2 < lLength; i2++) {
         tC = (_Site *)(*(_List *)this)(i2);
         k = tC->GetRefNo();
         if (k >= 0) {
@@ -504,7 +587,7 @@ void _DataSet::Finalize(void) {
       DeleteList(toDelete);
       theFrequencies.DeleteList(toDelete);
 
-      for (long i3 = 0; i3 < lLength; i3++) {
+      for (unsigned long i3 = 0; i3 < lLength; i3++) {
         tC = (_Site *)GetItem(i3);
         tC->TrimSpace();
         tC->SetRefNo(0);
@@ -513,6 +596,15 @@ void _DataSet::Finalize(void) {
   }
 }
 //_______________________________________________________________________
+/**
+ * @brief Marks a site as a duplicate of another.
+ * @param index The index of the site to mark as a duplicate.
+ *
+ * This function is part of the vertical-to-horizontal conversion process.
+ * It handles the case where a site is found to be a duplicate of a previously
+ * encountered site. It updates the reference of the current site to point to
+ * the original one and increments the frequency count of the original site.
+ */
 void _DataSet::Compact(long index) {
   if (useHorizontalRep) {
     HandleApplicationError("Internal Error: _DataSet::Compact called on a "
@@ -540,28 +632,55 @@ void _DataSet::Compact(long index) {
 }
 
 //_______________________________________________________________________
+/**
+ * @brief Provides access to a character in the dataset using function-call
+ * syntax.
+ * @param site The site index (column).
+ * @param pos The sequence index (row).
+ * @param (unused) An unused third parameter.
+ * @return The character at the specified `(site, pos)` coordinate.
+ *
+ * @example
+ * @code
+ *   char character = myDataSet(5, 2); // Gets the character from site 5,
+ * sequence 2.
+ * @endcode
+ */
 inline char _DataSet::operator()(unsigned long site, unsigned long pos,
                                  unsigned int) const {
   return (((_String **)list_data)[theMap.list_data[site]])->get_char(pos);
 }
 
 //_________________________________________________________
+/**
+ * @brief Computes the approximate memory size of the dataset in bytes.
+ * @return The estimated size of the dataset object and its associated data.
+ */
 long _DataSet::ComputeSize(void) {
   long res = sizeof(_DataSet);
 
   res += (theMap.lLength + lLength + theFrequencies.lLength) * sizeof(long);
   res += lLength * sizeof(_Site);
 
-  for (long i = 0; i < lLength; i++) {
-    res += ((_Site *)(*(_List *)this)(i))->length();
+  for (unsigned long i = 0; i < lLength; i++) {
+    res += ((_Site *)GetItem(i))->length();
   }
-
   return res;
 }
 
 //_________________________________________________________
+/**
+ * @brief Checks the consistency of the dataset against its translation table.
+ * @return A float representing the proportion of characters in the dataset that
+ * are valid according to the current translation table (excluding gaps). A
+ * value of 1.0 indicates perfect consistency.
+ *
+ * This function iterates through all the data to verify that the characters
+ * are defined in the current alphabet. It's useful for validating data
+ * integrity.
+ */
 hyFloat _DataSet::CheckAlphabetConsistency(void) {
-  long charsIn = 0L, gaps = 0L, total = 0L;
+  long validCharacterCount = 0L, gaps = 0L, total = 0L;
 
   bool checks[256] = {false};
 
@@ -581,18 +700,16 @@ hyFloat _DataSet::CheckAlphabetConsistency(void) {
         _TranslationTable::GetDefaultTable(HY_TRANSLATION_TABLE_BINARY);
   }
 
-  for (charsIn = 0; charsIn < baseSymbols.length(); charsIn++) {
-    checks[(unsigned char)baseSymbols.get_char(charsIn)] = true;
+  for (long i = 0; i < (long)baseSymbols.length(); i++) {
+    checks[(unsigned char)baseSymbols.get_char(i)] = true;
   }
 
-  charsIn = 0;
-
-  for (long i = 0; i < lLength; i++) {
+  for (unsigned long i = 0; i < lLength; i++) {
     _String *thisColumn = (_String *)GetItem(i);
     long w = theFrequencies.get(i);
-    for (long j = 0; j < thisColumn->length(); j++)
+    for (unsigned long j = 0; j < thisColumn->length(); j++)
       if (checks[(unsigned char)thisColumn->get_char(j)]) {
-        charsIn += w;
+        validCharacterCount += w;
       } else if (gapChar == thisColumn->get_char(j)) {
         gaps += w;
       }
@@ -600,11 +717,17 @@ hyFloat _DataSet::CheckAlphabetConsistency(void) {
     total += w * thisColumn->length();
   }
 
-  return (hyFloat)charsIn / (total - gaps + 1.);
+  return (hyFloat)validCharacterCount / (total - gaps + 1.);
 }
 
 //___________________________________________________
 
+/**
+ * @brief Generates a string summary of the dataset.
+ * @param (unused) An unused parameter.
+ * @return A `_StringBuffer` object containing a summary of the dataset,
+ * including the number of species and sites.
+ */
 BaseRef _DataSet::toStr(unsigned long) {
   _StringBuffer *s = new _StringBuffer(NoOfSpecies() * 30);
 
@@ -620,6 +743,11 @@ BaseRef _DataSet::toStr(unsigned long) {
 
 //___________________________________________________
 
+/**
+ * @brief Writes a string summary of the dataset to a file.
+ * @param dest A pointer to the `hyFile` to write to.
+ * @param padding A parameter for formatting the output of the sequence names.
+ */
 void _DataSet::toFileStr(hyFile *dest, unsigned long padding) {
   char buffer[512];
   snprintf(buffer, 512, "%ld species: ", NoOfSpecies());
@@ -631,20 +759,16 @@ void _DataSet::toFileStr(hyFile *dest, unsigned long padding) {
 
   snprintf(buffer, 512, ";\nDistinct Sites: %ld", theFrequencies.lLength);
   dest->puts(buffer);
-
-  /*  fprintf (dest,"\n");
-      for (long j=0; j<noOfSpecies;j++)
-      {
-          fprintf (dest,"\n");
-          for (long i=0; i<theMap.lLength; i++)
-          {
-              fprintf (dest,"%c",(*this)(i,j,1));
-          }
-      }*/
 }
 
 //_________________________________________________________
 
+/**
+ * @brief Adds a sequence name to the dataset.
+ * @param s The name of the sequence to add.
+ *
+ * The name is trimmed of trailing whitespace before being added.
+ */
 void _DataSet::AddName(_String const &s) {
   theNames.AppendNewInstance(
       new _String(s, 0, s.FirstNonSpaceIndex(0, -1, kStringDirectionBackward)));
@@ -652,34 +776,68 @@ void _DataSet::AddName(_String const &s) {
 
 //_________________________________________________________
 
+/**
+ * @brief Inserts a sequence name at a specific position.
+ * @param name The name of the sequence to insert.
+ * @param where The 0-based index at which to insert the name.
+ */
 void _DataSet::InsertName(_String const &name, long where) {
   theNames.InsertElement(new _String(name), where, false);
 }
 
 //_________________________________________________________
 
+/**
+ * @brief Filters indices by evaluating a formula.
+ * @param f The formula to evaluate for each index.
+ * @param receptacle A `_SimpleList` to store the indices for which the formula
+ * is true.
+ * @param isVert If true, iterates through site indices. If false, iterates
+ * through species indices.
+ * @param limit The upper bound of the indices to check.
+ * @param scope The variable scope to use for evaluating the formula.
+ *
+ * This function iterates from 0 to `limit - 1`. In each iteration, it sets a
+ * context variable
+ * (`siteIndex` or `speciesIndex`) to the current index value, evaluates the
+ * formula `f`, and if the result is non-zero, adds the index to the
+ * `receptacle` list.
+ */
 void _DataSet::MatchIndices(_Formula &f, _SimpleList &receptacle, bool isVert,
                             long limit, _String const *scope) const {
   _String varName = isVert ? "siteIndex" : "speciesIndex";
   varName = AppendContainerName(varName, scope);
   _Variable *v = CheckReceptacle(&varName, kEmptyString, false);
 
-  // fprintf (stderr, "\n_DataSet::MatchIndices %d %s [%s] %s\n", isVert, scope
-  // ? scope->sData : "none", varName.sData, ((_String*)f.toStr())->sData);
-
   for (long i = 0L; i < limit; i++) {
-    v->SetValue(new _Constant((hyFloat)i), false, i == 0, NULL);
+    v->SetValue(new _Constant((hyFloat)i), false, i == 0, nullptr);
     HBLObjectRef res = f.Compute();
-    // fprintf (stderr, "%ld %g\n", i, res->Compute()->Value());
     if (res && !CheckEqual(res->Value(), 0.0)) {
       receptacle << i;
     }
   }
-  v->SetValue(new _Constant(0.0), false, false, NULL);
+  v->SetValue(new _Constant(0.0), false, false, nullptr);
 }
 
 //_________________________________________________________
 
+/**
+ * @brief Checks if a list of datasets are compatible for a merge operation and
+ * creates a merged translation table.
+ * @param ref A `_SimpleList` containing the indices of the datasets to check.
+ * @param concatOrCombine A flag indicating the type of merge: 1 for
+ * concatenation (joining columns), 0 for combination (joining rows).
+ * @return A new `_TranslationTable` object if all datasets are compatible,
+ * otherwise `nullptr`.
+ *
+ * This function verifies two conditions:
+ * 1. The translation tables of all datasets can be merged into a single,
+ * consistent table.
+ * 2. The dimensions of the datasets are compatible for the specified operation
+ * (e.g., for concatenation, they must have the same number of species). If
+ * compatible, it returns a new, merged translation table. Otherwise, it reports
+ * an error and returns `nullptr`.
+ */
 _TranslationTable *_DataSet::CheckCompatibility(_SimpleList const &ref,
                                                 char concatOrCombine) {
   _DataSet *currentSet = (_DataSet *)dataSetList(ref.Element(0));
@@ -690,7 +848,7 @@ _TranslationTable *_DataSet::CheckCompatibility(_SimpleList const &ref,
       concatOrCombine ? currentSet->NoOfSpecies() : currentSet->NoOfColumns();
   char emptyStringChar = theEnd->GetSkipChar();
 
-  for (long k = 1; k < ref.lLength; k++) {
+  for (unsigned long k = 1; k < ref.lLength; k++) {
     currentSet = (_DataSet *)dataSetList(ref.Element(k));
 
     _TranslationTable *tryMe = theEnd->MergeTables(currentSet->theTT);
@@ -701,8 +859,8 @@ _TranslationTable *_DataSet::CheckCompatibility(_SimpleList const &ref,
         theEnd = tryMe;
         continue;
       } else {
-        if ((concatOrCombine && (currentSet->NoOfSpecies() == refNo)) ||
-            (!concatOrCombine && (currentSet->NoOfColumns() == refNo))) {
+        if ((concatOrCombine && ((long)currentSet->NoOfSpecies() == refNo)) ||
+            (!concatOrCombine && ((long)currentSet->NoOfColumns() == refNo))) {
           DeleteObject(theEnd);
           theEnd = tryMe;
           continue;
@@ -714,7 +872,7 @@ _TranslationTable *_DataSet::CheckCompatibility(_SimpleList const &ref,
         warningMessage &
         ((_String *)dataSetNamesList(ref.Element(k)))->Enquote() &
         _String(" was found incompatible with one of the following data sets ");
-    for (long i = 0; i < k; i++) {
+    for (unsigned long i = 0; i < k; i++) {
       if (k) {
         warningMessage = warningMessage & ", ";
       }
@@ -724,7 +882,7 @@ _TranslationTable *_DataSet::CheckCompatibility(_SimpleList const &ref,
     HandleApplicationError(warningMessage);
     DeleteObject(tryMe);
     DeleteObject(theEnd);
-    return nil;
+    return nullptr;
   }
 
   return theEnd;
@@ -732,6 +890,30 @@ _TranslationTable *_DataSet::CheckCompatibility(_SimpleList const &ref,
 
 //_________________________________________________________
 
+/**
+ * @brief Calculates frequencies of character patterns (e.g., codons, amino
+ * acids) from the dataset.
+ *
+ * @param unit The number of characters that form a single unit (e.g., 3 for a
+ * codon).
+ * @param atom The number of characters that form an atomic pattern within the
+ * unit (e.g., 1 for a nucleotide, 3 for a codon).
+ * @param posSpec If true, frequencies are position-specific within the unit. If
+ * false, frequencies are pooled across all positions.
+ * @param hSegmentation A `_SimpleList` of sequence indices (rows) to include in
+ * the calculation.
+ * @param vSegmentation A `_SimpleList` of site indices (columns) to include in
+ * the calculation.
+ * @param countGaps If true, ambiguity codes that resolve to gaps are included
+ * in the frequency counts.
+ * @return A `_Matrix` where rows correspond to character patterns and columns
+ * correspond to positions (if `posSpec` is true).
+ *
+ * This is a powerful and complex function for extracting detailed frequency
+ * information from the dataset. It can be used to calculate things like codon
+ * usage, amino acid frequencies, or nucleotide frequencies, optionally
+ * constrained to specific subsets of sequences and sites.
+ */
 _Matrix *_DataSet::HarvestFrequencies(unsigned char unit, unsigned char atom,
                                       bool posSpec, _SimpleList &hSegmentation,
                                       _SimpleList &vSegmentation,
@@ -766,13 +948,6 @@ _Matrix *_DataSet::HarvestFrequencies(unsigned char unit, unsigned char atom,
   for (unsigned long site_pattern = 0UL;
        site_pattern + unit <= vSegmentation.lLength;
        site_pattern += unit) { // loop over the set of segments
-    // make sure the partition is kosher
-
-    /*
-     if (site_pattern + unit > vSegmentation.lLength) {
-        break;
-    }
-    */
 
     for (unsigned long primary_site = site_pattern;
          primary_site < site_pattern + unit; primary_site += atom) {
@@ -796,7 +971,7 @@ _Matrix *_DataSet::HarvestFrequencies(unsigned char unit, unsigned char atom,
         long resolution_count = theTT->MultiTokenResolutions(
             unit_for_counting, static_store, countGaps);
 
-        if (resolution_count > 0UL) {
+        if (resolution_count > 0L) {
 
           hyFloat normalized = 1. / resolution_count;
 
@@ -834,6 +1009,28 @@ _Matrix *_DataSet::HarvestFrequencies(unsigned char unit, unsigned char atom,
 
 //_______________________________________________________________________
 
+/**
+ * @brief Parses a complex partition string to select a subset of sites or
+ * sequences.
+ *
+ * @param input2 The partition string. This can be a simple list of indices
+ * (e.g., "1,3,5-10"), a formula, a regular expression, or a callback function.
+ * @param target A `_SimpleList` that will be populated with the indices of the
+ * selected sites or sequences.
+ * @param isVertical If true, the partition applies to sites (columns). If
+ * false, it applies to sequences (rows).
+ * @param unit_length The size of the unit for certain partitioning modes (e.g.,
+ * 3 for codons).
+ * @param additionalFilter An optional pre-filter to apply before this
+ * partition.
+ * @param otherDimension An optional filter for the other dimension (e.g., if
+ * partitioning sites, this could filter sequences).
+ * @param scope The variable scope for evaluating formulas.
+ *
+ * This is a highly flexible and powerful function for selecting data. It can
+ * handle various complex selection criteria, making it a central part of the
+ * data analysis capabilities.
+ */
 void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
                                 bool isVertical, int unit_length,
                                 _SimpleList const *additionalFilter,
@@ -871,7 +1068,8 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
     HBLObjectRef fV = fmla.Compute();
     if (fV && fV->ObjectClass() == STRING) {
       ProcessPartition(((_FString *)fV)->get_str().Enquote(), target,
-                       isVertical, unit_length, additionalFilter, nil, scope);
+                       isVertical, unit_length, additionalFilter, nullptr,
+                       scope);
     } else {
       _DataSet::MatchIndices(fmla, target, isVertical, totalLength, scope);
     }
@@ -898,7 +1096,7 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
 
     if (is_regexp || is_hbl_function >= 0L) {
       // a regular expression or a callback
-      std::regex *regex = nil;
+      std::regex *regex = nullptr;
       _Formula filter_formula;
 
       if (is_regexp) {
@@ -915,7 +1113,7 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
       // using only the sites that are specced in the additionalFilter
 
       if (!isVertical) { // partitioning sequences
-        _FString *string_object = nil, *string_name = nil;
+        _FString *string_object = nullptr, *string_name = nullptr;
         if (!is_regexp) {
           filter_formula.GetList() < new _Operation() < new _Operation() <
               new _Operation(kEmptyString, -is_hbl_function - 1L);
@@ -933,14 +1131,15 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
                                          : specCount;
 
           if (otherDimension) {
-            for (long seqSlider = 0L; seqSlider < otherDimension->lLength;
-                 seqSlider++) {
+            for (unsigned long seqSlider = 0L;
+                 seqSlider < otherDimension->lLength; seqSlider++) {
               pattern.set_char(seqSlider,
                                GetSite(otherDimension->Element(seqSlider))
                                    ->get_char(seqPos));
             }
           } else {
-            for (long seqSlider = 0L; seqSlider < theMap.lLength; seqSlider++) {
+            for (unsigned long seqSlider = 0L; seqSlider < theMap.lLength;
+                 seqSlider++) {
               pattern.set_char(seqSlider, GetSite(seqSlider)->get_char(seqPos));
             }
           }
@@ -962,8 +1161,8 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
         }
 
         if (!is_regexp) {
-          filter_formula.GetIthTerm(0)->SetNumber(nil);
-          filter_formula.GetIthTerm(1)->SetNumber(nil);
+          filter_formula.GetIthTerm(0)->SetNumber(nullptr);
+          filter_formula.GetIthTerm(1)->SetNumber(nullptr);
           DeleteObject(string_object);
           DeleteObject(string_name);
         }
@@ -976,14 +1175,14 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
           });
         };
 
-        bool *eligibleMarks = nil;
+        bool *eligibleMarks = nullptr;
 
         if (is_regexp) {
           eligibleMarks = new bool[lLength];
           if (additionalFilter) {
             InitializeArray(eligibleMarks, lLength, false);
-            for (long siteIndex = 0; siteIndex < additionalFilter->lLength;
-                 siteIndex++) {
+            for (unsigned long siteIndex = 0;
+                 siteIndex < additionalFilter->lLength; siteIndex++) {
               eligibleMarks
                   [theMap.list_data[additionalFilter->list_data[siteIndex]]] =
                       true;
@@ -992,22 +1191,21 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
             InitializeArray(eligibleMarks, lLength, true);
           }
 
-          _String *tempString = nil;
+          _String *tempString = nullptr;
           _SimpleList matches;
           if (otherDimension) {
             tempString = new _String(otherDimension->countitems());
           }
 
-          for (long siteCounter = 0; siteCounter < lLength; siteCounter++)
+          for (unsigned long siteCounter = 0; siteCounter < lLength;
+               siteCounter++)
             if (eligibleMarks[siteCounter]) {
               matches.Clear();
               if (otherDimension) {
-                map_site((_Site *)GetItem(siteCounter), *tempString,
-                         otherDimension);
+                map_site(GetSite(siteCounter), *tempString, otherDimension);
                 matches = tempString->RegExpMatch(regex, 0UL);
               } else {
-                matches =
-                    ((_Site **)list_data)[siteCounter]->RegExpMatch(regex, 0UL);
+                matches = GetSite(siteCounter)->RegExpMatch(regex, 0UL);
               }
               if (matches.empty()) {
                 eligibleMarks[siteCounter] = false;
@@ -1016,7 +1214,8 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
 
           DeleteObject(tempString);
           if (additionalFilter) {
-            for (long afi = 0; afi < additionalFilter->lLength; afi++) {
+            for (unsigned long afi = 0; afi < additionalFilter->lLength;
+                 afi++) {
               if (eligibleMarks
                       [theMap.list_data[additionalFilter->list_data[afi]]]) {
                 target << afi;
@@ -1043,8 +1242,8 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
 
           if (additionalFilter) {
             InitializeArray(eligibleMarks, theMap.lLength, false);
-            for (long siteIndex = 0; siteIndex < additionalFilter->lLength;
-                 siteIndex++) {
+            for (unsigned long siteIndex = 0;
+                 siteIndex < additionalFilter->lLength; siteIndex++) {
               eligibleMarks[additionalFilter->list_data[siteIndex]] = true;
             }
           } else {
@@ -1054,7 +1253,7 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
           filter_formula.GetList() < new _Operation() < new _Operation() <
               new _Operation(kEmptyString, -is_hbl_function - 1L);
 
-          _Matrix *strings = nil, *frequencies = nil;
+          _Matrix *strings = nullptr, *frequencies = nullptr;
 
           _List string_list, string_storage;
 
@@ -1073,7 +1272,7 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
           }
 
           for (long siteCounter = 0L;
-               siteCounter + unit_length <= theMap.lLength;
+               siteCounter + unit_length <= (long)theMap.lLength;
                siteCounter += unit_length) {
             long unit_space = 0L;
             string_list.Clear();
@@ -1106,7 +1305,8 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
               //(unsigned char unit, unsigned char atom, bool posSpec,
               //_SimpleList& hSegmentation, _SimpleList& vSegmentation, bool
               // countGaps)
-              frequencies = HarvestFrequencies(unit_space, unit_space, false,
+              frequencies = HarvestFrequencies((unsigned char)unit_space,
+                                               (unsigned char)unit_space, false,
                                                sequences, sites, false);
               filter_formula.GetIthTerm(1)->SetNumber(frequencies);
 
@@ -1120,12 +1320,12 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
             }
           }
 
-          theMap.Each([&target, eligibleMarks](long site_pattern,
-                                               unsigned long index) -> void {
-            if (eligibleMarks[index]) {
-              target << index;
-            }
-          });
+          theMap.Each(
+              [&target, eligibleMarks](long, unsigned long index) -> void {
+                if (eligibleMarks[index]) {
+                  target << index;
+                }
+              });
           // strings && frequencies will be cleaned up by the destructor of
           // filter_formula
         }
@@ -1149,7 +1349,7 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
       // first check if it is has a comb filter
 
       if (input(0) == '<' && input(-1) == '>') {
-        for (count = 1; count < input.length() - 1; count++) {
+        for (count = 1; count < (long)input.length() - 1; count++) {
           if (input.char_at(count) != '0') {
             numbers << count - 1;
           }
@@ -1161,13 +1361,13 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
             totalLength = theMap.lLength;
           }
           while (anchor < totalLength - k) {
-            for (count = 0; count < numbers.lLength; count++) {
+            for (count = 0; count < (long)numbers.lLength; count++) {
               target << anchor + numbers.list_data[count];
             }
             anchor += k;
           }
           if ((k = totalLength - 1 - anchor)) {
-            for (count = 0; count < numbers.lLength; count++) {
+            for (count = 0; count < (long)numbers.lLength; count++) {
               if (numbers.list_data[count] > k) {
                 break;
               }
@@ -1178,10 +1378,11 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
         }
       }
 
-      while (count < input.length()) {
+      while (count < (long)input.length()) {
         anchor = count;
 
-        for (; count < input.length() && isdigit(input.char_at(count)); count++)
+        for (; count < (long)input.length() && isdigit(input.char_at(count));
+             count++)
           ;
 
         long aNumber = (input.Cut(anchor, count - 1)).to_long();
@@ -1212,7 +1413,8 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
         }
 
         // TODO SLKP 20171001 this needs to be checked for correctness
-        if (current_char == ',' || count == input.length()) { // wrap it up dude
+        if (current_char == ',' ||
+            count == (long)input.length()) { // wrap it up dude
           if (numbers.countitems() == 1) {
             target << numbers(0);
           } else {
@@ -1236,7 +1438,7 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
               } else {
                 _SimpleList signs;
                 signs << (numbers(0) < numbers(1) ? 1 : -1);
-                for (long k = 0; k < links.lLength; k += 2) {
+                for (unsigned long k = 0; k < links.lLength; k += 2) {
                   signs << (numbers(links(k)) < numbers(links(k + 1)) ? 1 : -1);
                 }
 
@@ -1244,7 +1446,7 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
                      signs(0) * k <= signs(0) * numbers(1);
                      k += signs(0), l++) {
                   target << numbers(0) + l * signs(0);
-                  for (long m = 0; m < links.lLength; m++) {
+                  for (unsigned long m = 0; m < links.lLength; m++) {
                     target << numbers(links(m)) + l * signs(m + 1);
                   }
                 }
@@ -1262,6 +1464,20 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
 
 //_________________________________________________________
 
+/**
+ * @brief Concatenates multiple datasets into a single new dataset.
+ * @param ref A `_SimpleList` of indices of the datasets to concatenate.
+ * @return A new `_DataSet` object containing the concatenated data.
+ *
+ * This function joins multiple datasets side-by-side (column-wise).
+ * If the datasets have a different number of sequences (rows), the resulting
+ * dataset will have the same number of sequences as the largest dataset, and
+ * the smaller datasets will be padded with the skip character. The translation
+ * tables of all datasets are merged.
+ *
+ * @note The caller is responsible for managing the memory of the returned
+ * `_DataSet` object.
+ */
 _DataSet *_DataSet::Concatenate(_SimpleList const &ref)
 
 // concatenates (adds columns together) several datasets
@@ -1283,13 +1499,13 @@ _DataSet *_DataSet::Concatenate(_SimpleList const &ref)
   // pass one - determine the max max number of species present and what dataset
   // are they coming from
 
-  long maxSpecies = 0, maxDataSet = 0, siteIndex;
+  long maxSpecies = 0, indexOfLargestDataset = 0, siteIndex;
 
   _DataSet *currentSet;
 
   char emptyStringSlot = jointTable->GetSkipChar();
 
-  for (long i = 0; i < ref.lLength; i++) {
+  for (unsigned long i = 0; i < ref.lLength; i++) {
     currentSet = (_DataSet *)dataSetList(ref(i));
 
     long specCount = currentSet->NoOfSpecies(),
@@ -1297,7 +1513,7 @@ _DataSet *_DataSet::Concatenate(_SimpleList const &ref)
 
     if (specCount > maxSpecies) {
       maxSpecies = specCount;
-      maxDataSet = i;
+      indexOfLargestDataset = i;
     }
     for (long j = 0; j < siteCount; j++) {
       bigDataSet->AddSite((*currentSet)(j, 0, 1));
@@ -1306,7 +1522,7 @@ _DataSet *_DataSet::Concatenate(_SimpleList const &ref)
 
   for (long k = 1; k < maxSpecies; k++) {
     siteIndex = 0;
-    for (long i = 0; i < ref.lLength; i++) {
+    for (unsigned long i = 0; i < ref.lLength; i++) {
       currentSet = (_DataSet *)dataSetList(ref.list_data[i]);
 
       long cns = currentSet->NoOfSpecies(), cnc = currentSet->NoOfColumns();
@@ -1322,7 +1538,7 @@ _DataSet *_DataSet::Concatenate(_SimpleList const &ref)
     }
   }
 
-  currentSet = (_DataSet *)dataSetList(ref(maxDataSet));
+  currentSet = (_DataSet *)dataSetList(ref(indexOfLargestDataset));
   for (long i = 0L; i < maxSpecies; i++) {
     bigDataSet->AddName(*currentSet->GetSequenceName(i));
   }
@@ -1334,6 +1550,20 @@ _DataSet *_DataSet::Concatenate(_SimpleList const &ref)
 
 //_________________________________________________________
 
+/**
+ * @brief Combines multiple datasets into a single new dataset.
+ * @param ref A `_SimpleList` of indices of the datasets to combine.
+ * @return A new `_DataSet` object containing the combined data.
+ *
+ * This function joins multiple datasets top-to-bottom (row-wise).
+ * If the datasets have a different number of sites (columns), the resulting
+ * dataset will have the same number of sites as the widest dataset, and the
+ * narrower datasets will be padded with the skip character. The translation
+ * tables of all datasets are merged.
+ *
+ * @note The caller is responsible for managing the memory of the returned
+ * `_DataSet` object.
+ */
 _DataSet *_DataSet::Combine(_SimpleList const &ref) {
 
   // combines (adds rows together) several datasets
@@ -1409,7 +1639,7 @@ _String *_DataSet::GetSequenceCharacters(long seqID) const {
   unsigned long upTo = NoOfColumns();
   _StringBuffer *aSequence = new _StringBuffer(upTo);
 
-  if (seqID >= 0L && seqID < noOfSpecies) {
+  if (seqID >= 0L && seqID < (long)noOfSpecies) {
     for (unsigned long k2 = 0UL; k2 < upTo; k2++) {
       (*aSequence) << GetSite(k2)->char_at(seqID);
     }
@@ -1544,7 +1774,7 @@ void processCommand(_String *s, FileState *fs) {
 
   long f = -1, command_index;
 
-  for (command_index = 0L; command_index < _CommandList.countitems();
+  for (command_index = 0L; command_index < (long)_CommandList.countitems();
        ++command_index) {
     f = s->Find(*(_String *)_CommandList.GetItem(command_index));
     if (f != kNotFound) {
@@ -1592,7 +1822,7 @@ void processCommand(_String *s, FileState *fs) {
             "\\\"([a-z,A-Z])\\\"\\ *=\\ *\\\"([a-z,A-Z]+)\\\"", false, true);
         if (matches.countitems() == 6) {
           fs->translationTable->AddTokenCode(
-              matches.get(2), s->Cut(matches.get(3), matches.get(4)));
+              (char)matches.get(2), s->Cut(matches.get(3), matches.get(4)));
         } else {
           throw(s->Enquote('[', ']') &
                 " was not of the form \"token\"=\"translation\"");
@@ -1642,7 +1872,7 @@ void processCommand(_String *s, FileState *fs) {
       case 2: // RAWLINE template e.g 1,-1 skips one word at the beginning and
               // one word at the end
         _List chips(s, ',');
-        chips.ForEach([&](BaseRef number, unsigned long index) -> void {
+        chips.ForEach([&](BaseRef number, unsigned long) -> void {
           fs->rawLinesFormat << ((_String *)number)->to_long();
         });
         break;
@@ -1661,7 +1891,7 @@ void FilterRawString(_String &s, FileState *fs, _DataSet &ds) {
 
   long current_start = 0L, current_end = (long)words.countitems() - 1L;
 
-  fs->rawLinesFormat.Each([&](long word, unsigned long idx) -> void {
+  fs->rawLinesFormat.Each([&](long word, unsigned long) -> void {
     if (word > 0L) {
       current_start += word;
     } else {
@@ -1726,7 +1956,7 @@ long ProcessLine(_String &s, FileState *fs, _DataSet &ds) {
   long sitesAttached = 0L;
 
   try {
-    s.Each([&](char letter, unsigned long i) -> void {
+    s.Each([&](char letter, unsigned long) -> void {
       letter = _uppercase_char(letter);
       if (fs->translationTable->IsCharLegal(letter)) { // go on
         if (fs->curSpecies == 0) {                     // add new column
@@ -1738,8 +1968,8 @@ long ProcessLine(_String &s, FileState *fs, _DataSet &ds) {
 
           if (letter == fs->repeat) {
             if (fs->curSite + sitesAttached >=
-                ds.lLength) { // a dot not matched by a previously read
-                              // character; ignore
+                (long)ds.lLength) { // a dot not matched by a previously read
+                                    // character; ignore
               throw sitesAttached;
             }
 
@@ -1874,9 +2104,9 @@ void ReadNextLine(hyFile *fp, _StringBuffer *s, FileState *fs, bool,
   char lastc;
 
   if (fp) {
-    lastc = fp->getc();
+    lastc = (char)fp->getc();
   } else {
-    lastc = fs->pInSrc < fs->theSource->length()
+    lastc = fs->pInSrc < (long)fs->theSource->length()
                 ? fs->theSource->char_at(fs->pInSrc++)
                 : 0;
   }
@@ -1888,7 +2118,7 @@ void ReadNextLine(hyFile *fp, _StringBuffer *s, FileState *fs, bool,
           fs->lineBuffer << lastc;
         }
 
-        lastc = fp->getc();
+        lastc = (char)fp->getc();
       }
     else
       while (lastc && lastc != '\r' && lastc != '\n') {
@@ -1902,7 +2132,7 @@ void ReadNextLine(hyFile *fp, _StringBuffer *s, FileState *fs, bool,
     }
 
     while (((fp && !fp->feof()) ||
-            (fs->theSource && (fs->pInSrc <= fs->theSource->length()))) &&
+            (fs->theSource && (fs->pInSrc <= (long)fs->theSource->length()))) &&
            lastc != '\r' && lastc != '\n') {
       if (lastc == '[') {
         if (fs->isSkippingInNEXUS) {
@@ -1921,7 +2151,7 @@ void ReadNextLine(hyFile *fp, _StringBuffer *s, FileState *fs, bool,
       }
 
       if (fp) {
-        lastc = fp->getc();
+        lastc = (char)fp->getc();
         if (upCase) {
           lastc = _uppercase_char(lastc);
         }
@@ -1940,7 +2170,7 @@ void ReadNextLine(hyFile *fp, _StringBuffer *s, FileState *fs, bool,
   }
 
   if ((fp && fp->feof()) ||
-      (fs->theSource && fs->pInSrc >= fs->theSource->length())) {
+      (fs->theSource && fs->pInSrc >= (long)fs->theSource->length())) {
     if (fs->lineBuffer.empty()) {
       s->Clear();
       return;
@@ -2028,7 +2258,8 @@ _DataSet *ReadDataSetFile(hyFile *f, char execBF, _String *theS,
     fState.autoDetect = true;
     fState.fileType = -1;
     fState.baseLength = 4;
-    fState.repeat = '.', fState.skip = 0;
+    fState.repeat = '.';
+    fState.skip = 0;
     fState.theSource = theS;
     fState.pInSrc = 0;
     fState.theNamespace = namespaceID;

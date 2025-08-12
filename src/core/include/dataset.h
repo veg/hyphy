@@ -91,7 +91,7 @@ public:
   unsigned long GetFreqType(long) const;
   // return the frequency of a site
 
-  _Site *GetSite(long index) const {
+  inline _Site *GetSite(long index) const {
     return ((_Site **)list_data)[theMap.list_data[index]];
   }
 

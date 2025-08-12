@@ -1348,7 +1348,7 @@ public:
   long Any(CALLBACK cb, unsigned long start_at = 0) const {
     for (unsigned long i = start_at; i < s_length; i++) {
       if (cb(s_data[i], i))
-        return i;
+        return (long)i;
     }
     return kNotFound;
   }

@@ -358,7 +358,7 @@ bool _BayesianGraphicalModel::SetDataMatrix(_Matrix const *data) {
         data_nlevels[node] = 1;
 
         for (unsigned long row = 0L; row < nrows; row++) {
-          long val = theData(row, node);
+          long val = (long)theData(row, node);
 
           if (val < 0) {
             has_missing[node] = 1L;
@@ -807,7 +807,7 @@ void _BayesianGraphicalModel::UpdateDirichletHyperparameters(
        NONE OF THE CASES IS COMPLETE! - afyp, 2010/02/25
      */
     for (unsigned long obs = 0UL; obs < theData.GetHDim(); obs++) {
-      long index = 0, child_state = theData(obs, dnode);
+      long index = 0, child_state = (long)theData(obs, dnode);
 
       if (child_state < 0L) {
         continue; /* missing observation */
@@ -815,7 +815,7 @@ void _BayesianGraphicalModel::UpdateDirichletHyperparameters(
 
       for (unsigned long par = 0UL; par < dparents.countitems(); par++) {
         long this_parent = dparents.get(par),
-             this_parent_state = theData(obs, this_parent);
+             this_parent_state = (long)theData(obs, this_parent);
 
         if (this_parent_state < 0L) {
           index = -1; /* missing observation */
@@ -845,7 +845,7 @@ void _BayesianGraphicalModel::UpdateDirichletHyperparameters(
 
     // update with data
     for (unsigned long obs = 0UL; obs < theData.GetHDim(); obs++) {
-      long child_state = theData(obs, dnode);
+      long child_state = (long)theData(obs, dnode);
 
       if (child_state < 0L) {
         continue;
@@ -1446,13 +1446,16 @@ _Matrix *_BayesianGraphicalModel::Optimize(_AssociativeList const *) {
       // output_matrix =  new _Matrix (num_nodes * num_nodes, 2, false, true);
 
       output_matrix = K2Search(
-          optMethod, hy_env::EnvVariableGetNumber(kHYBgm_K2_RESTARTS, 1.0),
-          hy_env::EnvVariableGetNumber(kHYBgm_K2_RANDOMIZE, num_nodes));
+          (long)optMethod,
+          (long)hy_env::EnvVariableGetNumber(kHYBgm_K2_RESTARTS, 1.0),
+          (long)hy_env::EnvVariableGetNumber(kHYBgm_K2_RANDOMIZE, num_nodes));
     } else {
-      long mcmc_steps = hy_env ::EnvVariableGetNumber(kHYBgm_MCMC_MAXSTEPS, 0.),
-           mcmc_burnin = hy_env ::EnvVariableGetNumber(kHYBgm_MCMC_BURNIN, 0.),
+      long mcmc_steps =
+               (long)hy_env ::EnvVariableGetNumber(kHYBgm_MCMC_MAXSTEPS, 0.),
+           mcmc_burnin =
+               (long)hy_env ::EnvVariableGetNumber(kHYBgm_MCMC_BURNIN, 0.),
            mcmc_samples =
-               hy_env ::EnvVariableGetNumber(kHYBgm_MCMC_SAMPLES, 0.);
+               (long)hy_env ::EnvVariableGetNumber(kHYBgm_MCMC_SAMPLES, 0.);
 
       if (mcmc_steps <= 0) {
         throw(kHYBgm_MCMC_MAXSTEPS & " must be positive\n");
@@ -1535,7 +1538,7 @@ _Matrix *_BayesianGraphicalModel::Optimize(_AssociativeList const *) {
               node_order_arg.Populate(num_nodes, 0, 0);
             }
             for (unsigned long i = 0; i < num_nodes; i++) {
-              node_order_arg.list_data[i] = (*output_matrix)(i, 3);
+              node_order_arg.list_data[i] = (long)(*output_matrix)(i, 3);
             }
             ReportWarning(_String((_String *)node_order_arg.toStr()));
             delete output_matrix;
@@ -1707,7 +1710,7 @@ _BayesianGraphicalModel::GetOrderFromGraph(_Matrix const &graph) const {
     // loop through nodes in list looking for parents
     for (left_of = 0L; left_of < new_order.countitems(); left_of++) {
       // if the node is the child,
-      if (graph(left_of, node)) {
+      if (!CheckEqual(graph(left_of, node), 0.)) {
         new_order.InsertElement((BaseRef)node, left_of, false, false);
         break;
       }
@@ -1771,7 +1774,8 @@ _Matrix *_BayesianGraphicalModel::GraphMetropolis(bool fixed_order,
   }
 
   long sampling_interval = mcmc_steps / mcmc_samples,
-       max_fails = hy_env::EnvVariableGetNumber(kHYBgm_MCMC_MAXFAILS, 100);
+       max_fails =
+           (long)hy_env::EnvVariableGetNumber(kHYBgm_MCMC_MAXFAILS, 100);
 
   if (max_fails <= 0.) {
     throw(kHYBgm_MCMC_MAXFAILS & " must be assigned a value greater than 0");
@@ -1910,7 +1914,7 @@ void _BayesianGraphicalModel::RandomizeGraph(_Matrix *graph, _SimpleList *order,
     // build a list of current parents
     for (unsigned long par = 0L; par < num_nodes; par++)
       // par is parent of child AND the edge is NOT enforced
-      if ((*graph)(par, node_index) &&
+      if (!CheckEqual((*graph)(par, node_index), 0.0) &&
           constraint_graph(par, node_index) <= 0.) {
         removeable_edges << par;
       }

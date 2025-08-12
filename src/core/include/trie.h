@@ -102,8 +102,8 @@ public:
   void InitializeTrie(const _String *alphabet);
 
   template <typename... values>
-  long Insert(const _String &key, long payload, values... data) {
-    Insert(key, payload);
+  long Insert(const _String &key, long payload_data, values... data) {
+    Insert(key, payload_data);
     return Insert(data...);
   }
 

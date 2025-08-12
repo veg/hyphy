@@ -120,7 +120,7 @@ void _CalcNode::InitializeCN(_String const &parms, int,
   //_SimpleList local_cat_vars;
 
   ForEachLocalVariable(
-      iVariables, [&](long var_idx, long ref_idx, unsigned long idx) -> void {
+      iVariables, [&](long, long ref_idx, unsigned long) -> void {
         if (ref_idx >= 0) {
           /* TODO:
            this used to do with local category variables
@@ -184,7 +184,7 @@ long _CalcNode::SetDependance(long var_index) {
 
     PopulateAndSort([&](_AVLList &avl) -> void {
       LocateVar(var_index)->ScanForVariables(avl, true);
-    }).Each([&](long var_index, unsigned long idx) -> void {
+    }).Each([&](long var_index, unsigned long) -> void {
       if (LocateVar(var_index)->IsCategory() &&
           (categoryVariables >> var_index)) {
         categoryIndexVars << -1;
@@ -422,7 +422,7 @@ hyFloat _CalcNode::ComputeBranchLength(void) {
   hyFloat result = 0.0;
 
   IntergrateOverAssignments(
-      categoryVariables, true, [&](long current_cat, hyFloat weight) -> void {
+      categoryVariables, true, [&](long, hyFloat weight) -> void {
         result +=
             fabs(ComputeModelMatrix()->ExpNumberOfSubs(freqMx, mbf)) * weight;
       });
@@ -897,7 +897,7 @@ void _CalcNode::ConvertToSimpleMatrix(unsigned long category_count) {
   if (mf) {
     if (!templateFormulaClone) {
       templateFormulaClone = new _Formula *[category_count];
-      for (long i = 0; i < category_count; i++) {
+      for (unsigned long i = 0; i < category_count; i++) {
         templateFormulaClone[i] = new _Formula(*mf);
         templateFormulaClone[i]->ConvertMatrixArgumentsToSimpleOrComplexForm(
             false);
@@ -922,7 +922,7 @@ void _CalcNode::ConvertFromSimpleMatrix(unsigned long category_count) {
     if (templateFormulaClone) {
       // printf ("_CalcNode::ConvertFromSimpleMatrix %s => %d\n",
       // GetName()->get_str(), category_count);
-      for (long i = 0; i < category_count; i++) {
+      for (unsigned long i = 0; i < category_count; i++) {
         delete templateFormulaClone[i];
       }
       delete[] templateFormulaClone;
@@ -1045,27 +1045,30 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
         }
       // really bad bongos! must solve for non-additive constraint
       else
-        for (long l = 0; l < branches_to_process; l++) {
-          if (l == k) {
+        for (long branch_index = 0; branch_index < branches_to_process;
+             branch_index++) {
+          if (branch_index == k) {
             continue;
           }
-          if (nodeConditions[l]->Length() == 1) {
+          if (nodeConditions[branch_index]->Length() == 1) {
             // printf ("Setting simple non-additive at %s %s\n",
             // LocateVar(nodeConditions[l]->GetIthTerm(0)->GetAVariable())->GetName()->get_str(),
             //         _String((_String*)nodeConditions[k]->toStr(kFormulaStringConversionNormal,
             //         nil, true)).get_str());
 
-            LocateVar(nodeConditions[l]->GetIthTerm(0)->GetAVariable())
+            LocateVar(
+                nodeConditions[branch_index]->GetIthTerm(0)->GetAVariable())
                 ->SetFormula(*nodeConditions[k]);
           } else { // solve for a non-additive constraint
-            _Variable *nonAdd =
-                LocateVar(nodeConditions[l]->GetIthTerm(0)->GetAVariable());
-            nodeConditions[l]->GetList().Delete(0);
+            _Variable *nonAdd = LocateVar(
+                nodeConditions[branch_index]->GetIthTerm(0)->GetAVariable());
+            nodeConditions[branch_index]->GetList().Delete(0);
             _Formula newConstraint;
             newConstraint.Duplicate(nodeConditions[k]);
-            for (long m = 0; m < nodeConditions[l]->GetList().lLength; m++) {
+            for (unsigned long m = 0;
+                 m < nodeConditions[branch_index]->GetList().lLength; m++) {
               _Operation *curOp =
-                  (_Operation *)(*nodeConditions[l]).GetList()(m);
+                  (_Operation *)(*nodeConditions[branch_index]).GetList()(m);
               if (curOp->GetNoTerms()) {
                 newConstraint.GetList().AppendNewInstance(
                     new _Operation(HY_OP_CODE_SUB, 2L));
@@ -1073,8 +1076,8 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
                 newConstraint.GetList() << curOp;
               }
             }
-            delete (nodeConditions[l]);
-            nodeConditions[l] = nil;
+            delete (nodeConditions[branch_index]);
+            nodeConditions[branch_index] = nil;
             nonAdd->SetFormula(newConstraint);
             // printf ("Setting complex non-additive at %s %s\n",
             // nonAdd->GetName()->get_str(),
@@ -1095,9 +1098,10 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
       return result;
     }
 
-    for (long k = 0; k < branches_to_process; k++)
-      if (nodeConditions[k]) {
-        delete nodeConditions[k];
+    for (long branch_index = 0; branch_index < branches_to_process;
+         branch_index++)
+      if (nodeConditions[branch_index]) {
+        delete nodeConditions[branch_index];
       }
 
     delete[] nodeConditions;

@@ -475,7 +475,7 @@ void Scfg::ProcessAFormula(_FString *expression, _List &ruleProbabilities,
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
 bool Scfg::CheckANT(long lhs, long rhs1, long rhs2, _AVLListX &tempNT,
-                    long startSymbol) const {
+                    long start_symbol) const {
 
   long avl_index1 = tempNT.Find((BaseRef)lhs),
        avl_index2 = tempNT.Find((BaseRef)rhs1),
@@ -484,7 +484,7 @@ bool Scfg::CheckANT(long lhs, long rhs1, long rhs2, _AVLListX &tempNT,
        old_flag2 = tempNT.GetXtra(avl_index2), new_flag2 = old_flag2,
        old_flag3 = tempNT.GetXtra(avl_index3), new_flag3 = old_flag3;
 
-  if (lhs == startSymbol || (old_flag1 & _HYSCFG_NT_START_)) {
+  if (lhs == start_symbol || (old_flag1 & _HYSCFG_NT_START_)) {
     new_flag1 |= _HYSCFG_NT_START_;
     new_flag2 |= _HYSCFG_NT_START_;
     new_flag3 |= _HYSCFG_NT_START_;
@@ -1274,7 +1274,7 @@ _Matrix *Scfg::Optimize(
 
   const static _String kSCFGOptimizationMethod("SCFG_OPTIMIZATION_METHOD");
 
-  if (hy_env::EnvVariableGetNumber(kSCFGOptimizationMethod, 0.0)) {
+  if (hy_env::EnvVariableTrue(kSCFGOptimizationMethod)) {
     // fall back to default optimization; do not use EM
     return _LikelihoodFunction::Optimize(options);
   }
@@ -1866,7 +1866,8 @@ void Scfg::CykTraceback(long i, long j, long v, long stringIndex,
          k = theYZKs->get(matrixIndex + 2);
 
     if (y == 0 && z == 0 && k == 0) { // node terminates
-      parseTreeString << '(' << v << "terminal " << corpusString->get(i) << ')';
+      parseTreeString << '(' << _String(v) << "terminal "
+                      << _String(corpusString->get(i)) << ')';
       //(*parseTreeString) = (*parseTreeString) & "(" & v & " " &
       // corpusString->sData[i] & ")";
       /*
@@ -1874,7 +1875,7 @@ void Scfg::CykTraceback(long i, long j, long v, long stringIndex,
       (*parseString) << (const char *) buf;
        */
     } else {
-      parseTreeString << "(" << v << " ";
+      parseTreeString << "(" << _String(v) << " ";
       /*
       snprintf (buf, sizeof(buf), "(%d ", v);
       (*parseString) << (const char *) buf;

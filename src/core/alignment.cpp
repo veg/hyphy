@@ -890,10 +890,10 @@ double AlignStrings(
         r_enc = new long[r_len];
         q_enc = new long[q_len];
 
-        for (long i = 0; i < r_len; ++i) {
+        for (long i = 0; i < (long)r_len; ++i) {
           r_enc[i] = char_map[(unsigned char)r_str[i]];
         }
-        for (long i = 0; i < q_len; ++i) {
+        for (long i = 0; i < (long)q_len; ++i) {
           q_enc[i] = char_map[(unsigned char)q_str[i]];
         }
       }
@@ -929,7 +929,8 @@ double AlignStrings(
 
           insertion_matrix[0] = cost;
 
-          for (long i = 1; i < score_cols; ++i, cost -= extend_insertion) {
+          for (unsigned long i = 1; i < score_cols;
+               ++i, cost -= extend_insertion) {
             score_matrix[i] = cost;
             insertion_matrix[i] = cost;
             deletion_matrix[i] = cost;
@@ -942,7 +943,7 @@ double AlignStrings(
 
           /** 20240219 : SLKP optimization note; may be faster to do 3 loops
            * because of memory locality */
-          for (long i = score_cols; i < score_rows * score_cols;
+          for (unsigned long i = score_cols; i < score_rows * score_cols;
                i += score_cols, cost -= extend_deletion) {
             score_matrix[i] = cost;
             insertion_matrix[i] = cost;
@@ -952,11 +953,12 @@ double AlignStrings(
           // no affine gaps
           if (!do_codon) {
             cost = -open_insertion;
-            for (long i = 1; i < score_cols; ++i, cost -= open_insertion)
+            for (unsigned long i = 1; i < score_cols;
+                 ++i, cost -= open_insertion)
               score_matrix[i] = cost;
 
             cost = -open_deletion;
-            for (long i = score_cols; i < score_rows * score_cols;
+            for (unsigned long i = score_cols; i < score_rows * score_cols;
                  i += score_cols, cost -= open_deletion)
               score_matrix[i] = cost;
 
@@ -965,11 +967,13 @@ double AlignStrings(
             cost = -open_insertion;
             /** 20240219 : SLKP optimization note; surely the next two loops
              * don't need to do integer remainer at each iteration */
-            for (long i = 1; i < score_cols; ++i, cost -= open_insertion)
+            for (unsigned long i = 1; i < score_cols;
+                 ++i, cost -= open_insertion)
               score_matrix[i] = cost - (i % 3 != 1 ? miscall_cost : 0);
 
             cost = -open_deletion;
-            for (long i = score_cols, j = 0; i < score_rows * score_cols;
+            for (unsigned long i = score_cols, j = 0;
+                 i < score_rows * score_cols;
                  i += score_cols, cost -= open_insertion, ++j)
               score_matrix[i] = cost - (j % 3 != 0 ? miscall_cost : 0);
           }
@@ -988,26 +992,26 @@ double AlignStrings(
             // XXX: should we be including the frameshift penalty here? I think
             // not fill in the first row of the affine deletion matrix with the
             // deletion cost plus the miscall penalty
-            for (long i = 1; i < score_cols; ++i)
+            for (unsigned long i = 1; i < score_cols; ++i)
               deletion_matrix[i] =
                   -open_deletion - (i % 3 != 1 ? miscall_cost : 0);
 
             // fill in the first column of the affine insertion matrix
             // with the insertion cost plus the miscall penalty
-            for (long i = score_cols, j = 0; i < score_rows * score_cols;
-                 i += score_cols, ++j)
+            for (unsigned long i = score_cols, j = 0;
+                 i < score_rows * score_cols; i += score_cols, ++j)
               insertion_matrix[i] =
                   -open_insertion - (j % 3 != 0 ? miscall_cost : 0);
 
           } else {
             // fill in the first row of the affine deletion matrix
             // with the deletion cost
-            for (long i = 1; i < score_cols; ++i)
+            for (unsigned long i = 1; i < score_cols; ++i)
               deletion_matrix[i] = -open_deletion;
 
             // fill in the first column of the affine insertion matrix
             // with the insertion cost
-            for (long i = score_cols; i < score_rows * score_cols;
+            for (unsigned long i = score_cols; i < score_rows * score_cols;
                  i += score_cols)
               insertion_matrix[i] = -open_insertion;
           }
@@ -1016,8 +1020,8 @@ double AlignStrings(
 
       if (do_codon) {
         /** populate the dynamic programming matrix here */
-        for (long i = 1; i < score_rows; ++i)
-          for (long j = 1; j < score_cols; ++j)
+        for (unsigned long i = 1; i < score_rows; ++i)
+          for (unsigned long j = 1; j < score_cols; ++j)
             CodonAlignStringsStep(score_matrix, r_enc, q_enc, i, j, score_cols,
                                   char_count, miscall_cost, open_insertion,
                                   open_deletion, extend_insertion,
@@ -1027,9 +1031,9 @@ double AlignStrings(
         // not doing codon alignment
       } else {
         /** populate the dynamic programming matrix here */
-        for (long i = 1; i < score_rows; ++i) {
+        for (unsigned long i = 1; i < score_rows; ++i) {
           const long r_char = char_map[(unsigned char)r_str[i - 1]];
-          for (long j = 1; j < score_cols; ++j) {
+          for (unsigned long j = 1; j < score_cols; ++j) {
 
             const long curr = (i)*score_cols + j,
                        prev = (i - 1) * score_cols + j;
@@ -1055,12 +1059,12 @@ double AlignStrings(
             if (do_affine) {
               deletion = MAX_OP(deletion,
                                 deletion_matrix[prev] -
-                                    (i > 1 ? extend_deletion : open_deletion)),
+                                    (i > 1 ? extend_deletion : open_deletion));
               insertion = MAX_OP(
                   insertion, insertion_matrix[curr - 1] -
-                                 (j > 1 ? extend_insertion : open_insertion)),
+                                 (j > 1 ? extend_insertion : open_insertion));
               // store the values back in the gap matrices
-                  deletion_matrix[curr] = deletion;
+              deletion_matrix[curr] = deletion;
               insertion_matrix[curr] = insertion;
             }
 
@@ -1085,8 +1089,8 @@ double AlignStrings(
         // except for the first row/first column
         // and start backtracking from there
         const double *score_row = score_matrix + score_cols;
-        for (long m = 1; m < score_rows; m++) {
-          for (long k = 1; k < score_cols; k++) {
+        for (unsigned long m = 1; m < score_rows; m++) {
+          for (unsigned long k = 1; k < score_cols; k++) {
             if (score_row[k] > score) {
               score = score_row[k];
               index_R = ref_stride * m;
@@ -1104,7 +1108,7 @@ double AlignStrings(
           // grab the best score from the last column of the score matrix,
           // skipping the very last entry ( we already checked it )
 
-          for (long k = score_cols - 1; k < score_rows * score_cols - 1;
+          for (long k = score_cols - 1; k < (long)(score_rows * score_cols) - 1;
                k += score_cols)
             if (score_matrix[k] > score) {
               score = score_matrix[k];
@@ -1118,7 +1122,7 @@ double AlignStrings(
           // grab the best score from the last row of the score matrix,
           // skipping the very last entry ( we already checked it )
           for (long k = (score_rows - 1) * score_cols;
-               k < score_rows * score_cols - 1; ++k)
+               k < (long)(score_rows * score_cols) - 1; ++k)
             if (score_matrix[k] > score) {
               score = score_matrix[k];
               // if we've found a better score here,
@@ -1130,13 +1134,13 @@ double AlignStrings(
 
           // fill in the edit_ops with the difference
           // between r_len and i
-          for (long k = index_R; k < r_len; ++k) {
+          for (unsigned long k = index_R; k < r_len; ++k) {
             edit_ops[edit_ptr++] = -1;
           }
 
           // fill in the edit_ops with the difference
           // between q_len and j
-          for (long k = index_Q; k < q_len; ++k) {
+          for (unsigned long k = index_Q; k < q_len; ++k) {
             edit_ops[edit_ptr++] = 1;
           }
         }
@@ -1347,14 +1351,14 @@ double AlignStrings(
             break;
           case 2:
             r_res[k] = gap;
-            q_res[k] = tolower(q_str[index_Q++]);
+            q_res[k] = (char)tolower(q_str[index_Q++]);
             break;
           case -1:
             r_res[k] = r_str[index_R++];
             q_res[k] = gap;
             break;
           case -2:
-            r_res[k] = tolower(r_str[index_R++]);
+            r_res[k] = (char)tolower(r_str[index_R++]);
             q_res[k] = gap;
             break;
           }
@@ -1728,12 +1732,11 @@ double LinearSpaceAlign(
     double gextend, // the cost of extending a gap in sequence 1 (ignored unless
                     // doAffine == true)
     double gopen2,  // the cost of opening a gap in sequence 2
-    double gextend2,   // the cost of opening a gap in sequence 2   (ignored
-                       // unless doAffine == true)
-    bool doLocal,      // ignore prefix and suffix gaps
-    bool doAffine,     // use affine gap penalties
-    long *ops,         // edit operations for the optimal alignment
-    double scoreCheck, // check the score of the alignment
+    double gextend2, // the cost of opening a gap in sequence 2   (ignored
+                     // unless doAffine == true)
+    bool doLocal,    // ignore prefix and suffix gaps
+    bool doAffine,   // use affine gap penalties
+    long *ops,       // edit operations for the optimal alignment
     long from1, long to1, long from2, long to2,
     double **buffer, // matrix storage,
     char parentGapLink, char *ha) {
@@ -1896,8 +1899,6 @@ double LinearSpaceAlign(
     }
   } else {
 
-    double check1 = buffer[0][maxIndex], check2 = buffer[3][span - maxIndex];
-
     if (span1 > 1) {
       if (maxIndex > 0) {
         char gapCode = gapLink;
@@ -1905,9 +1906,9 @@ double LinearSpaceAlign(
           gapCode += 2;
         }
         LinearSpaceAlign(s1, s2, s1L, s2L, cmap, ccost, costD, gopen, gextend,
-                         gopen2, gextend2, doLocal, doAffine, ops, check1,
-                         from1, midpoint, from2, from2 + maxIndex, buffer,
-                         gapCode, ha);
+                         gopen2, gextend2, doLocal, doAffine, ops, from1,
+                         midpoint, from2, from2 + maxIndex, buffer, gapCode,
+                         ha);
       } else if (from2 == 0)
         for (long k = from1; k < midpoint; k++) {
           ops[k + 1] = -3;
@@ -1919,9 +1920,8 @@ double LinearSpaceAlign(
           gapCode++;
         }
         LinearSpaceAlign(s1, s2, s1L, s2L, cmap, ccost, costD, gopen, gextend,
-                         gopen2, gextend2, doLocal, doAffine, ops, check2,
-                         midpoint, to1, from2 + maxIndex, to2, buffer, gapCode,
-                         ha);
+                         gopen2, gextend2, doLocal, doAffine, ops, midpoint,
+                         to1, from2 + maxIndex, to2, buffer, gapCode, ha);
       }
     }
   }

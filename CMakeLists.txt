@@ -19,6 +19,8 @@ option(NONEON "Disable NEON instruction set" OFF)
 option(NOZLIB "Disable ZLIB compression library" OFF)
 option(NOBLAS "Disable BLAS linear algebra library" OFF)
 option(RUN_CLANG_TIDY "Run clang-tidy on all files" OFF)
+option(CODE_COVERAGE "Enable code coverage" OFF)
+option(USE_ASAN "Enable Address Sanitizer" OFF)
 
 if(RUN_CLANG_TIDY)
   find_program(CLANG_TIDY_EXE NAMES clang-tidy)
@@ -58,7 +60,7 @@ set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_UTILS} ${SRC_CONTRIB})
 include(CheckCXXCompilerFlag)
 include(CheckCXXSourceCompiles)
 
-set(COMMON_COMPILE_FLAGS "-fsigned-char;-O3;-D_FORTIFY_SOURCE=2;-Wall;-g;")
+set(COMMON_COMPILE_FLAGS "-fsigned-char;-O3;-D_FORTIFY_SOURCE=2;-Wall;")
 
 if(NOT NONEON)
     set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
@@ -73,14 +75,14 @@ int main() {
 " HYPHY_HAVE_NEON)
     if(HYPHY_HAVE_NEON)
         add_compile_definitions(_SLKP_USE_ARM_NEON)
-        if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             list(APPEND COMMON_COMPILE_FLAGS "-mcpu=native;-mtune=native")
         endif()
     endif()
     set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(NOT NOAVX)
         set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
         set(CMAKE_REQUIRED_FLAGS "-mavx2")
@@ -131,6 +133,17 @@ int main() {
             list(APPEND COMMON_COMPILE_FLAGS "-mno-sse3")
         endif()
     endif()
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    list(APPEND COMMON_COMPILE_FLAGS
+        -Wextra
+        -Wpedantic
+        -Wshadow
+        -Wformat=2
+        -Wunused
+        -Wmost
+    )
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
@@ -256,12 +269,10 @@ if(MPI_FOUND)
 endif()
 
 add_executable(HYPHYDEBUG EXCLUDE_FROM_ALL ${SRC_COMMON} ${SRC_UNIXMAIN})
-target_compile_options(HYPHYDEBUG PRIVATE
-    ${COMMON_COMPILE_FLAGS}
-    -g
-    -fsanitize=address
-    -O0
-)
+if(USE_ASAN)
+    target_compile_options(HYPHYDEBUG PRIVATE -fsanitize=address -g)
+    target_link_libraries(HYPHYDEBUG PRIVATE -fsanitize=address -g)
+endif()
 target_compile_definitions(HYPHYDEBUG PRIVATE
     __AFYP_REWRITE_BGM__
     __UNIX__
@@ -278,8 +289,14 @@ target_link_libraries(HYPHYDEBUG PRIVATE ${DEFAULT_LIBRARIES})
 if(OPENMP_FOUND)
     target_link_libraries(HYPHYDEBUG PRIVATE OpenMP::OpenMP_CXX)
 endif()
-if(BLAS_FOUND AND NOT NOBLAS)
-    target_link_libraries(HYPHYDEBUG PRIVATE ${BLAS_LIBRARIES})
+if(CODE_COVERAGE)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(HYPHYDEBUG PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+        target_link_libraries(HYPHYDEBUG PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        target_compile_options(HYPHYDEBUG PRIVATE  -fprofile-arcs -ftest-coverage)
+        target_link_libraries(HYPHYDEBUG PRIVATE  -fprofile-arcs -ftest-coverage)
+    endif()
 endif()
 
 #------------------------------------------------------------------------------

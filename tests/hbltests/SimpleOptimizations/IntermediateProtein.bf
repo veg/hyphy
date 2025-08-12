@@ -1508,7 +1508,7 @@ Optimize(res_IntermediateCodon_AA_LF,IntermediateCodon_AA_LF);
 
 
 USE_JSON_FOR_MATRIX = 1;
-//fprintf ("optimization_log.json", CLEAR_FILE,  IntermediateCodon_AA_LF.trace);
+fprintf ("optimization_log.json", CLEAR_FILE,  IntermediateCodon_AA_LF.trace);
 
 fprintf (stdout, res_IntermediateCodon_AA_LF[1][0], "\n");
 

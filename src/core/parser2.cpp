@@ -303,7 +303,7 @@ long ExecuteFormula(_Formula *f, _Formula *f2, long code, long reference,
 
     long stackD = -1L, last0 = 0L;
 
-    for (long opID = 0; opID < f->theFormula.lLength - 1; opID++) {
+    for (long opID = 0; opID < (long)f->theFormula.lLength - 1; opID++) {
       ((_Operation *)f->theFormula(opID))->StackDepth(stackD);
       if (stackD == 0L) {
         last0 = opID;
@@ -346,7 +346,7 @@ long ExecuteFormula(_Formula *f, _Formula *f2, long code, long reference,
 
     HBLObjectRef coordMx = nil;
     if (mma || mmx) {
-      long expectedType = mmx ? MATRIX : STRING;
+      unsigned long expectedType = mmx ? MATRIX : STRING;
       coordMx = f->Compute(last0);
       if (!coordMx || coordMx->ObjectClass() != expectedType) {
         if (mmx) {
@@ -365,7 +365,7 @@ long ExecuteFormula(_Formula *f, _Formula *f2, long code, long reference,
     if (mmx) { // matrix LHS
       _Matrix *mcoord = (_Matrix *)coordMx;
 
-      long hC = mcoord->theData[0], vC = mcoord->theData[1];
+      long hC = (long)mcoord->theData[0], vC = (long)mcoord->theData[1];
 
       if (mmx->CheckCoordinates(hC, vC)) {
         if (!ANALYTIC_COMPUTATION_FLAG) {
@@ -437,7 +437,8 @@ long HandleFormulaParsingError(_String errMsg, _String *saveError, _String &s,
   if (index >= 0) {
     errMsg = errMsg & " in the following context: '" &
              s.Cut(MAX(0, index - CONTEXT_TRUNCATION), index) & "<ERROR HERE>" &
-             s.Cut(index + 1, MIN(index + CONTEXT_TRUNCATION, s.length() - 1)) &
+             s.Cut(index + 1,
+                   MIN(index + CONTEXT_TRUNCATION, (long)s.length() - 1)) &
              "'";
   }
   if (saveError) {
@@ -477,7 +478,7 @@ bool checkLHS(_List *levelOps, _List *levelData, _String &errMsg, char &deref,
   if (levelOps->lLength > 0) { // this is where 'f is non-empty' cases will go
     check = false;
     if (levelOps->lLength == 1) {
-      char buffered_op = ((_Operation *)((*levelOps)(0)))->TheCode();
+      char buffered_op = (char)((_Operation *)((*levelOps)(0)))->TheCode();
       if (buffered_op == HY_OP_CODE_MUL) {
         check = true;
         deref = kStringLocalDeference;
@@ -713,7 +714,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
     hyFloat number;
     int upto;
     if (sscanf(s.get_str(), "%lf%n", &number, &upto) == 1) {
-      if (upto == s.length()) {
+      if (upto == (int)s.length()) {
         f->theFormula.AppendNewInstance(new _Operation(new _Constant(number)));
         return HY_FORMULA_EXPRESSION;
       }
@@ -766,7 +767,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
 
   _parse_new_level(level, operations, operands, levelOps, levelData, curOp,
                    functionCallTags);
-  for (long i = 0; i <= s.length(); i++) {
+  for (long i = 0; i <= (long)s.length(); i++) {
     char lookAtMe = s.get_char(i);
 
     if (isspace(lookAtMe)) { // skip spaces and tabs
@@ -778,7 +779,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
     // printf ("at '%c', the formula looks like this %s\n", lookAtMe, (const
     // char*)_String ((_String*)f->GetList().toStr()));
 
-    if (i == s.length() || lookAtMe == ')' || lookAtMe == ']' ||
+    if (i == (long)s.length() || lookAtMe == ')' || lookAtMe == ']' ||
         lookAtMe == ',') {
       // closing ) or ]
       // or a parameter list
@@ -791,7 +792,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
       }
 
       if (lookAtMe != ',') {
-        if (i != s.length()) {
+        if (i != (long)s.length()) {
           level--;
         } else {
           if (level != 0L) {
@@ -819,8 +820,9 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
                                            parsingContext.errMsg(), s, i);
         }
 
-        for (unsigned long i = 0UL; i < levelData->countitems(); i++) {
-          f->PushTerm(levelData->GetItem(i));
+        for (unsigned long index = 0UL; index < levelData->countitems();
+             index++) {
+          f->PushTerm(levelData->GetItem(index));
         }
 
         for (long k = levelOps->countitems() - 1L; k >= 0; k--) {
@@ -841,7 +843,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
 
       levelData->Clear();
 
-      if (i < s.length() && lookAtMe != ',') {
+      if (i < (long)s.length() && lookAtMe != ',') {
         operations.Delete(level + 1);
         operands.Delete(level + 1);
         functionCallTags.Pop();
@@ -909,9 +911,9 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
         }
 
         if (lookAtMe != ']')
-          if (BinOps.Find(s.get_char(i + 1)) == -1 && i + 1 < s.length() &&
-              s.get_char(i + 1) != ')' && s.get_char(i + 1) != ']' &&
-              s.get_char(i + 1) != '[' &&
+          if (BinOps.Find(s.get_char(i + 1)) == -1 &&
+              i + 1 < (long)s.length() && s.get_char(i + 1) != ')' &&
+              s.get_char(i + 1) != ']' && s.get_char(i + 1) != '[' &&
               HalfOps.Find(s.get_char(i + 1)) == -1 &&
               s.get_char(i + 1) != ',') {
             storage = s.get_char(i);
@@ -1263,7 +1265,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
 
       if (matrixDef.length() == 2UL ||
           (has_values = matrixDef.FindTerminator(1, ":") >= 0L) ||
-          matrixDef.FirstNonSpaceIndex(1, -1) + 1 == matrixDef.length()) {
+          matrixDef.FirstNonSpaceIndex(1, -1) + 1 == (long)matrixDef.length()) {
         _AssociativeList *theList = new _AssociativeList();
         if (has_values) {
           matrixDef.Trim(1, matrixDef.length() - 2);
@@ -1348,10 +1350,10 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
       _StringBuffer *literal = new _StringBuffer(16UL);
       _List *formula_list = nil;
 
-      while (i + j < s.length()) {
+      while (i + j < (long)s.length()) {
         char aChar = s.char_at(i + j);
         if (aChar == '\\') {
-          if (i + j + 1 < s.length()) {
+          if (i + j + 1 < (long)s.length()) {
             char char_at_index = s.char_at(i + j + 1);
             if (char_at_index == '"' || char_at_index == '`' ||
                 char_at_index == '\'') {
@@ -1490,7 +1492,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
       impliedMult = (i && numeric.isAllowed[(unsigned char)s.get_char(i - 1)]);
 
       long j = 1L;
-      while (i + j < s.length()) {
+      while (i + j < (long)s.length()) {
         unsigned char look_ahead = s.get_char(i + j);
         if (alpha.isAllowed[look_ahead] || numeric.isAllowed[look_ahead] ||
             parsingContext.allowTemplate() == look_ahead) {
@@ -1645,7 +1647,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
       }
       long j = 1;
 
-      while (i + j < s.length() &&
+      while (i + j < (long)s.length() &&
              (numeric.isAllowed[(unsigned char)s.get_char(i + j)] ||
               ((s.get_char(i + j) == '-' || s.get_char(i + j) == '+') &&
                tolower(s.get_char(i + j - 1)) == 'e'))) {
@@ -1655,7 +1657,7 @@ long Parse(_Formula *f, _String &s, _FormulaParsingContext &parsingContext,
       curOp = (s.Cut(i, i + j - 1));
       i += j - 1;
       levelData->AppendNewInstance(new _Operation(false, curOp));
-      if (i + 1 < s.length() && s.get_char(i + 1) == '(') {
+      if (i + 1 < (long)s.length() && s.get_char(i + 1) == '(') {
         storage = s.get_char(i);
         s.set_char(i,
                    ((_String *)BuiltInFunctions(HY_OP_CODE_MUL))->get_char(0));
@@ -1809,7 +1811,7 @@ long VerbosityLevel(void) {
     verbosity_level = 10L;
   else
     verbosity_level =
-        hy_env::EnvVariableGetNumber(hy_env::verbosity_level_string, -1.);
+        (long)hy_env::EnvVariableGetNumber(hy_env::verbosity_level_string, -1.);
   return verbosity_level;
 }
 
@@ -2080,7 +2082,7 @@ void ExportDepVariables(_StringBuffer &glVars, _StringBuffer &locVars,
 void ExportCatVariables(_StringBuffer &rec, _SimpleList *catVarList) {
   _SimpleList nonInd;
 
-  for (long idx = 0; idx < catVarList->lLength; idx++)
+  for (unsigned long idx = 0; idx < catVarList->lLength; idx++)
     if (((_CategoryVariable *)LocateVar(catVarList->list_data[idx]))
             ->IsUncorrelated()) {
       ((_CategoryVariable *)LocateVar(catVarList->list_data[idx]))
@@ -2089,7 +2091,7 @@ void ExportCatVariables(_StringBuffer &rec, _SimpleList *catVarList) {
       nonInd << idx;
     }
   {
-    for (long idx = 0; idx < nonInd.lLength; idx++) {
+    for (unsigned long idx = 0; idx < nonInd.lLength; idx++) {
       ((_CategoryVariable *)LocateVar(
            catVarList->list_data[nonInd.list_data[idx]]))
           ->SerializeCategory(rec);
@@ -2101,7 +2103,7 @@ void ExportCatVariables(_StringBuffer &rec, _SimpleList *catVarList) {
 
 void SplitVariablesIntoClasses(_SimpleList &all, _SimpleList &i, _SimpleList &d,
                                _SimpleList &c) {
-  for (long idx = 0; idx < all.lLength; idx++) {
+  for (unsigned long idx = 0; idx < all.lLength; idx++) {
     _Variable *thisVar = LocateVar(all.list_data[idx]);
     if (thisVar->IsCategory()) {
       c << all.list_data[idx];

@@ -136,7 +136,7 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
   checkParameter(maxCatIvals, maxCategoryIntervals, 100UL);
   // set up the number of intervals and the matrices
   _String *param = (_String *)parameters(0);
-  intervals = ProcessNumericArgument(param, theP);
+  intervals = (long)ProcessNumericArgument(param, theP);
   if (intervals <= 0) {
     HandleApplicationError(
         errorMsg &
@@ -146,7 +146,7 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
     return;
   }
 
-  if (intervals > maxCategoryIntervals) {
+  if (intervals > (long)maxCategoryIntervals) {
     intervals = maxCategoryIntervals;
     ReportWarning(errorMsg &
                   _String("Category variable cannot have more than ") &
@@ -204,17 +204,18 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
         _Matrix *weightMatrix = (_Matrix *)tryMatrix;
 
         if (!(((weightMatrix->GetHDim() == 1) &&
-               (weightMatrix->GetVDim() == intervals)) ||
-              ((weightMatrix->GetHDim() == intervals) &&
+               ((long)weightMatrix->GetVDim() == intervals)) ||
+              (((long)weightMatrix->GetHDim() == intervals) &&
                (weightMatrix->GetVDim() == 1)))) {
-          if (weightMatrix->GetVDim() == intervals)
+          if ((long)weightMatrix->GetVDim() == intervals)
           // covariance structure here
           {
             if (weightMatrix->GetHDim() > 1) {
               check = true;
               covariantVar = true;
               if (weightMatrix->IsIndependent())
-                for (long k = 0; check && (k < weightMatrix->GetHDim()); k++) {
+                for (unsigned long k = 0;
+                     check && (k < weightMatrix->GetHDim()); k++) {
                   check = check && checkWeightMatrix(*weightMatrix, k);
                 }
 
@@ -233,7 +234,7 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
           if (weightMatrix->IsIndependent()) {
             check = checkWeightMatrix(*weightMatrix);
           } else {
-            for (long k = 0;
+            for (unsigned long k = 0;
                  k < weightMatrix->GetHDim() * weightMatrix->GetVDim(); k++) {
               _Formula *thisCell = weightMatrix->GetFormula(k, -1);
               if (thisCell) {
@@ -241,15 +242,16 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
                 _AVLList sv(&probVars);
                 thisCell->ScanFForVariables(sv, true);
                 sv.ReorderList();
-                for (long v = 0; v < probVars.lLength; v++) {
-                  long f = variableDependanceAllocations.Find(
+                for (unsigned long v = 0; v < probVars.lLength; v++) {
+                  long prob_var = variableDependanceAllocations.Find(
                       (BaseRef)probVars.list_data[v]);
-                  if (f < 0) {
-                    f = variableDependanceAllocations.Insert(
+                  if (prob_var < 0) {
+                    prob_var = variableDependanceAllocations.Insert(
                         (BaseRef)probVars.list_data[v],
                         (long)(new _SimpleList(intervals, 0, 0)), false);
                   }
-                  ((_SimpleList *)variableDependanceAllocations.GetXtra(f))
+                  ((_SimpleList *)variableDependanceAllocations.GetXtra(
+                       prob_var))
                       ->list_data[k] = 1;
                 }
               }
@@ -264,7 +266,7 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
         if (scannedVarsList.lLength) {
           if (scannedVarsList.lLength == 1) {
             if (scannedVarsList[0] == hy_n_variable->get_index()) {
-              for (unsigned long i = 0UL; i < intervals; i++) {
+              for (long i = 0; i < intervals; i++) {
                 hy_n_variable->SetValue(new _Constant((hyFloat)i), false, true,
                                         NULL);
                 (*weights)[i] = probabilities.Compute()->Value();
@@ -451,7 +453,7 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
       } else {
         covariant = variableNames.GetXtra(f);
         if (((_CategoryVariable *)FetchVar(f))->GetNumberOfIntervals() !=
-            weights->GetHDim()) {
+            (long)weights->GetHDim()) {
           HandleApplicationError(
               errorMsg & *param &
               " is incompatible with the conditional probability matrix for " &
@@ -462,22 +464,22 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
       }
     }
     param = (_String *)parameters(4);
-    _Formula cumulative(*param, theP);
+    _Formula cumulative_probability(*param, theP);
     {
       _SimpleList densityVars, existingVars(scannedVarsList);
 
       _AVLList sv(&densityVars);
-      cumulative.ScanFForVariables(sv, true);
+      cumulative_probability.ScanFForVariables(sv, true);
       sv.ReorderList();
       scannedVarsList.Union(densityVars, existingVars);
     }
     // check to see if it is a matrix spec
-    HBLObjectRef tryMatrix = cumulative.GetTheMatrix();
+    HBLObjectRef tryMatrix = cumulative_probability.GetTheMatrix();
     if (tryMatrix) {
       _Matrix *catMatrix = (_Matrix *)tryMatrix;
       if (!(((catMatrix->GetHDim() == 1) &&
-             (catMatrix->GetVDim() == intervals)) ||
-            ((catMatrix->GetHDim() == intervals) &&
+             ((long)catMatrix->GetVDim() == intervals)) ||
+            (((long)catMatrix->GetHDim() == intervals) &&
              (catMatrix->GetVDim() == 1)))) {
         HandleApplicationError(errorMsg &
                                ("Dimension of category representatives matrix "
@@ -486,8 +488,8 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
       } else {
         values->Duplicate(catMatrix);
         if (!catMatrix->IsIndependent()) { // not a constant matrix
-          for (long k = 0; k < catMatrix->GetHDim() * catMatrix->GetVDim();
-               k++) {
+          for (unsigned long k = 0;
+               k < catMatrix->GetHDim() * catMatrix->GetVDim(); k++) {
             _Formula *thisCell = catMatrix->GetFormula(k, -1);
             if (thisCell) {
               _SimpleList densityVars, existingVars(scannedVarsList);
@@ -495,15 +497,16 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
               _AVLList sv(&densityVars);
               thisCell->ScanFForVariables(sv, true);
               sv.ReorderList();
-              for (long v = 0; v < densityVars.lLength; v++) {
-                long f = variableDependanceAllocations.Find(
+              for (unsigned long v = 0; v < densityVars.lLength; v++) {
+                long local_variable = variableDependanceAllocations.Find(
                     (BaseRef)densityVars.list_data[v]);
-                if (f < 0) {
-                  f = variableDependanceAllocations.Insert(
+                if (local_variable < 0) {
+                  local_variable = variableDependanceAllocations.Insert(
                       (BaseRef)densityVars.list_data[v],
                       (long)(new _SimpleList(intervals, 0, 0)), false);
                 }
-                ((_SimpleList *)variableDependanceAllocations.GetXtra(f))
+                ((_SimpleList *)variableDependanceAllocations.GetXtra(
+                     local_variable))
                     ->list_data[k] = 1;
               }
 
@@ -517,14 +520,15 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
           errorMsg &
           ("Expected an explicit enumeration of category representatives in "
            "place of cumulative distribution: ") &
-          ((_String *)cumulative.toStr(kFormulaStringConversionNormal))
+          ((_String *)cumulative_probability.toStr(
+               kFormulaStringConversionNormal))
               ->Enquote());
       return;
     }
   }
 
   // disallow category -> category dependence
-  for (long i = 0; i < scannedVarsList.lLength; i++) {
+  for (unsigned long i = 0; i < scannedVarsList.lLength; i++) {
     _Variable *curVar = (_Variable *)variablePtrs(scannedVarsList.list_data[i]);
     if (curVar->IsCategory()) {
       HandleApplicationError(errorMsg &
@@ -581,7 +585,7 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
 
             f = weights->GetHDim() * weights->GetVDim();
 
-            if (hmm->GetHDim() == f && hmm->GetVDim() == f) {
+            if (hmm->check_dimension(f, f)) {
               _SimpleList hmmVars, existingVars(parameterList);
 
               _AVLList sv(&hmmVars);
@@ -610,7 +614,7 @@ void _CategoryVariable::Construct(_List &parameters, _VariableContainer *theP) {
     }
   }
 
-  for (long vid = 0; vid < parameterList.lLength; vid++) {
+  for (unsigned long vid = 0; vid < parameterList.lLength; vid++) {
     long vf = variableDependanceAllocations.Find(
         (BaseRef)parameterList.list_data[vid]);
     if (vf >= 0) {
@@ -1036,7 +1040,7 @@ void _CategoryVariable::ScanForGVariables(_AVLList &l) {
 
   long xi = hy_x_variable->get_index();
 
-  for (long i = 0; i < temp.lLength; i++) {
+  for (unsigned long i = 0; i < temp.lLength; i++) {
     if (temp.list_data[i] != xi) {
       _Variable *theV = LocateVar(temp.list_data[i]);
 
@@ -1110,7 +1114,7 @@ bool _CategoryVariable::UpdateIntervalsAndValues(bool force) {
                            currentLeft); // get the next interval point
       }
 
-      if (currentProb) {
+      if (CheckEqual(currentProb, 0) == false) {
         if (representation == MEAN) { // compute the MEAN
           // need to perform integration here of p(x) dx
           if (meanC.IsEmpty()) {
@@ -1158,7 +1162,7 @@ bool _CategoryVariable::UpdateIntervalsAndValues(bool force) {
     // (a,infinity)
 
     hyFloat lastProb = (*ew)[i];
-    if (lastProb) {
+    if (CheckEqual(lastProb, 0.0) == false) {
       if (representation == MEAN) { // compute the MEAN
         // need to perform integration here of p(x) dx
         if (meanC.IsEmpty()) {

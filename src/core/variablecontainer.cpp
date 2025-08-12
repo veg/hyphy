@@ -136,11 +136,11 @@ BaseRef _VariableContainer::toStr(unsigned long) {
   (*res) << "Container Class:" << theName << ":{ Independent Variables:";
 
   if (iVariables)
-    for (long i = 0L; i < iVariables->lLength; i += 2L) {
+    for (unsigned long i = 0; i < iVariables->lLength; i += 2) {
       res->AppendNewInstance(
           (_String *)variablePtrs(iVariables->list_data[i])->toStr());
 
-      if (i < iVariables->lLength - 2) {
+      if (i + 2 < iVariables->lLength) {
         (*res) << ',';
       }
     }
@@ -148,10 +148,10 @@ BaseRef _VariableContainer::toStr(unsigned long) {
   (*res) << "; Dependent Variables:";
 
   if (dVariables)
-    for (long i2 = 0L; i2 < dVariables->lLength; i2 += 2L) {
+    for (unsigned long i2 = 0; i2 < dVariables->lLength; i2 += 2) {
       res->AppendNewInstance(
           (_String *)variablePtrs(dVariables->list_data[i2])->toStr());
-      if (i2 < dVariables->lLength - 2) {
+      if (i2 + 2 < dVariables->lLength) {
         (*res) << ',';
       }
     }
@@ -226,7 +226,7 @@ _Matrix *_VariableContainer::GetModelMatrix(_List *queue, _SimpleList *tags,
       // ((_Formula*)GetExplicitFormModel()),
       // ((_Formula*)modelMatrixIndices.list_data[theModel]));
       if (currentQueueLength) {
-        for (unsigned long k = 0; k < currentQueueLength; k++)
+        for (long k = 0; k < currentQueueLength; k++)
           (*tags) << currentQueueLength;
         return nil;
       }
@@ -306,7 +306,7 @@ void _VariableContainer::ScanModelBasedVariables(_String const &fullName,
       mVars.Duplicate(varCache->GetXtra(cachedID));
     }
 
-    for (long i = 0L; i < mVars.lLength; i++) {
+    for (unsigned long i = 0; i < mVars.lLength; i++) {
       _Variable *aVar = (_Variable *)variablePtrs(mVars.list_data[i]);
       if (aVar->IsGlobal()) {
         PushGlobalVariable(aVar->get_index());
@@ -434,7 +434,7 @@ _VariableContainer::~_VariableContainer(void) {
 
 //__________________________________________________________________________________
 
-bool _VariableContainer::HasChanged(bool ignore_cats, _AVLListX *cache) {
+bool _VariableContainer::HasChanged(bool, _AVLListX *cache) {
 
   auto handle_cache = [&](long idx) -> bool {
     if (cache) {
@@ -466,7 +466,7 @@ bool _VariableContainer::HasChanged(bool ignore_cats, _AVLListX *cache) {
 //__________________________________________________________________________________
 
 _Variable *_VariableContainer::GetIthIndependent(long index) const {
-  if (iVariables && (index = index << 1) < iVariables->countitems()) {
+  if (iVariables && (index = index << 1) < (long)iVariables->countitems()) {
     return LocateVar(iVariables->get(index));
   } else {
     return nil;
@@ -476,7 +476,7 @@ _Variable *_VariableContainer::GetIthIndependent(long index) const {
 //__________________________________________________________________________________
 
 _Variable *_VariableContainer::GetIthDependent(long index) const {
-  if (dVariables && (index = index << 1) < dVariables->countitems()) {
+  if (dVariables && (index = index << 1) < (long)dVariables->countitems()) {
     return LocateVar(dVariables->get(index));
   } else {
     return nil;
@@ -487,18 +487,18 @@ _Variable *_VariableContainer::GetIthDependent(long index) const {
 
 _Variable *_VariableContainer::GetIthParameter(long index) const {
   if (iVariables) {
-    if ((index = index << 1) < iVariables->countitems()) {
+    if ((index = index << 1) < (long)iVariables->countitems()) {
       return LocateVar(iVariables->get(index));
     } else {
       if (dVariables) {
         index -= iVariables->countitems();
-        if (index < dVariables->countitems()) {
+        if (index < (long)dVariables->countitems()) {
           return LocateVar(dVariables->get(index));
         }
       }
     }
   } else {
-    if (dVariables && (index = index << 1) < dVariables->countitems()) {
+    if (dVariables && (index = index << 1) < (long)dVariables->countitems()) {
       return LocateVar(dVariables->get(index));
     }
   }
@@ -573,7 +573,7 @@ void _VariableContainer::SortVars(void) {
       while (!done) {
         done = true;
         s1 = LocateVar(array->list_data[0])->GetName();
-        for (long index = 2L; index < array->countitems(); index += 2L) {
+        for (unsigned long index = 2; index < array->countitems(); index += 2) {
           s2 = LocateVar(array->list_data[index])->GetName();
           if (s2->Compare(*s1) == kCompareLess) {
             done = false;
@@ -745,21 +745,21 @@ void _VariableContainer::CopyMatrixParameters(_VariableContainer *source,
       _SimpleList model_vars_in_source, model_vars_in_target;
 
       ForEachLocalVariable(source->iVariables,
-                           [&](long var_idx, long ref_idx, long array_index) {
+                           [&](long, long ref_idx, long array_index) {
                              if (ref_idx >= 0L) {
                                source_vars << LocateVar(ref_idx)->GetName();
                                model_vars_in_source << array_index;
                              }
                            });
       ForEachLocalVariable(source->dVariables,
-                           [&](long var_idx, long ref_idx, long array_index) {
+                           [&](long, long ref_idx, long array_index) {
                              if (ref_idx >= 0L) {
                                source_vars << LocateVar(ref_idx)->GetName();
                                model_vars_in_source << (-2L - array_index);
                              }
                            });
       ForEachLocalVariable(iVariables,
-                           [&](long var_idx, long ref_idx, long array_index) {
+                           [&](long, long ref_idx, long array_index) {
                              if (ref_idx >= 0L) {
                                target_vars << LocateVar(ref_idx)->GetName();
                                model_vars_in_target << array_index;
@@ -816,7 +816,7 @@ long _VariableContainer::InsertVariableInSortedList(_SimpleList *&list,
   if (!list) {
     list = new _SimpleList;
   } else {
-    unsigned long array_l = list->countitems();
+    long array_l = list->countitems();
     while (insert_here < array_l) {
       _Variable *existing_var = LocateVar(list->get(insert_here));
       if (!existing_var) {
@@ -940,8 +940,7 @@ _String *_VariableContainer::GetSaveableListOfUserParameters(void) {
   _StringBuffer *result = new _StringBuffer(64L);
 
   ForEachLocalVariable(
-      dVariables,
-      [&](long var_index, long ref_index, unsigned long array_index) -> void {
+      dVariables, [&](long var_index, long ref_index, unsigned long) -> void {
         if (ref_index < 0) {
           _Variable *userParm = (_Variable *)LocateVar(var_index);
           result->AppendAnAssignmentToBuffer(
@@ -992,13 +991,13 @@ void _VariableContainer::CopyModelParameterValue(long var_idx, long ref_idx,
 
 void _VariableContainer::CompileListOfDependents(_SimpleList &rec) {
 
-  auto push_var = [&](long var_idx, long ref_idx, unsigned long index) -> void {
+  auto push_var = [&](long var_idx, long, unsigned long) -> void {
     LocateVar(var_idx)->CompileListOfDependents(rec);
   };
 
   ForEachLocalVariable(iVariables, push_var);
   if (gVariables) {
-    gVariables->Each([&](long var_idx, unsigned long index) -> void {
+    gVariables->Each([&](long var_idx, unsigned long) -> void {
       LocateVar(var_idx)->CompileListOfDependents(rec);
     });
   }
@@ -1017,12 +1016,12 @@ void _VariableContainer::CompileListOfDependents(_SimpleList &rec) {
 
 void _VariableContainer::MarkDone(void) {
 
-  ForEachLocalVariable(
-      iVariables, [](long var_idx, long ref_idx, unsigned long index) -> void {
-        LocateVar(var_idx)->MarkDone();
-      });
+  ForEachLocalVariable(iVariables,
+                       [](long var_idx, long, unsigned long) -> void {
+                         LocateVar(var_idx)->MarkDone();
+                       });
   if (gVariables) {
-    gVariables->Each([&](long var_idx, unsigned long index) -> void {
+    gVariables->Each([&](long var_idx, unsigned long) -> void {
       LocateVar(var_idx)->MarkDone();
     });
   }
@@ -1036,7 +1035,7 @@ void _VariableContainer::MatchParametersToList(_List &suffixes, bool doAll,
 
   if (doAll) {
     for (long i = suffixes.lLength - 1; i >= 0; i--) {
-      long j;
+      unsigned long j;
       if (!indOnly) {
         if (dVariables) {
           for (j = 0; j < dVariables->lLength; j += 2)
@@ -1068,7 +1067,7 @@ void _VariableContainer::MatchParametersToList(_List &suffixes, bool doAll,
     }
   } else {
     for (long i = suffixes.lLength - 1; i >= 0; i--) {
-      long j;
+      unsigned long j;
       if (dVariables) {
         for (j = 0; j < dVariables->lLength; j += 2) {
           if (dVariables->list_data[j + 1] < 0) {
@@ -1098,7 +1097,7 @@ bool _VariableContainer::IsConstant(void) {
 
   return !(
       AnyLocalVariable(dVariables,
-                       [](long var_idx, long ref_idx, unsigned long) -> bool {
+                       [](long var_idx, long, unsigned long) -> bool {
                          return !LocateVar(var_idx)->IsConstant();
                        }) ||
       (gVariables && gVariables->Any([](long var_idx, unsigned long) -> bool {
@@ -1114,7 +1113,7 @@ void _VariableContainer::ScanContainerForVariables(
 
   // printf ("_VariableContainer::ScanContainerForVariable %x\n", this);
   ForEachLocalVariable(
-      iVariables, [&](long var_idx, long ref_idx, unsigned long) -> void {
+      iVariables, [&](long var_idx, long, unsigned long) -> void {
         long insert_location = l.Insert((BaseRef)var_idx);
         if (tagger) {
           tagger->UpdateValue((BaseRef)var_idx, weight, 0);
@@ -1136,7 +1135,7 @@ void _VariableContainer::ScanContainerForVariables(
     _AVLList ta(&temp);
 
     ForEachLocalVariable(
-        dVariables, [&](long var_idx, long ref_idx, unsigned long) -> void {
+        dVariables, [&](long var_idx, long, unsigned long) -> void {
           l2.Insert((BaseRef)var_idx);
           LocateVar(var_idx)->ScanForVariables(ta, true, tagger, weight);
         });
@@ -1166,7 +1165,7 @@ void _VariableContainer::ScanContainerForVariables(
 
 void _VariableContainer::ScanForDVariables(_AVLList &l, _AVLList &) const {
   ForEachLocalVariable(dVariables,
-                       [&](long var_idx, long ref_idx, unsigned long) -> void {
+                       [&](long var_idx, long, unsigned long) -> void {
                          l.Insert((BaseRef)var_idx);
                        });
 }
@@ -1175,7 +1174,7 @@ void _VariableContainer::ScanForDVariables(_AVLList &l, _AVLList &) const {
 
 void _VariableContainer::GetListOfModelParameters(_List &rec) {
   ForEachLocalVariable(iVariables,
-                       [&](long var_idx, long ref_idx, unsigned long) -> void {
+                       [&](long, long ref_idx, unsigned long) -> void {
                          if (ref_idx >= 0) {
                            rec << LocateVar(ref_idx)->GetName();
                          }
@@ -1211,10 +1210,10 @@ void _VariableContainer::ScanForGVariables(_AVLList &independent,
   if (dVariables) {
     _SimpleList var_list;
     _AVLList al(&var_list);
-    ForEachLocalVariable(
-        dVariables, [&](long var_idx, long ref_idx, unsigned long) -> void {
-          LocateVar(var_idx)->ScanForVariables(al, true);
-        });
+    ForEachLocalVariable(dVariables,
+                         [&](long var_idx, long, unsigned long) -> void {
+                           LocateVar(var_idx)->ScanForVariables(al, true);
+                         });
     // al.ReorderList();
     var_list.Each([&](long var_idx, unsigned long) -> void {
       _Variable *v = LocateVar(var_idx);

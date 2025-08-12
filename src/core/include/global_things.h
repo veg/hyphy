@@ -77,7 +77,7 @@ namespace hy_global {
  @return a pointer to the new memory block
 
  */
-hyPointer MemAllocate(long bytes, bool zero = false, size_t alignment = 0);
+hyPointer MemAllocate(size_t bytes, bool zero = false, size_t alignment = 0);
 
 /**
  Resize an existing pointer to 'new_bytes' bytes.
@@ -91,7 +91,7 @@ hyPointer MemAllocate(long bytes, bool zero = false, size_t alignment = 0);
  @return a pointer to the resized; could be different from old_pointer
 
  */
-hyPointer MemReallocate(hyPointer old_pointer, long new_bytes);
+hyPointer MemReallocate(hyPointer old_pointer, size_t new_bytes);
 
 /**
  Set up application environment

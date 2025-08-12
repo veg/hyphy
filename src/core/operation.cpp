@@ -301,7 +301,7 @@ bool _Operation::IsConstant(bool strict) {
 bool _Operation::EqualOp(_Operation *otherOp) {
   if (theNumber) {
     if (otherOp->theNumber) {
-      long oc = theNumber->ObjectClass();
+      unsigned long oc = theNumber->ObjectClass();
 
       if ((oc == NUMBER) && (oc == otherOp->theNumber->ObjectClass())) {
         return CheckEqual(theNumber->Value(), otherOp->theNumber->Value());
@@ -361,9 +361,8 @@ long _Operation::StackDepth(void) const {
 }
 
 //__________________________________________________________________________________
-bool _Operation::PushValue(_Stack &theScrap,
-                           _VariableContainer const *nameSpace,
-                           _String *errMsg) {
+bool _Operation::PushValue(_Stack &theScrap, _VariableContainer const *,
+                           _String *) {
   if (theData >= 0L) {         // variable reference
     if (numberOfTerms <= 0L) { // compute and push value
       _Variable *src =
@@ -605,7 +604,7 @@ bool _Operation::Execute(_Stack &theScrap, _VariableContainer const *nameSpace,
     return true;
   }
 
-  if (theScrap.theStack.lLength < numberOfTerms) {
+  if ((long)theScrap.theStack.lLength < numberOfTerms) {
     return ReportOperationExecutionError(
         _String((_String *)toStr()) & " needs " & _String(numberOfTerms) &
             " arguments; " & _String(theScrap.StackDepth()) & " were supplied",

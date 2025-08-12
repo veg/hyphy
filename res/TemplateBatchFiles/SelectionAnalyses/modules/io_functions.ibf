@@ -541,10 +541,11 @@ lfunction selection.io.handle_subset_of_sites () {
 
 //------------------------------------------------------------------------------------------------------------------------
 
-lfunction selection.io.sitelist_matches_pattern (site_list, pattern, opt_in) {
+lfunction selection.io.sitelist_matches_pattern (site_list, pattern, opt_in, offset) {
     if (Type (pattern) != "String") {if (opt_in) return 0; return site_list[0];}
     for (i,s;in;site_list) {
-        if (None != regexp.Find ("" + (1+(+s)), pattern)) {
+        idx = "" + (1+(+s) + offset);
+        if (None != regexp.Find (pattern, "$" + idx + "|\\,"+ idx )) {
             return (1+(+s));
         }
     }

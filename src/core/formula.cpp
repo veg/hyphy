@@ -99,7 +99,7 @@ _Formula::_Formula(const _Polynomial *source) {
     poly_vars << source->GetIthVariable(i);
   }
 
-  for (long i = 0L; i < poly_terms->NumberOfTerms(); i++) {
+  for (unsigned long i = 0L; i < poly_terms->NumberOfTerms(); i++) {
     hyFloat c = poly_terms->GetCoeff(i);
     /*theFormula.AppendNewInstance (new _Operation (new _Constant
      * (poly_terms->GetCoeff(i))));*/
@@ -163,7 +163,7 @@ void _Formula::Duplicate(_Formula const *f_cast, bool deep_copy) {
 
   if (deep_copy) {
     theFormula.Clear();
-    for (long i = 0; i < f_cast->theFormula.lLength; i++) {
+    for (unsigned long i = 0; i < f_cast->theFormula.lLength; i++) {
       theFormula.AppendNewInstance(f_cast->GetIthTerm(i)->makeDynamic());
     }
     theStack.Reset();
@@ -288,10 +288,10 @@ _StringBuffer const _Formula::toRPN(_hyFormulaStringConversionMode mode,
                                     _List *matched_names) {
   _StringBuffer r;
   if (theFormula.countitems()) {
-    SubtreeToString(r, nil, 0, nil, GetIthTerm(0UL), mode);
+    SubtreeToString(r, nil, 0, matched_names, GetIthTerm(0UL), mode);
     for (unsigned long k = 1UL; k < theFormula.countitems(); k++) {
       r << '|';
-      SubtreeToString(r, nil, 0, nil, GetIthTerm(k), mode);
+      SubtreeToString(r, nil, 0, matched_names, GetIthTerm(k), mode);
     }
   }
   return r;
@@ -977,10 +977,10 @@ bool _Formula::InternalSimplify(node<long> *top_node) {
 
   // printf ("InternalSimplify %x\n", startNode);
 
-  for (unsigned int k = 1UL; k <= n_children; k++) {
-    if (k == 1UL) {
+  for (int k = 1; k <= n_children; k++) {
+    if (k == 1) {
       left_constant = InternalSimplify(top_node->go_down(k));
-    } else if (k == 2UL) {
+    } else if (k == 2) {
       right_constant = InternalSimplify(top_node->go_down(k));
     } else {
       if (!InternalSimplify(top_node->go_down(k))) {
@@ -996,7 +996,7 @@ bool _Formula::InternalSimplify(node<long> *top_node) {
     if (all_constant) { // this executes the subxpression starting at the
                         // current node
       _Stack scrap;
-      for (unsigned int k = 1UL; k <= n_children; k++) {
+      for (int k = 1; k <= n_children; k++) {
         ((_Operation *)theFormula(top_node->go_down(k)->get_data()))
             ->Execute(scrap);
       }
@@ -1096,7 +1096,7 @@ bool _Formula::InternalSimplify(node<long> *top_node) {
 
         top_node->kill_all_nodes();
 
-        for (unsigned int k = 1; k <= pruned_tree->get_num_nodes(); k++) {
+        for (int k = 1; k <= pruned_tree->get_num_nodes(); k++) {
           top_node->add_node(*pruned_tree->go_down(k));
         }
         top_node->in_object = pruned_tree->in_object;
@@ -1126,7 +1126,7 @@ bool _Formula::InternalSimplify(node<long> *top_node) {
         delete (top_node->go_down(1));
         top_node->in_object = remaining_trunk->in_object;
         top_node->kill_all_nodes();
-        for (unsigned int k = 1; k <= remaining_trunk->get_num_nodes(); k++) {
+        for (int k = 1; k <= remaining_trunk->get_num_nodes(); k++) {
           top_node->add_node(*remaining_trunk->go_down(k));
         }
         delete remaining_trunk;
@@ -1232,7 +1232,7 @@ void _Formula::SubtreeToString(_StringBuffer &result, node<long> *top_node,
       // return in parentheses
 
       if (!top_node || top_node->get_num_nodes() == 2) {
-        unsigned char op_precedence = opPrecedence(f),
+        unsigned char op_precedence = (unsigned char)opPrecedence(f),
                       op_precedence_right = op_precedence;
 
         if (associativeOps.Find(f) == kNotFound) {
@@ -1804,8 +1804,8 @@ hyFloat _Formula::Integral(_Variable *dx, hyFloat left, hyFloat right,
 
   hyFloat precision_factor =
       hy_env::EnvVariableGetNumber(hy_env::integration_precision_factor);
-  long max_iterations =
-      hy_env::EnvVariableGetNumber(hy_env::integration_maximum_iterations);
+  long max_iterations = (long)hy_env::EnvVariableGetNumber(
+      hy_env::integration_maximum_iterations);
 
   hyFloat ss = 0., dss, *s = new hyFloat[max_iterations],
           *h = new hyFloat[max_iterations + 1L];
@@ -1832,7 +1832,7 @@ hyFloat _Formula::Integral(_Variable *dx, hyFloat left, hyFloat right,
       vvals = new _SimpleFormulaDatum[fvidx.countitems()];
       // fvidx.ReorderList();
       long dx_index = dx->get_index();
-      for (long vi = 0; vi < fvidx_aux.countitems(); vi++) {
+      for (unsigned long vi = 0; vi < fvidx_aux.countitems(); vi++) {
         _Variable *variable_in_expression = LocateVar(fvidx_aux.Element(vi));
         if (variable_in_expression->CheckFForDependence(dx_index, true)) {
           changing_vars << fvidx_aux.Element(vi);
@@ -3031,7 +3031,7 @@ void _Formula::ScanFForVariables(_AVLList &l, bool includeGlobals,
 }
 
 //__________________________________________________________________________________
-void _Formula::ScanFForType(_SimpleList &l, int type) {
+void _Formula::ScanFForType(_SimpleList &l, unsigned long type) {
   unsigned long const upper_bound = NumberOperations();
 
   for (unsigned long i = 0UL; i < upper_bound; i++) {
@@ -3149,7 +3149,7 @@ bool _Formula::DependsOnVariable(long idx) {
 
 //__________________________________________________________________________________
 _Operation *_Formula::GetIthTerm(long idx) const {
-  if (idx >= 0 && idx < theFormula.lLength) {
+  if (theFormula.index_in_range(idx)) {
     return (_Operation *)theFormula.GetItem(idx);
   }
 
@@ -3285,7 +3285,7 @@ void _Formula::ConvertToTree(bool err_msg) {
             nTerms = GetBFFunctionArgumentCount(currentOp->opCode);
           }
 
-          if (nTerms > nodeStack.lLength) {
+          if (nTerms > (long)nodeStack.lLength) {
             throw(_String("Insufficient number of arguments for a call to ") &
                   _String((_String *)currentOp->toStr()) &
                   " while converting " &
@@ -3338,8 +3338,8 @@ void _Formula::ConvertFromTree(void) {
 
     if (termOrder.lLength != theFormula.lLength) { // something has changed
       _List newFormula;
-      for (long i = 0; i < termOrder.lLength; i++) {
-        newFormula << theFormula(termOrder(i));
+      for (unsigned long i = 0; i < termOrder.lLength; i++) {
+        newFormula << theFormula(termOrder.get(i));
       }
       theFormula.Clear();
       theFormula.Duplicate(&newFormula);

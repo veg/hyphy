@@ -47,9 +47,10 @@
 using namespace hy_global;
 
 hyFloat dropPrecision = log(1e-9), drop2Precision = log(1e-18),
-        topPolyCap = 5.0, dropTerms = 1.0, enforcePolyCap = 1.0,
-        *varCheckArray = nil, dropThreshold = 0.0,
+        topPolyCap = 5.0, *varCheckArray = nil, dropThreshold = 0.0,
         polynomialExpPrecision = 1e-10;
+
+bool dropTerms = true, enforcePolyCap = true;
 
 long varCheckAllocated = 0, polyTermCap = 0x1fffffff;
 
@@ -57,6 +58,15 @@ bool checkReset = true;
 
 const unsigned long maximumPolyTermsPerVariable = 500UL,
                     maxPolynomialExpIterates = 20UL;
+
+//__________________________________________________________________________________
+
+HBLObjectRef _returnPolyOrUseCache(HBLObjectRef cache) {
+  if (cache && cache->ObjectClass() == HY_UNDEFINED) {
+    return cache;
+  }
+  return new _MathObject;
+}
 //__________________________________________________________________________________
 /**
  * @brief Construct a new _PolynomialData object.
@@ -243,7 +253,12 @@ void _PolynomialData::ShrinkExtraSpace(void) {
 void _PolynomialData::AddTerm(long *theTerm, hyFloat theC) {
   EnsureSpaceIsAvailable();
   theCoeff[actTerms] = theC;
-  memcpy(thePowers + actTerms * numberVars, theTerm, sizeof(long) * numberVars);
+  if (theTerm) {
+    memcpy(thePowers + actTerms * numberVars, theTerm,
+           sizeof(long) * numberVars);
+  } else {
+    memset(thePowers + actTerms * numberVars, 0, sizeof(long) * numberVars);
+  }
   actTerms++;
 }
 
@@ -283,7 +298,7 @@ void _PolynomialData::AddTerm(long *theTerm, hyFloat theC, long *reindexer,
 
 //__________________________________________________________________________________
 /**
- * @brief Add a term to the polynomial.
+ * @brief Add a constant  term to the polynomial.
  * @param theC The coefficient of the term.
  */
 void _PolynomialData::AddTerm(hyFloat theC) {
@@ -659,6 +674,7 @@ bool _PolynomialData::KeepTerm(hyFloat myCoeff, long myIndex) const {
   if (myCoeff == 0.0) { // delete in any case
     return false;
   }
+
   if (checkReset) {
     checkReset = false;
     dropThreshold = dropPrecision + log(fabs(myCoeff));
@@ -779,7 +795,7 @@ void _Polynomial::Duplicate(BaseRefConst tp) {
   variableIndex.Duplicate(&p->variableIndex);
   compList1.Duplicate(&p->compList1);
   compList2.Duplicate(&p->compList2);
-  DeleteObject(theTerms);
+  DeleteAndZeroObject(theTerms);
   if (p->theTerms) {
     theTerms = new _PolynomialData(*(p->theTerms));
   }
@@ -792,6 +808,10 @@ HBLObjectRef _Polynomial::ExecuteSingleOp(long opCode, _List *arguments,
   switch (opCode) {     // first check operations without arguments
   case HY_OP_CODE_TYPE: // Type
     return Type(cache);
+  case HY_OP_CODE_EVAL: // Eval
+    return _returnConstantOrUseCache(ComputePolynomial(), cache);
+  case HY_OP_CODE_POLYNOMIAL: // Polynomial
+    return new _Polynomial(*this);
   }
 
   _MathObject *arg0 = _extract_argument(arguments, 0UL, false);
@@ -818,12 +838,18 @@ HBLObjectRef _Polynomial::ExecuteSingleOp(long opCode, _List *arguments,
       return Mult(arg0, cache);
     case HY_OP_CODE_POWER: // ^
       return Raise(arg0, cache);
+    case HY_OP_CODE_EQ: // ==
+      return _returnConstantOrUseCache(Equal(arg0), cache);
+    case HY_OP_CODE_NEQ: // !=
+      return _returnConstantOrUseCache(!Equal(arg0), cache);
     }
   }
 
   switch (opCode) {
   case HY_OP_CODE_MUL:
   case HY_OP_CODE_POWER:
+  case HY_OP_CODE_EQ:
+  case HY_OP_CODE_NEQ:
     WarnWrongNumberOfArguments(this, opCode, context, arguments);
     break;
   default:
@@ -843,10 +869,10 @@ _MathObject *_Polynomial::IsANumber(bool returnLeading) {
       return new _Constant(0.0);
     }
   }
-  if (theTerms->NumberOfTerms() <= 1) {
-    if (theTerms->NumberOfTerms() == 0) {
-      return new _Constant(0.0);
-    }
+  if (theTerms->NumberOfTerms() == 0) {
+    return new _Constant(0.0);
+  }
+  if (theTerms->NumberOfTerms() == 1) {
     if (theTerms->IsFirstANumber() || returnLeading) {
       return new _Constant(theTerms->theCoeff[0]);
     }
@@ -863,7 +889,7 @@ _MathObject *_Polynomial::Add(_MathObject *m, HBLObjectRef cache) {
 void ResetPolynomialCheck(_Polynomial *p) {
   if (dropTerms) {
     if (!enforcePolyCap) {
-      if (varCheckAllocated != p->variableIndex.countitems()) {
+      if (varCheckAllocated != (long)p->variableIndex.countitems()) {
         if (varCheckArray) {
           free(varCheckArray);
         }
@@ -909,25 +935,37 @@ bool _Polynomial::Equal(_MathObject *m) {
   }
   return result;
 }
+//__________________________________________________________________________________
+void _Polynomial::DropZeroCoefficient(void) {
+  if (theTerms->GetCoeff(0) == 0.0) {
+    theTerms->DeleteTerm(0);
+  }
+}
 
 //__________________________________________________________________________________
-_MathObject *_Polynomial::Plus(_MathObject *m, bool subtract,
-                               HBLObjectRef cache) {
+_Polynomial *_Polynomial::NegateCoefficients(void) {
+  hyFloat *invC = theTerms->theCoeff;
+  for (long inv = 0; inv < theTerms->actTerms; inv++) {
+    invC[inv] = -invC[inv];
+  }
+  return this;
+}
+
+//__________________________________________________________________________________
+_MathObject *_Polynomial::Plus(_MathObject *m, bool subtract, HBLObjectRef) {
   long objectT = m->ObjectClass();
 
-  if (objectT == 1) { // a number
+  if (objectT == NUMBER) { // a number
     Convert2OperationForm();
     _Polynomial *result = new _Polynomial(*this);
     hyFloat mV = subtract ? -m->Value() : m->Value();
 
-    if (!variableIndex.lLength) { // constant poly
+    if (variableIndex.empty()) { // constant poly
       if (theTerms->NumberOfTerms()) {
         result->theTerms->GetCoeff(0) += mV;
-        if (result->theTerms->GetCoeff(0) == 0.0) {
-          result->theTerms->DeleteTerm(0);
-        }
+        result->DropZeroCoefficient();
       } else {
-        if (mV) {
+        if (mV != 0.0) {
           result->theTerms->AddTerm(nil, mV);
         }
       }
@@ -935,9 +973,7 @@ _MathObject *_Polynomial::Plus(_MathObject *m, bool subtract,
       if (theTerms->NumberOfTerms()) {
         if (theTerms->IsFirstANumber()) {
           result->theTerms->GetCoeff(0) += mV;
-          if (result->theTerms->GetCoeff(0) == 0.0) {
-            result->theTerms->DeleteTerm(0);
-          }
+          result->DropZeroCoefficient();
         } else {
           result->theTerms->AddTerm(mV);
         }
@@ -949,600 +985,94 @@ _MathObject *_Polynomial::Plus(_MathObject *m, bool subtract,
   }
 
   if (objectT == POLYNOMIAL) { // another polynomial
+
     Convert2OperationForm();
     _Polynomial *p2 = (_Polynomial *)m;
-
-    if (variableIndex.lLength == 0) {
-      if (theTerms->NumberOfTerms()) {
+    p2->Convert2OperationForm();
+    if (variableIndex.empty()) {       // this polynomial has no variables
+      if (theTerms->NumberOfTerms()) { // this polynomial is just a number
         _Constant coef1(theTerms->GetCoeff(0));
         if (!subtract) {
           return p2->Plus(&coef1, false, nil);
         } else {
-          _Polynomial *ppp = (_Polynomial *)p2->Plus(&coef1, true, nil);
-          hyFloat *invC = ppp->theTerms->theCoeff;
-          for (long inv = 0; inv < ppp->theTerms->actTerms; inv++, invC++) {
-            (*invC) *= -1.0;
-          }
-          return ppp;
+          return ((_Polynomial *)p2->Plus(&coef1, true, nil))
+              ->NegateCoefficients();
         }
       } else {
-        if (!subtract) {
+        if (!subtract) { // this polynomial is 0
           return new _Polynomial(*p2);
         } else {
-          _Polynomial *ppp = new _Polynomial(*p2);
-          hyFloat *invC = ppp->theTerms->theCoeff;
-          for (long inv = 0; inv < ppp->theTerms->actTerms; inv++, invC++) {
-            (*invC) *= (-1.0);
-          }
-
-          return ppp;
-        }
-      }
-    }
-    if (p2->variableIndex.lLength == 0) {
-      if (p2->theTerms->NumberOfTerms()) {
-        _Constant coef2(p2->theTerms->GetCoeff(0));
-        return Plus(&coef2, subtract, nil);
-      } else {
-        if (!subtract) {
-          return new _Polynomial(*this);
-        } else {
-          _Polynomial *ppp = new _Polynomial(*this);
-          hyFloat *invC = ppp->theTerms->theCoeff;
-          for (long inv = 0; inv < ppp->theTerms->actTerms; inv++, invC++) {
-            (*invC) *= (-1.0);
-          }
-
-          return ppp;
+          return (new _Polynomial(*p2))->NegateCoefficients();
         }
       }
     }
 
     p2->Convert2OperationForm();
 
+    if (p2->variableIndex.empty()) {       // the second term is a constant
+      if (p2->theTerms->NumberOfTerms()) { // the second term is NOT empty
+        _Constant coef2(p2->theTerms->GetCoeff(0));
+        return Plus(&coef2, subtract, nil);
+      } else {
+        return new _Polynomial(*this);
+      }
+    }
+
     long nt2 = p2->theTerms->NumberOfTerms(), nt1 = theTerms->NumberOfTerms(),
          pos1 = 0, pos2 = 0, *term1, *term2;
-
-    char c = 0, advancing = -1;
 
     hyFloat *coeff1 = theTerms->GetCoeff(), *coeff2 = p2->theTerms->GetCoeff();
 
     _Polynomial *res;
 
-    if (variableIndex.Equal(p2->variableIndex))
-    // same variable arrays - proceed to the operation directly
-    {
-      res = new _Polynomial(variableIndex); // create a blank new result holder
-      ResetPolynomialCheck(res);
-      while (1) {             // stuff left to do
-        if (advancing == 0) { // advancing in the 1st polynomial
-          pos1++;
-          if (pos1 >= nt1) {
-            advancing = 2;
-            continue;
-          }
-          coeff1++;
-          term1 = theTerms->GetTerm(pos1);
-          c = res->theTerms->CompareTerms(term1, term2);
-          if (c <= 0) {
-            res->theTerms->AddTerm(term1, *coeff1);
-            if (c < 0) {
-              continue;
-            }
-          }
-          if (c > 0) {
-            advancing = 1;
-            res->theTerms->AddTerm(term2, subtract ? -*coeff2 : *coeff2);
-            continue;
-          }
-        } else if (advancing == 1) { // advancing in the 2nd polynomial
-          pos2++;
-          if (pos2 >= nt2) {
-            advancing = 3;
-            continue;
-          }
-          coeff2++;
-          term2 = p2->theTerms->GetTerm(pos2);
-          c = res->theTerms->CompareTerms(term2, term1);
-          if (c <= 0) {
-            res->theTerms->AddTerm(term2, subtract ? -*coeff2 : *coeff2);
-            if (c < 0) {
-              continue;
-            }
-          }
-          if (c > 0) {
-            advancing = 0;
-            res->theTerms->AddTerm(term1, *coeff1);
-            continue;
-          }
-        } else if (advancing == 2) { // flush out the 2nd poly
-          while (pos2 < nt2) {
-            res->theTerms->AddTerm(p2->theTerms->GetTerm(pos2),
-                                   subtract ? -*coeff2 : *coeff2);
-            pos2++;
-            coeff2++;
-          }
-          break;
-        } else if (advancing == 3) { // flush out the 2nd poly
-          while (pos1 < nt1) {
-            res->theTerms->AddTerm(theTerms->GetTerm(pos1), *coeff1);
-            pos1++;
-            coeff1++;
-          }
-          break;
-        } else if (advancing == -1) { // just starting
-          if (!nt1) {                 // first poly is empty!
-            advancing = 3;
-            continue;
-          }
-          if (!nt2) { // second poly is empty!
-            advancing = 2;
-            continue;
-          }
-          term1 = theTerms->GetTerm(0);
-          term2 = p2->theTerms->GetTerm(0);
-          c = res->theTerms->CompareTerms(term1, term2);
-          if (c <= 0) { // begin with the first poly
-            res->theTerms->AddTerm(term1, *coeff1);
-            advancing = 0;
-            if (c) {
-              continue;
-            } else {
-              if (subtract) {
-                res->theTerms->GetCoeff(res->theTerms->actTerms - 1) -= *coeff2;
-              } else {
-                res->theTerms->GetCoeff(res->theTerms->actTerms - 1) += *coeff2;
-              }
-              pos2++;
-              if (pos2 == nt2) {
-                pos1++;
-                coeff1++;
-                advancing = 3;
-              } else {
-                term2 = p2->theTerms->GetTerm(pos2);
-                coeff2++;
-              }
-              res->CheckTerm();
-              continue;
-            }
-          } else {
-            res->theTerms->AddTerm(term2, subtract ? -*coeff2 : *coeff2);
-            advancing = 1;
-            continue;
-          }
-        }
+    _SimpleList mergedVariables, merge1, merge2;
+    mergedVariables.Merge(variableIndex, p2->variableIndex, &merge1, &merge2);
 
-        // will only get here when there are like terms
-        // see which one is being added
-        if (advancing == 0) { // moving up in the first term
-          if (subtract) {
-            res->theTerms->GetCoeff(res->theTerms->actTerms - 1) -= *coeff2;
-          } else {
-            res->theTerms->GetCoeff(res->theTerms->actTerms - 1) += *coeff2;
-          }
-          pos1++;
-          if (pos1 >= nt1) {
-            advancing = 2;
-            pos2++;
-            term2 = p2->theTerms->GetTerm(pos2);
-            coeff2++;
-          } else {
-            term1 = theTerms->GetTerm(pos1);
-            coeff1++;
-            advancing = 1;
-          }
+    res = new _Polynomial(mergedVariables); // create a blank new result holder
+    ResetPolynomialCheck(res);
 
-        } else {
-          // if (subtract)
-          //   res->theTerms->GetCoeff (res->theTerms->actTerms-1)-= *coeff1;
-          // else
-          res->theTerms->GetCoeff(res->theTerms->actTerms - 1) += *coeff1;
-          pos2++;
-          if (pos2 >= nt2) {
-            advancing = 3;
-            pos1++;
-            term1 = theTerms->GetTerm(pos1);
-            coeff1++;
-          } else {
-            term2 = p2->theTerms->GetTerm(pos2);
-            coeff2++;
-            advancing = 0;
-          }
-        }
-
-        // check to see if the term is significant
-        res->CheckTerm(); // by default will check the last term
+    while (pos1 < nt1 && pos2 < nt2) {
+      term1 = theTerms->GetTerm(pos1);
+      term2 = p2->theTerms->GetTerm(pos2);
+      char comp = res->theTerms->CompareTerms(
+          term1, term2, merge1.quickArrayAccess(), merge2.quickArrayAccess(),
+          merge1.countitems(), merge2.countitems());
+      if (comp < 0) {
+        res->theTerms->AddTerm(term1, coeff1[pos1], merge1.quickArrayAccess(),
+                               merge1.countitems());
+        pos1++;
+      } else if (comp > 0) {
+        res->theTerms->AddTerm(term2, subtract ? -coeff2[pos2] : coeff2[pos2],
+                               merge2.quickArrayAccess(), merge2.countitems());
+        pos2++;
+      } else {
+        res->theTerms->AddTerm(
+            term1, coeff1[pos1] + (subtract ? -coeff2[pos2] : coeff2[pos2]),
+            merge1.quickArrayAccess(), merge1.countitems());
+        pos1++;
+        pos2++;
       }
-
-    } else {
-      _SimpleList mergedVariables, merge1, merge2;
-      mergedVariables.Merge(variableIndex, p2->variableIndex, &merge1, &merge2);
-      if (merge1.countitems() == mergedVariables.countitems() ||
-          merge2.countitems() == mergedVariables.countitems()) {
-        bool firstBigger =
-            merge1.countitems() ==
-            mergedVariables
-                .countitems(); // is the first poly bigger than the second
-
-        long *reindexList = firstBigger ? merge2.quickArrayAccess()
-                                        : merge1.quickArrayAccess(),
-             reindexLength =
-                 firstBigger ? merge2.countitems() : merge1.countitems();
-
-        res = new _Polynomial(
-            mergedVariables); // create a blank new result holder
-
-        ResetPolynomialCheck(res);
-        while (1) {             // stuff left to do
-          if (advancing == 0) { // advancing in the 1st polynomial
-            pos1++;
-            if (pos1 >= nt1) {
-              advancing = 2;
-              continue;
-            }
-            coeff1++;
-            term1 = theTerms->GetTerm(pos1);
-            c = firstBigger
-                    ? res->theTerms->CompareTerms(term1, term2, reindexList,
-                                                  reindexLength)
-                    : -res->theTerms->CompareTerms(term2, term1, reindexList,
-                                                   reindexLength);
-            if (c <= 0) {
-              if (firstBigger) {
-                res->theTerms->AddTerm(term1, *coeff1);
-              } else {
-                res->theTerms->AddTerm(term1, *coeff1, reindexList,
-                                       reindexLength);
-              }
-              if (c < 0) {
-                continue;
-              }
-            }
-            if (c > 0) {
-              advancing = 1;
-              if (firstBigger) {
-                res->theTerms->AddTerm(term2, subtract ? -*coeff2 : *coeff2,
-                                       reindexList, reindexLength);
-              } else {
-                res->theTerms->AddTerm(term2, subtract ? -*coeff2 : *coeff2);
-              }
-              continue;
-            }
-
-          } else if (advancing == 1) { // advancing in the 2nd polynomial
-            pos2++;
-            if (pos2 >= nt2) {
-              advancing = 3;
-              continue;
-            }
-            coeff2++;
-            term2 = p2->theTerms->GetTerm(pos2);
-            c = firstBigger
-                    ? -res->theTerms->CompareTerms(term1, term2, reindexList,
-                                                   reindexLength)
-                    : res->theTerms->CompareTerms(term2, term1, reindexList,
-                                                  reindexLength);
-            if (c <= 0) {
-              if (firstBigger) {
-                res->theTerms->AddTerm(term2, subtract ? -*coeff2 : *coeff2,
-                                       reindexList, reindexLength);
-              } else {
-                res->theTerms->AddTerm(term2, subtract ? -*coeff2 : *coeff2);
-              }
-              if (c < 0) {
-                continue;
-              }
-            }
-            if (c > 0) {
-              advancing = 0;
-              if (firstBigger) {
-                res->theTerms->AddTerm(term1, *coeff1);
-              } else {
-                res->theTerms->AddTerm(term1, *coeff1, reindexList,
-                                       reindexLength);
-              }
-              continue;
-            }
-          } else if (advancing == 2) { // flush out the 2nd poly
-            if (firstBigger)
-              while (pos2 < nt2) {
-                res->theTerms->AddTerm(p2->theTerms->GetTerm(pos2),
-                                       subtract ? -*coeff2 : *coeff2,
-                                       reindexList, reindexLength);
-                pos2++;
-                coeff2++;
-              }
-            else
-              while (pos2 < nt2) {
-                res->theTerms->AddTerm(p2->theTerms->GetTerm(pos2),
-                                       subtract ? -*coeff2 : *coeff2);
-                pos2++;
-                coeff2++;
-              }
-            break;
-          } else if (advancing == 3) { // flush out the 2nd poly
-            if (firstBigger)
-              while (pos1 < nt1) {
-                res->theTerms->AddTerm(theTerms->GetTerm(pos1), *coeff1);
-                pos1++;
-                coeff1++;
-              }
-            else
-              while (pos1 < nt1) {
-                res->theTerms->AddTerm(theTerms->GetTerm(pos1), *coeff1,
-                                       reindexList, reindexLength);
-                pos1++;
-                coeff1++;
-              }
-            break;
-          } else if (advancing == -1) { // just starting
-            if (!nt1) {                 // first poly is empty!
-              advancing = 3;
-              continue;
-            }
-            if (!nt2) { // second poly is empty!
-              advancing = 2;
-              continue;
-            }
-            term1 = theTerms->GetTerm(0);
-            term2 = p2->theTerms->GetTerm(0);
-            c = firstBigger
-                    ? res->theTerms->CompareTerms(term1, term2, reindexList,
-                                                  reindexLength)
-                    : -res->theTerms->CompareTerms(term2, term1, reindexList,
-                                                   reindexLength);
-            if (c <= 0) { // begin with the first poly
-              if (firstBigger) {
-                res->theTerms->AddTerm(term1, *coeff1);
-              } else {
-                res->theTerms->AddTerm(term1, *coeff1, reindexList,
-                                       reindexLength);
-              }
-              advancing = 0;
-              if (c) {
-                continue;
-              } else {
-                if (subtract) {
-                  res->theTerms->GetCoeff(res->theTerms->actTerms - 1) -=
-                      *coeff2;
-                } else {
-                  res->theTerms->GetCoeff(res->theTerms->actTerms - 1) +=
-                      *coeff2;
-                }
-                pos2++;
-                if (pos2 >= nt2) {
-                  advancing = 3;
-                  coeff1++;
-                  pos1++;
-                } else {
-                  term2 = p2->theTerms->GetTerm(pos2);
-                  coeff2++;
-                }
-                res->CheckTerm();
-                continue;
-              }
-            } else {
-              if (firstBigger) {
-                res->theTerms->AddTerm(term2, subtract ? -*coeff2 : *coeff2,
-                                       reindexList, reindexLength);
-              } else {
-                res->theTerms->AddTerm(term2, subtract ? -*coeff2 : *coeff2);
-              }
-              advancing = 1;
-              continue;
-            }
-          }
-
-          // will only get here when there are like terms
-          // see which one is being added
-          if (advancing == 0) { // moving up in the first term
-            if (subtract) {
-              res->theTerms->GetCoeff(res->theTerms->actTerms - 1) -= *coeff2;
-            } else {
-              res->theTerms->GetCoeff(res->theTerms->actTerms - 1) += *coeff2;
-            }
-            pos1++;
-            if (pos1 >= nt1) {
-              advancing = 2;
-              pos2++;
-              term2 = p2->theTerms->GetTerm(pos2);
-              coeff2++;
-            } else {
-              term1 = theTerms->GetTerm(pos1);
-              coeff1++;
-              advancing = 1;
-            }
-
-          } else {
-            // if (subtract)
-            //   res->theTerms->GetCoeff (res->theTerms->actTerms-1)-= *coeff1;
-            // else
-            res->theTerms->GetCoeff(res->theTerms->actTerms - 1) += *coeff1;
-            pos2++;
-            if (pos2 >= nt2) {
-              advancing = 3;
-              pos1++;
-              coeff1++;
-              term1 = theTerms->GetTerm(pos1);
-            } else {
-              term2 = p2->theTerms->GetTerm(pos2);
-              coeff2++;
-              advancing = 0;
-            }
-          }
-
-          // check to see if the term is significant
-          res->CheckTerm(); // by default will check the last term
-        }
-      } else
-      // both variable indices must be reindexed
-      {
-        long *ri1 = merge1.quickArrayAccess(), *ri2 = merge2.quickArrayAccess(),
-             rl1 = merge1.countitems(), rl2 = merge2.countitems();
-
-        res = new _Polynomial(
-            mergedVariables); // create a blank new result holder
-        ResetPolynomialCheck(res);
-
-        while (1) {             // stuff left to do
-          if (advancing == 0) { // advancing in the 1st polynomial
-            pos1++;
-            if (pos1 >= nt1) {
-              advancing = 2;
-              continue;
-            }
-            coeff1++;
-            term1 = theTerms->GetTerm(pos1);
-            c = res->theTerms->CompareTerms(term1, term2, ri1, ri2, rl1, rl2);
-            if (c <= 0) {
-              res->theTerms->AddTerm(term1, *coeff1, ri1, rl1);
-              if (c < 0) {
-                continue;
-              }
-            }
-            if (c > 0) {
-              advancing = 1;
-              res->theTerms->AddTerm(term2, subtract ? -*coeff2 : *coeff2, ri2,
-                                     rl2);
-              continue;
-            }
-
-          } else if (advancing == 1) { // advancing in the 2nd polynomial
-            pos2++;
-            if (pos2 >= nt2) {
-              advancing = 3;
-              continue;
-            }
-            coeff2++;
-            term2 = p2->theTerms->GetTerm(pos2);
-            c = res->theTerms->CompareTerms(term2, term1, ri2, ri1, rl2, rl1);
-            if (c <= 0) {
-              res->theTerms->AddTerm(term2, subtract ? -*coeff2 : *coeff2, ri2,
-                                     rl2);
-              if (c < 0) {
-                continue;
-              }
-            }
-            if (c > 0) {
-              advancing = 0;
-              res->theTerms->AddTerm(term1, *coeff1, ri1, rl1);
-              continue;
-            }
-          } else if (advancing == 2) { // flush out the 2nd poly
-            while (pos2 < nt2) {
-              res->theTerms->AddTerm(p2->theTerms->GetTerm(pos2),
-                                     subtract ? -*coeff2 : *coeff2, ri2, rl2);
-              pos2++;
-              coeff2++;
-            }
-            break;
-          } else if (advancing == 3) { // flush out the 2nd poly
-            while (pos1 < nt1) {
-              res->theTerms->AddTerm(theTerms->GetTerm(pos1), *coeff1, ri1,
-                                     rl1);
-              pos1++;
-              coeff1++;
-            }
-            break;
-          } else if (advancing == -1) { // just starting
-            if (!nt1) {                 // first poly is empty!
-              advancing = 3;
-              continue;
-            }
-            if (!nt2) { // second poly is empty!
-              advancing = 2;
-              continue;
-            }
-            term1 = theTerms->GetTerm(0);
-            term2 = p2->theTerms->GetTerm(0);
-            c = res->theTerms->CompareTerms(term1, term2, ri1, ri2, rl1, rl2);
-            if (c <= 0) { // begin with the first poly
-              res->theTerms->AddTerm(term1, *coeff1, ri1, rl1);
-              advancing = 0;
-              if (c) {
-                continue;
-              } else {
-                if (subtract) {
-                  res->theTerms->GetCoeff(res->theTerms->actTerms - 1) -=
-                      *coeff2;
-                } else {
-                  res->theTerms->GetCoeff(res->theTerms->actTerms - 1) +=
-                      *coeff2;
-                }
-                pos2++;
-                if (pos2 == nt2) {
-                  pos1++;
-                  coeff1++;
-                  advancing = 3;
-                } else {
-                  term2 = p2->theTerms->GetTerm(pos2);
-                  coeff2++;
-                }
-                res->CheckTerm();
-                continue;
-              }
-            } else {
-              res->theTerms->AddTerm(term2, subtract ? -*coeff2 : *coeff2, ri2,
-                                     rl2);
-              advancing = 1;
-              continue;
-            }
-          }
-
-          // will only get here when there are like terms
-          // see which one is being added
-          if (advancing == 0) { // moving up in the first term
-            if (subtract) {
-              res->theTerms->GetCoeff(res->theTerms->actTerms - 1) -= *coeff2;
-            } else {
-              res->theTerms->GetCoeff(res->theTerms->actTerms - 1) += *coeff2;
-            }
-            pos1++;
-            if (pos1 >= nt1) {
-              advancing = 2;
-              pos2++;
-              term2 = p2->theTerms->GetTerm(pos2);
-              coeff2++;
-            } else {
-              term1 = theTerms->GetTerm(pos1);
-              coeff1++;
-              advancing = 1;
-            }
-
-          } else {
-            // if (subtract)
-            //   res->theTerms->GetCoeff (res->theTerms->actTerms-1)-= *coeff1;
-            // else
-            res->theTerms->GetCoeff(res->theTerms->actTerms - 1) += *coeff1;
-            pos2++;
-            if (pos2 >= nt2) {
-              advancing = 3;
-              pos1++;
-              term1 = theTerms->GetTerm(pos1);
-              coeff1++;
-            } else {
-              term2 = p2->theTerms->GetTerm(pos2);
-              coeff2++;
-              advancing = 0;
-            }
-          }
-
-          // check to see if the term is significant
-          res->CheckTerm(); // by default will check the last term
-        }
-      }
+      res->CheckTerm();
     }
 
-    /*
-    NLToConsole();
-    NLToConsole();
-    BufferToConsole (_String((_String*)this->toStr()).getStr());
-    BufferToConsole("\n+\n");
-    BufferToConsole (_String((_String*)p2->toStr()).getStr());
-    BufferToConsole("\n=\n");
-    BufferToConsole (_String((_String*)res->toStr()).getStr());
-    NLToConsole();
-     */
+    while (pos1 < nt1) {
+      term1 = theTerms->GetTerm(pos1);
+      res->theTerms->AddTerm(term1, coeff1[pos1++], merge1.quickArrayAccess(),
+                             merge1.countitems());
+      res->CheckTerm();
+    }
+
+    while (pos2 < nt2) {
+      term2 = p2->theTerms->GetTerm(pos2);
+      if (subtract) {
+        res->theTerms->AddTerm(term2, -coeff2[pos2++],
+                               merge2.quickArrayAccess(), merge2.countitems());
+      } else {
+        res->theTerms->AddTerm(term2, coeff2[pos2++], merge2.quickArrayAccess(),
+                               merge2.countitems());
+      }
+      res->CheckTerm();
+    }
 
     if (!res->theTerms->checkMe()) {
       return nil;
@@ -1566,13 +1096,12 @@ _MathObject *_Polynomial::Sub(_MathObject *m, HBLObjectRef cache) {
 }
 
 //__________________________________________________________________________________
-_MathObject *_Polynomial::Minus(HBLObjectRef cache) {
-  _Constant min(-1.0);
-  return Mult(&min, cache);
+_MathObject *_Polynomial::Minus(HBLObjectRef) {
+  return (new _Polynomial(*this))->NegateCoefficients();
 }
 
 //__________________________________________________________________________________
-_MathObject *_Polynomial::Mult(_MathObject *m, HBLObjectRef cache) {
+_MathObject *_Polynomial::Mult(_MathObject *m, HBLObjectRef) {
   long objectT = m->ObjectClass();
 
   if (objectT == NUMBER) { // a number or a monomial
@@ -1590,371 +1119,6 @@ _MathObject *_Polynomial::Mult(_MathObject *m, HBLObjectRef cache) {
   }
 
   if (objectT == POLYNOMIAL) { // another polynomial
-    /*      Convert2OperationForm();
-            _Polynomial* p2 = (_Polynomial*)m, *res;
-            p2->Convert2OperationForm();
-            if (!variableIndex.countitems())
-            {
-                if (theTerms->NumberOfTerms())
-                {
-                    _Constant coef1 (theTerms->GetCoeff(0));
-                    return p2->Mult (&coef1);
-                }
-                else
-                    return new _Polynomial();
-            }
-            if (!p2->variableIndex.countitems())
-            {
-                if (p2->theTerms->NumberOfTerms())
-                {
-                    _Constant coef2 (p2->theTerms->GetCoeff(0));
-                    return Mult (&coef2);
-                }
-                else
-                    return new _Polynomial();
-            }
-
-            long nt1 = theTerms->NumberOfTerms ()-1, nt2 =
-       p2->theTerms->NumberOfTerms ()-1, csp = 0, cwp = 0;
-
-            long *positionArray = (long*)MemAllocate ((nt2+1)*sizeof(long)),
-       temp1, temp2, resVars; char compRes, compRes2, compRes3, status = 0; if
-       ((nt1<0) || (nt2<0)) return new _Polynomial(); memset
-       (positionArray,0,(nt2+1)*sizeof(long)); long* terms1, *terms2, *holder1,
-       *holder2, *holder3;
-
-            //set up proper variable/term agreement
-            if (variableIndex.Equal(p2->variableIndex))
-            // same variables - the simplest case
-            {
-                terms1 = theTerms->GetTerm(0);
-                terms2 = p2->theTerms->GetTerm(0);
-                resVars = variableIndex.countitems();
-                res = new _Polynomial (variableIndex);
-            }
-            else
-            {
-                _SimpleList mergedVars, merge1, merge2;
-                mergedVars.Merge (variableIndex,p2->variableIndex, &merge1,
-       &merge2); if (!merge1.countitems()) // 1 is a superset of 2
-                {
-                    res = new _Polynomial (variableIndex);
-                    temp2 = p2->variableIndex.countitems();
-                    resVars = temp1 = variableIndex.countitems();
-                    terms1 = theTerms->GetTerm(0);
-                    holder2 = terms2 = (long*)MemAllocate
-       (nt2*sizeof(long)*temp1); holder3 = p2->theTerms->GetTerm(0); holder1 =
-       merge2.quickArrayAccess(); for (;csp<nt2;csp++,holder2+=temp1, holder3+=
-       temp2)
-                    {
-                        _PolynomialData::RearrangeTerm (holder2, holder3,
-       holder1, temp2);
-                    }
-                }
-                else
-                    if (!merge2.countitems()) // 2 is a superset of 1
-                    {
-                        res = new _Polynomial (p2->variableIndex);
-                        resVars = temp2 = p2->variableIndex.countitems();
-                        temp1 = variableIndex.countitems();
-                        terms2 = p2->theTerms->GetTerm(0);
-                        holder1 = terms1 = (long*)MemAllocate
-       (nt1*sizeof(long)*temp2); holder3 = theTerms->GetTerm(0); holder2 =
-       merge1.quickArrayAccess(); for (;csp<nt1;csp++,holder1+=temp2, holder3+=
-       temp1)
-                        {
-                            _PolynomialData::RearrangeTerm (holder1, holder3,
-       holder2, temp1);
-                        }
-                    }
-                    else // no inclusions
-                    {
-                        res = new _Polynomial (mergedVars);
-                        resVars = mergedVars.countitems();
-
-                        temp2 = p2->variableIndex.countitems();
-                        temp1 = variableIndex.countitems();
-                        holder2 = terms2 = (long*)MemAllocate
-       (nt2*sizeof(long)*resVars); holder3 = p2->theTerms->GetTerm(0); holder1 =
-       merge2.quickArrayAccess(); for (;csp<nt2;csp++,holder2+=resVars,
-       holder3+= temp2)
-                        {
-                            _PolynomialData::RearrangeTerm (holder2, holder3,
-       holder1, temp2);
-                        }
-                        holder1 = terms1 = (long*)MemAllocate
-       (nt1*sizeof(long)*resVars); holder3 = theTerms->GetTerm(0); holder2 =
-       merge1.quickArrayAccess(); for (;csp<nt1;csp++,holder1+=resVars,
-       holder3+= temp1)
-                        {
-                            _PolynomialData::RearrangeTerm (holder1, holder3,
-       holder2, temp1);
-                        }
-                    }
-
-                } // done arranging variables
-
-                ResetPolynomialCheck(res);
-                holder1 = (long*)MemAllocate (resVars*sizeof(long));
-                holder2 = (long*)MemAllocate (resVars*sizeof(long));
-                holder3 = (long*)MemAllocate (resVars*sizeof(long));
-
-                hyFloat *tempCoeff = (hyFloat*)MemAllocate
-       (theTerms->NumberOfTerms()*sizeof(hyFloat)); memcpy (tempCoeff,
-       theTerms->GetCoeff(), theTerms->NumberOfTerms()*sizeof(hyFloat));
-
-
-                res->theTerms->MultiplyTerms    (holder1, terms1, terms2); //
-       add the first term
-
-                res->theTerms->AddTerm (holder1, *tempCoeff *
-       *p2->theTerms->GetCoeff());
-
-
-                while (1)
-                {
-                    if ((status==0)&&(cwp==csp))
-                    {
-                        temp1 = positionArray[csp]+1;
-                        if (temp1>nt2)
-                        {
-                            csp++;
-                            cwp = csp;
-                            if (csp>nt1) break;
-                            if (csp==nt1)
-                            {
-                                long i = positionArray[csp]+1;
-                                hyFloat coe = theTerms->GetCoeff (csp);
-                                while (i<=nt2)
-                                {
-                                    res->theTerms->MultiplyTerms (holder1,
-       theTerms->GetTerm(csp), p2->theTerms->GetTerm(i)); res->theTerms->AddTerm
-       (holder1, coe*p2->theTerms->GetCoeff (i)); i++;
-                                }
-                                break;
-                            }
-                            continue;
-                        }
-                        compRes = 0;
-                    }
-                    else
-                    {
-                        if (positionArray[cwp]+1>nt2)
-                        {
-                            csp = cwp+1;
-                            if (csp==nt1)
-                            {
-                                long i = positionArray[csp]+1;
-                                hyFloat coe = theTerms->GetCoeff (csp);
-                                while (i<=nt2)
-                                {
-                                    res->theTerms->MultiplyTerms (holder1,
-       theTerms->GetTerm(csp), p2->theTerms->GetTerm(i)); res->theTerms->AddTerm
-       (holder1, coe*p2->theTerms->GetCoeff (i)); i++;
-                                }
-                                break;
-                            }
-                            cwp = csp;
-                            status = 0;
-                            continue;
-                        }
-                    }
-                    res->theTerms->MultiplyTerms (holder1, terms1+resVars*cwp,
-       terms2+resVars*(positionArray[cwp]+1));
-
-                    if ((compRes>=0)||status)
-                        res->theTerms->MultiplyTerms    (holder2,
-       terms1+resVars*(cwp+1), terms2+resVars*positionArray[cwp+1]);
-
-                    if (status==0)
-                    {
-                        compRes = res->theTerms->CompareTerms (holder1,
-       holder2);
-                    }
-                    else
-                        compRes = 1;
-
-                    if (compRes<0)
-                    {
-                        if (status==1)
-                        {
-                            cwp --;
-                            if (cwp==csp) status = 0;
-                            continue;
-                        }
-                        res->theTerms->AddTerm(holder1,tempCoeff[cwp]*p2->theTerms->GetCoeff
-       (positionArray[cwp])); if (cwp>csp)
-                        {
-                            tempCoeff[cwp]=theTerms->GetCoeff(cwp);
-                        }
-                        res->CheckTerm();
-                        positionArray[cwp]++;
-                        status = 0;
-                        continue;
-                    }
-                    if (compRes==0)
-                    {
-                        positionArray[cwp]++;
-                        tempCoeff[cwp+1]+= tempCoeff[cwp]*p2->theTerms->GetCoeff
-       (positionArray[cwp])/ p2->theTerms->GetCoeff (positionArray[cwp+1]);
-                        status = 0;
-                        continue;
-                    }
-
-                    if ((cwp-csp>1)||(cwp==nt1-1))
-                    {
-                        compRes3 = 1;
-                        for (long k=csp; k<cwp-1;k++)
-                        {
-                            res->theTerms->MultiplyTerms    (holder3,
-       terms1+resVars*(k), terms2+resVars*(positionArray[k]+1)); compRes3 =
-       res->theTerms->CompareTerms (holder3, holder2); if (!compRes3)
-                            {
-                                tempCoeff[cwp+1]+=
-       tempCoeff[k]*p2->theTerms->GetCoeff (positionArray[k])/
-                                                     p2->theTerms->GetCoeff
-       (positionArray[k+1]); positionArray[csp]++; if (k==csp) if
-       (positionArray[csp]>=nt2) csp++; break;
-                            }
-                            if (compRes3<0) break;
-                        }
-
-                    }
-                    res->theTerms->AddTerm(holder2,tempCoeff[cwp+1]*p2->theTerms->GetCoeff
-       (positionArray[cwp+1])); tempCoeff[cwp+1]=theTerms->GetCoeff(cwp+1);
-                    res->CheckTerm();
-
-                    temp1 = (positionArray[cwp+1]+1);
-                    res->theTerms->MultiplyTerms    (holder2,
-       terms1+resVars*(cwp+1), terms2+resVars*(temp1)); compRes2 =
-       res->theTerms->CompareTerms (holder1, holder2); if (compRes2<=0)
-                    {
-                        if (!compRes2)
-                        {
-                            positionArray[cwp]++;
-                            tempCoeff[cwp+1]+=
-       tempCoeff[cwp]*p2->theTerms->GetCoeff (positionArray[cwp])/
-                                                     p2->theTerms->GetCoeff
-       (temp1); if (cwp>csp)
-                            {
-                                tempCoeff[cwp]=theTerms->GetCoeff(cwp);
-                            }
-                        }
-
-                        if (cwp<=nt1-2)
-                        {
-                            res->theTerms->MultiplyTerms    (holder3,
-       terms1+resVars*(cwp+2),  terms2+resVars*(positionArray[cwp+2])); compRes3
-       = res->theTerms->CompareTerms (holder2, holder3); compRes =
-       res->theTerms->CompareTerms (holder1, holder3); if (!compRes)
-                            {
-                                positionArray[csp]++;
-                                tempCoeff[cwp+2]+=
-       tempCoeff[csp]*p2->theTerms->GetCoeff (positionArray[csp])/
-                                                         p2->theTerms->GetCoeff
-       (positionArray[cwp+2]); if (positionArray[csp]>nt2) csp++;
-                            }
-                        }
-                        else
-                        {
-                            compRes3 = -1;
-                        }
-
-                        if (compRes3<0)
-                        {
-                            positionArray[cwp+1]=temp1;
-                            res->theTerms->AddTerm (holder1,
-       tempCoeff[cwp+1]*p2->theTerms->GetCoeff (positionArray[cwp+1]));
-                            tempCoeff[cwp+1]=theTerms->GetCoeff(cwp+1);
-                            res->CheckTerm();
-                            compRes = 1;
-                            if (status==1)
-                            {
-                                if (compRes2==0)
-                                {
-                                    positionArray[cwp+1]++;
-                                    if (positionArray[cwp+1]>nt2)
-                                    {
-                                        csp = cwp+1;
-                                        if (cwp<csp)
-                                        {
-                                            cwp = csp;
-                                            status = 0;
-                                        }
-                                    }
-                                    else
-                                        if (positionArray[cwp+1]==nt2)
-                                        {
-                                            positionArray[cwp+1]--;
-                                        }
-                                }
-                            }
-                            continue;
-                        }
-
-                        if (!compRes3)
-                        {
-                            tempCoeff[cwp+2]+=
-       tempCoeff[cwp+1]*p2->theTerms->GetCoeff (positionArray[cwp+1])/
-                                                     p2->theTerms->GetCoeff
-       (positionArray[cwp+2]); tempCoeff[cwp+1]=theTerms->GetCoeff(cwp+1);
-                            status = 0;
-                            continue;
-                        }
-
-                        cwp++;
-                        status = 1;
-                        continue;
-                    }
-                    else
-                    {
-                        if (cwp<=nt1-2)
-                        {
-                            res->theTerms->MultiplyTerms    (holder3,
-       terms1+resVars*(cwp+2),  terms2+resVars*(positionArray[cwp+2])); compRes3
-       = res->theTerms->CompareTerms (holder2, holder3);
-                        }
-                        else
-                        {
-                            compRes3 = -1;
-                        }
-                        if (compRes3 < 0)
-                        {
-                            positionArray[cwp+1]=temp1;
-                            tempCoeff[cwp+1]=theTerms->GetCoeff(cwp+1);
-                            status = 1;
-                            continue;
-                        }
-
-                        cwp++;
-                        if (compRes3 == 0)
-                        {
-                            tempCoeff[cwp+1]+=
-       tempCoeff[cwp]*p2->theTerms->GetCoeff
-       (positionArray[cwp])/p2->theTerms->GetCoeff (positionArray[cwp+1]);
-                            tempCoeff[cwp]=theTerms->GetCoeff(cwp);
-                            continue;
-                        }
-
-                        status = 1;
-                        continue;
-
-                    }
-
-                }
-
-                free (positionArray);
-                free (holder1);
-                free (holder2);
-                free (holder3);
-                free (tempCoeff);
-                if (terms1!=theTerms->GetTerm(0))
-                    free (terms1);
-                if (terms2!=p2->theTerms->GetTerm(0))
-                    free (terms2);
-                res->theTerms->checkMe();
-                return res;*/
-
     Convert2OperationForm();
     _Polynomial *p2 = (_Polynomial *)m;
     p2->Convert2OperationForm();
@@ -2237,7 +1401,7 @@ _MathObject *_Polynomial::Mult(_MathObject *m, HBLObjectRef cache) {
 }
 
 //__________________________________________________________________________________
-_MathObject *_Polynomial::Raise(_MathObject *m, HBLObjectRef cache) {
+_MathObject *_Polynomial::Raise(_MathObject *m, HBLObjectRef) {
   long objectT = m->ObjectClass();
   bool del = false;
   if (objectT == POLYNOMIAL) {
@@ -2263,7 +1427,7 @@ _MathObject *_Polynomial::Raise(_MathObject *m, HBLObjectRef cache) {
 
       _Polynomial *oldR;
       unsigned char bits[sizeof(long) * 8];
-      long pwr = m->Value(), nLength = 0L;
+      long pwr = (long)m->Value(), nLength = 0L;
       while (pwr) {
         bits[nLength] = pwr % 2;
         pwr /= 2;
@@ -2296,160 +1460,194 @@ _MathObject *_Polynomial::Raise(_MathObject *m, HBLObjectRef cache) {
 void _Polynomial::Convert2ComputationForm(_SimpleList *c1, _SimpleList *c2,
                                           _SimpleList *termsToInclude) {
   // compList1 and two one will contain pairs of numbers to be interpreted as
-  // follows for pair (m,n) m>=0, n>=0, m!=last var m<0, n<0 - mult by -n-th
-  // power of var -m-1, do not add yet m<0, n>0 - mult by -n-th power of var
-  // -m-1, do add m>=0, n<0 - reset all vars after m and set the power of m-the
-  // var to -n, do not compute yet m>=0, n>0 - reset all vars after m and set
-  // the power of m-the var to -n, do add last var, n>0 - add n successive
-  // powers of last var
+  // follows for pair (m,n), where m is in compList1 and n is compList2
+  // m>=0, n>=0, m!=last var
+  // m<0, n<0 - mult by -n-th power of var -m-1, do NOT add yet
+  // m<0, n>0 - mult by -n-th power of var -m-1, DO add
+  // m>=0, n<0 - reset all vars after m and set the power of m-the var to -n, do
+  // not compute yet m>=0, n>0 - reset all vars after m and set the power of
+  // m-the var to -n, do add last var, n>0 - add n successive powers of last var
+
   if ((theTerms->NumberOfTerms() != 0) &&
       (compList1.countitems() == 0)) { // stuff to do
-    _SimpleList *cL1, *cL2, ti;
+    _SimpleList *op_var_index, *op_power_code, ti;
 
-    long i = 0, n = variableIndex.countitems() - 1, p, l, s = 0, j, *vi;
+    const long variable_count = variableIndex.countitems();
+    long i = 0, n = variable_count - 1, count_of_items_to_process,
+         accumulator_counter = 0;
+
     if (c1 && c2 && termsToInclude) {
-      cL1 = c1;
-      cL2 = c2;
+      op_var_index = c1;
+      op_power_code = c2;
       ti.Duplicate(termsToInclude);
     } else {
-      cL1 = &compList1;
-      cL2 = &compList2;
-      for (i = 0; i < theTerms->actTerms; i++) {
-        ti << i;
-      }
-      i = 0;
+      op_var_index = &compList1;
+      op_power_code = &compList2;
+      ti.Populate(theTerms->actTerms, 0, 1);
+      theTerms->actTerms = 0;
     }
-    l = ti.countitems();
-    vi = ti.quickArrayAccess();
-    (*cL1).Clear();
-    (*cL2).Clear();
+
+    count_of_items_to_process = ti.countitems();
+    // vi = ti.quickArrayAccess();
+    op_var_index->Clear();
+    op_power_code->Clear();
+
+    auto _TERM_add_coefficient_to_result = [&]() -> void {
+      (*op_var_index) << n;
+      (*op_power_code) << 0;
+    };
+
+    auto _TERM_last_var_jump = [&](long power) -> void {
+      (*op_var_index) << n;
+      (*op_power_code) << -power;
+    };
+
+    auto _TERM_raise_var_and_add = [&](long var_index, long power) -> void {
+      (*op_var_index) << -var_index - 1;
+      (*op_power_code) << power;
+    };
+
+    auto _TERM_raise_var_deferred = [&](long var_index, long power) -> void {
+      if (power) {
+        (*op_var_index) << -var_index - 1;
+        (*op_power_code) << -power;
+      }
+    };
+
+    auto _TERM_raise_var_deferred_and_reset = [&](long var_index,
+                                                  long power) -> void {
+      (*op_var_index) << var_index;
+      (*op_power_code) << -power;
+    };
+
+    auto _TERM_raise_variable_deferred = [&](long var_index,
+                                             long power) -> void {
+      if (power) {
+        (*op_var_index) << -var_index - 1;
+        (*op_power_code) << -power;
+      }
+    };
+
+    auto _TERM_last_var_succession = [&](long count) -> void {
+      (*op_var_index) << n;
+      (*op_power_code) << count;
+    };
+
+    auto _TERM_remove_deferral = [&](void) -> void {
+      (*op_power_code)[op_power_code->countitems() - 1] =
+          -op_power_code->get(op_power_code->countitems() - 1);
+    };
 
     if (!theTerms->IsFirstANumber()) {
-      long *fst = theTerms->GetTerm(vi[0]);
-      p = fst[n];
+      long *first_term = theTerms->GetTerm(ti.get(0));
       // set up the first term
-      (*cL1) << -n - 1;
-      (*cL2) << -p;
+      // check later why the ugly add then delete
+      _TERM_raise_variable_deferred(n, first_term[n]);
 
-      for (j = variableIndex.countitems() - 2; j >= 0; j--) {
-        p = fst[j];
-        if (p) {
-          (*cL1) << -j - 1;
-          (*cL2) << -p;
+      for (long j = variable_count - 2; j >= 0; j--) {
+        long power = first_term[j];
+        if (power) {
+          _TERM_raise_variable_deferred(j, power);
         }
       }
-      (*cL2)[(*cL2).countitems() - 1] *= -1;
-      if ((*cL2).countitems() > 1) {
-        if (fst[n] == 0) {
-          (*cL2).Delete(0);
-          (*cL1).Delete(0);
+
+      _TERM_remove_deferral();
+      //(*op_power_code)[op_power_code->countitems() - 1] = -op_power_code->get
+      //(op_power_code->countitems() - 1);
+      // remove deferral; add this term
+
+      if (op_power_code->countitems() > 1) {
+        if (first_term[n] == 0) {
+          op_var_index->Delete(0);
+          op_power_code->Delete(0);
         }
       }
     } else {
-      (*cL1) << n;
-      (*cL2) << 0;
+      _TERM_add_coefficient_to_result();
     }
     i++;
-    long *powerDiff = new long[n + 2];
-    for (; i < l; i++) { // even more stuff to do
 
-      long *cM = theTerms->GetTerm(vi[i]),
-           *prevM = theTerms->GetTerm(vi[i - 1]);
+    long *powerDiff = (long *)alloca(sizeof(long) * (n + 1)); // (why n+2)?
+
+    for (; i < count_of_items_to_process; i++) { // even more stuff to do
+
+      long *current_term_powers = theTerms->GetTerm(ti.get(i)),
+           *previous_term_powers = theTerms->GetTerm(ti.get(i - 1));
+
       long k = 0, ch = -1;
       bool reset = false;
-      for (j = 0; j < n; j++, cM++, prevM++) {
-        powerDiff[j] = *cM - *prevM;
+
+      for (long j = 0; j < n; j++) {
+        powerDiff[j] = current_term_powers[j] - previous_term_powers[j];
         if (powerDiff[j]) {
           if (ch < 0) {
             ch = j;
           }
           k--;
-          if (!reset) {
-            reset = powerDiff[j] < 0;
-          }
+          reset = reset || (powerDiff[n] < 0);
         }
       }
 
-      powerDiff[j] = *cM - *prevM;
+      powerDiff[n] = current_term_powers[n] - previous_term_powers[n];
+      reset = reset || (powerDiff[n] < 0);
 
-      if (!reset) {
-        reset = powerDiff[n] < 0;
-      }
-      if (!k) {
+      if (k == 0) {
         k = powerDiff[n];
       } else if (powerDiff[n]) {
         k--;
       }
       // analyze the difference
       if (k == 1) {
-        s++;
+        accumulator_counter++; // the only difference is a +1 power in the last
+                               // variable
         continue;
       } else {
-        if (s > 0) {
-          (*cL1) << n;
-          (*cL2) << s;
-          s = 0;
+        if (accumulator_counter > 0) {
+          // counting the number of x + x^2 + x^3 type tems
+          _TERM_last_var_succession(accumulator_counter);
+          accumulator_counter = 0;
         }
-        if (k > 0) {
-          (*cL1) << n;
-          (*cL2) << -k;
+        if (k > 0) { // only changed the last variable, but the power step > 1
+          _TERM_last_var_jump(k);
           continue;
         }
         if (k < 0) {
-          // difference in more than one power
+          // power decreased from the previous term
           if (k == -1) { // change in exactly one variable
-            (*cL1) << -ch - 1;
-            (*cL2) << powerDiff[ch];
-
+            _TERM_raise_var_and_add(ch, powerDiff[ch]);
             continue;
           }
           // change in more than one variable
-          (*cL1) << (reset ? ch : -ch - 1);
-          (*cL2) << -powerDiff[ch];
-          long c = ch + 1;
-          prevM = theTerms->GetTerm(vi[i - 1]) + c;
-          for (; c < n; c++, prevM++) {
+
+          if (reset) {
+            _TERM_raise_var_deferred_and_reset(ch, powerDiff[ch]);
+          } else {
+            _TERM_raise_var_deferred(ch, powerDiff[ch]);
+          }
+
+          for (long c = ch + 1; c <= n; c++) {
             if (powerDiff[c] > 0) {
-              (*cL1) << -c - 1;
-              (*cL2) << (reset ? -(*prevM + powerDiff[c]) : -powerDiff[c]);
-            } else if (powerDiff[c] < 0) {
-              long tp = -(*prevM + powerDiff[c]);
-              if (tp) {
-                (*cL1) << -c - 1;
-                (*cL2) << tp;
-              }
-            } else if (reset) {
-              if (*prevM) {
-                (*cL1) << -c - 1;
-                (*cL2) << -*prevM;
-              }
+              _TERM_raise_var_deferred(c, reset ? previous_term_powers[c] +
+                                                      powerDiff[c]
+                                                : powerDiff[c]);
+              //(*op_var_index) << -c - 1;
+              //(*op_power_code) << (reset ? -(previous_term_powers[c] +
+              // powerDiff[c]) : -powerDiff[c]);
+            } else {
+              _TERM_raise_var_deferred(c,
+                                       previous_term_powers[c] + powerDiff[c]);
             }
           }
-          if (powerDiff[n] > 0) {
-            (*cL1) << -n - 1;
-            (*cL2) << (reset ? (-(*prevM + powerDiff[n])) : -powerDiff[n]);
-          } else if (powerDiff[n] < 0) {
-            long tp = -(*prevM + powerDiff[n]);
-            if (tp) {
-              (*cL1) << -n - 1;
-              (*cL2) << tp;
-            }
-          } else if (reset) {
-            if (*prevM) {
-              (*cL1) << -n - 1;
-              (*cL2) << -*prevM;
-            }
-          }
-          (*cL2)[(*cL2).countitems() - 1] *= -1;
+          _TERM_remove_deferral();
         }
       }
     }
-    if (s > 0) {
-      (*cL1) << n;
-      (*cL2) << s;
+    if (accumulator_counter > 0) {
+      _TERM_last_var_succession(accumulator_counter);
+      //(*op_var_index) << n;
+      //(*op_power_code) << accumulator_counter;
     }
 
-    delete[] powerDiff;
     if (!(c1 && c2)) {
       free(theTerms->thePowers);
       theTerms->thePowers = nil;
@@ -2460,21 +1658,21 @@ void _Polynomial::Convert2ComputationForm(_SimpleList *c1, _SimpleList *c2,
 //__________________________________________________________________________________
 void _Polynomial::Convert2OperationForm(void) {
   // see if anything needs to be done at all
-  if (compList1.countitems() && !theTerms->thePowers) {
+  if (compList1.nonempty() && !theTerms->thePowers) {
     long n = variableIndex.countitems() + 1, m = compList1.countitems();
-    long i1, i2, i, lp = n - 2, *scratch = nil, index = 0;
+    long lp = n - 2, *scratch = nil, index = 0;
     if (n > 1) {
       theTerms->thePowers =
           (long *)MemAllocate(theTerms->allocTerms * sizeof(long) * (n - 1));
-      scratch = new long[n - 1];
+      scratch = (long *)alloca(sizeof(long) * (n - 1));
       memset(scratch, 0, sizeof(long) * (n - 1));
       memset(theTerms->thePowers, 0,
              theTerms->allocTerms * sizeof(long) * (n - 1));
     }
 
-    for (i = 0; i < m; i++) { // loop over all commands
-      i1 = compList1(i);
-      i2 = compList2(i);
+    for (long i = 0; i < m; i++) { // loop over all commands
+      long i1 = compList1.get(i);
+      long i2 = compList2.get(i);
       if (i1 == lp) { // operations with the last var
         if (i2 > 0) { // do several iterations
           for (long k = 0; k < i2; k++, index++) {
@@ -2529,16 +1727,13 @@ void _Polynomial::Convert2OperationForm(void) {
         }
       }
     }
-    if (scratch) {
-      delete[] scratch;
-    }
     compList1.Clear();
     compList2.Clear();
   }
 }
 //__________________________________________________________________________________
 _MathObject *_Polynomial::Compute(void) {
-  return new _Constant(ComputePolynomial());
+  return this; // new _Constant(ComputePolynomial());
 }
 
 //__________________________________________________________________________________
@@ -2547,92 +1742,132 @@ hyFloat _Polynomial::ComputePolynomial(void)
 {
   Convert2ComputationForm();
   long n = variableIndex.countitems() + 1;
-  hyFloat *varValues = new hyFloat[n];
+  hyFloat *varValues = (hyFloat *)alloca(n * sizeof(hyFloat));
   for (long i = 0; i < n - 1; i++) {
     varValues[i] = LocateVar(variableIndex(i))->Compute()->Value();
   }
   hyFloat result =
       ComputeP(varValues, theTerms->GetCoeff(), n, compList1.countitems(),
                compList1.quickArrayAccess(), compList2.quickArrayAccess());
-  delete[] varValues;
   return result;
 }
 //__________________________________________________________________________________
 
-hyFloat _Polynomial::ComputeP(hyFloat *varValues, hyFloat *compCoeff, long n,
-                              long m, long *c1, long *c2) {
-  hyFloat *holder = new hyFloat[n], term = 1, result = 0, lv;
-  long i1, i2, i, lp = n - 2;
-  for (i = 0; i < n - 1; i++) {
-    holder[i] = 1;
+hyFloat _Polynomial::ComputeP(hyFloat *varValues, hyFloat *compCoeff,
+                              long variable_count, long array_length, long *c1,
+                              long *c2) {
+  hyFloat *holder = (hyFloat *)alloca(sizeof(hyFloat) * variable_count),
+          term = 1., result = 0., lv;
+
+  long lp = variable_count -
+            2, // array index of the last variable, variable_count is one extra
+      current_coefficient = 0;
+
+  for (long var_index = 0; var_index < variable_count - 1; var_index++) {
+    holder[var_index] = 1.;
   }
-  lv = n > 1 ? varValues[n - 2] : 1;
-  for (i = 0; i < m; i++, c1++, c2++) { // loop over all commands
-    i1 = *c1;
-    i2 = *c2;
-    if (i1 == lp) { // operations with the last var
-      if (i2 > 0) { // do several iterations
-        for (long k = 0; k < i2; k++, compCoeff++) {
+
+  lv = variable_count > 1 ? varValues[variable_count - 2] : 1.;
+
+  /*
+        Opcode meanings
+        LVI = index of the last variable (varcount - 1)
+        VV (i) : value of variable indexed i
+        TERM   : current term
+        RESULT : overall result
+        MADD   : multiply by the current coefficient, then add to the RESULT,
+     advacing the current coefficient HOLDER : an array of N powers (one for
+     each variable + 1)
+
+        opcode1 == LVI
+            opcode2 == 0 : add the current coefficient to the result
+            opcode2 < 0  : multiply TERM by VV (LVI) ^ (-opcode2 - 1), then
+     current coefficient, and MADD this to the RESULT opcode2 > 0  : repeat
+     opcode2 times multiply TERM by VV (LVI) the MADD to the result opcode1 < 0
+            CVI (current variable index) -opcode1 - 1
+            POWER = Abs (opcode2)
+
+                multiply HOLDER (CVI) by VV (CVI) ^ POWER
+                multiply TERM by VV (CVI) ^ POWER
+
+            opcode2 > 0:
+                MADD TERM to RESULT
+
+        opcode1 > 0
+            POWER = Abs (opcode2)
+               Reset values opcode + 1 to the end in HOLDER to 1
+               multiply HOLDER (opcode1) by VV (opcode1) ^ POWER
+
+            opcode2 < 0
+                MADD TERM TO RESULT
+
+   */
+
+  for (long array_index = 0; array_index < array_length;
+       array_index++) { // loop over all commands
+    long opcode1 = c1[array_index];
+    long opcode2 = c2[array_index];
+    if (opcode1 == lp) { // operations with the last var
+      if (opcode2 > 0) { // do several iterations
+        for (long k = 0; k < opcode2; k++, current_coefficient++) {
           term *= lv;
-          result += term * *compCoeff;
+          result += term * compCoeff[current_coefficient];
         }
       } else {
-        if (!i2) {
-          result += *compCoeff;
+        if (!opcode2) {
+          result += compCoeff[current_coefficient];
         } else {
-          term *= _PolynomialData::BinaryRaise(lv, -i2);
-          result += term * *compCoeff;
+          term *= _PolynomialData::BinaryRaise(lv, -opcode2);
+          result += term * compCoeff[current_coefficient];
         }
-        compCoeff++;
+        current_coefficient++;
       }
     } else {
-      if (i1 < 0) {
-        bool compute = i2 < 0;
-        i1 = -i1 - 1;
+      if (opcode1 < 0) {
+        bool compute = opcode2 < 0;
+        opcode1 = -opcode1 - 1;
         if (compute) {
-          i2 = -i2;
+          opcode2 = -opcode2;
         }
-        if (i2 == 1) {
-          holder[i1] *= varValues[i1];
-          term *= varValues[i1];
+        if (opcode2 == 1) {
+          holder[opcode1] *= varValues[opcode1];
+          term *= varValues[opcode1];
         } else {
-          hyFloat p2 = _PolynomialData::BinaryRaise(varValues[i1], i2);
-          holder[i1] *= p2;
+          hyFloat p2 =
+              _PolynomialData::BinaryRaise(varValues[opcode1], opcode2);
+          holder[opcode1] *= p2;
           term *= p2;
         }
         if (compute) {
           continue;
         }
-        result += term * *compCoeff;
-        compCoeff++;
-      } else {
-        bool compute = i2 < 0;
-        long k;
-        for (k = i1 + 1; k <= lp; k++) {
-          holder[k] = 1;
+        result += term * compCoeff[current_coefficient++];
+      } else { // opcode1 < 0
+        bool compute = opcode2 < 0;
+        for (long k = opcode1 + 1; k <= lp; k++) {
+          holder[k] = 1.;
         }
-        if (i2 < 0) {
-          i2 = -i2;
+        if (opcode2 < 0) {
+          opcode2 = -opcode2;
         }
-        if (i2 == 1) {
-          holder[i1] *= varValues[i1];
+        if (opcode2 == 1) {
+          holder[opcode1] *= varValues[opcode1];
         } else {
-          holder[i1] *= _PolynomialData::BinaryRaise(varValues[i1], i2);
+          holder[opcode1] *=
+              _PolynomialData::BinaryRaise(varValues[opcode1], opcode2);
         }
-        term = 1;
-        for (k = 0; k <= i1; k++) {
+        term = 1.;
+        for (long k = 0; k <= opcode1; k++) {
           term *= holder[k];
         }
 
         if (compute) {
           continue;
         }
-        result += term * *compCoeff;
-        compCoeff++;
+        result += term * compCoeff[current_coefficient++];
       }
     }
   }
-  delete[] holder;
   return result;
 }
 //__________________________________________________________________________________
@@ -2651,8 +1886,87 @@ void _Polynomial::RankTerms(_SimpleList *receptacle) {
 
 BaseObj *_Polynomial::toStr(unsigned long padding) {
   _StringBuffer *result = new _StringBuffer(32UL);
+
+  /*
+        Opcode meanings
+        LVI = index of the last variable (varcount - 1)
+        VV (i) : value of variable indexed i
+        TERM   : current term
+        RESULT : overall result
+        MADD   : multiply by the current coefficient, then add to the RESULT,
+     advacing the current coefficient HOLDER : an array of N powers (one for
+     each variable + 1)
+
+        opcode1 == LVI
+            opcode2 == 0 : add the current coefficient to the result
+            opcode2 < 0  : multiply TERM by VV (LVI) ^ (-opcode2 - 1), then
+     current coefficient, and MADD this to the RESULT opcode2 > 0  : repeat
+     opcode2 times multiply TERM by VV (LVI) the MADD to the result opcode1 < 0
+            CVI (current variable index) -opcode1 - 1
+            POWER = Abs (opcode2)
+
+                multiply HOLDER (CVI) by VV (CVI) ^ POWER
+                multiply TERM by VV (CVI) ^ POWER
+
+            opcode2 > 0:
+                MADD TERM to RESULT
+
+        opcode1 > 0
+            POWER = Abs (opcode2)
+               Reset values opcode + 1 to the end in HOLDER to 1
+               multiply HOLDER (opcode1) by VV (opcode1) ^ POWER
+
+            opcode2 < 0
+                MADD TERM TO RESULT
+
+   */
+
+  if (compList1.nonempty() && !theTerms->thePowers) {
+    long N = variableIndex.countitems() - 1;
+
+    for (long i = 0; i <= N; i++) {
+      (*result) << "Variable  " << _String(i) << " = "
+                << LocateVar(variableIndex.get(i))->GetName()->Enquote('"')
+                << "\n";
+    }
+
+    for (unsigned long i = 0; i < compList1.countitems(); i++) {
+      long i1 = compList1.get(i), i2 = compList2.get(i);
+
+      (*result) << "\nStep " << _String(i + 1) << ": ";
+      if (N >= 0 && i1 == N) {
+        (*result) << " last var "
+                  << LocateVar(variableIndex.get(N))->GetName()->Enquote('"');
+        if (i2 < 0) {
+          (*result) << " raise to power " << _String(-i2 - 1);
+        } else {
+          (*result) << " " << _String(i2) << " consecutive powers";
+        }
+      } else {
+        if (i1 < 0) {
+          (*result)
+              << "Operation on "
+              << LocateVar(variableIndex.get(-i1 - 1))->GetName()->Enquote('"')
+              << " power " << _String(fabs(i2));
+          if (i2 < 0) {
+            (*result) << " add to results";
+          }
+        } else {
+          (*result)
+              << "Reset from "
+              << LocateVar(variableIndex.get(i1 + 1))->GetName()->Enquote('"')
+              << " power " << _String(fabs(i2));
+          if (i2 < 0) {
+            (*result) << " add to results";
+          }
+        }
+      }
+    }
+    (*result) << "\n";
+  }
+  Convert2OperationForm();
   if (theTerms->NumberOfTerms()) {
-    long i;
+    unsigned long i;
     _List _varNames;
     for (i = 0; i < variableIndex.countitems(); i++) {
       _varNames << LocateVar(variableIndex(i))->GetName();
@@ -2685,7 +1999,7 @@ BaseObj *_Polynomial::toStr(unsigned long padding) {
         }
         long *cT = theTerms->GetTerm(i);
         bool printedFirst = false;
-        for (long k = 0; k < variableIndex.countitems(); k++, cT++) {
+        for (unsigned long k = 0; k < variableIndex.countitems(); k++, cT++) {
           if (*cT != 0) {
             if (printedFirst) {
               *result << '*';
@@ -2716,14 +2030,15 @@ BaseObj *_Polynomial::toStr(unsigned long padding) {
 //__________________________________________________________________________________
 
 void _Polynomial::toFileStr(hyFile *f, unsigned long padding) {
+  Convert2OperationForm();
   if (theTerms->NumberOfTerms() && theTerms->thePowers) {
     f->puts("p(");
     _List _varNames;
-    long i;
+    unsigned long i;
     for (i = 0; i < variableIndex.countitems(); i++) {
       _varNames << LocateVar(variableIndex(i))->GetName();
       f->puts(((_String *)_varNames(i))->get_str());
-      if (i < variableIndex.countitems() - 1) {
+      if (i + 1 < variableIndex.countitems()) {
         f->puts(",");
       }
     }
@@ -2739,7 +2054,7 @@ void _Polynomial::toFileStr(hyFile *f, unsigned long padding) {
       if ((i > 0) || !theTerms->IsFirstANumber()) {
         f->puts("*");
         long *cT = theTerms->GetTerm(i);
-        for (long k = 0; k < variableIndex.countitems(); k++, cT++) {
+        for (unsigned long k = 0; k < variableIndex.countitems(); k++, cT++) {
           if (*cT > 0) {
             f->puts(((_String *)_varNames(k))->get_str());
             if (*cT > 1) {
@@ -2760,7 +2075,7 @@ void _Polynomial::toFileStr(hyFile *f, unsigned long padding) {
 //__________________________________________________________________________________
 void _Polynomial::ScanForVariables(_AVLList &l, bool globals, _AVLListX *tagger,
                                    long weight) const {
-  for (long i = 0; i < variableIndex.lLength; i++) {
+  for (unsigned long i = 0; i < variableIndex.lLength; i++) {
     long vi = variableIndex(i);
 
     _Variable *v = LocateVar(vi);

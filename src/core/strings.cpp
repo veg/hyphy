@@ -49,6 +49,7 @@
 
 #include "hy_strings.h"
 #include "mersenne_twister.h"
+#include <memory>
 
 _String compileDate = __DATE__;
 
@@ -355,6 +356,23 @@ _String &_String::operator=(_String &&rhs) {
  ==============================================================
  */
 
+/**
+ * @brief Normalizes a given range [from, to] to be within the bounds of the
+ * string.
+ * @param from The starting index of the range (passed by reference and modified
+ * in place).
+ * @param to The ending index of the range (passed by reference and modified in
+ * place).
+ * @return The length of the normalized range. Returns 0 if the string is empty.
+ * @note This function modifies the 'from' and 'to' parameters.
+ * @example
+ * @code
+ *   _String my_string("hello world");
+ *   long from = -2, to = 20;
+ *   long length = my_string.NormalizeRange(from, to);
+ *   // from is now 0, to is now 10, and length is 11.
+ * @endcode
+ */
 long _String::NormalizeRange(long &from, long &to) const {
 
   if (s_length == 0UL) {
@@ -365,7 +383,7 @@ long _String::NormalizeRange(long &from, long &to) const {
     from = 0L;
   }
 
-  if (to < 0L || to >= s_length) {
+  if (to < 0L || to >= (long)s_length) {
     to = s_length - 1UL;
   }
 
@@ -374,6 +392,11 @@ long _String::NormalizeRange(long &from, long &to) const {
 
 //=============================================================
 
+/**
+ * @brief Allocates memory for the string and copies the source string into it.
+ * @param source_string The C-style string to copy.
+ * @param length The length of the source string.
+ */
 void _String::AllocateAndCopyString(const char *source_string,
                                     unsigned long length) {
   s_length = length;
@@ -390,8 +413,19 @@ Getters and setters
 ==============================================================
 */
 
+/**
+ * @brief Access a character in the string by its index.
+ * @param index The index of the character to access.
+ * @return A reference to the character at the specified index.
+ * @throws HandleApplicationError if the index is out of bounds.
+ * @example
+ * @code
+ *  _String s ("test");
+ *  s[0] = 'T'; // s is now "Test"
+ * @endcode
+ */
 char &_String::operator[](long index) {
-  if (index < s_length && index >= 0L) {
+  if (index < (long)s_length && index >= 0L) {
     return s_data[index];
   }
   HandleApplicationError(_String("Internal error at ") & __PRETTY_FUNCTION__ &
@@ -401,11 +435,24 @@ char &_String::operator[](long index) {
 
 //=============================================================
 
+/**
+ * @brief Access a character in the string by its index (const version).
+ * @param index The index of the character to access. Can be negative to index
+ * from the end of the string.
+ * @return The character at the specified index. Returns `default_return` if the
+ * index is out of bounds.
+ * @example
+ * @code
+ *  _String s ("test");
+ *  char c = s(0);  // c is 't'
+ *  char d = s(-1); // d is 't'
+ * @endcode
+ */
 char _String::operator()(long index) const {
-  if (index >= 0L && index < s_length) {
+  if (index >= 0L && index < (long)s_length) {
     return s_data[index];
   }
-  if (index < 0L && -index <= s_length) {
+  if (index < 0L && -index <= (long)s_length) {
     return s_data[s_length + index];
   }
   return default_return;
@@ -413,6 +460,12 @@ char _String::operator()(long index) const {
 
 //=============================================================
 
+/**
+ * @brief Sets a character at a specific index.
+ * @param index The index of the character to set.
+ * @param data The new character.
+ * @note This function does nothing if the index is out of bounds.
+ */
 void _String::set_char(unsigned long index, char const data) {
   if (index < s_length) {
     s_data[index] = data;
@@ -421,11 +474,21 @@ void _String::set_char(unsigned long index, char const data) {
 
 //=============================================================
 
+/**
+ * @brief Sets a character at a specific index without checking bounds.
+ * @param index The index of the character to set.
+ * @param data The new character.
+ * @warning This function does not perform bounds checking. Use with caution.
+ */
 void _String::set_char_no_check(unsigned long index, char const data) {
   s_data[index] = data;
 }
 //=============================================================
 
+/**
+ * @brief Get the underlying C-style string.
+ * @return A const pointer to the C-style string.
+ */
 const char *_String::get_str(void) const { return s_data; }
 
 /*
@@ -434,10 +497,18 @@ const char *_String::get_str(void) const { return s_data; }
  ==============================================================
  */
 
+/**
+ * @brief Implicitly convert the _String to a const char*.
+ * @return A const pointer to the C-style string.
+ */
 _String::operator const char *(void) const { return s_data; }
 
 //=============================================================
 
+/**
+ * @brief Converts the string to a floating-point number.
+ * @return The float value of the string. Returns 0.0 if the string is empty.
+ */
 hyFloat _String::to_float(void) const {
   if (s_length == 0UL) {
     return 0.;
@@ -448,6 +519,11 @@ hyFloat _String::to_float(void) const {
 
 //=============================================================
 
+/**
+ * @brief Converts the string to a long integer.
+ * @return The long integer value of the string. Returns 0 if the string is
+ * empty.
+ */
 long _String::to_long(void) const {
   if (s_length == 0UL) {
     return 0L;
@@ -458,6 +534,11 @@ long _String::to_long(void) const {
 
 //=============================================================
 
+/**
+ * @brief Converts the object to a string representation.
+ * @param arg Unused.
+ * @return A reference to the string object itself.
+ */
 BaseRef _String::toStr(unsigned long) {
   AddAReference();
   return this;
@@ -465,6 +546,16 @@ BaseRef _String::toStr(unsigned long) {
 
 //=============================================================
 
+/**
+ * @brief Formats a time difference in seconds into a HH:MM:SS string.
+ * @param time_diff The time difference in seconds.
+ * @return A _String object representing the formatted time.
+ * @example
+ * @code
+ *  _String formatted_time = _String::FormatTimeString(3661);
+ *  // formatted_time is "01:01:01"
+ * @endcode
+ */
 const _String _String::FormatTimeString(long time_diff) {
 
   long fields[3] = {time_diff / 3600L, time_diff / 60L % 60L, time_diff % 60L};
@@ -490,68 +581,48 @@ const _String _String::FormatTimeString(long time_diff) {
  ==============================================================
  */
 
+/**
+ * @brief Compare this string with another string.
+ * @param rhs The string to compare against.
+ * @return hyComparisonType indicating the relationship between the strings
+ * (kCompareLess, kCompareEqual, kCompareGreater).
+ */
 hyComparisonType _String::Compare(_String const &rhs) const {
 
-  if (s_length <= rhs.s_length) {
-    for (unsigned long i = 0UL; i < s_length; i++) {
-      int diff = s_data[i] - rhs.s_data[i];
+  unsigned long min_len = MIN(s_length, rhs.s_length);
+  int result = memcmp(s_data, rhs.s_data, min_len);
 
-      if (diff < 0) {
-        return kCompareLess;
-      } else {
-        if (diff > 0) {
-          return kCompareGreater;
-        }
-      }
-    }
-
-    if (s_length == rhs.s_length) {
-      return kCompareEqual;
-    }
+  if (result < 0) {
     return kCompareLess;
-  } else {
-
-    for (unsigned long i = 0UL; i < rhs.s_length; i++) {
-      int diff = s_data[i] - rhs.s_data[i];
-
-      if (diff < 0) {
-        return kCompareLess;
-      } else {
-        if (diff > 0) {
-          return kCompareGreater;
-        }
-      }
-    }
+  }
+  if (result > 0) {
     return kCompareGreater;
   }
 
-  /*
-  unsigned long up_to = MIN (s_length, rhs.s_length);
-
-  for (unsigned long i = 0UL; i < up_to; i++) {
-      if (s_data[i] < rhs.s_data[i]) {
-          return kCompareLess;
-      }
-      if (s_data[i] > rhs.s_data[i]) {
-          return kCompareGreater;
-      }
+  if (s_length < rhs.s_length) {
+    return kCompareLess;
+  }
+  if (s_length > rhs.s_length) {
+    return kCompareGreater;
   }
 
-  if (s_length == rhs.s_length) {
-      return kCompareEqual;
-  }
-
-  return s_length < rhs.s_length ? kCompareLess : kCompareGreater;*/
+  return kCompareEqual;
 }
 
 //=============================================================
 
+/**
+ * @brief Compare this string with another string, ignoring case.
+ * @param rhs The string to compare against.
+ * @return hyComparisonType indicating the relationship between the strings
+ * (kCompareLess, kCompareEqual, kCompareGreater).
+ */
 hyComparisonType _String::CompareIgnoringCase(_String const &rhs) const {
   unsigned long up_to = MIN(s_length, rhs.s_length);
 
   for (unsigned long i = 0UL; i < up_to; i++) {
 
-    char llhs = tolower(s_data[i]), lrhs = tolower(rhs.s_data[i]);
+    char llhs = (char)tolower(s_data[i]), lrhs = (char)tolower(rhs.s_data[i]);
 
     if (llhs < lrhs) {
       return kCompareLess;
@@ -570,37 +641,56 @@ hyComparisonType _String::CompareIgnoringCase(_String const &rhs) const {
 
 //=============================================================
 
+/** @brief Equality operator. */
 bool _String::operator==(const _String &s) const {
   return Compare(s) == kCompareEqual;
 }
+/** @brief Greater than operator. */
 bool _String::operator>(const _String &s) const {
   return Compare(s) == kCompareGreater;
 }
+/** @brief Less than or equal to operator. */
 bool _String::operator<=(const _String &s) const {
   return Compare(s) != kCompareGreater;
 }
+/** @brief Greater than or equal to operator. */
 bool _String::operator>=(const _String &s) const {
   return Compare(s) != kCompareLess;
 }
+/** @brief Inequality operator. */
 bool _String::operator!=(const _String &s) const {
   return Compare(s) != kCompareEqual;
 }
+/** @brief Less than operator. */
 bool _String::operator<(const _String &s) const {
   return Compare(s) == kCompareLess;
 }
 
+/** @brief Check for equality with another string. */
 bool _String::Equal(const _String &s) const {
   return Compare(s) == kCompareEqual;
 };
+/** @brief Check for equality with another string, ignoring case. */
 bool _String::EqualIgnoringCase(const _String &s) const {
   return CompareIgnoringCase(s) == kCompareEqual;
 };
+/** @brief Check for equality with a single character. */
 bool _String::Equal(const char c) const {
   return s_length == 1UL && s_data[0] == c;
 }
 
 //=============================================================
 
+/**
+ * @brief Check for equality with a pattern string containing a wildcard
+ * character.
+ * @param pattern The pattern string to match against.
+ * @param wildchar The wildcard character.
+ * @param start_this The starting index in this string.
+ * @param start_pattern The starting index in the pattern string.
+ * @param wildchar_matches A list to store the indices of wildcard matches.
+ * @return True if the string matches the pattern, false otherwise.
+ */
 bool _String::EqualWithWildChar(const _String &pattern, const char wildchar,
                                 unsigned long start_this,
                                 unsigned long start_pattern,
@@ -633,7 +723,7 @@ bool _String::EqualWithWildChar(const _String &pattern, const char wildchar,
               // if this is the last (0) character, return true
               long rollback_checkpoint = wildchar_matches->countitems();
               if (last_matched_char + 1 <
-                  i) { // something get matched to the wildchard
+                  (long)i) { // something get matched to the wildchard
                 *wildchar_matches << (last_matched_char + 1) << (i - 1);
               }
               if (i == s_length) {
@@ -667,7 +757,7 @@ bool _String::EqualWithWildChar(const _String &pattern, const char wildchar,
             // this is where we terminate
             if (wildchar_matches) {
               if (last_matched_char + 1 <
-                  i) { // something get matched to the wildchard
+                  (long)i) { // something get matched to the wildchard
                 *wildchar_matches << (last_matched_char + 1) << (i - 1);
               }
               last_matched_char = i;
@@ -694,7 +784,8 @@ bool _String::EqualWithWildChar(const _String &pattern, const char wildchar,
     }
 
     if (wildchar_matches) {
-      if (last_matched_char + 1 < i) { // something get matched to the wildchard
+      if (last_matched_char + 1 <
+          (long)i) { // something get matched to the wildchard
         *wildchar_matches << (last_matched_char + 1) << (i - 1);
       }
     }
@@ -715,7 +806,17 @@ bool _String::EqualWithWildChar(const _String &pattern, const char wildchar,
 
 //=============================================================
 
-// Append operator
+/**
+ * @brief Append a string to this string.
+ * @param rhs The string to append.
+ * @return A new _String object containing the concatenated strings.
+ * @example
+ * @code
+ *  _String s1 ("Hello, ");
+ *  _String s2 ("World!");
+ *  _String s3 = s1 & s2; // s3 is "Hello, World!"
+ * @endcode
+ */
 _String _String::operator&(const _String &rhs) const {
   unsigned long combined_length = s_length + rhs.s_length;
 
@@ -739,6 +840,17 @@ _String _String::operator&(const _String &rhs) const {
 
 //=============================================================
 
+/**
+ * @brief Removes a substring from the string.
+ * @param start The starting index of the substring to remove.
+ * @param end The ending index of the substring to remove.
+ * @return A new _String object with the specified substring removed.
+ * @example
+ * @code
+ *  _String s ("Hello, World!");
+ *  _String s2 = s.Chop(5, 11); // s2 is "Hello!"
+ * @endcode
+ */
 _String _String::Chop(long start, long end) const {
 
   long resulting_length = NormalizeRange(start, end);
@@ -748,7 +860,7 @@ _String _String::Chop(long start, long end) const {
     if (start > 0L) {
       memcpy(res.s_data, s_data, start);
     }
-    if (end + 1L < s_length) {
+    if (end + 1L < (long)s_length) {
       memcpy(res.s_data + start, s_data + end + 1L, s_length - end - 1L);
     }
 
@@ -760,17 +872,38 @@ _String _String::Chop(long start, long end) const {
 
 //=============================================================
 
+/**
+ * @brief Extracts a substring from the string.
+ * @param start The starting index of the substring.
+ * @param end The ending index of the substring.
+ * @return A new _String object containing the extracted substring.
+ * @example
+ * @code
+ *  _String s ("Hello, World!");
+ *  _String s2 = s.Cut(7, 11); // s2 is "World"
+ * @endcode
+ */
 _String _String::Cut(long start, long end) const {
   return _String(*this, start, end);
 }
 
 //=============================================================
 
+/**
+ * @brief Deletes a substring from the string in place.
+ * @param start The starting index of the substring to delete.
+ * @param end The ending index of the substring to delete.
+ * @example
+ * @code
+ *  _String s ("Hello, World!");
+ *  s.Delete(5, 11); // s is now "Hello!"
+ * @endcode
+ */
 void _String::Delete(long start, long end) {
   long resulting_length = NormalizeRange(start, end);
 
   if (resulting_length > 0L) {
-    if (end < (long)s_length - 1UL) {
+    if (end < (long)s_length - 1) {
       memmove(s_data + start, s_data + end + 1L, s_length - end - 1L);
     }
     s_length -= resulting_length;
@@ -781,6 +914,14 @@ void _String::Delete(long start, long end) {
 
 //=============================================================
 
+/**
+ * @brief Reverses the string in place.
+ * @example
+ * @code
+ *  _String s ("abcde");
+ *  s.Flip(); // s is now "edcba"
+ * @endcode
+ */
 void _String::Flip(void) {
   for (unsigned long i = 0UL; i < (s_length >> 1); i++) {
     char c;
@@ -790,6 +931,10 @@ void _String::Flip(void) {
 
 //=============================================================
 
+/**
+ * @brief Returns a reversed copy of the string.
+ * @return A new _String object that is the reverse of this string.
+ */
 _String _String::Reverse(void) const {
 
   _String result(*this);
@@ -801,14 +946,24 @@ _String _String::Reverse(void) const {
 
 //=============================================================
 
+/**
+ * @brief Inserts a character into the string at a specified position.
+ * @param c The character to insert.
+ * @param where The index at which to insert the character.
+ * @example
+ * @code
+ *  _String s ("Hllo");
+ *  s.Insert('e', 1); // s is now "Hello"
+ * @endcode
+ */
 void _String::Insert(char c, long where) {
-  if (where < 0L || where >= s_length) {
+  if (where < 0L || where >= (long)s_length) {
     where = s_length;
   }
 
   s_data = (char *)MemReallocate(s_data, sizeof(char) * (s_length + 2UL));
 
-  if (where < s_length) {
+  if (where < (long)s_length) {
     memmove(s_data + where + 1UL, s_data + where, s_length - where);
   }
 
@@ -818,6 +973,16 @@ void _String::Insert(char c, long where) {
 
 //=============================================================
 
+/**
+ * @brief Trims the string to a specified range in place.
+ * @param start The starting index of the range to keep.
+ * @param end The ending index of the range to keep.
+ * @example
+ * @code
+ *  _String s ("  Hello  ");
+ *  s.Trim(2, 6); // s is now "Hello"
+ * @endcode
+ */
 void _String::Trim(long start, long end) {
   long resulting_length = NormalizeRange(start, end);
   /*if (s_length >= 5000 && start > 0) {
@@ -828,7 +993,7 @@ void _String::Trim(long start, long end) {
     if (start > 0L) {
       memmove(s_data, s_data + start, resulting_length);
     }
-    if (s_length != resulting_length) {
+    if ((long)s_length != resulting_length) {
       s_length = resulting_length;
       s_data = (char *)MemReallocate(s_data, resulting_length + 1UL);
       s_data[resulting_length] = '\0';
@@ -842,6 +1007,12 @@ void _String::Trim(long start, long end) {
 
 //=============================================================
 
+/**
+ * @brief Changes the case of the string.
+ * @param conversion_type The type of case conversion (kStringUpperCase or
+ * kStringLowerCase).
+ * @return A new _String object with the case changed.
+ */
 const _String _String::ChangeCase(hy_string_case conversion_type) const {
   _String result(s_length);
 
@@ -849,7 +1020,7 @@ const _String _String::ChangeCase(hy_string_case conversion_type) const {
       conversion_type == kStringUpperCase ? toupper : tolower;
 
   for (unsigned long i = 0UL; i < s_length; i++) {
-    result.s_data[i] = conversion_function(s_data[i]);
+    result.s_data[i] = (char)conversion_function(s_data[i]);
   }
 
   return result;
@@ -857,18 +1028,34 @@ const _String _String::ChangeCase(hy_string_case conversion_type) const {
 
 //=============================================================
 
+/**
+ * @brief Changes the case of the string in place.
+ * @param conversion_type The type of case conversion (kStringUpperCase or
+ * kStringLowerCase).
+ */
 void _String::ChangeCaseInPlace(hy_string_case conversion_type) {
 
   auto conversion_function =
       conversion_type == kStringUpperCase ? toupper : tolower;
 
   for (unsigned long i = 0UL; i < s_length; i++) {
-    s_data[i] = conversion_function(s_data[i]);
+    s_data[i] = (char)conversion_function(s_data[i]);
   }
 }
 
 //=============================================================
 
+/**
+ * @brief Tokenizes the string based on a splitter string.
+ * @param splitter The string to use as a delimiter.
+ * @return A _List of _String objects.
+ * @example
+ * @code
+ *  _String s ("a,b,c");
+ *  _List tokens = s.Tokenize(",");
+ *  // tokens contains ["a", "b", "c"]
+ * @endcode
+ */
 const _List _String::Tokenize(const _String &splitter) const {
   _List tokenized;
 
@@ -889,6 +1076,12 @@ const _List _String::Tokenize(const _String &splitter) const {
 
 //=============================================================
 
+/**
+ * @brief Tokenizes the string based on a set of splitter characters.
+ * @param splitter An array of booleans indicating which characters are
+ * splitters.
+ * @return A _List of _String objects.
+ */
 const _List _String::Tokenize(bool const splitter[256]) const {
   _List tokenized;
 
@@ -909,18 +1102,33 @@ const _List _String::Tokenize(bool const splitter[256]) const {
 
 //=============================================================
 
+/**
+ * @brief Encloses the string in a pair of identical quotes.
+ * @param quote_char The character to use for quoting.
+ * @return A new _String object with the quotes added.
+ */
 const _String _String::Enquote(char quote_char) const {
   return _StringBuffer(2UL + s_length) << quote_char << *this << quote_char;
 }
 
 //=============================================================
 
+/**
+ * @brief Encloses the string in a pair of opening and closing quotes.
+ * @param open_char The opening quote character.
+ * @param close_char The closing quote character.
+ * @return A new _String object with the quotes added.
+ */
 const _String _String::Enquote(char open_char, char close_char) const {
   return _StringBuffer(2UL + s_length) << open_char << *this << close_char;
 }
 
 //=============================================================
 
+/**
+ * @brief Removes all whitespace characters from the string.
+ * @return A new _String object with whitespace removed.
+ */
 const _String _String::KillSpaces(void) const {
   _StringBuffer temp(s_length + 1UL);
   for (unsigned long k = 0UL; k < s_length; k++) {
@@ -933,6 +1141,10 @@ const _String _String::KillSpaces(void) const {
 
 //=============================================================
 
+/**
+ * @brief Compresses consecutive whitespace characters into a single space.
+ * @return A new _String object with whitespace compressed.
+ */
 const _String _String::CompressSpaces(void) const {
 
   _StringBuffer temp(s_length + 1UL);
@@ -958,6 +1170,19 @@ const _String _String::CompressSpaces(void) const {
  ==============================================================
 */
 
+/**
+ * @brief Finds the first occurrence of a pattern in the string.
+ * @param pattern The pattern to search for.
+ * @param start The starting index for the search.
+ * @param end The ending index for the search.
+ * @return The index of the first character of the found pattern, or kNotFound
+ * if not found.
+ * @example
+ * @code
+ *  _String s ("hello world");
+ *  long index = s.Find("world"); // index is 6
+ * @endcode
+ */
 long _String::Find(const _String &pattern, long start, long end) const {
 
   if (pattern.s_length) {
@@ -982,6 +1207,19 @@ long _String::Find(const _String &pattern, long start, long end) const {
 
 //=============================================================
 
+/**
+ * @brief Finds the last occurrence of a pattern in the string.
+ * @param pattern The pattern to search for.
+ * @param start The starting index for the search.
+ * @param end The ending index for the search.
+ * @return The index of the first character of the found pattern, or kNotFound
+ * if not found.
+ * @example
+ * @code
+ *  _String s ("hello world world");
+ *  long index = s.FindBackwards("world"); // index is 12
+ * @endcode
+ */
 long _String::FindBackwards(const _String &pattern, long start,
                             long end) const {
 
@@ -1007,6 +1245,13 @@ long _String::FindBackwards(const _String &pattern, long start,
 
 //=============================================================
 
+/**
+ * @brief Finds the first occurrence of a character in the string.
+ * @param p The character to search for.
+ * @param start The starting index for the search.
+ * @param end The ending index for the search.
+ * @return The index of the found character, or kNotFound if not found.
+ */
 long _String::Find(const char p, long start, long end) const {
   if (s_length) {
     long span = NormalizeRange(start, end);
@@ -1027,12 +1272,20 @@ long _String::Find(const char p, long start, long end) const {
 
 //=============================================================
 
+/**
+ * @brief Finds the first occurrence of any character from a given set.
+ * @param lookup A boolean array representing the set of characters to search
+ * for.
+ * @param start The starting index for the search.
+ * @param end The ending index for the search.
+ * @return The index of the first character found, or kNotFound if not found.
+ */
 long _String::Find(const bool lookup[256], long start, long end) const {
   if (s_length) {
     long span = NormalizeRange(start, end);
     if (span > 0L) {
 
-      for (unsigned long index = start; index <= end; index++) {
+      for (long index = start; index <= end; index++) {
         if (lookup[(unsigned char)s_data[index]]) {
           return index;
         }
@@ -1045,12 +1298,21 @@ long _String::Find(const bool lookup[256], long start, long end) const {
 
 //=============================================================
 
+/**
+ * @brief Finds the first occurrence of any character from a given set, ignoring
+ * case.
+ * @param lookup A boolean array representing the set of characters to search
+ * for (should be lowercase).
+ * @param start The starting index for the search.
+ * @param end The ending index for the search.
+ * @return The index of the first character found, or kNotFound if not found.
+ */
 long _String::FindAnyCase(const bool lookup[256], long start, long end) const {
   if (s_length) {
     long span = NormalizeRange(start, end);
     if (span > 0L) {
 
-      for (unsigned long index = start; index <= end; index++) {
+      for (long index = start; index <= end; index++) {
         if (lookup[tolower(s_data[index])] || lookup[toupper(s_data[index])]) {
           return index;
         }
@@ -1062,6 +1324,14 @@ long _String::FindAnyCase(const bool lookup[256], long start, long end) const {
 }
 
 //=============================================================
+/**
+ * @brief Finds the first occurrence of a pattern in the string, ignoring case.
+ * @param pattern The pattern to search for.
+ * @param start The starting index for the search.
+ * @param end The ending index for the search.
+ * @return The index of the first character of the found pattern, or kNotFound
+ * if not found.
+ */
 long _String::FindAnyCase(const _String &pattern, long start, long end) const {
 
   if (pattern.s_length) {
@@ -1085,6 +1355,19 @@ long _String::FindAnyCase(const _String &pattern, long start, long end) const {
 }
 //=============================================================
 
+/**
+ * @brief Replaces occurrences of a pattern with a replacement string.
+ * @param pattern The pattern to search for.
+ * @param replace The string to replace the pattern with.
+ * @param replace_all If true, all occurrences are replaced; otherwise, only the
+ * first.
+ * @return A new _String object with the replacements made.
+ * @example
+ * @code
+ *  _String s ("hello world world");
+ *  _String s2 = s.Replace("world", "earth", true); // s2 is "hello earth earth"
+ * @endcode
+ */
 const _String _String::Replace(const _String &pattern, const _String &replace,
                                bool replace_all) const {
 
@@ -1118,12 +1401,27 @@ const _String _String::Replace(const _String &pattern, const _String &replace,
 }
 //=============================================================
 
+/**
+ * @brief Finds the index of the first non-whitespace character.
+ * @param start The starting index for the search.
+ * @param end The ending index for the search.
+ * @param direction The direction to search in (forward or backward).
+ * @return The index of the first non-whitespace character, or kNotFound if not
+ * found.
+ */
 long _String::FirstNonSpaceIndex(long start, long end,
                                  hy_string_search_direction direction) const {
   return _FindFirstIndexCondtion(start, end, direction,
                                  [](char c) -> bool { return !isspace(c); });
 }
 
+/**
+ * @brief Finds the first non-whitespace character.
+ * @param start The starting index for the search.
+ * @param end The ending index for the search.
+ * @param direction The direction to search in (forward or backward).
+ * @return The first non-whitespace character, or `default_return` if not found.
+ */
 char _String::FirstNonSpace(long start, long end,
                             hy_string_search_direction direction) const {
   long r = FirstNonSpaceIndex(start, end, direction);
@@ -1132,6 +1430,14 @@ char _String::FirstNonSpace(long start, long end,
 
 //=============================================================
 
+/**
+ * @brief Finds the index of the first whitespace character.
+ * @param start The starting index for the search.
+ * @param end The ending index for the search.
+ * @param direction The direction to search in (forward or backward).
+ * @return The index of the first whitespace character, or kNotFound if not
+ * found.
+ */
 long _String::FirstSpaceIndex(long start, long end,
                               hy_string_search_direction direction) const {
   return _FindFirstIndexCondtion(start, end, direction, isspace);
@@ -1139,6 +1445,14 @@ long _String::FirstSpaceIndex(long start, long end,
 
 //=============================================================
 
+/**
+ * @brief Finds the first non-whitespace character that follows a whitespace
+ * character.
+ * @param start The starting index for the search.
+ * @param end The ending index for the search.
+ * @param direction The direction to search in (forward or backward).
+ * @return The index of the found character, or kNotFound if not found.
+ */
 long _String::FirstNonSpaceFollowingSpace(
     long start, long end, hy_string_search_direction direction) const {
   long first_space = FirstSpaceIndex(start, end, direction);
@@ -1152,7 +1466,13 @@ long _String::FirstNonSpaceFollowingSpace(
   return first_space;
 }
 
-// Begins with string
+/**
+ * @brief Checks if the string begins with a given pattern.
+ * @param pattern The pattern to check for.
+ * @param case_sensitive If true, the comparison is case-sensitive.
+ * @param startfrom The index to start the comparison from.
+ * @return True if the string begins with the pattern, false otherwise.
+ */
 bool _String::BeginsWith(_String const &pattern, bool case_sensitive,
                          unsigned long startfrom) const {
   if (s_length >= pattern.s_length + startfrom) {
@@ -1174,7 +1494,15 @@ bool _String::BeginsWith(_String const &pattern, bool case_sensitive,
   return false;
 }
 
-// Begins with string
+/**
+ * @brief Checks if the string begins with any character from a given set.
+ * @param pattern A boolean array representing the set of characters to check
+ * for.
+ * @param case_sensitive If true, the comparison is case-sensitive.
+ * @param startfrom The index to start the comparison from.
+ * @return True if the string begins with a character from the set, false
+ * otherwise.
+ */
 bool _String::BeginsWith(const bool pattern[256], bool case_sensitive,
                          unsigned long startfrom) const {
   if (s_length >= 1UL + startfrom) {
@@ -1196,10 +1524,15 @@ bool _String::BeginsWith(const bool pattern[256], bool case_sensitive,
   return false;
 }
 
-// Ends with string
+/**
+ * @brief Checks if the string ends with a given pattern.
+ * @param pattern The pattern to check for.
+ * @param case_sensitive If true, the comparison is case-sensitive.
+ * @return True if the string ends with the pattern, false otherwise.
+ */
 bool _String::EndsWith(_String const &pattern, bool case_sensitive) const {
   if (s_length >= pattern.s_length) {
-    unsigned long length_difference = s_length - pattern.s_length;
+    long length_difference = s_length - pattern.s_length;
     return (case_sensitive
                 ? Find(pattern, length_difference)
                 : FindAnyCase(pattern, length_difference)) == length_difference;
@@ -1207,7 +1540,12 @@ bool _String::EndsWith(_String const &pattern, bool case_sensitive) const {
   return false;
 }
 
-// Begins with string
+/**
+ * @brief Checks if the string begins with a given pattern and is not followed
+ * by an identifier character.
+ * @param pattern The pattern to check for.
+ * @return True if the condition is met, false otherwise.
+ */
 bool _String::BeginsWithAndIsNotAnIdent(_String const &pattern) const {
 
   if (BeginsWith(pattern)) {
@@ -1233,6 +1571,13 @@ bool _String::BeginsWithAndIsNotAnIdent(_String const &pattern) const {
 
 //=============================================================
 
+/**
+ * @brief Removes matching opening and closing characters from the beginning and
+ * end of the string.
+ * @param open_char The opening character to strip.
+ * @param close_char The closing character to strip.
+ * @return True if the quotes were stripped, false otherwise.
+ */
 bool _String::StripQuotes(char open_char, char close_char) {
   if (s_length >= 2UL) {
     if (s_data[0] == open_char && s_data[s_length - 1UL] == close_char) {
@@ -1245,6 +1590,13 @@ bool _String::StripQuotes(char open_char, char close_char) {
 
 //=============================================================
 
+/**
+ * @brief Removes matching opening and closing characters from a set of possible
+ * pairs.
+ * @param open_chars A C-string of possible opening characters.
+ * @param close_chars A C-string of corresponding closing characters.
+ * @return True if any pair of quotes was stripped, false otherwise.
+ */
 bool _String::StripQuotes(char const *open_chars, char const *close_chars) {
   if (s_length >= 2UL) {
     size_t count = strlen(open_chars);
@@ -1261,16 +1613,26 @@ bool _String::StripQuotes(char const *open_chars, char const *close_chars) {
 
 //=============================================================
 
+/**
+ * @brief Checks if the string is a valid identifier.
+ * @param options A bitmask of options for validation.
+ * @return True if the string is a valid identifier, false otherwise.
+ */
 bool _String::IsValidIdentifier(int options) const {
   return s_length > 0UL &&
          _IsValidIdentifierAux(options & fIDAllowCompound,
                                options & fIDAllowFirstNumeric) ==
-             s_length - 1UL &&
+             (long)s_length - 1 &&
          hyReservedWords.FindObject(this) == kNotFound;
 }
 
 //=============================================================
 
+/**
+ * @brief Converts the string to a valid identifier.
+ * @param options A bitmask of options for conversion.
+ * @return A new _String object that is a valid identifier.
+ */
 const _String _String::ConvertToAnIdent(int options) const {
   _StringBuffer converted;
 
@@ -1318,9 +1680,17 @@ const _String _String::ConvertToAnIdent(int options) const {
 
 //=============================================================
 
+/**
+ * @brief Auxiliary function to check for a valid identifier.
+ * @param allow_compounds If true, allows compound identifiers (e.g., with
+ * dots).
+ * @param allow_first_numeric If true, allows the first character to be a
+ * number.
+ * @param unused Unused parameter.
+ * @return The length of the valid identifier prefix, or kNotFound.
+ */
 long _String::_IsValidIdentifierAux(bool allow_compounds,
-                                    bool allow_first_numeric,
-                                    char wildcard) const {
+                                    bool allow_first_numeric, char) const {
 
   unsigned long current_index = 0UL;
 
@@ -1355,6 +1725,11 @@ long _String::_IsValidIdentifierAux(bool allow_compounds,
 
 //=============================================================
 
+/**
+ * @brief Checks if the string is a literal argument (i.e., enclosed in quotes).
+ * @param strip_quotes If true, the quotes are removed from the string.
+ * @return True if the string is a literal argument, false otherwise.
+ */
 bool _String::IsALiteralArgument(bool strip_quotes) {
   if (s_length >= 2UL) {
     char quotes[2] = {'"', '\''};
@@ -1362,7 +1737,7 @@ bool _String::IsALiteralArgument(bool strip_quotes) {
       long from = 0L, to = ExtractEnclosedExpression(from, quote, quote,
                                                      fExtractRespectEscape);
 
-      if (from == 0L && to == s_length - 1L) {
+      if (from == 0L && to == (long)s_length - 1L) {
         if (strip_quotes) {
           Trim(1L, s_length - 2L);
         }
@@ -1375,6 +1750,13 @@ bool _String::IsALiteralArgument(bool strip_quotes) {
 
 //=============================================================
 
+/**
+ * @brief Processes variable reference cases, resolving dereferences and
+ * context.
+ * @param referenced_object The string to store the resolved reference.
+ * @param context The context to resolve the reference in.
+ * @return The type of reference found.
+ */
 hy_reference_type
 _String::ProcessVariableReferenceCases(_String &referenced_object,
                                        _String const *context) const {
@@ -1475,6 +1857,11 @@ _String::ProcessVariableReferenceCases(_String &referenced_object,
  ==============================================================
  */
 
+/**
+ * @brief Gets a formatted error string for a regular expression error code.
+ * @param error The error code.
+ * @return A _String object containing the formatted error message.
+ */
 const _String _String::GetRegExpError(int error) {
   return _String("Regular Expression error: ") &
          _String(std::to_string(error).c_str()).Enquote();
@@ -1482,7 +1869,10 @@ const _String _String::GetRegExpError(int error) {
 
 //=============================================================
 
-void _String::FlushRegExp(std::regex *re) { delete re; }
+/**
+ * @brief Deletes a compiled regular expression object.
+ * @param re A pointer to the std::regex object to delete.
+ */
 
 //=============================================================
 
@@ -1510,6 +1900,13 @@ std::regex *_String::PrepRegExp(const _String &pattern, int &error_code,
 
 //=============================================================
 
+/**
+ * @brief Finds the first match of a compiled regular expression in the string.
+ * @param re A pointer to the compiled std::regex object.
+ * @param start The starting index for the search.
+ * @return A _SimpleList of pairs, where each pair is the start and end index of
+ * a match group.
+ */
 const _SimpleList _String::RegExpMatch(std::regex const *re,
                                        unsigned long start) const {
   _SimpleList matched_pairs;
@@ -1528,6 +1925,12 @@ const _SimpleList _String::RegExpMatch(std::regex const *re,
 
 //=============================================================
 
+/**
+ * @brief Finds all matches of a compiled regular expression in the string.
+ * @param re A pointer to the compiled std::regex object.
+ * @return A _SimpleList of pairs, where each pair is the start and end index of
+ * a match.
+ */
 const _SimpleList _String::RegExpAllMatches(std::regex const *re) const {
   _SimpleList matched_pairs;
 
@@ -1546,6 +1949,14 @@ const _SimpleList _String::RegExpAllMatches(std::regex const *re) const {
 
 //=============================================================
 
+/**
+ * @brief Internal helper function for regular expression matching.
+ * @param pattern The regular expression pattern.
+ * @param case_sensitive If true, the match is case-sensitive.
+ * @param handle_errors If true, application errors are handled.
+ * @param match_all If true, all matches are found; otherwise, only the first.
+ * @return A _SimpleList of matching indices.
+ */
 const _SimpleList _String::_IntRegExpMatch(const _String &pattern,
                                            bool case_sensitive,
                                            bool handle_errors,
@@ -1569,6 +1980,13 @@ const _SimpleList _String::_IntRegExpMatch(const _String &pattern,
 
 //=============================================================
 
+/**
+ * @brief Finds the first match of a regular expression pattern in the string.
+ * @param pattern The regular expression pattern.
+ * @param case_sensitive If true, the match is case-sensitive.
+ * @param handle_errors If true, application errors are handled.
+ * @return A _SimpleList of pairs for the first match and its capture groups.
+ */
 const _SimpleList _String::RegExpMatch(const _String &pattern,
                                        bool case_sensitive,
                                        bool handle_errors) const {
@@ -1577,11 +1995,22 @@ const _SimpleList _String::RegExpMatch(const _String &pattern,
 
 //=============================================================
 
+/**
+ * @brief Finds all matches of a regular expression pattern in the string.
+ * @param pattern The regular expression pattern.
+ * @param case_sensitive If true, the match is case-sensitive.
+ * @param handle_errors If true, application errors are handled.
+ * @return A _SimpleList of pairs for all matches.
+ */
 const _SimpleList _String::RegExpAllMatches(const _String &pattern,
                                             bool case_sensitive,
                                             bool handle_errors) const {
   return _IntRegExpMatch(pattern, case_sensitive, handle_errors, true);
 }
+
+//=============================================================
+
+void _String::FlushRegExp(std::regex *re) { delete re; }
 
 /*
 ==============================================================
@@ -1589,8 +2018,10 @@ Methods
 ==============================================================
 */
 
-// Compute Adler-32 CRC for a string
-// Implementation shamelessly lifted from http://en.wikipedia.org/wiki/Adler-32
+/**
+ * @brief Computes the Adler-32 checksum of the string.
+ * @return The Adler-32 checksum as a long integer.
+ */
 long _String::Adler32(void) const {
 
   const static unsigned long MOD_ADLER = 65521UL;
@@ -1623,6 +2054,13 @@ long _String::Adler32(void) const {
 
 //=============================================================
 
+/**
+ * @brief Generates a random string of a given length.
+ * @param length The desired length of the random string.
+ * @param alphabet An optional string specifying the set of characters to use.
+ * If nil, characters from 1 to 127 are used.
+ * @return A new _String object containing the random string.
+ */
 _String const _String::Random(const unsigned long length,
                               const _String *alphabet) {
   _String random(length);
@@ -1645,6 +2083,12 @@ _String const _String::Random(const unsigned long length,
 
 //=============================================================
 
+/**
+ * @brief Computes the Lempel-Ziv production history of the string.
+ * @param rec An optional pointer to a _SimpleList to store the production
+ * history.
+ * @return The number of production steps.
+ */
 unsigned long _String::LempelZivProductionHistory(_SimpleList *rec) const {
   if (rec) {
     rec->Clear();
@@ -1667,16 +2111,16 @@ unsigned long _String::LempelZivProductionHistory(_SimpleList *rec) const {
     for (unsigned long ip = 0; ip < current_position; ip++) {
       long sp = ip, mp = current_position;
 
-      while (mp < s_length && s_data[mp] == s_data[sp]) {
+      while (mp < (long)s_length && s_data[mp] == s_data[sp]) {
         mp++;
         sp++;
       }
 
-      if (mp == s_length) {
+      if (mp == (long)s_length) {
         max_extension = s_length - current_position;
         break;
       } else {
-        if ((mp = mp - current_position + 1UL) > max_extension) {
+        if ((mp = mp - current_position + 1) > (long)max_extension) {
           max_extension = mp;
         }
       }
