@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.15)
 project(HyPhy LANGUAGES CXX)
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9")
+        message(FATAL_ERROR "GCC version 9 or later is required.")
+    endif()
+endif()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 enable_testing()
