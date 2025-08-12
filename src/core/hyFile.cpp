@@ -35,6 +35,7 @@
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
 #include "global_things.h"
 #include "hy_strings.h"
 #include "hy_types.h"

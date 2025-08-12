@@ -7,10 +7,10 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
-	Lance Hepler (nlhepler@gmail.com)
-	Martin Smith (martin.audacis@gmail.com)
+        Lance Hepler (nlhepler@gmail.com)
+        Martin Smith (martin.audacis@gmail.com)
 
 Significant contributions from:
   Spencer V Muse (muse@stat.ncsu.edu)
@@ -37,11 +37,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __HY_TYPES__
-#define     __HY_TYPES__
+#ifndef __HY_TYPES__
+#define __HY_TYPES__
 
 #ifdef __ZLIB__
-    #include <zlib.h>
+#include <zlib.h>
 #endif
 
 #include <stdio.h>
@@ -50,14 +50,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     Put application-wide typedefs and enums here
 */
 
-typedef     void*        hyPointer;
-    // generic pointer
-typedef     double       hyFloat;
-    // standard floating type
+typedef void *hyPointer;
+// generic pointer
+typedef double hyFloat;
+// standard floating type
 
-
-
-enum hyBLFunctionType  {
+enum hyBLFunctionType {
   kBLFunctionAlwaysUpdate,
   kBLFunctionSkipUpdate,
   kBLFunctionLocal
@@ -75,53 +73,59 @@ enum hyTreeDefinitionPhase {
 };
 
 enum hyComparisonType {
-    kCompareLess    = -1,
-    kCompareEqual   = 0,
-    kCompareGreater = 1,
-    kCompareUndefined      = 0xff
+  kCompareLess = -1,
+  kCompareEqual = 0,
+  kCompareGreater = 1,
+  kCompareUndefined = 0xff
 };
 
 enum hyFileOpenMode {
-    kFileRead,
-    kFileReadBinary,
-    kFileReadWrite,
-    kFileWrite,
-    kFileWriteBinary,
-    kFileAppend
+  kFileRead,
+  kFileReadBinary,
+  kFileReadWrite,
+  kFileWrite,
+  kFileWriteBinary,
+  kFileAppend
 };
 
 class hyFile {
-    public:
-        hyFile (void) {
-            _fileReference = NULL;
-            #ifdef __ZLIB__
-                _fileReferenceDirect = NULL;
-            #endif
-        }
-        static hyFile* openFile (const char * file_path, hyFileOpenMode mode , bool error = false, bool compress = false, long buffer = 1024*128);
-        void lock (void);
-        void unlock (void);
-        void rewind (void);
-        void seek (long, int);
-        void flush (void);
-        int  close ();
-        bool feof (void);
-        unsigned long read (void* buffer, unsigned long size, unsigned long items);
-        size_t fwrite( const void* buffer, size_t size, size_t count);
-        int    puts(const char *str);
-        int    fputc(int chr);
-        size_t tell ();
-        int getc ();
-    #ifdef __ZLIB__
-        inline  bool valid (void) const {return _fileReference != NULL || _fileReferenceDirect != NULL;}
-        gzFile _fileReference;
-        FILE * _fileReferenceDirect;
-        bool    is_compressed (void) const { return _fileReference != NULL;}
-    #else
-        inline  bool valid (void) const {return _fileReference != NULL;}
-        bool    is_compressed (void) const { return false;}
-        FILE* _fileReference;
-    #endif
+public:
+  hyFile(void) {
+    _fileReference = NULL;
+#ifdef __ZLIB__
+    _fileReferenceDirect = NULL;
+#endif
+  }
+  static hyFile *openFile(const char *file_path, hyFileOpenMode mode,
+                          bool error = false, bool compress = false,
+                          long buffer = 1024 * 128);
+  void lock(void);
+  void unlock(void);
+  void rewind(void);
+  void seek(long, int);
+  void flush(void);
+  int close();
+  bool feof(void);
+  unsigned long read(void *buffer, unsigned long size, unsigned long items);
+  size_t fwrite(const void *buffer, size_t size, size_t count);
+  int puts(const char *str);
+  int fputc(int chr);
+  size_t tell();
+  int getc(void);
+
+#ifdef __ZLIB__
+  inline bool valid(void) const {
+    return _fileReference != NULL || _fileReferenceDirect != NULL;
+  }
+  gzFile _fileReference;
+  FILE *_fileReferenceDirect;
+  bool is_compressed(void) const { return _fileReference != NULL; }
+#else
+  inline bool valid(void) const { return _fileReference != NULL; }
+  bool is_compressed(void) const { return false; }
+  FILE *_fileReference;
+#endif
+
 };
 
 #endif
