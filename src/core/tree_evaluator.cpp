@@ -2728,7 +2728,8 @@ void _hy_mvp_blocked_4x4(double *C, double const *M, double const *V) {
       accumulator.val[1] = vfmaq_f64(accumulator.val[1], mv2, v);
 
       mv1 = vcombine_f64(vld1_f64(M + moffset + 1),
-                         vld1_f64(M + moffset + D + 1)),
+                         vld1_f64(M + moffset + D + 1));
+
       mv2 = vcombine_f64(vld1_f64(M + moffset + 2 * D + 1),
                          vld1_f64(M + moffset + 3 * D + 1));
 
@@ -2793,7 +2794,8 @@ void _hy_mvp_blocked_4x4(double *C, double const *M, double const *V) {
       accumulator.val[1] = vfmaq_f64(accumulator.val[1], mv2, v);
 
       mv1 = vcombine_f64(vld1_f64(M + moffset + 1),
-                         vld1_f64(M + moffset + D + 1)),
+                         vld1_f64(M + moffset + D + 1));
+
       mv2 = vcombine_f64(vld1_f64(M + moffset + 2 * D + 1),
                          vld1_f64(M + moffset + 3 * D + 1));
 
@@ -2802,7 +2804,8 @@ void _hy_mvp_blocked_4x4(double *C, double const *M, double const *V) {
       accumulator.val[1] = vfmaq_f64(accumulator.val[1], mv2, v);
 
       mv1 = vcombine_f64(vld1_f64(M + moffset + 2),
-                         vld1_f64(M + moffset + D + 2)),
+                         vld1_f64(M + moffset + D + 2));
+
       mv2 = vcombine_f64(vld1_f64(M + moffset + 2 * D + 2),
                          vld1_f64(M + moffset + 3 * D + 2));
 
@@ -3153,7 +3156,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
   _CalcNode *currentTreeNode;
   long localScalerChange = 0;
 
-  if (siteTo > siteCount) {
+  if (siteTo > (long)siteCount) {
     siteTo = siteCount;
   }
 
@@ -3176,7 +3179,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
     hyFloat *childVector, *lastUpdatedSite;
 
     bool isLeaf;
-    if (nodeCode < flatLeaves.lLength) {
+    if (nodeCode < (long)flatLeaves.lLength) {
       isLeaf = true;
       currentTreeNode = ((_CalcNode *)flatCLeaves(nodeCode));
     } else {
@@ -3630,7 +3633,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
   for (long siteID = siteFrom, rootIndex = 0L; siteID < siteTo; siteID++) {
     hyFloat accumulator = 0.;
 
-    if (setBranch == flatTree.lLength - 1) {
+    if (setBranch + 1 == (long)flatTree.lLength) {
       long rootState = setBranchTo[siteOrdering.list_data[siteID]];
       accumulator =
           rootConditionals[rootIndex + rootState] * theProbs[rootState];
@@ -3638,7 +3641,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
     } else {
 // #pragma unroll(4)
 #pragma GCC unroll 4
-      for (long p = 0; p < alphabetDimension; p++, rootIndex++) {
+      for (unsigned long p = 0; p < alphabetDimension; p++, rootIndex++) {
         accumulator += rootConditionals[rootIndex] * theProbs[p];
       }
     }
@@ -3937,7 +3940,7 @@ void _TheTree::ComputeBranchCache(
     myParent = flatParents.list_data[k];
     if (taggedNodes.list_data[myParent + flatLeaves.lLength] == 1 &&
         taggedNodes.list_data[k] == 0) {
-      if (myParent != brID - flatLeaves.lLength) {
+      if (myParent != brID - (long)flatLeaves.lLength) {
         nodesToProcess << k;
       }
     }
@@ -3952,7 +3955,7 @@ void _TheTree::ComputeBranchCache(
 
   // first populate the downward looking vector of conditionals
 
-  if (brID < flatLeaves.lLength) { // a leaf
+  if (brID < (long)flatLeaves.lLength) { // a leaf
     if (alphabetDimension == 4) {
       for (long siteID = siteFrom; siteID < siteTo; siteID++, state += 4) {
         long siteState =
@@ -4045,7 +4048,7 @@ void _TheTree::ComputeBranchCache(
   long const node_count = nodesToProcess.lLength + rootPath.lLength - 2L;
 
   for (long nodeID = 0; nodeID < node_count; nodeID++) {
-    bool notPassedRoot = nodeID < nodesToProcess.lLength;
+    bool notPassedRoot = nodeID < (long)nodesToProcess.lLength;
 
     long nodeCode, parentCode;
 
@@ -4058,7 +4061,7 @@ void _TheTree::ComputeBranchCache(
                     flatLeaves.lLength);
     }
 
-    bool isLeaf = nodeCode < flatLeaves.lLength;
+    bool isLeaf = nodeCode < (long)flatLeaves.lLength;
 
     if (!isLeaf) {
       nodeCode -= flatLeaves.lLength;
@@ -4083,11 +4086,11 @@ void _TheTree::ComputeBranchCache(
         }
       } else {
         unsigned long k3 = 0UL;
-        for (unsigned long k = siteFrom; k < siteTo; k++) {
+        for (long k = siteFrom; k < siteTo; k++) {
           hyFloat scaler = localScalingFactor[k];
 // #pragma unroll(4)
 #pragma GCC unroll 4
-          for (unsigned long k2 = 0UL; k2 < alphabetDimension; k2++, k3++) {
+          for (long k2 = 0; k2 < alphabetDimension; k2++, k3++) {
             parentConditionals[k3] = scaler;
           }
         }
@@ -4105,10 +4108,10 @@ void _TheTree::ComputeBranchCache(
 
     _Matrix const *transitionMatrixObj = currentTreeNode->GetCompExp(catID);
     hyFloat const *transitionMatrix = transitionMatrixObj->theData;
-    hyFloat *childVector, *lastUpdatedSite;
+    hyFloat *childProbabilitiesVector, *lastUpdatedSite;
 
     if (!isLeaf) {
-      lastUpdatedSite = childVector =
+      lastUpdatedSite = childProbabilitiesVector =
           iNodeCache + (siteFrom + nodeCode * siteCount) * alphabetDimension;
     }
 
@@ -4164,9 +4167,9 @@ void _TheTree::ComputeBranchCache(
         hyFloat const *tMatrix = transitionMatrix;
         if (__lcache_loop_preface<4>(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount,
-                siteFrom, parentConditionals, tMatrix, canScale, childVector,
-                lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex,
-                parentTCCIBit, parentTCCIIndex, notPassedRoot,
+                siteFrom, parentConditionals, tMatrix, canScale,
+                childProbabilitiesVector, lastUpdatedSite, tcc, currentTCCBit,
+                currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot,
                 lNodeResolutions)) {
           /*if (likeFuncEvalCallCount == 328 && siteID == 30) {
               fprintf (stderr, "__lcache_loop_preface (%ld isleaf = %d canscale
@@ -4193,7 +4196,7 @@ void _TheTree::ComputeBranchCache(
         }*/
 
         hyFloat sum = _handle4x4_pruning_case_direct(
-            childVector, tmatrix_transpose, parentConditionals);
+            childProbabilitiesVector, tmatrix_transpose, parentConditionals);
 
         if (canScale) {
 
@@ -4210,7 +4213,7 @@ void _TheTree::ComputeBranchCache(
         parentConditionals[2], parentConditionals[3], didScale);
         }*/
 
-        childVector += 4L;
+        childProbabilitiesVector += 4L;
         __handle_site_corrections(didScale, siteID);
       }
     } else if (alphabetDimension == 20L) {
@@ -4220,15 +4223,15 @@ void _TheTree::ComputeBranchCache(
         hyFloat const *tMatrix = transitionMatrix;
         if (__lcache_loop_preface<20>(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount,
-                siteFrom, parentConditionals, tMatrix, canScale, childVector,
-                lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex,
-                parentTCCIBit, parentTCCIIndex, notPassedRoot,
+                siteFrom, parentConditionals, tMatrix, canScale,
+                childProbabilitiesVector, lastUpdatedSite, tcc, currentTCCBit,
+                currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot,
                 lNodeResolutions)) {
           continue;
         }
         long didScale = 0;
         hyFloat sum = 0.;
-        _hy_mvp_blocked_4x4<20>(mvs, tMatrix, childVector);
+        _hy_mvp_blocked_4x4<20>(mvs, tMatrix, childProbabilitiesVector);
         sum = _hy_vvmult_sum<20>(parentConditionals, mvs);
         if (canScale) {
           __ll_loop_handle_scaling<20L, false>(
@@ -4236,7 +4239,7 @@ void _TheTree::ComputeBranchCache(
               siteCount, siteID, localScalerChange,
               theFilter->theFrequencies.get(siteOrdering.list_data[siteID]));
         }
-        childVector += 20L;
+        childProbabilitiesVector += 20L;
         __handle_site_corrections(didScale, siteID);
       }
     } else if (alphabetDimension == 60L) {
@@ -4246,15 +4249,15 @@ void _TheTree::ComputeBranchCache(
         hyFloat const *tMatrix = transitionMatrix;
         if (__lcache_loop_preface<60>(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount,
-                siteFrom, parentConditionals, tMatrix, canScale, childVector,
-                lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex,
-                parentTCCIBit, parentTCCIIndex, notPassedRoot,
+                siteFrom, parentConditionals, tMatrix, canScale,
+                childProbabilitiesVector, lastUpdatedSite, tcc, currentTCCBit,
+                currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot,
                 lNodeResolutions)) {
           continue;
         }
         long didScale = 0;
         hyFloat sum = 0.;
-        _hy_mvp_blocked_4x4<60>(mvs, tMatrix, childVector);
+        _hy_mvp_blocked_4x4<60>(mvs, tMatrix, childProbabilitiesVector);
         sum = _hy_vvmult_sum<60>(parentConditionals, mvs);
         if (canScale) {
           __ll_loop_handle_scaling<60L, false>(
@@ -4262,7 +4265,7 @@ void _TheTree::ComputeBranchCache(
               siteCount, siteID, localScalerChange,
               theFilter->theFrequencies.get(siteOrdering.list_data[siteID]));
         }
-        childVector += 60L;
+        childProbabilitiesVector += 60L;
         __handle_site_corrections(didScale, siteID);
       }
     } else if (alphabetDimension == 61L) {
@@ -4273,15 +4276,15 @@ void _TheTree::ComputeBranchCache(
         hyFloat const *tMatrix = transitionMatrix;
         if (__lcache_loop_preface<61>(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount,
-                siteFrom, parentConditionals, tMatrix, canScale, childVector,
-                lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex,
-                parentTCCIBit, parentTCCIIndex, notPassedRoot,
+                siteFrom, parentConditionals, tMatrix, canScale,
+                childProbabilitiesVector, lastUpdatedSite, tcc, currentTCCBit,
+                currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot,
                 lNodeResolutions)) {
           continue;
         }
         long didScale = 0;
 
-        _hy_mvp_blocked_4x4<61>(mvs, tMatrix, childVector);
+        _hy_mvp_blocked_4x4<61>(mvs, tMatrix, childProbabilitiesVector);
         hyFloat sum = _hy_vvmult_sum<61>(parentConditionals, mvs);
 
         if (canScale) {
@@ -4290,7 +4293,7 @@ void _TheTree::ComputeBranchCache(
               siteCount, siteID, localScalerChange,
               theFilter->theFrequencies.get(siteOrdering.list_data[siteID]));
         }
-        childVector += 61L;
+        childProbabilitiesVector += 61L;
         __handle_site_corrections(didScale, siteID);
       }
     } else if (alphabetDimension == 62L) {
@@ -4305,16 +4308,16 @@ void _TheTree::ComputeBranchCache(
         hyFloat const *tMatrix = transitionMatrix;
         if (__lcache_loop_preface<62>(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount,
-                siteFrom, parentConditionals, tMatrix, canScale, childVector,
-                lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex,
-                parentTCCIBit, parentTCCIIndex, notPassedRoot,
+                siteFrom, parentConditionals, tMatrix, canScale,
+                childProbabilitiesVector, lastUpdatedSite, tcc, currentTCCBit,
+                currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot,
                 lNodeResolutions)) {
           continue;
         }
         long didScale = 0;
         hyFloat sum = 0.;
 
-        _hy_mvp_blocked_4x4<62>(mvs, tMatrix, childVector);
+        _hy_mvp_blocked_4x4<62>(mvs, tMatrix, childProbabilitiesVector);
         sum = _hy_vvmult_sum<62>(parentConditionals, mvs);
 
         if (canScale) {
@@ -4323,7 +4326,7 @@ void _TheTree::ComputeBranchCache(
               siteCount, siteID, localScalerChange,
               theFilter->theFrequencies.get(siteOrdering.list_data[siteID]));
         }
-        childVector += 62L;
+        childProbabilitiesVector += 62L;
         __handle_site_corrections(didScale, siteID);
       }
     } else if (alphabetDimension == 63L) {
@@ -4338,15 +4341,15 @@ void _TheTree::ComputeBranchCache(
         hyFloat const *tMatrix = transitionMatrix;
         if (__lcache_loop_preface<63>(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount,
-                siteFrom, parentConditionals, tMatrix, canScale, childVector,
-                lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex,
-                parentTCCIBit, parentTCCIIndex, notPassedRoot,
+                siteFrom, parentConditionals, tMatrix, canScale,
+                childProbabilitiesVector, lastUpdatedSite, tcc, currentTCCBit,
+                currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot,
                 lNodeResolutions)) {
           continue;
         }
         long didScale = 0;
         hyFloat sum = 0.;
-        _hy_mvp_blocked_4x4<63>(mvs, tMatrix, childVector);
+        _hy_mvp_blocked_4x4<63>(mvs, tMatrix, childProbabilitiesVector);
         sum = _hy_vvmult_sum<63>(parentConditionals, mvs);
         if (canScale) {
           __ll_loop_handle_scaling<63L, false>(
@@ -4354,7 +4357,7 @@ void _TheTree::ComputeBranchCache(
               siteCount, siteID, localScalerChange,
               theFilter->theFrequencies.get(siteOrdering.list_data[siteID]));
         }
-        childVector += 63L;
+        childProbabilitiesVector += 63L;
         __handle_site_corrections(didScale, siteID);
       }
     } else {
@@ -4366,16 +4369,16 @@ void _TheTree::ComputeBranchCache(
         hyFloat const *tMatrix = transitionMatrix;
         if (__lcache_loop_preface_generic(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount,
-                siteFrom, parentConditionals, tMatrix, canScale, childVector,
-                lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex,
-                parentTCCIBit, parentTCCIIndex, notPassedRoot, lNodeResolutions,
-                alphabetDimension)) {
+                siteFrom, parentConditionals, tMatrix, canScale,
+                childProbabilitiesVector, lastUpdatedSite, tcc, currentTCCBit,
+                currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot,
+                lNodeResolutions, alphabetDimension)) {
           continue;
         }
         long didScale = 0;
         hyFloat sum = 0.;
-        _hy_matrix_vector_product_blocked_4x4(mvs, tMatrix, childVector,
-                                              (int)alphabetDimension);
+        _hy_matrix_vector_product_blocked_4x4(
+            mvs, tMatrix, childProbabilitiesVector, (int)alphabetDimension);
         sum = _hy_vvmult_sum_generic(parentConditionals, mvs,
                                      (int)alphabetDimension);
 
@@ -4386,7 +4389,7 @@ void _TheTree::ComputeBranchCache(
               theFilter->theFrequencies.get(siteOrdering.list_data[siteID]),
               alphabetDimension);
         }
-        childVector += alphabetDimension;
+        childProbabilitiesVector += alphabetDimension;
         __handle_site_corrections(didScale, siteID);
       }
     }

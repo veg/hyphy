@@ -37,266 +37,294 @@
 
  */
 
-#ifndef     __FORMULAS__
-#define     __FORMULAS__
+#ifndef __FORMULAS__
+#define __FORMULAS__
 
+#include "avllistxl.h"
 #include "baseobj.h"
 #include "classes.h"
 #include "defines.h"
-#include "avllistxl.h"
-#include "stack.h"
 #include "operation.h"
+#include "stack.h"
 
-
-#include "hy_string_buffer.h"
 #include "formula_parsing_context.h"
+#include "hy_string_buffer.h"
 
 class _Variable;
 class _VariableContainer;
 class _Polynomial;
 
-
-union       _SimpleFormulaDatum {
-    hyFloat value;
-    hyPointer        reference;
+union _SimpleFormulaDatum {
+  hyFloat value;
+  hyPointer reference;
 };
 
-
-enum _hyFormulaStringConversionMode  {
+enum _hyFormulaStringConversionMode {
   kFormulaStringConversionNormal = 0L,
   kFormulaStringConversionSubstiteValues = 2L,
   kFormulaStringConversionReportRanges = 3L
 };
 
-class   _Formula {
+class _Formula {
 
-    friend class _Variable;
-    friend class _VariableContainer;
-    
+  friend class _Variable;
+  friend class _VariableContainer;
+
 protected:
+  unsigned long call_count;
+  HBLObjectRef recursion_calls;
+  _List *resultCache;
+  _Stack theStack;
+  _List theFormula;
+  long *simpleExpressionStatus;
+  /**
+      SLKP: 20200924
+          Added this shorthand to improve memory locality and speed-up
+     SimpleCompute performance one entry per formula operator with the following
+     values -1     : constant value
+              >=0 : reference to variable value
+                 - 2: matrix storage
+                 - 3 : matrix access
+                 - 4 : no shortcut
+              < -10000:
+                 - HY_OP_CODE : (-10000-HY_OP_CODE for binary operatons)
+              < -100000:
+                 - HY_OP_CODE (-100000-HY_OP_CODE for unary operatons)
+   */
 
-    unsigned    long    call_count;
-    HBLObjectRef        recursion_calls;
-    _List*              resultCache;
-    _Stack              theStack;
-    _List               theFormula;
-    long*               simpleExpressionStatus;
-    /**
-        SLKP: 20200924
-            Added this shorthand to improve memory locality and speed-up SimpleCompute performance
-            one entry per formula operator with the following values
-                -1     : constant value
-                >=0 : reference to variable value
-                   - 2: matrix storage
-                   - 3 : matrix access
-                   - 4 : no shortcut
-                < -10000:
-                   - HY_OP_CODE : (-10000-HY_OP_CODE for binary operatons)
-                < -100000:
-                   - HY_OP_CODE (-100000-HY_OP_CODE for unary operatons)
-     */
-
-    node<long>* theTree; // this formula converted to a tree for operation purposes
-    // such as simplification, differentiation and printing.
-    // trees store numbers referencing operations inside
-    // "theFormula"
-
+  node<long> *theTree; // this formula converted to a tree for operation
+                       // purposes such as simplification, differentiation and
+                       // printing. trees store numbers referencing operations
+                       // inside "theFormula"
 
 public:
-    _Formula (void);
-    _Formula (_String const&,_VariableContainer const* theParent=nil,_String* errorString = nil);
-    _Formula (const _Polynomial *);
-    
-    long     ParseFormula (_String const&,_VariableContainer const* theParent=nil,_String* errorString = nil);
-    
-    _Formula (HBLObjectRef, bool isAVar = false);
-    _Formula (_Formula const & rhs);
-    const _Formula & operator = (_Formula const & rhs);
-    virtual ~_Formula (void);
-    HBLObjectRef   Compute             (long = 0, _VariableContainer const* = nil, _List* additionalCacheArguments = nil, _String *errMsg = nil, long object_type = HY_ANY_OBJECT, bool can_cache = true, bool skip_comparison = false);
-    // compute the value of the formula
-    // 1st argument : execute from this instruction onwards
-    // see the commend for ExecuteFormula for the second argument
+  _Formula(void);
+  _Formula(_String const &, _VariableContainer const *theParent = nil,
+           _String *errorString = nil);
+  _Formula(const _Polynomial *);
 
-    bool        IsEmpty             (void) const; // is there anything in the formula
-    long        NumberOperations    (void) const; // how many ops in the formula?
+  long ParseFormula(_String const &, _VariableContainer const *theParent = nil,
+                    _String *errorString = nil);
 
-    friend  long        Parse               (_Formula*, _String&, _FormulaParsingContext&, _Formula*);
-    // the main expression parser
+  _Formula(HBLObjectRef, bool isAVar = false);
+  _Formula(_Formula const &rhs);
+  const _Formula &operator=(_Formula const &rhs);
+  virtual ~_Formula(void);
+  HBLObjectRef Compute(long = 0, _VariableContainer const * = nil,
+                       _List *additionalCacheArguments = nil,
+                       _String *errMsg = nil, long object_type = HY_ANY_OBJECT,
+                       bool can_cache = true, bool skip_comparison = false);
+  // compute the value of the formula
+  // 1st argument : execute from this instruction onwards
+  // see the commend for ExecuteFormula for the second argument
 
-    friend  long        ExecuteFormula      (_Formula*, _Formula*, long, long, _VariableContainer*, char);
-    // the execution block for "compiled formulae
-    /*
-     SLKP 20100119: added an execution name space to allow correct scoping of "pass-by-reference"
-                    arguments when calling ExecuteAFile within a namespace.
+  bool IsEmpty(void) const;          // is there anything in the formula
+  long NumberOperations(void) const; // how many ops in the formula?
 
-                    e.g. in
+  friend long Parse(_Formula *, _String &, _FormulaParsingContext &,
+                    _Formula *);
+  // the main expression parser
 
-                    function foo (var&)
-                    {
-                        ...
-                    }
+  friend long ExecuteFormula(_Formula *, _Formula *, long, long,
+                             _VariableContainer *, char);
+  // the execution block for "compiled formulae
+  /*
+   SLKP 20100119: added an execution name space to allow correct scoping of
+   "pass-by-reference" arguments when calling ExecuteAFile within a namespace.
 
-                    foo ("varID");
+                  e.g. in
 
-                    varID may need to be prefixed by a namespace ID.
-     */
+                  function foo (var&)
+                  {
+                      ...
+                  }
 
+                  foo ("varID");
 
-    _MathObject*ConstructPolynomial (void);
+                  varID may need to be prefixed by a namespace ID.
+   */
 
-    void        Initialize          (void);
-    void        Duplicate           (_Formula const *, bool deep_copy = false);
-    void        DuplicateReference          (const _Formula*);
-    BaseRef     makeDynamic         (void) const;
-    BaseRef     toStr               (_hyFormulaStringConversionMode mode, _List* matchNames = nil, bool = false, _StringBuffer* hbl_dependencies = nil);
-    _StringBuffer const     toRPN               (_hyFormulaStringConversionMode mode, _List* matchNames = nil);
+  _MathObject *ConstructPolynomial(void);
 
-    long        ObjectClass         (void);
+  void Initialize(void);
+  void Duplicate(_Formula const *, bool deep_copy = false);
+  void DuplicateReference(const _Formula *);
+  BaseRef makeDynamic(void) const;
+  BaseRef toStr(_hyFormulaStringConversionMode mode, _List *matchNames = nil,
+                bool = false, _StringBuffer *hbl_dependencies = nil);
+  _StringBuffer const toRPN(_hyFormulaStringConversionMode mode,
+                            _List *matchNames = nil);
 
+  long ObjectClass(void);
 
-    void        ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool skipMatrixAssignments = false, _AVLListX* tagger = nil, long weight = 0, long weight2 = 0) const;
-    void        ScanFForType        (_SimpleList&,  int);
-    /* SLKP 20100716:
-            A simple utility function to retrieve all variables of a given type
-     */
+  void ScanFForVariables(_AVLList &l, bool includeGlobals = false,
+                         bool includeAll = false, bool includeCateg = true,
+                         bool skipMatrixAssignments = false,
+                         _AVLListX *tagger = nil, long weight = 0,
+                         long weight2 = 0) const;
+  void ScanFForType(_SimpleList &, unsigned long);
+  /* SLKP 20100716:
+          A simple utility function to retrieve all variables of a given type
+   */
 
-    bool        CheckFForDependence (long, bool checkAll = false);
-    bool        CheckFForDependence (_AVLList const & indices, bool checkAll = false);
-    
-    _List&      GetList             (void) {
-        return theFormula;
-    }
+  bool CheckFForDependence(long, bool checkAll = false);
+  bool CheckFForDependence(_AVLList const &indices, bool checkAll = false);
 
-    bool        HasChanged          (bool = false); // does  the formula need recomputing
-    bool        HasChangedSimple    (_SimpleList&);
-    bool        EqualFormula        (_Formula*);
-    bool        IsAConstant         (void); //  does this formula include variables, or is it just a constant?
-    bool        IsConstant          (bool strict = false); //  does this formula depend on something other that constants and fixed parameters?
-    bool        DependsOnVariable   (long);
-    bool        IsArrayAccess       (void); // check to see if this formula performs a matrix access
-    /*
-        SLKP 20090315: added a missing utility function
-        given a variable index as an argument, returns true if
-        the formula depends on a it; false otherwise
-    */
-    _Operation* GetIthTerm          (long) const;
-    /*
-        SLKP 20090315: added a missing utility function
-        given an index (i) as the argument, the function retrieves
-        the i-th term of the formula
-    */
+  _List &GetList(void) { return theFormula; }
 
-    _Operation* ItemAt          (long) const;
-    /*
-     Same as GetIthTerm, but no range checking
-     */
+  bool HasChanged(bool = false); // does  the formula need recomputing
+  bool HasChangedSimple(_SimpleList &);
+  bool EqualFormula(_Formula *);
+  bool IsAConstant(
+      void); //  does this formula include variables, or is it just a constant?
+  bool IsConstant(
+      bool strict = false); //  does this formula depend on something other that
+                            //  constants and fixed parameters?
+  bool DependsOnVariable(long);
+  bool
+  IsArrayAccess(void); // check to see if this formula performs a matrix access
+  /*
+      SLKP 20090315: added a missing utility function
+      given a variable index as an argument, returns true if
+      the formula depends on a it; false otherwise
+  */
+  _Operation *GetIthTerm(long) const;
+  /*
+      SLKP 20090315: added a missing utility function
+      given an index (i) as the argument, the function retrieves
+      the i-th term of the formula
+  */
 
-    unsigned long Length            (void) const {return theFormula.lLength;}
+  _Operation *ItemAt(long) const;
+  /*
+   Same as GetIthTerm, but no range checking
+   */
 
-    void        Clear               (void);
-    HBLObjectRef   GetTheMatrix        (void);
+  unsigned long Length(void) const { return theFormula.lLength; }
 
-    void        PushTerm            (BaseRef);
+  void Clear(void);
+  HBLObjectRef GetTheMatrix(void);
 
-    /* 20151008: if the argument is a _List, then treat as a list of _Operations and push them onto this formula (increment reference counters as well)
-                 otherwise assume it's a MathObject and push it to this forumla (+1 reference counter)
-                 dynamic_cast is used to determine what type of object this is
+  void PushTerm(BaseRef);
 
-    */
+  /* 20151008: if the argument is a _List, then treat as a list of _Operations
+     and push them onto this formula (increment reference counters as well)
+               otherwise assume it's a MathObject and push it to this forumla
+     (+1 reference counter) dynamic_cast is used to determine what type of
+     object this is
 
-    bool        AmISimple           (long& stack_depth, _AVLList& variable_index) ;
-    long        StackDepth          (long start_at = 0L, long end_at = -1L) const;
-      /**
-        starting at operation 'start_at', counting up to 'end_at' (-1 == the end),
-        evaluate how many values would be on the stack after the execution of these commands
-       */
-    bool        ConvertToSimple     (_AVLList& variableIndex);
-    void        ConvertFromSimple   (_AVLList const& variableIndex);
-    void        ConvertFromSimpleList   (_SimpleList const& variableIndex);
-    void        SimplifyConstants   (void);
-    _Variable * Dereference         (bool, _hyExecutionContext* = _hyDefaultExecutionContext);
+  */
 
-    hyFloat  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
+  bool AmISimple(long &stack_depth, _AVLList &variable_index);
+  long StackDepth(long start_at = 0L, long end_at = -1L) const;
+  /**
+    starting at operation 'start_at', counting up to 'end_at' (-1 == the end),
+    evaluate how many values would be on the stack after the execution of these
+    commands
+   */
+  bool ConvertToSimple(_AVLList &variableIndex);
+  void ConvertFromSimple(_AVLList const &variableIndex);
+  void ConvertFromSimpleList(_SimpleList const &variableIndex);
+  void SimplifyConstants(void);
+  _Variable *Dereference(bool,
+                         _hyExecutionContext * = _hyDefaultExecutionContext);
 
-    hyFloat  Newton              (_Formula&, _Variable*,  hyFloat, hyFloat, hyFloat);
-    hyFloat  Newton              (_Formula&, hyFloat, hyFloat, hyFloat, _Variable*);
-    hyFloat  Newton              (_Variable*,  hyFloat, hyFloat, hyFloat, hyFloat);
-    hyFloat  Newton              (_Variable*,hyFloat, hyFloat, hyFloat);
+  hyFloat ComputeSimple(_SimpleFormulaDatum *stack,
+                        _SimpleFormulaDatum *varValues);
 
-    hyFloat  Brent               (_Variable*, hyFloat, hyFloat, hyFloat = 1.e-7, _List* = nil, hyFloat = 0.);
+  hyFloat Newton(_Formula &, _Variable *, hyFloat, hyFloat, hyFloat);
+  hyFloat Newton(_Formula &, hyFloat, hyFloat, hyFloat, _Variable *);
+  hyFloat Newton(_Variable *, hyFloat, hyFloat, hyFloat, hyFloat);
+  hyFloat Newton(_Variable *, hyFloat, hyFloat, hyFloat);
 
-    hyFloat  Integral            (_Variable*,hyFloat, hyFloat, bool inifinite = false);
-    hyFloat  MeanIntegral        (_Variable*,hyFloat, hyFloat, bool inifinite = false);
-    _Formula*   Differentiate       (_String const&, bool = true, bool convert_from_tree = true);
-    node<long>* InternalDifferentiate
-    (node<long>*, long,_SimpleList const &, _Formula  * const *, _Formula&);
+  hyFloat Brent(_Variable *, hyFloat, hyFloat, hyFloat = 1.e-7, _List * = nil,
+                hyFloat = 0.);
 
-    bool        InternalSimplify    (node<long>*);
+  hyFloat Integral(_Variable *, hyFloat, hyFloat, bool inifinite = false);
+  hyFloat MeanIntegral(_Variable *, hyFloat, hyFloat, bool inifinite = false);
+  _Formula *Differentiate(_String const &, bool = true,
+                          bool convert_from_tree = true);
+  node<long> *InternalDifferentiate(node<long> *, long, _SimpleList const &,
+                                    _Formula *const *, _Formula &);
 
-    void        LocalizeFormula           (_Formula&, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv);
-    void        ConvertMatrixArgumentsToSimpleOrComplexForm (bool);
-    long        ExtractMatrixExpArguments        (_List*);
+  bool InternalSimplify(node<long> *);
 
-    virtual     _Formula const operator + (const _Formula&);
-    virtual     _Formula const operator - (const _Formula&);
-    virtual     _Formula const operator * (const _Formula&);
-    virtual     _Formula const operator / (const _Formula&);
-    virtual     _Formula const operator ^ (const _Formula&);
+  void LocalizeFormula(_Formula &, _String &parentName, _SimpleList &iv,
+                       _SimpleList &iiv, _SimpleList &dv, _SimpleList &idv);
+  void ConvertMatrixArgumentsToSimpleOrComplexForm(bool);
+  long ExtractMatrixExpArguments(_List *);
 
-    static      _Formula*        PatchFormulasTogether (const _Formula& op1, const _Formula& op2, const char op_code);
-    static      _Formula*        PatchFormulasTogether (const _Formula& op1, HBLObjectRef op2, const char op_code);
-    
-    void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive, bool simplify = true, bool help_mode = false);
-  
-    /**
-        Process a formula as a part of a batch to convert to simple formulas
-     
-         @author SLKP
-         @date 20240305
-         @param stackLength : keep track of the deepest stack for the formulas in the batch
-         @param var_list : the union of all independent variables that this batch depends on
-         @param new_formulas : a list of references to unique formulas in the batch
-         @param references : the index of the unique formula to which this formula refers
-         @param formula_strings : keep track of formula strings to identify unique ones
-         @param run_all : if true, process all formulas (not just those which return TRUE from AmISimple)
+  virtual _Formula const operator+(const _Formula &);
+  virtual _Formula const operator-(const _Formula &);
+  virtual _Formula const operator*(const _Formula &);
+  virtual _Formula const operator/(const _Formula &);
+  virtual _Formula const operator^(const _Formula &);
 
-     */
-    bool        ProcessFormulaForConverstionToSimple (long& stack_length,
-                                                      _AVLList& var_list,
-                                                      _SimpleList& new_formulas,
-                                                      _SimpleList& references,
-                                                      _AVLListX& formula_strings,
-                                                      bool run_all);
-  
-    /** A compute and forget utility function.
-        Parse an expression, optionally check to see that it's of the right type and return the value
-        
-      @param expression : the string to parse
-      @param use_exceptions : if true, throw const _String exceptions, otherwise handle errors directly 
-      @param requested_type: return nil if the computed value is not of this type
-      @param formula parsing contrext
-     
-      @return expression value or nil; the value needs to be managed by the caller
-      Revision history
-          20170921 : SLKP initial implementation 
-     
-    */
-     
-    static      HBLObjectRef          ParseAndCompute (_String const& expression, bool use_exceptions = false, long requested_type = HY_ANY_OBJECT, _hyExecutionContext * context = nil);
+  static _Formula *PatchFormulasTogether(const _Formula &op1,
+                                         const _Formula &op2,
+                                         const char op_code);
+  static _Formula *PatchFormulasTogether(const _Formula &op1, HBLObjectRef op2,
+                                         const char op_code);
 
+  void ScanFormulaForHBLFunctions(_AVLListX &collection, bool recursive,
+                                  bool simplify = true, bool help_mode = false);
+
+  /**
+      Process a formula as a part of a batch to convert to simple formulas
+
+       @author SLKP
+       @date 20240305
+       @param stackLength : keep track of the deepest stack for the formulas in
+     the batch
+       @param var_list : the union of all independent variables that this batch
+     depends on
+       @param new_formulas : a list of references to unique formulas in the
+     batch
+       @param references : the index of the unique formula to which this formula
+     refers
+       @param formula_strings : keep track of formula strings to identify unique
+     ones
+       @param run_all : if true, process all formulas (not just those which
+     return TRUE from AmISimple)
+
+   */
+  bool ProcessFormulaForConverstionToSimple(
+      long &stack_length, _AVLList &var_list, _SimpleList &new_formulas,
+      _SimpleList &references, _AVLListX &formula_strings, bool run_all);
+
+  /** A compute and forget utility function.
+      Parse an expression, optionally check to see that it's of the right type
+    and return the value
+
+    @param expression : the string to parse
+    @param use_exceptions : if true, throw const _String exceptions, otherwise
+    handle errors directly
+    @param requested_type: return nil if the computed value is not of this type
+    @param formula parsing contrext
+
+    @return expression value or nil; the value needs to be managed by the caller
+    Revision history
+        20170921 : SLKP initial implementation
+
+  */
+
+  static HBLObjectRef ParseAndCompute(_String const &expression,
+                                      bool use_exceptions = false,
+                                      long requested_type = HY_ANY_OBJECT,
+                                      _hyExecutionContext *context = nil);
 
 protected:
-
-    void        SubtreeToString     (_StringBuffer & result, node<long>* top_node, int op_level, _List* match_names, _Operation* this_node_op, _hyFormulaStringConversionMode mode = kFormulaStringConversionNormal, _StringBuffer * hbl_dependencies = nil, _AVLList* hbl_tracker = nil);
-    void        ConvertToTree       (bool err_msg = true);
-    void        ConvertFromTree     (void);
-    bool        CheckSimpleTerm     (HBLObjectRef);
-    node<long>* DuplicateFormula    (node<long>*,_Formula&) const;
-
-
+  void SubtreeToString(
+      _StringBuffer &result, node<long> *top_node, int op_level,
+      _List *match_names, _Operation *this_node_op,
+      _hyFormulaStringConversionMode mode = kFormulaStringConversionNormal,
+      _StringBuffer *hbl_dependencies = nil, _AVLList *hbl_tracker = nil);
+  void ConvertToTree(bool err_msg = true);
+  void ConvertFromTree(void);
+  bool CheckSimpleTerm(HBLObjectRef);
+  node<long> *DuplicateFormula(node<long> *, _Formula &) const;
 };
 
-extern _Formula * current_formula_being_computed;
+extern _Formula *current_formula_being_computed;
 
 #endif
