@@ -269,7 +269,10 @@ public:
       }
     }
   }
-  long GetThreadCount(void) { return lfThreadCount; }
+  long GetThreadCount(void) const { return lfThreadCount; }
+#else
+  long GetThreadCount(void) const { return 1; }
+  void SetThreadCount(long, bool = false) {};
 #endif
 
   void ComputeDependencyLists(_List &receptacle,
