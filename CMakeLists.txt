@@ -67,6 +67,7 @@ include(CheckCXXCompilerFlag)
 include(CheckCXXSourceCompiles)
 
 set(COMMON_COMPILE_FLAGS "-fsigned-char;-O3;-D_FORTIFY_SOURCE=2;-Wall;")
+set(HYPHY_SIMD_FLAGS "")
 
 if(NOT NONEON)
     set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
@@ -82,13 +83,16 @@ int main() {
     if(HYPHY_HAVE_NEON)
         add_compile_definitions(_SLKP_USE_ARM_NEON)
         if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-            list(APPEND COMMON_COMPILE_FLAGS "-mcpu=native;-mtune=native")
+            list(APPEND HYPHY_SIMD_FLAGS "-mcpu=native;-mtune=native")
         endif()
     endif()
     set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if(NOT HYPHY_HAVE_NEON)
+        list(APPEND COMMON_COMPILE_FLAGS "-march=native" "-mcpu=native" "-mtune=native")
+    endif()
     if(NOT NOAVX)
         set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
         set(CMAKE_REQUIRED_FLAGS "-mavx2")
@@ -101,7 +105,7 @@ int main() {
 }
 " HYPHY_HAVE_AVX2)
         if(HYPHY_HAVE_AVX2)
-            list(APPEND COMMON_COMPILE_FLAGS "-mavx2")
+            list(APPEND HYPHY_SIMD_FLAGS "-mavx2")
             add_compile_definitions(_SLKP_USE_AVX_INTRINSICS)
             set(CMAKE_REQUIRED_FLAGS "-mfma")
             check_cxx_source_compiles("
@@ -113,7 +117,7 @@ int main() {
 }
 " HYPHY_HAVE_FMA)
             if(HYPHY_HAVE_FMA)
-                list(APPEND COMMON_COMPILE_FLAGS "-mfma")
+                list(APPEND HYPHY_SIMD_FLAGS "-mfma")
                 add_compile_definitions(_SLKP_USE_FMA3_INTRINSICS)
             endif()
         endif()
@@ -130,7 +134,7 @@ int main() {
 }
 " HYPHY_HAVE_SSE41)
         if(HYPHY_HAVE_SSE41)
-            list(APPEND COMMON_COMPILE_FLAGS "-msse4.1")
+            list(APPEND HYPHY_SIMD_FLAGS "-msse4.1")
             add_compile_definitions(_SLKP_USE_SSE_INTRINSICS)
         endif()
         set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
@@ -155,7 +159,7 @@ endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
    list(APPEND COMMON_COMPILE_FLAGS "-fwasm-exceptions")
    if(NOT NOSSE4)
-       list(APPEND COMMON_COMPILE_FLAGS "-msimd128")
+       list(APPEND HYPHY_SIMD_FLAGS "-msimd128")
    endif()
 endif()
 
@@ -197,7 +201,7 @@ add_custom_target(uninstall
 # Main Executable
 #------------------------------------------------------------------------------
 add_executable(hyphy ${SRC_COMMON} ${SRC_UNIXMAIN})
-target_compile_options(hyphy PRIVATE ${COMMON_COMPILE_FLAGS})
+target_compile_options(hyphy PRIVATE ${COMMON_COMPILE_FLAGS} ${HYPHY_SIMD_FLAGS})
 target_compile_definitions(hyphy PRIVATE
      __AFYP_REWRITE_BGM__
     __UNIX__
@@ -247,7 +251,7 @@ install(TARGETS hyphy RUNTIME DESTINATION bin)
 #------------------------------------------------------------------------------
 if(MPI_FOUND)
     add_executable(HYPHYMPI EXCLUDE_FROM_ALL ${SRC_COMMON} ${SRC_UNIXMAIN})
-    target_compile_options(HYPHYMPI PRIVATE ${COMMON_COMPILE_FLAGS})
+    target_compile_options(HYPHYMPI PRIVATE ${COMMON_COMPILE_FLAGS} ${HYPHY_SIMD_FLAGS})
     target_compile_definitions(HYPHYMPI PRIVATE
         __AFYP_REWRITE_BGM__
         __UNIX__
@@ -275,6 +279,7 @@ if(MPI_FOUND)
 endif()
 
 add_executable(HYPHYDEBUG EXCLUDE_FROM_ALL ${SRC_COMMON} ${SRC_UNIXMAIN})
+target_compile_options(HYPHYDEBUG PRIVATE ${HYPHY_SIMD_FLAGS})
 if(USE_ASAN)
     target_compile_options(HYPHYDEBUG PRIVATE -fsanitize=address -g)
     target_link_libraries(HYPHYDEBUG PRIVATE -fsanitize=address -g)
