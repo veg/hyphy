@@ -2104,7 +2104,7 @@ void ReadNextLine(hyFile *fp, _StringBuffer *s, FileState *fs, bool,
   char lastc;
 
   if (fp) {
-    lastc = (char)fp->getc();
+    lastc = (char)fp->read_char();
   } else {
     lastc = fs->pInSrc < (long)fs->theSource->length()
                 ? fs->theSource->char_at(fs->pInSrc++)
@@ -2118,7 +2118,7 @@ void ReadNextLine(hyFile *fp, _StringBuffer *s, FileState *fs, bool,
           fs->lineBuffer << lastc;
         }
 
-        lastc = (char)fp->getc();
+        lastc = (char)fp->read_char();
       }
     else
       while (lastc && lastc != '\r' && lastc != '\n') {
@@ -2151,7 +2151,7 @@ void ReadNextLine(hyFile *fp, _StringBuffer *s, FileState *fs, bool,
       }
 
       if (fp) {
-        lastc = (char)fp->getc();
+        lastc = (char)fp->read_char();
         if (upCase) {
           lastc = _uppercase_char(lastc);
         }

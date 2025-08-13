@@ -110,9 +110,9 @@ public:
   size_t fwrite(const void *buffer, size_t size, size_t count);
   int puts(const char *str);
   int fputc(int chr);
-  size_t tell();
-  int getc(void);
-
+  size_t tell(void);
+  int read_char(void);
+>>>>>>> ea7586cd4995e13a7959e901c82afcbaf1b69d7f
 #ifdef __ZLIB__
   inline bool valid(void) const {
     return _fileReference != NULL || _fileReferenceDirect != NULL;
@@ -125,7 +125,6 @@ public:
   bool is_compressed(void) const { return false; }
   FILE *_fileReference;
 #endif
-
 };
 
 #endif

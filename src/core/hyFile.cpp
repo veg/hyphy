@@ -303,7 +303,7 @@ size_t hyFile::fwrite(const void *buffer, size_t size, size_t count) {
   return -1;
 }
 //____________________________________________________________________________________
-int hyFile::getc(void) {
+int hyFile::read_char(void) {
   if (valid()) {
 #ifdef __ZLIB__
     if (_fileReferenceDirect) {

@@ -8646,7 +8646,7 @@ bool _Matrix::ImportMatrixExp(hyFile *theSource) {
   char buffer[255], fc = 0;
   buffer[0] = 0;
   while (1) {
-    buffer[mDim] = (char)theSource->getc();
+    buffer[mDim] = (char)theSource->read_char();
     if (theSource->feof()) {
       return false;
     }
@@ -8663,7 +8663,7 @@ bool _Matrix::ImportMatrixExp(hyFile *theSource) {
   i = 0;
   _SimpleList varList, c1, c2;
   while (fc != ';') {
-    fc = (char)theSource->getc();
+    fc = (char)theSource->read_char();
     if (fc == ',' || fc == ';') {
       buffer[i] = 0;
       _String varName(buffer);
@@ -8679,7 +8679,7 @@ bool _Matrix::ImportMatrixExp(hyFile *theSource) {
     }
   }
   do {
-    fc = (char)theSource->getc();
+    fc = (char)theSource->read_char();
     if (theSource->feof()) {
       return false;
     }
@@ -8690,7 +8690,7 @@ bool _Matrix::ImportMatrixExp(hyFile *theSource) {
   while (k < mDim * mDim) {
     i = 0;
     while (fc != '{') {
-      fc = (char)theSource->getc();
+      fc = (char)theSource->read_char();
       buffer[i] = fc;
       i++;
       if (theSource->feof()) {
@@ -8704,7 +8704,7 @@ bool _Matrix::ImportMatrixExp(hyFile *theSource) {
     while (fc != '}') {
       i = 0;
       do {
-        buffer[i] = fc = (char)theSource->getc();
+        buffer[i] = fc = (char)theSource->read_char();
         i++;
         if (theSource->feof()) {
           DeleteObject(thisCell);
@@ -8719,7 +8719,7 @@ bool _Matrix::ImportMatrixExp(hyFile *theSource) {
         return false;
       }
     }
-    fc = (char)theSource->getc();
+    fc = (char)theSource->read_char();
     if (fc != '{') {
       DeleteObject(thisCell);
       return false;
@@ -8731,7 +8731,7 @@ bool _Matrix::ImportMatrixExp(hyFile *theSource) {
     while (fc != '}') {
       i = 0;
       do {
-        buffer[i] = fc = (char)theSource->getc();
+        buffer[i] = fc = (char)theSource->read_char();
         i++;
         if (theSource->feof()) {
           DeleteObject(thisCell);
@@ -8742,7 +8742,7 @@ bool _Matrix::ImportMatrixExp(hyFile *theSource) {
       buffer[i] = 0;
       c1 << atol(buffer);
     }
-    fc = (char)theSource->getc();
+    fc = (char)theSource->read_char();
     if (fc != '{') {
       DeleteObject(thisCell);
       DeleteObject(pd);
@@ -8752,7 +8752,7 @@ bool _Matrix::ImportMatrixExp(hyFile *theSource) {
     while (fc != '}') {
       i = 0;
       do {
-        buffer[i] = fc = (char)theSource->getc();
+        buffer[i] = fc = (char)theSource->read_char();
         i++;
         if (theSource->feof()) {
           DeleteObject(thisCell);
