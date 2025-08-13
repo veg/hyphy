@@ -272,9 +272,6 @@ _String getLibraryPath() {
   _String libDir = baseDir;
 #endif
 
-  ObjectToConsole(&libDir);
-  NLToConsole();
-
   // SW20141119: Check environment libpath and override default path if it
   // exists
   // TODO: Move string to globals in v3

@@ -4231,6 +4231,8 @@ long _ElementaryCommand::ExtractConditions(_StringBuffer const &source,
                                            char delimeter,
                                            bool include_empty_conditions) {
 
+  start_at = MAX(0, start_at);
+
   long parentheses_depth = 1L,
        // this is because extaction will work from the first character following
        // a '(', e.g. CreateFilter([start parsing here]....)

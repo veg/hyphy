@@ -4537,16 +4537,16 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
                 for (long idx = 0L; idx < loopBound; idx += 4) {
 #ifdef _SLKP_USE_AVX_INTRINSICS
 #ifdef _SLKP_USE_FMA3_INTRINSICS
-                  _mm256_storeu_pd(res + i,
-                                   _mm256_fmadd_pd(value_op,
-                                                   _mm256_loadu_pd(secArg + i),
-                                                   _mm256_loadu_pd(res + i)));
+                  _mm256_storeu_pd(
+                      res + idx,
+                      _mm256_fmadd_pd(value_op, _mm256_loadu_pd(secArg + idx),
+                                      _mm256_loadu_pd(res + idx)));
 #else
                   _mm256_storeu_pd(
-                      res + i,
-                      _mm256_add_pd(_mm256_loadu_pd(res + i),
-                                    _mm256_mul_pd(value_op, _mm256_loadu_pd(
-                                                                secArg + i))));
+                      res + i, _mm256_add_pd(
+                                   _mm256_loadu_pd(res + idx),
+                                   _mm256_mul_pd(value_op, _mm256_loadu_pd(
+                                                               secArg + idx))));
 #endif
 #elif defined _SLKP_USE_ARM_NEON
                   vst1q_f64(res + idx, vfmaq_f64(vld1q_f64(res + idx), value_op,
@@ -4555,10 +4555,10 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
                             vfmaq_f64(vld1q_f64(res + idx + 2), value_op,
                                       vld1q_f64(secArg + idx + 2)));
 #else
-                  res[i] += value * secArg[i];
-                  res[i + 1] += value * secArg[i + 1];
-                  res[i + 2] += value * secArg[i + 2];
-                  res[i + 3] += value * secArg[i + 3];
+                  res[i] += value * secArg[idx];
+                  res[i + 1] += value * secArg[idx + 1];
+                  res[i + 2] += value * secArg[idx + 2];
+                  res[i + 3] += value * secArg[idx + 3];
 #endif
                 }
                 for (long index = loopBound; index < vDim; index++) {
