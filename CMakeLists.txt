@@ -90,7 +90,7 @@ int main() {
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if(NOT HYPHY_HAVE_NEON)
+    if(NOT HYPHY_HAVE_NEON AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
         list(APPEND COMMON_COMPILE_FLAGS "-march=native" "-mcpu=native" "-mtune=native")
     endif()
     if(NOT NOAVX)
