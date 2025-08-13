@@ -641,6 +641,7 @@ meme.imputed_leaf_states = {};
 meme.site_LRT = {};
 
 meme.output_file_path = meme.codon_data_info[terms.json.json];
+meme.site_offset = 0;
 
 for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme.partition_index += 1) {
     meme.branch_ebf = {}; 
@@ -713,7 +714,7 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
     meme.queue = mpi.CreateQueue ({terms.mpi.LikelihoodFunctions: {{"meme.site_likelihood","meme.site_likelihood_bsrel"}},
                                    terms.mpi.Models : {{"meme.site.background_fel","meme.site.bsrel"}},
                                    terms.mpi.Headers : utility.GetListOfLoadedModules ("libv3/"),
-                                   terms.mpi.Variables : {{"meme.selected_branches","meme.impute_states","meme.pairwise_counts","meme.codon_data_info","meme.resample","meme.site_filter","meme.output_file_path"}},
+                                   terms.mpi.Variables : {{"meme.selected_branches","meme.impute_states","meme.site_offset","meme.pairwise_counts","meme.codon_data_info","meme.resample","meme.site_filter","meme.output_file_path"}},
                                    terms.mpi.Functions : {{"meme.compute_branch_EBF","selection.io.sitelist_matches_pattern"}}
                                  });
 
@@ -726,7 +727,9 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
         '
             meme.pattern_count_this += 1;
             io.ReportProgressBar("", "Working on site pattern " + (meme.pattern_count_this) + "/" +  meme.pattern_count_all + " in partition " + (1+meme.partition_index));
-            meme.run_site = selection.io.sitelist_matches_pattern (_pattern_info_[terms.data.sites], meme.site_filter["site-filter"], FALSE);
+            
+             
+            meme.run_site = selection.io.sitelist_matches_pattern (_pattern_info_[terms.data.sites], meme.site_filter["site-filter"], FALSE, meme.site_offset);
 
             if (_pattern_info_[utility.getGlobalValue("terms.data.is_constant")] || (!meme.run_site)) {
                 meme.store_results (-1,None,{"0" : "meme.site_likelihood",
@@ -783,7 +786,7 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
                                      meme.partition_index,
                                      meme.branch_ebf_matrix);
 
-    
+    meme.site_offset += meme.site_count;
 
 }
 
@@ -1359,7 +1362,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         branch_ebf       = {};
         branch_posterior = {};
         
-        site_match = selection.io.sitelist_matches_pattern (pattern_info[^"terms.data.sites"], (^"meme.site_filter")["site-save-filter"], TRUE);
+        site_match = selection.io.sitelist_matches_pattern (pattern_info[^"terms.data.sites"], (^"meme.site_filter")["site-save-filter"], TRUE, ^"meme.site_offset");
     
         if (site_match) {
             Export  (lfe, ^lf_bsrel);

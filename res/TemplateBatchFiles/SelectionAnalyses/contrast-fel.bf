@@ -455,7 +455,7 @@ utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
         fel.pattern_count_this += 1;
         io.ReportProgressBar("", "Working on site pattern " + (fel.pattern_count_this) + "/" +  fel.pattern_count_all + " in partition " + (1+fel.partition_index));
 
-        fel.run_site = selection.io.sitelist_matches_pattern (_pattern_info_[terms.data.sites], fel.site_filter["site-filter"], FALSE);
+        fel.run_site = selection.io.sitelist_matches_pattern (_pattern_info_[terms.data.sites], fel.site_filter["site-filter"], FALSE, 0);
 
         if (_pattern_info_[terms.data.is_constant] || (!fel.run_site)) {
             fel.store_results (-1,None,{"0" : "fel.site_likelihood",
@@ -780,7 +780,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
             `&counts_by_branch_set`[`&branch_sets`[_name_]] += ((`&counts`)["Counts"])[+`&branch_map`[_name_]];
         ');
         
-        site_match = selection.io.sitelist_matches_pattern (pattern_info[^"terms.data.sites"], (^"fel.site_filter")["site-save-filter"], TRUE);
+        site_match = selection.io.sitelist_matches_pattern (pattern_info[^"terms.data.sites"], (^"fel.site_filter")["site-save-filter"], TRUE, 0);
     
         if (site_match) {
             Export  (lfe, ^lf);

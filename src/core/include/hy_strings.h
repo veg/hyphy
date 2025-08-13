@@ -42,12 +42,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "baseobj.h"
 #include "hy_types.h"
-#include "regex.h"
 #include "wchar.h"
+#include <regex>
 
-#define fExtractRespectQuote  0x01
+#define fExtractRespectQuote 0x01
 #define fExtractRespectEscape 0x02
-#define fExtractOneLevelOnly  0x04
+#define fExtractOneLevelOnly 0x04
 
 #define fIDAllowFirstNumeric 0x01
 #define fIDAllowCompound 0x02
@@ -74,18 +74,16 @@ class _ExecutionList;
 class _StringBuffer;
 
 class _String : public BaseObj {
-    
+
 protected:
-    char          *s_data;
-    unsigned long s_length;
-    
-    /** this value is returned for "failed"
-     access operations that don't throw errors, e.g. getChar */
-    const static char default_return = '\0';
+  char *s_data;
+  unsigned long s_length;
+
+  /** this value is returned for "failed"
+   access operations that don't throw errors, e.g. getChar */
+  const static char default_return = '\0';
 
 public:
-    
-    
   /*
    ==============================================================
    Constructors/Destructors/Copiers
@@ -132,7 +130,8 @@ public:
    * Construct a string long enough to hold the specified # of chars
    * Contents will be initialized to 0
    * @param lengths: the number of chars to store
-   * @param buffer: if specified, use an externally allocated buffer (to avoid memory calls)
+   * @param buffer: if specified, use an externally allocated buffer (to avoid
+   memory calls)
 
    * Revision history
       - SLKP 20170517 reviewed while porting from v3 branch
@@ -151,16 +150,16 @@ public:
    */
   _String(const hyFloat number, const char *format = nil);
 
-    /**
-     * Construct a string representation of a hyFloat(double) to string,
-     * using with the required digits of precision ("%.[N]g") specified
-     * @param number : The floating number to convert to string
-     * @param unsigned char : The number of significant digits
-     
-     * Revision history
-     - SLKP 20181009 initial implementation
-     */
-    _String(const hyFloat number, unsigned char digits_of_precision);
+  /**
+   * Construct a string representation of a hyFloat(double) to string,
+   * using with the required digits of precision ("%.[N]g") specified
+   * @param number : The floating number to convert to string
+   * @param unsigned char : The number of significant digits
+
+   * Revision history
+   - SLKP 20181009 initial implementation
+   */
+  _String(const hyFloat number, unsigned char digits_of_precision);
 
   /**
    * A RHS copy constructor
@@ -174,20 +173,20 @@ public:
   /**
    * A RHS move constructor
    * @param str : the string to copy from
-   
+
    * Revision history
    - SLKP 20180920 initial implementation
    */
-   _String(_String && str);
+  _String(_String &&str);
 
   /**
    * A RHS move constructor for string buffer
    * @param str : the string to copy from
-   
+
    * Revision history
    - SLKP 20180920 initial implementation
    */
-   _String(_StringBuffer && str);
+  _String(_StringBuffer &&str);
 
   /**
    * The purpose of this constructor is a "move" contents from a dynamically
@@ -310,9 +309,9 @@ public:
    [CHANGE-NOTE SLKP, changed parameter type from _String to _String const&]
 
    */
-  void operator=(_String const &rhs);
+  _String &operator=(_String const &rhs);
 
-  void operator=(_String &&rhs);
+  _String &operator=(_String &&rhs);
 
   /*
    ==============================================================
@@ -424,21 +423,22 @@ public:
    */
   void set_char(unsigned long index, char const data);
 
-    /** Store the supplied character in a given index; do NOT check that the index is value
-     *  Revision history
-     - SLKP 20230423 created to accelerate large data set reads
-     */
-   void set_char_no_check(unsigned long index, char const data);
-
-    /** Retrieve the read-only char * for the string contents
-   A convenience function to avoid writing (const char*) (*this)
-
-   @return string data (could be null!, no checks performed)
-   @sa operator char *
-
+  /** Store the supplied character in a given index; do NOT check that the index
+   is value
    *  Revision history
-   - SLKP 20170608 reviewed while porting from v3 branch
+   - SLKP 20230423 created to accelerate large data set reads
    */
+  void set_char_no_check(unsigned long index, char const data);
+
+  /** Retrieve the read-only char * for the string contents
+ A convenience function to avoid writing (const char*) (*this)
+
+ @return string data (could be null!, no checks performed)
+ @sa operator char *
+
+ *  Revision history
+ - SLKP 20170608 reviewed while porting from v3 branch
+ */
   const char *get_str(void) const;
 
   /*
@@ -455,7 +455,7 @@ public:
    *  Revision history
    - SLKP 20170608 reviewed while porting from v3 branch
    */
-  operator const char *(void)const;
+  operator const char *(void) const;
 
   /**
    * Converts a string of form "[\d\.]\+" into a floating point number
@@ -554,7 +554,8 @@ public:
    @param wildchar : the charcter to treat as a wild char
    @param start_this : start matching at this position in "this"
    @param start_pattern : start matching at this position in *pattern*
-   @param wildchar_matches: if given, push indices of ranges that matched wildcards
+   @param wildchar_matches: if given, push indices of ranges that matched
+   wildcards
 
    @return did the string match the pattern
 
@@ -562,14 +563,14 @@ public:
    - SLKP 20170517 reviewed while porting from v3 branch
    [CHANGE-NOTE SLKP 20170517 change pattern type to _String const& from _String
    const *]
-   - SLKP 20181024 add the optional _SimpleList argument to store the index ranges
-                   which matched the wildcards
+   - SLKP 20181024 add the optional _SimpleList argument to store the index
+   ranges which matched the wildcards
 
    */
   bool EqualWithWildChar(_String const &pattern, char const wildchar = '*',
                          unsigned long start_this = 0UL,
                          unsigned long start_pattern = 0UL,
-                         _SimpleList * wildchar_matches = nil) const;
+                         _SimpleList *wildchar_matches = nil) const;
 
   /*
    ==============================================================
@@ -602,7 +603,7 @@ public:
    *  Revision history
       - SLKP 20170519 reviewed while porting from v3 branch
    */
-   _String Chop(long start, long end) const;
+  _String Chop(long start, long end) const;
 
   /**
    * Cuts part of string that is between the two specified indices (0-bases,
@@ -617,7 +618,7 @@ public:
    *  Revision history
       - SLKP 20170519 reviewed while porting from v3 branch
    */
-   _String Cut(long, long) const;
+  _String Cut(long, long) const;
 
   /**
    * Delete a range of chars from the string (0-based, inclusive indices)
@@ -652,7 +653,7 @@ public:
    *  Revision history
     - SLKP 20170519 reviewed ; (was missing in v3)
    */
-   _String Reverse(void) const;
+  _String Reverse(void) const;
 
   /**
    * Insert a char at a given position
@@ -695,7 +696,7 @@ public:
       ]
    */
   const _String ChangeCase(hy_string_case conversion_type) const;
-  void   ChangeCaseInPlace(hy_string_case conversion_type);
+  void ChangeCaseInPlace(hy_string_case conversion_type);
 
   /**
    * Returns a list from a string split by a substr
@@ -711,26 +712,26 @@ public:
    */
   const _List Tokenize(_String const &splitter) const;
 
-    /**
-     * Returns a list from a string split by a any of the valid chars
-     * @param splitter a look table of characters
-     * @return A point to a *_List that holds a list of the resultant strings. Retrieve one by list->lData[i]
-     *  Revision history
-     -SLKP 20170912 initial impementation
-     
-     */
-    const _List  Tokenize (const bool splitter[256]) const;
-    /**
-   * Decorates the string with quotes
-
-   * @param quote_char which character to use as a "quote"
-   * @return quote_char + *this + quote_char
+  /**
+   * Returns a list from a string split by a any of the valid chars
+   * @param splitter a look table of characters
+   * @return A point to a *_List that holds a list of the resultant strings.
+   Retrieve one by list->lData[i]
    *  Revision history
-      -SLKP 20170616 reviewed while porting from v2.3 branch
-      -
+   -SLKP 20170912 initial impementation
+
    */
-    
-    
+  const _List Tokenize(const bool splitter[256]) const;
+  /**
+ * Decorates the string with quotes
+
+ * @param quote_char which character to use as a "quote"
+ * @return quote_char + *this + quote_char
+ *  Revision history
+    -SLKP 20170616 reviewed while porting from v2.3 branch
+    -
+ */
+
   const _String Enquote(char quote_char = '\'') const;
 
   /**
@@ -820,30 +821,32 @@ public:
   */
   long Find(const char p, long start = 0L, long to = kStringEnd) const;
 
-/**
- * Find first occurence of the any of the characters marked in the lookup buffer (0/1) between "start" and "end" (inclusive)
- * Uses a sentinel linear search
- * \n\n \b Example: \code _String ("AABBCC").Find('B')\endcode
- * @param lookup The lookup table whioch marks which characters are value
- * @param start The 0-based index to start searching from
- * @param end   The 0-based index to search to (inclusive); -1 : end of string
- * @return Returns the index of the first instance of the pattern, kNotFound (<0) if not found. 2 in the example
- 
- *  Revision history
- - SLKP 20170912 introduced
- */
+  /**
+   * Find first occurence of the any of the characters marked in the lookup
+   buffer (0/1) between "start" and "end" (inclusive)
+   * Uses a sentinel linear search
+   * \n\n \b Example: \code _String ("AABBCC").Find('B')\endcode
+   * @param lookup The lookup table whioch marks which characters are value
+   * @param start The 0-based index to start searching from
+   * @param end   The 0-based index to search to (inclusive); -1 : end of string
+   * @return Returns the index of the first instance of the pattern, kNotFound
+   (<0) if not found. 2 in the example
 
-   long    Find (const bool lookup[256] , long start = 0L, long to = kStringEnd) const ;
-   long    FindAnyCase (const bool lookup[256] , long start = 0L, long to = kStringEnd) const ;
-/**
-  * Find first occurence of the string between "start" and "end" (inclusive)
-  * @see Find() for parameter explanation
-  *  Revision history
-   - SLKP 20170612; reviewed and modifed to be the same as Find with case
-  normalization while porting from the v3 branch
-  */
-    
-    
+   *  Revision history
+   - SLKP 20170912 introduced
+   */
+
+  long Find(const bool lookup[256], long start = 0L,
+            long to = kStringEnd) const;
+  long FindAnyCase(const bool lookup[256], long start = 0L,
+                   long to = kStringEnd) const;
+  /**
+    * Find first occurence of the string between "start" and "end" (inclusive)
+    * @see Find() for parameter explanation
+    *  Revision history
+     - SLKP 20170612; reviewed and modifed to be the same as Find with case
+    normalization while porting from the v3 branch
+    */
 
   long FindAnyCase(_String const &pattern, long start = 0L,
                    long to = kStringEnd) const;
@@ -861,7 +864,7 @@ public:
      - SLKP 20170614; reviewed while porting from the v3 branch
    */
 
-  const _String Replace(const _String &pattern, const _String& replace,
+  const _String Replace(const _String &pattern, const _String &replace,
                         bool replace_all) const;
 
   /**
@@ -956,9 +959,11 @@ public:
    case (not cheap) added the third argument to check for match from a given
    position in this
   */
-  
-  bool BeginsWith (_String const& pattern, bool case_sensitive = true, unsigned long from = 0UL) const;
-  bool BeginsWith (bool const lookup[256], bool case_sensitive = true, unsigned long from = 0UL) const;
+
+  bool BeginsWith(_String const &pattern, bool case_sensitive = true,
+                  unsigned long from = 0UL) const;
+  bool BeginsWith(bool const lookup[256], bool case_sensitive = true,
+                  unsigned long from = 0UL) const;
 
   /**
    * Checks to see if String ends with substring
@@ -1026,33 +1031,33 @@ public:
      - SLKP 20170614; reviewed while porting from the v2.3 branch; convered the
    two bool flags to a bit-mask so that the calls can be more explict
      - SLKP 20170615; included support for singly quoted literals
-     - SLKP 20171211: added support for generic callbacks to check whether or not the final character has been found
+     - SLKP 20171211: added support for generic callbacks to check whether or
+   not the final character has been found
   */
 
-    //=============================================================
-  
-  
-  template <class DELIM> long ExtractEnclosedExpression (long& from, DELIM open, DELIM close, int options) const {
-    long   current_position = from,
-    current_level    = 0L;
-    
-    bool       respect_quote = options & fExtractRespectQuote,
-               respect_escape = options & fExtractRespectEscape,
-               one_level_only = options & fExtractOneLevelOnly,
-               do_escape = false;
-    
-    char       quote_state = '\0',
-               this_char = get_char (current_position);
-      
+  //=============================================================
+
+  template <class DELIM>
+  long ExtractEnclosedExpression(long &from, DELIM open, DELIM close,
+                                 int options) const {
+    long current_position = from, current_level = 0L;
+
+    bool respect_quote = options & fExtractRespectQuote,
+         respect_escape = options & fExtractRespectEscape,
+         one_level_only = options & fExtractOneLevelOnly, do_escape = false;
+
+    char quote_state = '\0', this_char = get_char(current_position);
+
     while (this_char) {
-      bool       check_quote = false;
-        
+      bool check_quote = false;
+
       if (do_escape) {
         do_escape = false;
       } else {
         // also need to handle cases when quotes are in the open / close set
-        
-        if ((this_char == '"' || this_char == '\'') && respect_quote && !do_escape) {
+
+        if ((this_char == '"' || this_char == '\'') && respect_quote &&
+            !do_escape) {
           if (quote_state == '\0') {
             check_quote = true;
             quote_state = this_char;
@@ -1064,8 +1069,9 @@ public:
           }
         }
         if (open == this_char && (check_quote || quote_state == '\0')) {
-            // handle the case when close and open are the same
-          if (current_level == 1L && close == this_char && from < current_position) {
+          // handle the case when close and open are the same
+          if (current_level == 1L && close == this_char &&
+              from < current_position) {
             return current_position;
           }
           if (current_level == 0L) {
@@ -1076,7 +1082,7 @@ public:
               current_level++;
             }
           }
-          
+
         } else if (close == this_char && (check_quote || quote_state == '\0')) {
           current_level--;
           if (current_level == 0L && from < current_position) {
@@ -1085,26 +1091,26 @@ public:
           if (current_level < 0L) {
             return kNotFound;
           }
-        } else if (this_char == '\\' && respect_escape && quote_state != '\0' && !do_escape) {
+        } else if (this_char == '\\' && respect_escape && quote_state != '\0' &&
+                   !do_escape) {
           do_escape = true;
         }
       }
-      
-      this_char = get_char (++current_position);
-        
+
+      this_char = get_char(++current_position);
     }
-      
+
     // check if \0 is a valid terminator
-      
-   if (close == this_char) {
-       if (current_level == 1L && from < current_position) {
-           return current_position;
-       }
-   }
-    
+
+    if (close == this_char) {
+      if (current_level == 1L && from < current_position) {
+        return current_position;
+      }
+    }
+
     return kNotFound;
   }
-  
+
   /**
    * Starting at a 0-based index [argument 1],
    * find a span that terminates in one of the characters in [argument 2], while
@@ -1118,25 +1124,23 @@ public:
    *  Revision history
       - SLKP 20170615   reviewed while porting from the v2.3 branch;
                         for the string; included support for singly quoted
-                        literals; cleaned up the logic, and fixed broken logic for terminator > 1
-                        char long
-   
+                        literals; cleaned up the logic, and fixed broken logic
+   for terminator > 1 char long
+
       - SLKP 20180921   converted into a template to make it possible to search
                         for multiple terminators
    */
 
-  template <typename TERMINATOR> long FindTerminator(long start, TERMINATOR const &terminator) const{
-    
-    long    current_position  = start;
-    
-    
-    long   curly_depth = 0L,
-    square_depth = 0L,
-    paren_depth = 0L;
-    
-    bool   do_escape = false;
-    char   quote_state = '\0';
-      
+  template <typename TERMINATOR>
+  long FindTerminator(long start, TERMINATOR const &terminator) const {
+
+    long current_position = start;
+
+    long curly_depth = 0L, square_depth = 0L, paren_depth = 0L;
+
+    bool do_escape = false;
+    char quote_state = '\0';
+
     while (current_position < (long)s_length) {
       char this_char = s_data[current_position];
       if (do_escape) {
@@ -1152,45 +1156,45 @@ public:
           }
         } else {
           if (quote_state == '\0') {
-            
+
             switch (this_char) {
-              case '(':
-                paren_depth ++;
+            case '(':
+              paren_depth++;
+              current_position++;
+              continue;
+            case ')':
+              if (paren_depth > 0L) {
+                paren_depth--;
                 current_position++;
                 continue;
-              case ')':
-                if (paren_depth > 0L) {
-                  paren_depth --;
-                  current_position++;
-                  continue;
-                }
-                break;
-              case '[':
-                square_depth++;
+              }
+              break;
+            case '[':
+              square_depth++;
+              current_position++;
+              continue;
+            case ']':
+              if (square_depth > 0L) {
+                square_depth--;
                 current_position++;
                 continue;
-              case ']':
-                if (square_depth > 0L) {
-                  square_depth --;
-                  current_position++;
-                  continue;
-                }
-                break;
-              case '{':
-                curly_depth++;
+              }
+              break;
+            case '{':
+              curly_depth++;
+              current_position++;
+              continue;
+            case '}':
+              if (curly_depth > 0L) {
+                curly_depth--;
                 current_position++;
                 continue;
-              case '}':
-                if (curly_depth > 0L) {
-                  curly_depth --;
-                  current_position++;
-                  continue;
-                }
-                break;
+              }
+              break;
             }
-            
+
             if (curly_depth == 0L && square_depth == 0L && paren_depth == 0L) {
-              if (BeginsWith (terminator, true, current_position)) {
+              if (BeginsWith(terminator, true, current_position)) {
                 return current_position;
               }
             }
@@ -1203,7 +1207,7 @@ public:
       }
       current_position++;
     }
-    
+
     return kNotFound;
   }
 
@@ -1221,17 +1225,19 @@ public:
    */
   bool StripQuotes(char open_char = '"', char close_char = '"');
 
-    /**
-     * Strips quotes from around the string if present (in place) for multiple delimiters at once
-     * \n\n \b Example: \code _String("\"hyphy\"").StripQuotes("\"'","\"'")\endcode
-     * @param open_char : the opening quote chars (paired with close_char)
-     * @param close_char : the closing quote char (paired with open char)
-     * @return : true if the string was enquoted and the quotes had been stripped
+  /**
+   * Strips quotes from around the string if present (in place) for multiple
+   delimiters at once
+   * \n\n \b Example: \code
+   _String("\"hyphy\"").StripQuotes("\"'","\"'")\endcode
+   * @param open_char : the opening quote chars (paired with close_char)
+   * @param close_char : the closing quote char (paired with open char)
+   * @return : true if the string was enquoted and the quotes had been stripped
 
-     *  Revision history
-        - SLKP 20200508  initial
+   *  Revision history
+      - SLKP 20200508  initial
 
-     */
+   */
   bool StripQuotes(char const *, char const *);
 
   /**
@@ -1310,10 +1316,10 @@ public:
   METHODS
   ==============================================================
   */
-    
+
   /** a by-character iterator
-   
-   
+
+
    @param  cb : a void (char c, unsigned long index) callback argument
    @param  start_at : start the iteration at this position in the string
 
@@ -1321,28 +1327,31 @@ public:
 
    */
 
-    template <typename CALLBACK> void Each (CALLBACK cb, unsigned long start_at = 0) const {
-        for (unsigned long i = start_at; i<s_length; i++) {
-            cb ( s_data[i], i );
-        }
+  template <typename CALLBACK>
+  void Each(CALLBACK cb, unsigned long start_at = 0) const {
+    for (unsigned long i = start_at; i < s_length; i++) {
+      cb(s_data[i], i);
     }
+  }
 
-/** a by-character matching iterator
-     
-     
-     @param  cb : a void (char c, unsigned long index) callback argument
-     @param  start_at : start the iteration at this position in the string
+  /** a by-character matching iterator
 
-         - SLKP 20171008   introduced this function
 
-     */
+       @param  cb : a void (char c, unsigned long index) callback argument
+       @param  start_at : start the iteration at this position in the string
 
-      template <typename CALLBACK> long Any (CALLBACK cb, unsigned long start_at = 0) const {
-          for (unsigned long i = start_at; i<s_length; i++) {
-              if (cb ( s_data[i], i )) return i;
-          }
-          return kNotFound;
-      }
+           - SLKP 20171008   introduced this function
+
+       */
+
+  template <typename CALLBACK>
+  long Any(CALLBACK cb, unsigned long start_at = 0) const {
+    for (unsigned long i = start_at; i < s_length; i++) {
+      if (cb(s_data[i], i))
+        return (long)i;
+    }
+    return kNotFound;
+  }
 
   /**
   * Compute Adler-32 CRC for a string
@@ -1395,7 +1404,8 @@ public:
    * @param pattern the regular expression to compile
    * @param error_code will receive compilation error codes if any
    * @param case_sensitive controls whether or not the RE is case sensitive
-   * @param throw_errors if set, errors will result in thrown excptions (_String const type)
+   * @param throw_errors if set, errors will result in thrown excptions (_String
+   const type)
    * @return the resulting (opaque) RE datastructure, or NULL if
              compilation failed
 
@@ -1407,8 +1417,8 @@ public:
                     const &
    - SLKP 20180803; added the option for automatic error decoding
    */
-  static regex_t *PrepRegExp(_String const &pattern, int &error_code,
-                             bool case_sensitive, bool throw_errors = false);
+  static std::regex *PrepRegExp(_String const &pattern, int &error_code,
+                                bool case_sensitive, bool throw_errors = false);
 
   /**
    * Free a reg_exp datastructure previously returned by PrepRegExp
@@ -1419,7 +1429,7 @@ public:
    - SLKP 20170616; reviewed while porting from the v3 branch
                     maded static member of the class
    */
-  static void FlushRegExp(regex_t *re);
+  static void FlushRegExp(std::regex *re);
 
   /**
    * Convert internal regexp code into a string message
@@ -1452,7 +1462,7 @@ public:
    * @sa RegExpAllMatches()
    */
 
-  _SimpleList const RegExpMatch(regex_t const *re,
+  _SimpleList const RegExpMatch(std::regex const *re,
                                 unsigned long start = 0) const;
 
   /**
@@ -1471,7 +1481,7 @@ public:
    * @sa RegExpMatch
     */
 
-  _SimpleList const RegExpAllMatches(regex_t const *re) const;
+  _SimpleList const RegExpAllMatches(std::regex const *re) const;
 
   /**
      Convenience wrappers for RegExpMatch and RegExpAllMatches taking in regex_t
@@ -1493,20 +1503,19 @@ public:
   _SimpleList const RegExpAllMatches(_String const &pattern,
                                      bool case_sensitive,
                                      bool handle_errors) const;
-    /** given coordinates start and end, converts then to valid string indices
-     if called on an empty string, returns 0 and does not change start and end
-     if start < 0 it is reset to 0
-     if end < 0 or >= string length it is reset to (string length) - 1
+  /** given coordinates start and end, converts then to valid string indices
+   if called on an empty string, returns 0 and does not change start and end
+   if start < 0 it is reset to 0
+   if end < 0 or >= string length it is reset to (string length) - 1
 
-     @param start: start of the range (0-based)
-     @param end  : end of the range
-     @return     : the length of the range
+   @param start: start of the range (0-based)
+   @param end  : end of the range
+   @return     : the length of the range
 
-     * Revision history
-     - SLKP 20170517 porting from v3 branch
-     */
-    long NormalizeRange(long &start, long &end) const;
-
+   * Revision history
+   - SLKP 20170517 porting from v3 branch
+   */
+  long NormalizeRange(long &start, long &end) const;
 
 private:
   /** Find the length of the maximum prefix that forms a valid ID
@@ -1564,7 +1573,6 @@ private:
     return kNotFound;
   }
 
-
   /** this is a utility function which allocates length+1 chars for s_data,
   copies the data from source_string, and sets the terminating 0
 
@@ -1574,7 +1582,6 @@ private:
   */
   inline void AllocateAndCopyString(const char *source_string,
                                     unsigned long length);
-
 
   /** Factored out core of RegExpMatch and RegExpAllMatches
    * Revision history

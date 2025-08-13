@@ -39,9 +39,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include "dataset.h"
 #include "list.h"
 #include "stdlib.h"
-#include "dataset.h"
 #include "string_file_wrapper.h"
 
 //_________________________________________________________
@@ -67,7 +67,7 @@ public:
 
   virtual ~_DataSetFilter(void);
 
-  virtual BaseRef toStr(unsigned long = 0UL);          // convert to string
+  virtual BaseRef toStr(unsigned long = 0UL);            // convert to string
   virtual void toFileStr(hyFile *, unsigned long = 0UL); // convert to string
 
   virtual BaseRef makeDynamic(void) const;
@@ -77,11 +77,12 @@ public:
   void CopyFilter(_DataSetFilter const *);
   void SetFilter(_DataSet const *, unsigned char, _SimpleList &, _SimpleList &,
                  bool isFilteredAlready = false);
-  void SetExclusions(_String const&, bool = true);
+  void SetExclusions(_String const &, bool = true);
 
   _String *GetExclusions(void) const;
 
-  void SetMap(_String const&); // used to allow nonsequential maps to tree leaves
+  void
+  SetMap(_String const &); // used to allow nonsequential maps to tree leaves
 
   void SetMap(_SimpleList &newMap) {
     theNodeMap.Clear(); // used to allow nonsequential maps to tree leaves
@@ -90,13 +91,17 @@ public:
 
   unsigned long NumberSpecies(void) const { return theNodeMap.lLength; }
 
-  virtual long GetSiteCount(void) const { return theOriginalOrder.lLength; }
+  virtual unsigned long GetSiteCount(void) const {
+    return theOriginalOrder.lLength;
+  }
 
-  virtual long GetSiteCountInUnits(void) const {
+  virtual unsigned long GetSiteCountInUnits(void) const {
     return theOriginalOrder.lLength / unitLength;
   }
 
-  virtual long GetPatternCount(void) const { return theFrequencies.lLength; }
+  virtual unsigned long GetPatternCount(void) const {
+    return theFrequencies.lLength;
+  }
 
   unsigned long GetFrequency(long i) const { return theFrequencies.Element(i); }
 
@@ -142,21 +147,24 @@ public:
    * @return the buffer string
    */
 
-  _String const GenerateConsensusString(bool resolved = false, _SimpleList * = nil) const;
+  _String const GenerateConsensusString(bool resolved = false,
+                                        _SimpleList * = nil) const;
 
-
-  long site_frequency (unsigned long site) const { return theFrequencies.get (site); }
+  long site_frequency(unsigned long site) const {
+    return theFrequencies.get(site);
+  }
   bool HasDeletions(unsigned long site, _AVLList * = nil) const;
-  long HasExclusions(unsigned long site, _SimpleList *theExc, hyFloat *buffer) const;
+  long HasExclusions(unsigned long site, _SimpleList *theExc,
+                     hyFloat *buffer) const;
 
-  long Translate2Frequencies(_String const &, hyFloat *, bool, bool = true) const;
+  long Translate2Frequencies(_String const &, hyFloat *, bool,
+                             bool = true) const;
   long MapStringToCharIndex(_String &) const;
   // long   Translate2Frequencies (char*,    hyFloat*, bool = true);
   long Translate2Frequencies(char, hyFloat *, bool) const;
 
   _Matrix *HarvestFrequencies(char unit, char atom, bool posSpec,
                               bool = true) const;
-
 
   void MatchStartNEnd(_SimpleList &, _SimpleList &, _SimpleList * = nil) const;
 
@@ -168,11 +176,11 @@ public:
 
   _DataSet *GetData(void) const { return theData; }
   void SetData(_DataSet *ds) { theData = ds; }
-  const _String ConvertCodeToLetters(long code, char base) const {
+  const _String ConvertCodeToLetters(long code, unsigned char base) const {
     return theData->theTT->ConvertCodeToLetters(code, base);
   }
 
-  void ConvertCodeToLettersBuffered(long code, unsigned char base, _String&,
+  void ConvertCodeToLettersBuffered(long code, unsigned char base, _String &,
                                     _AVLListXL *) const;
   // 20090212: SLKP
   // added this function to cache repeated character code -> string conversions
@@ -205,87 +213,92 @@ public:
 
   * @return The number of unique sequences.
   */
-  unsigned long FindUniqueSequences(_SimpleList &indices, _SimpleList &map,
-                                    _SimpleList &counts,  _hy_dataset_filter_unique_match mode = kUniqueMatchExact) const;
+  unsigned long FindUniqueSequences(
+      _SimpleList &indices, _SimpleList &map, _SimpleList &counts,
+      _hy_dataset_filter_unique_match mode = kUniqueMatchExact) const;
 
   long CorrectCode(long code) const;
   virtual bool CompareTwoSites(unsigned long, unsigned long,
                                unsigned long) const;
 
-  template <typename FUNC> void CompareTwoSitesCallback(unsigned long site1, unsigned long site2,
-                                                        FUNC&& callback) const {
-                                                            
-                                                    
-        switch (unitLength) {
-            case 3: {
-                site1 = (site1 << 1) + site1;
-                site2 = (site2 << 1) + site2;
-                
-                const char * site1c[3] = {GetColumn(site1),GetColumn(site1+1),GetColumn(site1+2)},
-                           * site2c[3] = {GetColumn(site2),GetColumn(site2+1),GetColumn(site2+2)};
-                
-                theNodeMap.Each ([site1c,site2c,&callback] (long ci, unsigned long i) -> void {
-                    if (site1c[0][ci] != site2c[0][ci] || site1c[1][ci] != site2c[1][ci] || site1c[2][ci] != site2c[2][ci]) {
-                        callback (ci, i);
-                    }
-                });
-             }
-             break;
-                
-            case 2: {
-                site1 = (site1 << 1);
-                site2 = (site2 << 1);
-                
-                const char * site1c[2] = {GetColumn(site1),GetColumn(site1+1)},
-                           * site2c[2] = {GetColumn(site2),GetColumn(site2+1)};
-                
-                theNodeMap.Each ([site1c,site2c,&callback] (long ci, unsigned long i) -> void {
-                    if (site1c[0][ci] != site2c[0][ci] || site1c[1][ci] != site2c[1][ci]) {
-                        callback (ci, i);
-                    }
-                });
-             }
-            break;
+  template <typename FUNC>
+  void CompareTwoSitesCallback(unsigned long site1, unsigned long site2,
+                               FUNC &&callback) const {
 
-            case 1: {
-                
-                const char * site1c = GetColumn(site1),
-                           * site2c = GetColumn(site2);
-                
-                theNodeMap.Each ([site1c,site2c,&callback] (long ci, unsigned long i) -> void {
-                    if (site1c[ci] != site2c[ci]) {
-                        callback (ci, i);
-                    }
-                });
-                break;
-            }
-                
-            default: {
-                    site1 *= unitLength;
-                    site2 *= unitLength;
-                
-                    const char **site1c = (const char **)alloca (sizeof (char*) * unitLength),
-                               **site2c = (const char **)alloca (sizeof (char*) * unitLength);
-                
-                    for (int i = 0; i < unitLength; i++) {
-                        site1c[i] = GetColumn (site1 + i);
-                        site2c[i] = GetColumn (site2 + i);
-                    }
-                    
-                    theNodeMap.Each ([site1c,site2c,this,&callback] (long ci, unsigned long ) -> void {
-                            for (int i = 0; i < this->unitLength; i++) {
-                                if (site1c[i][ci] != site2c[i][ci]) {
-                                    callback (ci, i);
-                                    break;
-                                }
-                            }
-                    });
-                    break;
-            }
+    switch (unitLength) {
+    case 3: {
+      site1 = (site1 << 1) + site1;
+      site2 = (site2 << 1) + site2;
+
+      const char *site1c[3] = {GetColumn(site1), GetColumn(site1 + 1),
+                               GetColumn(site1 + 2)},
+                 *site2c[3] = {GetColumn(site2), GetColumn(site2 + 1),
+                               GetColumn(site2 + 2)};
+
+      theNodeMap.Each([site1c, site2c, &callback](long ci,
+                                                  unsigned long i) -> void {
+        if (site1c[0][ci] != site2c[0][ci] || site1c[1][ci] != site2c[1][ci] ||
+            site1c[2][ci] != site2c[2][ci]) {
+          callback(ci, i);
         }
+      });
+    } break;
+
+    case 2: {
+      site1 = (site1 << 1);
+      site2 = (site2 << 1);
+
+      const char *site1c[2] = {GetColumn(site1), GetColumn(site1 + 1)},
+                 *site2c[2] = {GetColumn(site2), GetColumn(site2 + 1)};
+
+      theNodeMap.Each([site1c, site2c, &callback](long ci,
+                                                  unsigned long i) -> void {
+        if (site1c[0][ci] != site2c[0][ci] || site1c[1][ci] != site2c[1][ci]) {
+          callback(ci, i);
+        }
+      });
+    } break;
+
+    case 1: {
+
+      const char *site1c = GetColumn(site1), *site2c = GetColumn(site2);
+
+      theNodeMap.Each(
+          [site1c, site2c, &callback](long ci, unsigned long i) -> void {
+            if (site1c[ci] != site2c[ci]) {
+              callback(ci, i);
+            }
+          });
+      break;
+    }
+
+    default: {
+      site1 *= unitLength;
+      site2 *= unitLength;
+
+      const char **site1c = (const char **)alloca(sizeof(char *) * unitLength),
+                 **site2c = (const char **)alloca(sizeof(char *) * unitLength);
+
+      for (int i = 0; i < unitLength; i++) {
+        site1c[i] = GetColumn(site1 + i);
+        site2c[i] = GetColumn(site2 + i);
+      }
+
+      theNodeMap.Each(
+          [site1c, site2c, this, &callback](long ci, unsigned long) -> void {
+            for (int i = 0; i < this->unitLength; i++) {
+              if (site1c[i][ci] != site2c[i][ci]) {
+                callback(ci, i);
+                break;
+              }
+            }
+          });
+      break;
+    }
+    }
   }
-    
-  long FindSpeciesName(_List &, _SimpleList &) const;
+
+  unsigned long FindSpeciesName(_List &, _SimpleList &) const;
   _DataSetFilter *PairFilter(long, long, _DataSetFilter *);
   void SetDimensions();
   long LookupConversion(char c, hyFloat *receptacle) const;
@@ -302,33 +315,34 @@ public:
    * have the same pattern in the original alignment
    */
 
-    _SimpleList const SitesForPattern(unsigned long) const;
+  _SimpleList const SitesForPattern(unsigned long) const;
 
-    /**
-     * return a list of sites matching a given pattern
-     */
+  /**
+   * return a list of sites matching a given pattern
+   */
 
-  template<typename SOURCE_TYPE, typename TARGET_TYPE> void PatternToSiteMapper(SOURCE_TYPE const* source, TARGET_TYPE  * target,  long padup, TARGET_TYPE filler) const {
-    
-  
-    duplicateMap.Each ([source, target] (long value, unsigned long site) -> void {
-      target [site] = source[value];
+  template <typename SOURCE_TYPE, typename TARGET_TYPE>
+  void PatternToSiteMapper(SOURCE_TYPE const *source, TARGET_TYPE *target,
+                           long padup, TARGET_TYPE filler) const {
+
+    duplicateMap.Each([source, target](long value, unsigned long site) -> void {
+      target[site] = source[value];
     });
-    
+
     if (padup > 0) {
       for (long site = duplicateMap.countitems(); site < padup; site++) {
         target[site] = filler;
       }
     }
   }
-  
+
   /*
       20180920: SLKP changed to templates
       20090325: SLKP
-   
+
       a function that takes per pattern values (source, argument 1)
       and maps them onto sites into target (argument 2)
-      the third argument is 
+      the third argument is
       0 to treat the pointers as hyFloat*
       1 to treat them as long*
       2 and to treat them as hyFloat* and long*, respetively
@@ -339,55 +353,65 @@ public:
      SITE_LIKELIHOOD constructs
    */
 
-    
-   /**
-            For the lists below, some notation
-                        N -- the lentgh of the filter in atomic units (e.g. nucleotides, amino-acids)
-                        M -- the length of the filter in evolutionary units (N / unit size), e.g codons, M == N if unit size = 1
-                        P --  the number of unique evotionary unit patterns (e.g. codons)
-                        S -- the number of sequences
-                        D -- the number of unique character states (e.g. 4 for nucleotides, 64 codons)
-                        U -- evolutionary unit size, i.e. how many atomic units comprise an evolutionary unit (e.g. U = 3 for codon filter)
-    
-    
-            For example:
-                DataSetFilter dsf = CreateFilter (ds, 3, "30-59", "3,2", "TAA,TAG,TGA");
-                ...
-                GGA GCG CTG GGT CAG GAC ATC GAC TTG GAC
-                GGA GCG CTG GGT CAG GAC ATC GAC TTG GAC
-    
-            theMap (24)
-                {30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,54,55,56}
-            theFrequencies (8)
-                {1,1,1,1,1,3,1,1}
-            duplicateMap (10)
-                {0,1,2,3,4,5,6,5,7,5}
-            originalOrder (30)
-                {30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59}
-            theNodeMap (2)
-                {3,2}
-            theExclusions (3)
-                {48,50,56}
+  /**
+           For the lists below, some notation
+                       N -- the lentgh of the filter in atomic units (e.g.
+     nucleotides, amino-acids) M -- the length of the filter in evolutionary
+     units (N / unit size), e.g codons, M == N if unit size = 1 P --  the number
+     of unique evotionary unit patterns (e.g. codons) S -- the number of
+     sequences D -- the number of unique character states (e.g. 4 for
+     nucleotides, 64 codons) U -- evolutionary unit size, i.e. how many atomic
+     units comprise an evolutionary unit (e.g. U = 3 for codon filter)
 
-    */
-    
-  _SimpleList   theFrequencies,
-                        // [length P]; entry -- how many times does pattern P appear in this filter; >= 1, values sum up to M
-                theNodeMap,
-                        // [length S]; entry i -- sequence i in this filter maps to theNodeMap[i] in the underlyign dataset
-                theMap,
-                        // [length P*U]; entry [U*i..U*i + (U-1)] maps the U components of the i-th pattern (e.g. as in theFrequencies) to the atomic sites in the underlying dataset
-                theOriginalOrder,
-                        // [length N = M*U]; entry [U*i..U*i + (U-1)] maps the i-th site (in the same ordering as used to create the filter) to the to the atomic sites in the underlying dataset
-                theExclusions,
-                        // [length 0 to D-2]; each entry is the index of an excluded character (e.g. TAA stop codon is index 48 in standard encoding); empty if all charater states are valod
-                duplicateMap;
-                        // [length M]; entry i maps M sites to P patterns, so is in [0,P-1]; "which pattern does the site map to"?
+
+           For example:
+               DataSetFilter dsf = CreateFilter (ds, 3, "30-59", "3,2",
+     "TAA,TAG,TGA");
+               ...
+               GGA GCG CTG GGT CAG GAC ATC GAC TTG GAC
+               GGA GCG CTG GGT CAG GAC ATC GAC TTG GAC
+
+           theMap (24)
+               {30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,54,55,56}
+           theFrequencies (8)
+               {1,1,1,1,1,3,1,1}
+           duplicateMap (10)
+               {0,1,2,3,4,5,6,5,7,5}
+           originalOrder (30)
+               {30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59}
+           theNodeMap (2)
+               {3,2}
+           theExclusions (3)
+               {48,50,56}
+
+   */
+
+  _SimpleList theFrequencies,
+      // [length P]; entry -- how many times does pattern P appear in this
+      // filter; >= 1, values sum up to M
+      theNodeMap,
+      // [length S]; entry i -- sequence i in this filter maps to theNodeMap[i]
+      // in the underlyign dataset
+      theMap,
+      // [length P*U]; entry [U*i..U*i + (U-1)] maps the U components of the
+      // i-th pattern (e.g. as in theFrequencies) to the atomic sites in the
+      // underlying dataset
+      theOriginalOrder,
+      // [length N = M*U]; entry [U*i..U*i + (U-1)] maps the i-th site (in the
+      // same ordering as used to create the filter) to the to the atomic sites
+      // in the underlying dataset
+      theExclusions,
+      // [length 0 to D-2]; each entry is the index of an excluded character
+      // (e.g. TAA stop codon is index 48 in standard encoding); empty if all
+      // charater states are valod
+      duplicateMap;
+  // [length M]; entry i maps M sites to P patterns, so is in [0,P-1]; "which
+  // pattern does the site map to"?
 
   char const *GetColumn(long index) const {
     return (const char *)(*(_Site *)((
-        (BaseRef *)
-            theData->list_data)[theData->theMap.list_data[theMap.list_data[index]]]));
+        (BaseRef *)theData
+            ->list_data)[theData->theMap.list_data[theMap.list_data[index]]]));
   }
 
   _SimpleList conversionCache;
@@ -398,28 +422,36 @@ protected:
 
 private:
   void internalToStr(hyFile *, _StringBuffer *);
-  
-  
-   inline void retrieve_individual_site_from_raw_coordinates (_String & store, unsigned long site, unsigned long sequence) const {
-        if (unitLength==1UL) {
-          store.set_char (0, (((_String**)theData->list_data)[theData->theMap.list_data[theMap.list_data[site]]])->char_at (sequence));
-        } else {
-          site*=unitLength;
-          for (unsigned long k = 0UL; k<unitLength; k++) {
-            store.set_char (k, ((_String**)theData->list_data)[theData->theMap.list_data[theMap.list_data[site++]]]->char_at(sequence));
-          }
-        }
-   }
-    inline char direct_index_character (unsigned long site, unsigned long sequence) const {
-        return (((_String**)theData->list_data)[theData->theMap.list_data[theMap.list_data[site]]])->char_at(sequence);
+
+  inline void retrieve_individual_site_from_raw_coordinates(
+      _String &store, unsigned long site, unsigned long sequence) const {
+    if (unitLength == 1UL) {
+      store.set_char(
+          0,
+          (((_String **)theData
+                ->list_data)[theData->theMap.list_data[theMap.list_data[site]]])
+              ->char_at(sequence));
+    } else {
+      site *= unitLength;
+      for (unsigned long k = 0UL; k < unitLength; k++) {
+        store.set_char(k,
+                       ((_String **)theData->list_data)
+                           [theData->theMap.list_data[theMap.list_data[site++]]]
+                               ->char_at(sequence));
+      }
     }
-  
-   _String *accessCache;
+  }
+  inline char direct_index_character(unsigned long site,
+                                     unsigned long sequence) const {
+    return (((_String **)theData->list_data)
+                [theData->theMap.list_data[theMap.list_data[site]]])
+        ->char_at(sequence);
+  }
+
+  _String *accessCache;
 
   long undimension;
 
   _DataSet *theData;
   //      _SimpleList     conversionCache;
 };
-
-

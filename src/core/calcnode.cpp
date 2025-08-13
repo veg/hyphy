@@ -120,7 +120,7 @@ void _CalcNode::InitializeCN(_String const &parms, int,
   //_SimpleList local_cat_vars;
 
   ForEachLocalVariable(
-      iVariables, [&](long var_idx, long ref_idx, unsigned long idx) -> void {
+      iVariables, [&](long, long ref_idx, unsigned long) -> void {
         if (ref_idx >= 0) {
           /* TODO:
            this used to do with local category variables
@@ -184,7 +184,7 @@ long _CalcNode::SetDependance(long var_index) {
 
     PopulateAndSort([&](_AVLList &avl) -> void {
       LocateVar(var_index)->ScanForVariables(avl, true);
-    }).Each([&](long var_index, unsigned long idx) -> void {
+    }).Each([&](long var_index, unsigned long) -> void {
       if (LocateVar(var_index)->IsCategory() &&
           (categoryVariables >> var_index)) {
         categoryIndexVars << -1;
@@ -256,7 +256,7 @@ void _CalcNode::Clear(void) {
 
 //_______________________________________________________________________________________________
 
-_CalcNode::~_CalcNode(void) { Clear(); }
+_CalcNode::~_CalcNode(void) { _CalcNode::Clear(); }
 
 //_______________________________________________________________________________________________
 
@@ -422,7 +422,7 @@ hyFloat _CalcNode::ComputeBranchLength(void) {
   hyFloat result = 0.0;
 
   IntergrateOverAssignments(
-      categoryVariables, true, [&](long current_cat, hyFloat weight) -> void {
+      categoryVariables, true, [&](long, hyFloat weight) -> void {
         result +=
             fabs(ComputeModelMatrix()->ExpNumberOfSubs(freqMx, mbf)) * weight;
       });
@@ -897,7 +897,7 @@ void _CalcNode::ConvertToSimpleMatrix(unsigned long category_count) {
   if (mf) {
     if (!templateFormulaClone) {
       templateFormulaClone = new _Formula *[category_count];
-      for (long i = 0; i < category_count; i++) {
+      for (unsigned long i = 0; i < category_count; i++) {
         templateFormulaClone[i] = new _Formula(*mf);
         templateFormulaClone[i]->ConvertMatrixArgumentsToSimpleOrComplexForm(
             false);
@@ -922,7 +922,7 @@ void _CalcNode::ConvertFromSimpleMatrix(unsigned long category_count) {
     if (templateFormulaClone) {
       // printf ("_CalcNode::ConvertFromSimpleMatrix %s => %d\n",
       // GetName()->get_str(), category_count);
-      for (long i = 0; i < category_count; i++) {
+      for (unsigned long i = 0; i < category_count; i++) {
         delete templateFormulaClone[i];
       }
       delete[] templateFormulaClone;
@@ -949,7 +949,7 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
 
   long descendants = whereAmI->get_num_nodes(),
        f = iVariables ? iVariables->FindStepping(varToConstrain, 2, 1) : -1,
-       start = 0;
+       start = 0L;
 
   if (f < 0 && !first) {
     HandleApplicationError(
@@ -974,126 +974,138 @@ _Formula *_CalcNode::RecurseMC(long varToConstrain, node<long> *whereAmI,
     start++;
   }
 
+  const long branches_to_process = descendants - start;
   // internal node - must do some work
 
-  _Formula **nodeConditions = new _Formula *[descendants - start];
+  if (branches_to_process > 0) {
 
-  for (long k = start + 1; k <= descendants; k++) {
-    node<long> *downWeGo = whereAmI->go_down((int)k);
-    if (!(nodeConditions[k - 1 - start] =
-              map_node_to_calcnode(downWeGo)->RecurseMC(varToConstrain,
-                                                        downWeGo))) {
-      for (long f2 = 0; f2 < k - start - 1; f2++) {
-        delete nodeConditions[f2];
+    _Formula **nodeConditions = new _Formula *[branches_to_process]();
+
+    for (long node_index = 0; node_index < branches_to_process; node_index++) {
+      node<long> *downWeGo = whereAmI->go_down((int)(node_index + start + 1));
+      if (!(nodeConditions[node_index] =
+                map_node_to_calcnode(downWeGo)->RecurseMC(varToConstrain,
+                                                          downWeGo))) {
+
+        for (long f2 = 0L; f2 < node_index; f2++) {
+          delete nodeConditions[f2];
+        }
+
+        delete[] nodeConditions;
+        return nil;
       }
-
-      delete[] nodeConditions;
-      return nil;
-    }
-  }
-
-  // all the conditions have been written. now check how we should resolve them
-
-  long k;
-
-  for (k = 0; k < descendants - start; k++)
-    if ((nodeConditions[k])->Length() > 1) {
-      break;
     }
 
-  if (k == descendants - start) { // all underlying branches are "simple"
-    for (long n = 1; n < descendants - start; n++) {
-      // printf ("Setting simple constraint at %s %s\n",
-      // LocateVar(nodeConditions[n]->GetIthTerm(0)->GetAVariable())->GetName()->get_str(),
-      //         _String((_String*)nodeConditions[0]->toStr(kFormulaStringConversionNormal,
-      //         nil, true)).get_str());
-      LocateVar(nodeConditions[n]->GetIthTerm(0)->GetAVariable())
-          ->SetFormula(*nodeConditions[0]);
-      delete (nodeConditions[n]);
-      nodeConditions[n] = nil;
-    }
-    k = 0;
-  } else {
-    long l;
-    for (l = k + 1; l < descendants - start; l++)
-      if (nodeConditions[l]->Length() > 1) {
+    // all the conditions have been written. now check how we should resolve
+    // them
+
+    long k;
+
+    for (k = 0; k < branches_to_process; k++) {
+      if ((nodeConditions[k])->Length() > 1) {
         break;
       }
+    }
 
-    if (l ==
-        descendants - start) // all but one underlying branches are "simple"
-      for (long n = 0; n < descendants - start; n++) {
-        if (n == k) {
-          continue;
-        }
-        // printf ("Setting semi-simple constraint at %s : %s\n",
+    if (k == branches_to_process) { // all underlying branches are "simple"
+      for (long n = 1; n < descendants - start; n++) {
+        // printf ("Setting simple constraint at %s %s\n",
         // LocateVar(nodeConditions[n]->GetIthTerm(0)->GetAVariable())->GetName()->get_str(),
-        //                                                        _String((_String*)nodeConditions[k]->toStr(kFormulaStringConversionNormal,
-        //                                                        nil,
-        //                                                        true)).get_str());
-
+        //         _String((_String*)nodeConditions[0]->toStr(kFormulaStringConversionNormal,
+        //         nil, true)).get_str());
         LocateVar(nodeConditions[n]->GetIthTerm(0)->GetAVariable())
-            ->SetFormula(*nodeConditions[k]);
+            ->SetFormula(*nodeConditions[0]);
         delete (nodeConditions[n]);
         nodeConditions[n] = nil;
       }
-    // really bad bongos! must solve for non-additive constraint
-    else
-      for (long l = 0; l < descendants - start; l++) {
-        if (l == k) {
-          continue;
+      k = 0;
+    } else {
+      long l;
+      for (l = k + 1; l < branches_to_process; l++)
+        if (nodeConditions[l]->Length() > 1) {
+          break;
         }
-        if (nodeConditions[l]->Length() == 1) {
-          // printf ("Setting simple non-additive at %s %s\n",
-          // LocateVar(nodeConditions[l]->GetIthTerm(0)->GetAVariable())->GetName()->get_str(),
-          //         _String((_String*)nodeConditions[k]->toStr(kFormulaStringConversionNormal,
-          //         nil, true)).get_str());
 
-          LocateVar(nodeConditions[l]->GetIthTerm(0)->GetAVariable())
-              ->SetFormula(*nodeConditions[k]);
-        } else { // solve for a non-additive constraint
-          _Variable *nonAdd =
-              LocateVar(nodeConditions[l]->GetIthTerm(0)->GetAVariable());
-          nodeConditions[l]->GetList().Delete(0);
-          _Formula newConstraint;
-          newConstraint.Duplicate(nodeConditions[k]);
-          for (long m = 0; m < nodeConditions[l]->GetList().lLength; m++) {
-            _Operation *curOp = (_Operation *)(*nodeConditions[l]).GetList()(m);
-            if (curOp->GetNoTerms()) {
-              newConstraint.GetList().AppendNewInstance(
-                  new _Operation(HY_OP_CODE_SUB, 2L));
-            } else {
-              newConstraint.GetList() << curOp;
-            }
+      if (l ==
+          descendants - start) // all but one underlying branches are "simple"
+        for (long n = 0; n < branches_to_process; n++) {
+          if (n == k) {
+            continue;
           }
-          delete (nodeConditions[l]);
-          nodeConditions[l] = nil;
-          nonAdd->SetFormula(newConstraint);
-          // printf ("Setting complex non-additive at %s %s\n",
-          // nonAdd->GetName()->get_str(),
-          //         _String((_String*)newConstraint.toStr(kFormulaStringConversionNormal,
-          //         nil, true)).get_str());
+          // printf ("Setting semi-simple constraint at %s : %s\n",
+          // LocateVar(nodeConditions[n]->GetIthTerm(0)->GetAVariable())->GetName()->get_str(),
+          //                                                        _String((_String*)nodeConditions[k]->toStr(kFormulaStringConversionNormal,
+          //                                                        nil,
+          //                                                        true)).get_str());
+
+          LocateVar(nodeConditions[n]->GetIthTerm(0)->GetAVariable())
+              ->SetFormula(*nodeConditions[k]);
+          delete (nodeConditions[n]);
+          nodeConditions[n] = nil;
         }
-      }
-  }
+      // really bad bongos! must solve for non-additive constraint
+      else
+        for (long branch_index = 0; branch_index < branches_to_process;
+             branch_index++) {
+          if (branch_index == k) {
+            continue;
+          }
+          if (nodeConditions[branch_index]->Length() == 1) {
+            // printf ("Setting simple non-additive at %s %s\n",
+            // LocateVar(nodeConditions[l]->GetIthTerm(0)->GetAVariable())->GetName()->get_str(),
+            //         _String((_String*)nodeConditions[k]->toStr(kFormulaStringConversionNormal,
+            //         nil, true)).get_str());
 
-  if (!first) {
-    _Formula *result = nodeConditions[k];
-    _Operation *newVar = new _Operation;
-    newVar->SetAVariable(iVariables->list_data[f - 1]);
-    result->GetList().AppendNewInstance(newVar);
-    result->GetList().AppendNewInstance(new _Operation(HY_OP_CODE_ADD, 2L));
-
-    delete[] nodeConditions;
-    return result;
-  }
-
-  for (long k = 0; k < descendants - start; k++)
-    if (nodeConditions[k]) {
-      delete nodeConditions[k];
+            LocateVar(
+                nodeConditions[branch_index]->GetIthTerm(0)->GetAVariable())
+                ->SetFormula(*nodeConditions[k]);
+          } else { // solve for a non-additive constraint
+            _Variable *nonAdd = LocateVar(
+                nodeConditions[branch_index]->GetIthTerm(0)->GetAVariable());
+            nodeConditions[branch_index]->GetList().Delete(0);
+            _Formula newConstraint;
+            newConstraint.Duplicate(nodeConditions[k]);
+            for (unsigned long m = 0;
+                 m < nodeConditions[branch_index]->GetList().lLength; m++) {
+              _Operation *curOp =
+                  (_Operation *)(*nodeConditions[branch_index]).GetList()(m);
+              if (curOp->GetNoTerms()) {
+                newConstraint.GetList().AppendNewInstance(
+                    new _Operation(HY_OP_CODE_SUB, 2L));
+              } else {
+                newConstraint.GetList() << curOp;
+              }
+            }
+            delete (nodeConditions[branch_index]);
+            nodeConditions[branch_index] = nil;
+            nonAdd->SetFormula(newConstraint);
+            // printf ("Setting complex non-additive at %s %s\n",
+            // nonAdd->GetName()->get_str(),
+            //         _String((_String*)newConstraint.toStr(kFormulaStringConversionNormal,
+            //         nil, true)).get_str());
+          }
+        }
     }
 
-  delete[] nodeConditions;
+    if (!first) {
+      _Formula *result = nodeConditions[k];
+      _Operation *newVar = new _Operation;
+      newVar->SetAVariable(iVariables->list_data[f - 1]);
+      result->GetList().AppendNewInstance(newVar);
+      result->GetList().AppendNewInstance(new _Operation(HY_OP_CODE_ADD, 2L));
+
+      delete[] nodeConditions;
+      return result;
+    }
+
+    for (long branch_index = 0; branch_index < branches_to_process;
+         branch_index++)
+      if (nodeConditions[branch_index]) {
+        delete nodeConditions[branch_index];
+      }
+
+    delete[] nodeConditions;
+  }
   return nil;
 }
 

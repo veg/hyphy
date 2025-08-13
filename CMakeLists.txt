@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.15)
 project(HyPhy LANGUAGES CXX)
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9")
+        message(FATAL_ERROR "GCC version 9 or later is required.")
+    endif()
+endif()
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 enable_testing()
 
 set(CMAKE_CXX_STANDARD 14)
@@ -16,6 +24,18 @@ option(NOSSE4 "Disable SSE4 instruction set" OFF)
 option(NONEON "Disable NEON instruction set" OFF)
 option(NOZLIB "Disable ZLIB compression library" OFF)
 option(NOBLAS "Disable BLAS linear algebra library" OFF)
+option(RUN_CLANG_TIDY "Run clang-tidy on all files" OFF)
+option(CODE_COVERAGE "Enable code coverage" OFF)
+option(USE_ASAN "Enable Address Sanitizer" OFF)
+
+if(RUN_CLANG_TIDY)
+  find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+  if(CLANG_TIDY_EXE)
+    set(CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY_EXE})
+  else()
+    message(SEND_ERROR "clang-tidy not found")
+  endif()
+endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
    set(NOAVX ON)
@@ -46,7 +66,8 @@ set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_UTILS} ${SRC_CONTRIB})
 include(CheckCXXCompilerFlag)
 include(CheckCXXSourceCompiles)
 
-set(COMMON_COMPILE_FLAGS "-fsigned-char;-O3;-D_FORTIFY_SOURCE=2;-Wall;-g;")
+set(COMMON_COMPILE_FLAGS "-fsigned-char;-O3;-D_FORTIFY_SOURCE=2;-Wall;")
+set(HYPHY_SIMD_FLAGS "")
 
 if(NOT NONEON)
     set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
@@ -61,14 +82,17 @@ int main() {
 " HYPHY_HAVE_NEON)
     if(HYPHY_HAVE_NEON)
         add_compile_definitions(_SLKP_USE_ARM_NEON)
-        if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-            list(APPEND COMMON_COMPILE_FLAGS "-mcpu=native;-mtune=native")
+        if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            list(APPEND HYPHY_SIMD_FLAGS "-mcpu=native;-mtune=native")
         endif()
     endif()
     set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if(NOT HYPHY_HAVE_NEON AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+        list(APPEND COMMON_COMPILE_FLAGS "-march=native" "-mcpu=native" "-mtune=native")
+    endif()
     if(NOT NOAVX)
         set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
         set(CMAKE_REQUIRED_FLAGS "-mavx2")
@@ -81,7 +105,7 @@ int main() {
 }
 " HYPHY_HAVE_AVX2)
         if(HYPHY_HAVE_AVX2)
-            list(APPEND COMMON_COMPILE_FLAGS "-mavx2")
+            list(APPEND HYPHY_SIMD_FLAGS "-mavx2")
             add_compile_definitions(_SLKP_USE_AVX_INTRINSICS)
             set(CMAKE_REQUIRED_FLAGS "-mfma")
             check_cxx_source_compiles("
@@ -93,7 +117,7 @@ int main() {
 }
 " HYPHY_HAVE_FMA)
             if(HYPHY_HAVE_FMA)
-                list(APPEND COMMON_COMPILE_FLAGS "-mfma")
+                list(APPEND HYPHY_SIMD_FLAGS "-mfma")
                 add_compile_definitions(_SLKP_USE_FMA3_INTRINSICS)
             endif()
         endif()
@@ -110,7 +134,7 @@ int main() {
 }
 " HYPHY_HAVE_SSE41)
         if(HYPHY_HAVE_SSE41)
-            list(APPEND COMMON_COMPILE_FLAGS "-msse4.1")
+            list(APPEND HYPHY_SIMD_FLAGS "-msse4.1")
             add_compile_definitions(_SLKP_USE_SSE_INTRINSICS)
         endif()
         set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
@@ -121,10 +145,21 @@ int main() {
     endif()
 endif()
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    list(APPEND COMMON_COMPILE_FLAGS
+        -Wextra
+        -Wpedantic
+        -Wshadow
+        -Wformat=2
+        -Wunused
+        -Wmost
+    )
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
    list(APPEND COMMON_COMPILE_FLAGS "-fwasm-exceptions")
    if(NOT NOSSE4)
-       list(APPEND COMMON_COMPILE_FLAGS "-msimd128")
+       list(APPEND HYPHY_SIMD_FLAGS "-msimd128")
    endif()
 endif()
 
@@ -166,10 +201,9 @@ add_custom_target(uninstall
 # Main Executable
 #------------------------------------------------------------------------------
 add_executable(hyphy ${SRC_COMMON} ${SRC_UNIXMAIN})
-target_compile_options(hyphy PRIVATE ${COMMON_COMPILE_FLAGS})
+target_compile_options(hyphy PRIVATE ${COMMON_COMPILE_FLAGS} ${HYPHY_SIMD_FLAGS})
 target_compile_definitions(hyphy PRIVATE
-    _SLKP_LFENGINE_REWRITE_
-    __AFYP_REWRITE_BGM__
+     __AFYP_REWRITE_BGM__
     __UNIX__
     __MP__
     __MP2__
@@ -217,9 +251,8 @@ install(TARGETS hyphy RUNTIME DESTINATION bin)
 #------------------------------------------------------------------------------
 if(MPI_FOUND)
     add_executable(HYPHYMPI EXCLUDE_FROM_ALL ${SRC_COMMON} ${SRC_UNIXMAIN})
-    target_compile_options(HYPHYMPI PRIVATE ${COMMON_COMPILE_FLAGS})
+    target_compile_options(HYPHYMPI PRIVATE ${COMMON_COMPILE_FLAGS} ${HYPHY_SIMD_FLAGS})
     target_compile_definitions(HYPHYMPI PRIVATE
-        _SLKP_LFENGINE_REWRITE_
         __AFYP_REWRITE_BGM__
         __UNIX__
         __HYPHYMPI__
@@ -246,14 +279,12 @@ if(MPI_FOUND)
 endif()
 
 add_executable(HYPHYDEBUG EXCLUDE_FROM_ALL ${SRC_COMMON} ${SRC_UNIXMAIN})
-target_compile_options(HYPHYDEBUG PRIVATE
-    ${COMMON_COMPILE_FLAGS}
-    -g
-    -fsanitize=address
-    -O0
-)
+target_compile_options(HYPHYDEBUG PRIVATE ${HYPHY_SIMD_FLAGS})
+if(USE_ASAN)
+    target_compile_options(HYPHYDEBUG PRIVATE -fsanitize=address -g)
+    target_link_libraries(HYPHYDEBUG PRIVATE -fsanitize=address -g)
+endif()
 target_compile_definitions(HYPHYDEBUG PRIVATE
-    _SLKP_LFENGINE_REWRITE_
     __AFYP_REWRITE_BGM__
     __UNIX__
     __HYPHYDEBUG__
@@ -269,8 +300,14 @@ target_link_libraries(HYPHYDEBUG PRIVATE ${DEFAULT_LIBRARIES})
 if(OPENMP_FOUND)
     target_link_libraries(HYPHYDEBUG PRIVATE OpenMP::OpenMP_CXX)
 endif()
-if(BLAS_FOUND AND NOT NOBLAS)
-    target_link_libraries(HYPHYDEBUG PRIVATE ${BLAS_LIBRARIES})
+if(CODE_COVERAGE)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(HYPHYDEBUG PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+        target_link_libraries(HYPHYDEBUG PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        target_compile_options(HYPHYDEBUG PRIVATE  -fprofile-arcs -ftest-coverage)
+        target_link_libraries(HYPHYDEBUG PRIVATE  -fprofile-arcs -ftest-coverage)
+    endif()
 endif()
 
 #------------------------------------------------------------------------------

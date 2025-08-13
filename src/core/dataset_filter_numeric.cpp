@@ -37,10 +37,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-
-#include "global_things.h"
 #include "dataset_filter_numeric.h"
 #include "batchlan.h"
+#include "global_things.h"
 
 //_________________________________________________________
 // Data Set Filter/Numeric
@@ -59,11 +58,9 @@ _DataSetFilterNumeric::~_DataSetFilterNumeric(void) {
   } else {
     HandleApplicationError("Internal error in ~_DataSetFilterNumeric", true);
   }
-
 }
 
-  //_________________________________________________________
-
+//_________________________________________________________
 
 _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
                                              _DataSet *ds, long cc) {
@@ -107,10 +104,11 @@ _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
 
   char buffer[255];
 
-  for (long site = 0; site < baseFreqs.lLength; site++) {
+  for (unsigned long site = 0; site < baseFreqs.lLength; site++) {
     hyFloat testV = 0.0;
 
-    for (long k = 0; k < theNodeMap.lLength; k++) // sweep down the columns
+    for (unsigned long k = 0; k < theNodeMap.lLength;
+         k++) // sweep down the columns
       for (long state = 0; state < dimension; state++) {
         testV += ((_Matrix *)(((_Matrix **)values.list_data)[k]))
                      ->theData[site * dimension + state];
@@ -124,13 +122,14 @@ _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
 
     if (f >= 0) {
       sameScore = (_SimpleList *)siteIndices.GetXtra(f);
-      for (long k = 0; k < sameScore->lLength; k++) {
+      for (unsigned long k = 0; k < sameScore->lLength; k++) {
         bool fit = true;
         f = sameScore->list_data[k];
 
-        for (long spec = 0; spec < theNodeMap.lLength && fit;
+        for (unsigned long spec = 0; spec < theNodeMap.lLength && fit;
              spec++) { // sweep down the columns
-          _Matrix *specMatrix = (_Matrix *)(((_Matrix **)values.list_data)[spec]);
+          _Matrix *specMatrix =
+              (_Matrix *)(((_Matrix **)values.list_data)[spec]);
           for (long state = 0; state < dimension; state++)
             if (specMatrix->theData[site * dimension + state] !=
                 specMatrix->theData[theMap.list_data[f] * dimension + state]) {
@@ -171,39 +170,37 @@ _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
   shifter = theFrequencies.lLength * dimension;
   categoryShifter = shifter * theNodeMap.lLength;
 
-  _Matrix::CreateMatrix(&probabilityVectors, theNodeMap.lLength, shifter * categoryCount,
-               false, true, false);
+  _Matrix::CreateMatrix(&probabilityVectors, theNodeMap.lLength,
+                        shifter * categoryCount, false, true, false);
   hyFloat *storeHere = probabilityVectors.theData;
 
   long refShifter = 0;
   for (long cat_counter = 0; cat_counter < categoryCount;
        cat_counter++, refShifter += theOriginalOrder.lLength * dimension) {
-    for (long spec = 0; spec < theNodeMap.lLength; spec++) {
+    for (unsigned long spec = 0; spec < theNodeMap.lLength; spec++) {
       _Matrix *specMatrix = (_Matrix *)values(spec);
-      for (long site = 0; site < theFrequencies.lLength; site++)
+      for (unsigned long site = 0; site < theFrequencies.lLength; site++)
         for (long state = 0; state < dimension; state++, storeHere++) {
           *storeHere =
-              specMatrix->theData[refShifter + theMap.list_data[site] * dimension +
-                                  state];
+              specMatrix->theData[refShifter +
+                                  theMap.list_data[site] * dimension + state];
         }
     }
   }
 }
 
-
 //_______________________________________________________________________
 
-bool     _DataSetFilterNumeric::CompareTwoSites (unsigned long, unsigned long, unsigned long) const {
+bool _DataSetFilterNumeric::CompareTwoSites(unsigned long, unsigned long,
+                                            unsigned long) const {
   return false;
 }
 
-  //_______________________________________________________________________
+//_______________________________________________________________________
 
-BaseRef _DataSetFilterNumeric::makeDynamic (void) const {
-  _DataSetFilterNumeric * r = new _DataSetFilterNumeric();
-  r->CopyFilter           (this);
+BaseRef _DataSetFilterNumeric::makeDynamic(void) const {
+  _DataSetFilterNumeric *r = new _DataSetFilterNumeric();
+  r->CopyFilter(this);
   r->probabilityVectors.Duplicate(&probabilityVectors);
   return r;
 }
-
-

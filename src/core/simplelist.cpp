@@ -61,10 +61,15 @@ Constructors
 ==============================================================
 */
 
-// Does nothing
+/**
+ * @brief Default constructor. Initializes an empty list.
+ */
 _SimpleList::_SimpleList() : static_data{0L} { Initialize(false); }
 
-// Data constructor (1 member list)
+/**
+ * @brief Constructor for a list with a single element.
+ * @param br The initial element to add to the list.
+ */
 _SimpleList::_SimpleList(long br) : static_data{0L} {
   lLength = 1;
   laLength = MEMORYSTEP;
@@ -72,13 +77,25 @@ _SimpleList::_SimpleList(long br) : static_data{0L} {
   static_data[0] = br;
 }
 
-// Length constructor and populator
+/**
+ * @brief Constructor that creates and populates a list with a sequence of
+ * numbers.
+ * @param l The number of elements in the list.
+ * @param start The starting value of the sequence.
+ * @param step The increment between consecutive elements.
+ * @code
+ *  _SimpleList list(5, 0, 2); // Creates a list with elements {0, 2, 4, 6, 8}
+ * @endcode
+ */
 _SimpleList::_SimpleList(long l, long start, long step) : static_data{0L} {
   Initialize(false);
   Populate(l, start, step);
 }
 
-// Length constructor
+/**
+ * @brief Constructor that pre-allocates memory for a given number of elements.
+ * @param l The number of elements to allocate space for.
+ */
 _SimpleList::_SimpleList(unsigned long l) : static_data{0L} {
   lLength = 0UL;
   if (l <= MEMORYSTEP) {
@@ -86,12 +103,17 @@ _SimpleList::_SimpleList(unsigned long l) : static_data{0L} {
     list_data = (long *)&static_data;
   } else {
     laLength = (l / MEMORYSTEP + 1) * MEMORYSTEP;
-    list_data = (long *)MemAllocate(laLength * sizeof(hyPointer));
+    list_data = static_cast<long *>(MemAllocate(laLength * sizeof(hyPointer)));
     memset(list_data, 0, laLength * sizeof(hyPointer));
   }
 }
 
-// Length constructor
+/**
+ * @brief Constructor that uses a pre-allocated buffer for storage.
+ * @param l The number of elements the pre-allocated storage can hold.
+ * @param preallocated_storage A pointer to the pre-allocated buffer. If NULL,
+ * new memory is allocated.
+ */
 _SimpleList::_SimpleList(unsigned long l, long *preallocated_storage)
     : static_data{0L} {
   lLength = 0UL;
@@ -105,13 +127,19 @@ _SimpleList::_SimpleList(unsigned long l, long *preallocated_storage)
       list_data = (long *)&static_data;
     } else {
       laLength = (l / MEMORYSTEP + 1) * MEMORYSTEP;
-      list_data = (long *)MemAllocate(laLength * sizeof(hyPointer));
+      list_data =
+          static_cast<long *>(MemAllocate(laLength * sizeof(hyPointer)));
     }
     memset(list_data, 0, laLength * sizeof(hyPointer));
   }
 }
 
-// Stack copy contructor
+/**
+ * @brief Copy constructor that copies a sub-list of another list.
+ * @param l The source list to copy from.
+ * @param from The starting index of the sub-list to copy (inclusive).
+ * @param to The ending index of the sub-list to copy (exclusive).
+ */
 _SimpleList::_SimpleList(_SimpleList const &l, long from, long to)
     : static_data{0L} {
   Initialize(false);
@@ -121,15 +149,23 @@ _SimpleList::_SimpleList(_SimpleList const &l, long from, long to)
     NormalizeCoordinates(from, to, l.lLength);
   }
   if (to > from) {
-    long upto = to - from;
+    unsigned long upto = to - from;
     RequestSpace(upto);
-    for (lLength = 0UL; lLength < upto; lLength++) {
-      list_data[lLength] = l.list_data[from + lLength];
-    }
+    memcpy(list_data, l.list_data + from, upto * sizeof(long));
+    lLength = upto;
   }
 }
 
-// Data constructor (variable number of long constants)
+/**
+ * @brief Constructor that initializes the list with a variable number of
+ * arguments.
+ * @param value1 The first value to add.
+ * @param number The number of additional arguments.
+ * @param ... The additional long integer values.
+ * @code
+ * _SimpleList list(10, 2, 20, 30); // Creates a list with elements {10, 20, 30}
+ * @endcode
+ */
 _SimpleList::_SimpleList(const long value1, const unsigned long number, ...)
     : static_data{0L} {
   Initialize(true);
@@ -145,10 +181,12 @@ _SimpleList::_SimpleList(const long value1, const unsigned long number, ...)
   va_end(vl);
 }
 
-// Destructor
+/**
+ * @brief Destructor. Frees the memory allocated by the list.
+ */
 _SimpleList::~_SimpleList(void) {
   if (CanFreeMe()) {
-    if (list_data && list_data != (long *)static_data) {
+    if (list_data && list_data != static_cast<long *>(static_data)) {
       free(list_data);
     }
   } else {
@@ -162,14 +200,22 @@ Operator Overloads
 ==============================================================
 */
 
-// Element location functions (0,llength - 1)
+/**
+ * @brief Access element by index (l-value).
+ * @param i The index of the element to access.
+ * @return A reference to the element at the specified index.
+ * @note No bounds checking is performed.
+ */
 long &_SimpleList::operator[](const long i) { return list_data[i]; }
 
-// Element location functions (0,llength - 1)
+/**
+ * @brief Access element by index (r-value).
+ * @param i The index of the element to access.
+ * @return The value of the element at the specified index.
+ * @note Performs bounds checking and calls HandleApplicationError on failure.
+ */
 long _SimpleList::operator()(const unsigned long i) const {
-  // if (lLength == 0) return 0;
-  // Is there a reason why this is commented out?
-  // if (i>=lLength) i = lLength-1;
+
   if (i < lLength) {
     return list_data[i];
   }
@@ -177,7 +223,11 @@ long _SimpleList::operator()(const unsigned long i) const {
   return -1;
 }
 
-// Assignment operator
+/**
+ * @brief Assignment operator.
+ * @param l The list to assign from.
+ * @return A reference to this list.
+ */
 const _SimpleList &_SimpleList::operator=(_SimpleList const &l) {
   if (l.laLength && list_data && laLength >= l.lLength &&
       laLength <= l.laLength && CanFreeMe()) {
@@ -191,7 +241,8 @@ const _SimpleList &_SimpleList::operator=(_SimpleList const &l) {
     lLength = l.lLength;
     laLength = l.laLength;
     if (laLength >= MEMORYSTEP) {
-      list_data = (long *)MemAllocate(laLength * sizeof(hyPointer));
+      list_data =
+          static_cast<long *>(MemAllocate(laLength * sizeof(hyPointer)));
     } else {
       list_data = static_data;
     }
@@ -203,8 +254,12 @@ const _SimpleList &_SimpleList::operator=(_SimpleList const &l) {
   return *this;
 }
 
-// Append operator
-_SimpleList _SimpleList::operator&(_SimpleList const &l) {
+/**
+ * @brief Concatenation operator.
+ * @param l The list to concatenate with.
+ * @return A new list containing the elements of both lists.
+ */
+_SimpleList const _SimpleList::operator&(_SimpleList const &l) {
   _SimpleList res(l.lLength + lLength);
 
   if (!res.laLength) {
@@ -225,11 +280,21 @@ _SimpleList _SimpleList::operator&(_SimpleList const &l) {
   return res;
 }
 
+/**
+ * @brief Append element operator.
+ * @param br The element to append.
+ * @return A reference to this list.
+ */
 _SimpleList &_SimpleList::operator<<(long br) {
   _SimpleList::InsertElement((BaseRef)br, -1, false, false);
   return *this;
 }
 
+/**
+ * @brief Append element if not already present.
+ * @param br The element to append.
+ * @return `true` if the element was appended, `false` otherwise.
+ */
 bool _SimpleList::operator>>(long br) {
   if (Find(br) == -1) {
     InsertElement((BaseRef)br, -1, false, false);
@@ -238,6 +303,10 @@ bool _SimpleList::operator>>(long br) {
   return false;
 }
 
+/**
+ * @brief Append another list.
+ * @param source The list to append.
+ */
 void _SimpleList::operator<<(_SimpleList const &source) {
   for (unsigned long k = 0UL; k < source.lLength; k++) {
     (*this) << source.list_data[k];
@@ -250,25 +319,37 @@ Methods
 ==============================================================
 */
 
-// Element location functions (0,llength - 1), negative values return
-//  elements from the end of the list
-
+/**
+ * @brief Get an element at a specific index.
+ * @param index The index of the element to retrieve. Negative indices count
+ * from the end of the list.
+ * @return The value of the element at the specified index.
+ * @note Performs bounds checking and calls HandleApplicationError on failure.
+ */
 long _SimpleList::GetElement(const long index) const {
   if (index >= 0L) {
-    if ((const unsigned long)index < lLength) {
+    if (static_cast<const unsigned long>(index) < lLength) {
       return list_data[index];
     }
   }
-  if ((const unsigned long)(-index) <= lLength) {
+  if (static_cast<const unsigned long>(-index) <= lLength) {
     return list_data[lLength + index];
   }
   HandleApplicationError(
-      _String("List index '") & (long)((const unsigned long)(-index)) &
+      _String("List index '") &
+      static_cast<long>(static_cast<const unsigned long>(-index)) &
       "' out of range in _SimpleList::GetElement on list of length " &
-      long(lLength));
+      static_cast<long>(lLength));
   return 0;
 }
 
+/**
+ * @brief Performs a binary search for a value in a sorted list.
+ * @param s The value to search for.
+ * @param startAt The index to start the search from.
+ * @return If the value is found, its index is returned. Otherwise, a negative
+ * value is returned, where `-index - 2` is the insertion point.
+ */
 long _SimpleList::BinaryFind(long s, long startAt) const {
 
   if (lLength == 0L) {
@@ -277,30 +358,37 @@ long _SimpleList::BinaryFind(long s, long startAt) const {
 
   long top = lLength - 1, bottom = startAt, middle;
 
-  while (top > bottom) {
-    middle = (top + bottom) >> 1;
-    if (s < list_data[middle]) {
-      top = middle == top ? top - 1 : middle;
-    } else if (s > list_data[middle]) {
-      bottom = middle == bottom ? bottom + 1 : middle;
+  while (top >= bottom) {
+    middle = bottom + ((top - bottom) >> 1);
+    long middle_value = list_data[middle];
+    if (s < middle_value) {
+      top = middle - 1;
+    } else if (s > middle_value) {
+      bottom = middle + 1;
     } else {
       return middle;
     }
   }
 
-  middle = top;
-  long comp = list_data[middle] - s;
-  if (!comp) {
-    return middle;
-  }
+  return -bottom - 2;
 
-  return comp < 0 ? -middle - 3 : -middle - 2;
+  // exiting here; because no match was found and middle = top = bottom
+  // if middle_value < s, then bottom = middle + 1, so we return -middle - 3
+  // if middle_value < s then bottom = middle - 1, otherwise bottom = middle
+
+  // comp < 0, means middle_value < s
+  // return comp < 0 ? -middle - 3 : -middle - 2;
 }
 
+/**
+ * @brief Inserts a value into a sorted list, maintaining the sort order.
+ * @param n The value to insert.
+ * @return The index where the value was inserted.
+ */
 long _SimpleList::BinaryInsert(long n) {
   if (lLength == 0L) {
     (*this) << n;
-    return 0;
+    return 0L;
   }
 
   long pos = -BinaryFind(n) - 2;
@@ -309,15 +397,20 @@ long _SimpleList::BinaryInsert(long n) {
     return -pos + 2;
   }
 
-  if (pos < lLength && list_data[pos] < n) {
+  if (pos < (long)lLength && list_data[pos] < n) {
     pos++;
   }
 
   InsertElement((BaseRef)n, pos, false, false);
 
-  return pos >= lLength ? lLength - 1 : pos;
+  return pos >= (long)lLength ? lLength - 1 : pos;
 }
 
+/**
+ * @brief Deletes all _Formula objects stored in the list.
+ * @note This function assumes that the list contains pointers to _Formula
+ * objects.
+ */
 void _SimpleList::ClearFormulasInList(void) {
   for (unsigned long k = 0UL; k < lLength; k++)
     if (list_data[k]) {
@@ -325,6 +418,10 @@ void _SimpleList::ClearFormulasInList(void) {
     }
 }
 
+/**
+ * @brief Calculates the sum of all elements in the list.
+ * @return The sum of all elements.
+ */
 long _SimpleList::Sum(void) const {
   long sum = 0L;
   for (unsigned long k = 0UL; k < lLength; k++) {
@@ -333,6 +430,13 @@ long _SimpleList::Sum(void) const {
   return sum;
 }
 
+/**
+ * @brief Compares two elements in the list.
+ * @param i The index of the first element.
+ * @param j The index of the second element.
+ * @return kCompareLess if the first element is smaller, kCompareEqual if they
+ * are equal, and kCompareGreater if the first element is larger.
+ */
 hyComparisonType _SimpleList::Compare(long i, long j) const {
   long v1 = list_data[i], v2 = list_data[j];
 
@@ -347,8 +451,15 @@ hyComparisonType _SimpleList::Compare(long i, long j) const {
   // return ((long*)list_data)[i]-((long*)list_data)[j];
 }
 
+/**
+ * @brief Compares a BaseObj pointer with an element in the list.
+ * @param i A pointer to a BaseObj.
+ * @param j The index of the element in the list to compare with.
+ * @return kCompareLess if the pointer value is smaller, kCompareEqual if they
+ * are equal, and kCompareGreater if the pointer value is larger.
+ */
 hyComparisonType _SimpleList::Compare(BaseObj const *i, long j) const {
-  long v1 = (long)i, v2 = list_data[j];
+  long v1 = reinterpret_cast<long>(i), v2 = list_data[j];
 
   if (v1 < v2) {
     return kCompareLess;
@@ -361,49 +472,45 @@ hyComparisonType _SimpleList::Compare(BaseObj const *i, long j) const {
   // return (long)i-((long*)list_data)[j];
 }
 
-// Compute the number of shared of two sorted lists
+/**
+ * @brief Counts the number of common elements between two sorted lists.
+ * @param l1 The other sorted list to compare with.
+ * @param yesNo If true, the function returns 1 as soon as a common element is
+ * found. Otherwise, it counts all common elements.
+ * @return The number of common elements.
+ */
 long _SimpleList::CountCommonElements(_SimpleList const &l1, bool yesNo) const {
-  long c1 = 0, c2 = 0, res = 0;
+  unsigned long res = 0;
 
-  while (c1 < l1.lLength && c2 < lLength) {
-    while (l1.list_data[c1] < list_data[c2]) {
-      c1++;
-      if (c1 == l1.lLength) {
-        break;
-      }
-    }
-    if (c1 == l1.lLength) {
-      break;
-    }
-
-    while (l1.list_data[c1] == list_data[c2]) {
-      c2++;
-      if (yesNo) {
+  unsigned long i = 0, j = 0;
+  while (i < l1.lLength && j < lLength) {
+    if (l1.list_data[i] < list_data[j]) {
+      i++;
+    } else if (list_data[j] < l1.list_data[i]) {
+      j++;
+    } else {
+      if (yesNo)
         return 1;
-      } else {
-        res++;
-      }
-      if (c1 == l1.lLength || c2 == lLength) {
-        break;
-      }
-    }
-    if (c1 == l1.lLength || c2 == lLength) {
-      break;
-    }
-    while (list_data[c2] < l1.list_data[c1]) {
-      c2++;
-      if (c2 == lLength) {
-        break;
-      }
+      res++;
+      i++;
+      j++;
     }
   }
 
   return res;
 }
 
+/**
+ * @brief Performs a counting sort on the list.
+ * @param upperBound The upper bound of the values in the list. If 0 or less, it
+ * is computed from the list.
+ * @param ordering A list to store the original indices of the sorted elements.
+ * @param wantResult If true, a new sorted list is returned.
+ * @return If `wantResult` is true, a new sorted list. Otherwise, `nil`.
+ */
 _SimpleList *_SimpleList::CountingSort(long upperBound, _SimpleList *ordering,
                                        bool wantResult) {
-  static const unsigned long kAllocaLimit = 4096UL;
+  static const long kAllocaLimit = 4096L;
 
   if (ordering) {
     ordering->Clear();
@@ -415,7 +522,7 @@ _SimpleList *_SimpleList::CountingSort(long upperBound, _SimpleList *ordering,
     }
 
     long *storage = upperBound < kAllocaLimit
-                        ? (long *)alloca(sizeof(long) * upperBound)
+                        ? static_cast<long *>(alloca(sizeof(long) * upperBound))
                         : nil;
 
     if (storage) {
@@ -426,7 +533,7 @@ _SimpleList *_SimpleList::CountingSort(long upperBound, _SimpleList *ordering,
     _SimpleList *result =
         (wantResult || !ordering) ? new _SimpleList(lLength) : nil;
 
-    for (long pass1 = 0; pass1 < lLength; pass1++) {
+    for (unsigned long pass1 = 0; pass1 < lLength; pass1++) {
       buffer.list_data[list_data[pass1]]++;
     }
     for (long pass2 = 1; pass2 < upperBound; pass2++) {
@@ -454,12 +561,20 @@ _SimpleList *_SimpleList::CountingSort(long upperBound, _SimpleList *ordering,
 
       result->lLength = lLength;
     }
-
+    if (storage) {
+      // this is to remove a static analysis warning
+      buffer.list_data = nil;
+    }
     return result;
   }
   return wantResult ? new _SimpleList : nil;
 }
 
+/**
+ * @brief Clears the list.
+ * @param completeClear If true, the allocated memory is freed and the list is
+ * reset to its initial state. Otherwise, only the length is reset to 0.
+ */
 void _SimpleList::Clear(bool completeClear) {
   if (CanFreeMe()) {
     lLength = 0UL;
@@ -475,6 +590,10 @@ void _SimpleList::Clear(bool completeClear) {
   }
 }
 
+/**
+ * @brief Dumps the contents of a variable list to the console for debugging.
+ * @note This function assumes that the list contains indices of variables.
+ */
 void _SimpleList::DebugVarList(void) {
   printf("\nVariable list dump:\n");
   for (unsigned long e = 0UL; e < lLength; e++) {
@@ -489,10 +608,15 @@ void _SimpleList::DebugVarList(void) {
   }
 }
 
+/**
+ * @brief Ensures that the list uses the correct storage type (static or
+ * dynamic) based on its allocated length.
+ */
 void _SimpleList::_EnsureCorrectStorageType(void) {
   if (laLength >= MEMORYSTEP) {
     if (list_data == static_data) {
-      list_data = (long *)MemAllocate(laLength * sizeof(hyPointer));
+      list_data =
+          static_cast<long *>(MemAllocate(laLength * sizeof(hyPointer)));
       _CopyStatic();
 
     } else {
@@ -501,15 +625,17 @@ void _SimpleList::_EnsureCorrectStorageType(void) {
     }
   } else {
     if (list_data != static_data) {
-      for (long k = 0L; k < lLength; k++) {
-        static_data[k] = list_data[k];
-      }
+      memcpy(static_data, list_data, lLength * sizeof(long));
       free(list_data);
       list_data = static_data;
     }
   }
 }
 
+/**
+ * @brief Updates the storage type of the list if there is a significant amount
+ * of unused allocated space.
+ */
 void _SimpleList::_UpdateStorageType(void) {
   if (laLength - lLength > MEMORYSTEP) {
     laLength -= ((laLength - lLength) / MEMORYSTEP) * MEMORYSTEP;
@@ -517,18 +643,25 @@ void _SimpleList::_UpdateStorageType(void) {
   }
 }
 
+/**
+ * @brief Copies the contents of the static buffer to the dynamic buffer.
+ */
 void _SimpleList::_CopyStatic(void) {
   for (long k = 0L; k < MEMORYSTEP; k++) {
     list_data[k] = static_data[k];
   }
 }
 
-// Delete item at index (>=0)
+/**
+ * @brief Deletes an element at a specific index.
+ * @param index The index of the element to delete.
+ * @param compact If true, the storage is compacted after deletion.
+ */
 void _SimpleList::Delete(long index, bool compact) {
-  if (index >= 0 && index < lLength) {
+  if (index_in_range(index)) {
     lLength--;
-    if (lLength > index) {
-      for (long k = index; k < lLength; k++) {
+    if ((long)lLength > index) {
+      for (unsigned long k = index; k < lLength; k++) {
         list_data[k] = list_data[k + 1];
       }
       // memmove
@@ -540,7 +673,9 @@ void _SimpleList::Delete(long index, bool compact) {
   }
 }
 
-// Delete duplicates from a sorted list
+/**
+ * @brief Deletes duplicate values from a sorted list.
+ */
 void _SimpleList::DeleteDuplicates(void) {
   if (lLength > 1L) {
     /*_SimpleList noDups;
@@ -559,26 +694,29 @@ void _SimpleList::DeleteDuplicates(void) {
     }*/
     long last_retained = 0L, current_store = 1L;
 
-    for (long k = 1L; k < lLength; k++) {
+    for (unsigned long k = 1; k < lLength; k++) {
       if (list_data[k] != list_data[last_retained]) {
         last_retained = k;
         list_data[current_store++] = list_data[k];
       }
     }
 
-    if (lLength != current_store) {
+    if ((long)lLength != current_store) {
       lLength = current_store;
       TrimMemory();
     }
   }
 }
 
-// Delete items from a sorted list
+/**
+ * @brief Deletes a list of indices from this list.
+ * @param toDelete A sorted list of indices to delete.
+ */
 void _SimpleList::DeleteList(const _SimpleList &toDelete) {
   if (toDelete.lLength) {
     unsigned long k = 0;
     for (unsigned long i = 0UL; i < lLength; i++) {
-      if (k < toDelete.lLength && i == toDelete.list_data[k])
+      if (k < toDelete.lLength && (long)i == toDelete.list_data[k])
       // if (k<toDelete.lLength)
       {
         k++;
@@ -591,6 +729,11 @@ void _SimpleList::DeleteList(const _SimpleList &toDelete) {
   _UpdateStorageType();
 }
 
+/**
+ * @brief Corrects an index by skipping over the elements in this list.
+ * @param index The index to correct.
+ * @return The corrected index.
+ */
 long _SimpleList::SkipCorrect(long index) const {
   for (unsigned long k = 0UL; k < lLength; k++)
     if (index >= list_data[k]) {
@@ -599,6 +742,13 @@ long _SimpleList::SkipCorrect(long index) const {
   return index;
 }
 
+/**
+ * @brief Corrects an index based on a list of excluded indices.
+ * @param index The index to correct.
+ * @param excluded_value The value to return if the index is in the exclusion
+ * list.
+ * @return The corrected index, or `excluded_value` if the index is excluded.
+ */
 long _SimpleList::CorrectForExclusions(long index, long excluded_value) const {
   long correction = 0L;
   for (unsigned long k = 0UL; k < lLength && index >= list_data[k]; k++) {
@@ -610,11 +760,18 @@ long _SimpleList::CorrectForExclusions(long index, long excluded_value) const {
   return index - correction;
 }
 
+/**
+ * @brief Corrects an array of indices based on a list of excluded indices.
+ * @param index A pointer to the array of indices to correct.
+ * @param length The length of the array.
+ * @return The new length of the corrected array.
+ */
 long _SimpleList::CorrectForExclusions(long *index, long length) const {
   long exclusion_index = 0L, mapped = 0UL;
 
   for (long k = 0UL; k < length; k++) {
-    if (exclusion_index < lLength && index[k] >= list_data[exclusion_index]) {
+    if (exclusion_index < (long)lLength &&
+        index[k] >= list_data[exclusion_index]) {
       if (index[k] > list_data[exclusion_index]) {
         k--;
       }
@@ -626,23 +783,28 @@ long _SimpleList::CorrectForExclusions(long *index, long length) const {
   return mapped;
 }
 
-// Shift the range from start to end
+/**
+ * @brief Displaces a range of elements within the list.
+ * @param start The starting index of the range.
+ * @param end The ending index of the range.
+ * @param delta The amount to displace the range by.
+ */
 void _SimpleList::Displace(long start, long end, long delta) {
   if (start < 0) {
     start = 0;
-  } else if (start >= lLength) {
+  } else if (start >= (long)lLength) {
     start = lLength - 1;
   }
 
   if (end < 0) {
     end = lLength - 1;
-  } else if (end >= lLength) {
+  } else if (end >= (long)lLength) {
     end = lLength - 1;
   }
 
-  if ((end - start >= 0) && delta && (end - start < lLength - 1)) {
-    if (delta > 0 && lLength - end <= delta) { // shift up
-      delta = lLength - end - 1;
+  if ((end - start >= 0) && delta && (end - start < (long)lLength - 1)) {
+    if (delta > 0 && (long)lLength - end <= delta) { // shift up
+      delta = (long)lLength - end - 1;
     } else if (start - delta < 0) {
       delta = start;
     }
@@ -674,36 +836,51 @@ void _SimpleList::Displace(long start, long end, long delta) {
   }
 }
 
+/**
+ * @brief Duplicates the contents of another SimpleList into this list.
+ * @param theRef A constant reference to the SimpleList to duplicate.
+ */
 void _SimpleList::Duplicate(BaseRefConst theRef) {
-  _SimpleList const *l = (_SimpleList const *)theRef;
+  _SimpleList const *l = static_cast<const _SimpleList *>(theRef);
   lLength = l->lLength;
   laLength = l->laLength;
   // list_data       = l->list_data;
   if (l->is_dynamic()) {
-    list_data = (long *)MemAllocate(laLength * sizeof(hyPointer));
+    list_data = static_cast<long *>(MemAllocate(laLength * sizeof(hyPointer)));
     memcpy(list_data, l->list_data, lLength * sizeof(hyPointer));
   } else {
     list_data = static_data;
-    for (long k = 0L; k < lLength; k++) {
+    for (unsigned long k = 0L; k < lLength; k++) {
       list_data[k] = l->list_data[k];
     }
   }
 }
 
-// Element location functions (0,llength - 1)
-// Negative indices return offsets from the end of the list
+/**
+ * @brief Retrieves an element from the list.
+ * @param index The index of the element to retrieve. Negative indices count
+ * from the end of the list.
+ * @return The element at the specified index, or 0L if the index is out of
+ * bounds.
+ */
 long _SimpleList::Element(long index) const {
-  if (index >= 0 && index < lLength) {
+  if (index_in_range(index)) {
     return list_data[index];
   }
 
-  else if (index < 0L && -index <= lLength) {
-    return list_data[(long)lLength + index];
+  else if (index < 0L && -index <= (long)lLength) {
+    return list_data[static_cast<long>(lLength) + index];
   }
 
   return 0L;
 }
 
+/**
+ * @brief Compares this list with another list for equality.
+ * @param l2 The other list to compare with.
+ * @return True if the lists are equal (same length and all elements are the
+ * same), false otherwise.
+ */
 bool _SimpleList::Equal(_SimpleList const &l2) const {
   if (lLength == l2.lLength) {
     for (unsigned long i = 0UL; i < lLength; i++)
@@ -716,6 +893,13 @@ bool _SimpleList::Equal(_SimpleList const &l2) const {
   return false;
 }
 
+/**
+ * @brief Finds the first occurrence of a value in the list.
+ * @param s The value to search for.
+ * @param startAt The index to start the search from.
+ * @return The index of the first occurrence of the value, or kNotFound if not
+ * found.
+ */
 long _SimpleList::Find(long s, long startAt) const {
   for (unsigned long i = startAt; i < lLength; i++) {
     if (list_data[i] == s) {
@@ -725,6 +909,14 @@ long _SimpleList::Find(long s, long startAt) const {
   return kNotFound;
 }
 
+/**
+ * @brief Finds a value in the list by stepping through elements.
+ * @param s The value to search for.
+ * @param step The step size to use when iterating through the list.
+ * @param startAt The index to start the search from.
+ * @return The index of the first occurrence of the value, or kNotFound if not
+ * found.
+ */
 long _SimpleList::FindStepping(long s, long step, long startAt) {
   for (unsigned long i = startAt; i < lLength; i += step) {
     if (list_data[i] == s) {
@@ -735,6 +927,11 @@ long _SimpleList::FindStepping(long s, long step, long startAt) {
   return kNotFound;
 }
 
+/**
+ * @brief Filters the list, keeping only elements within a specified range.
+ * @param lb The lower bound of the range (inclusive).
+ * @param ub The upper bound of the range (exclusive).
+ */
 void _SimpleList::FilterRange(long lb, long ub) {
   if (ub <= lb) {
     Clear();
@@ -746,7 +943,7 @@ void _SimpleList::FilterRange(long lb, long ub) {
         }
     DeleteList (toDelete);*/
     unsigned long current_store = 0UL;
-    for (long k = 0; k < lLength; k++) {
+    for (unsigned long k = 0; k < lLength; k++) {
       if (list_data[k] >= lb || list_data[k] <= ub) {
         list_data[current_store++] = list_data[k];
       }
@@ -759,13 +956,20 @@ void _SimpleList::FilterRange(long lb, long ub) {
   }
 }
 
+/**
+ * @brief Reverses the order of elements in the list.
+ */
 void _SimpleList::Flip() {
   for (long k = 0L, l = lLength - 1; k < l; k++, l--) {
     Exchange(list_data[k], list_data[l]);
   }
 }
 
-void _SimpleList::Initialize(bool doMemAlloc) {
+/**
+ * @brief Initializes the list.
+ * @param doMemAlloc If true, memory is allocated for the list.
+ */
+void _SimpleList::Initialize(bool) {
   BaseObj::Initialize();
   lLength = 0UL;
   /*if (doMemAlloc) {
@@ -779,7 +983,15 @@ void _SimpleList::Initialize(bool doMemAlloc) {
   list_data = static_data;
 }
 
-// Append & store operator
+/**
+ * @brief Inserts an element into the list at a specified position.
+ * @param br The element to insert.
+ * @param insertAt The index at which to insert the element. If -1, the element
+ * is appended.
+ * @param store If true, the element is duplicated and stored. Otherwise, the
+ * element is stored directly.
+ * @param pointer If true, a reference to the element is added.
+ */
 void _SimpleList::InsertElement(BaseRef br, long insertAt, bool store,
                                 bool pointer) {
   lLength++;
@@ -793,7 +1005,7 @@ void _SimpleList::InsertElement(BaseRef br, long insertAt, bool store,
       list_data =
           (long *)MemReallocate((char *)list_data, laLength * sizeof(long));
     } else {
-      list_data = (long *)MemAllocate(laLength * sizeof(long));
+      list_data = static_cast<long *>(MemAllocate(laLength * sizeof(long)));
       _CopyStatic();
     }
   }
@@ -802,7 +1014,7 @@ void _SimpleList::InsertElement(BaseRef br, long insertAt, bool store,
     insertAt = lLength - 1;
   } else {
     // insertAt = insertAt>=lLength?lLength:insertAt;
-    insertAt = insertAt >= lLength ? lLength - 1 : insertAt;
+    insertAt = insertAt >= (long)lLength ? lLength - 1 : insertAt;
     long moveThisMany = (laLength - insertAt - 1);
     if (moveThisMany < 32L)
       for (long k = insertAt + moveThisMany; k > insertAt; k--) {
@@ -823,7 +1035,15 @@ void _SimpleList::InsertElement(BaseRef br, long insertAt, bool store,
   }
 }
 
-// Convert a list into a partition style string
+/**
+ * @brief Converts the list into a partition-style string representation.
+ * @return A BaseRef to a _StringBuffer containing the partition string.
+ * @code
+ *  _SimpleList list;
+ *  list << 1 << 2 << 3 << 5 << 6 << 8;
+ *  // list.ListToPartitionString() would return "{1-3,5-6,8}"
+ * @endcode
+ */
 BaseRef _SimpleList::ListToPartitionString() const {
   _StringBuffer *result = new _StringBuffer((unsigned long)64);
 
@@ -850,32 +1070,51 @@ BaseRef _SimpleList::ListToPartitionString() const {
   return result;
 }
 
+/**
+ * @brief Creates a dynamic copy of this list.
+ * @return A BaseRef to a new dynamically allocated _SimpleList object.
+ */
 BaseRef _SimpleList::makeDynamic(void) const {
   _SimpleList *Res = new _SimpleList;
   Res->Duplicate(this);
   return Res;
 }
 
+/**
+ * @brief Finds the maximum value in the list.
+ * @return The maximum value in the list.
+ */
 long _SimpleList::Max(void) const {
   long res = LONG_MIN;
-  for (long e = 0L; e < lLength; e++)
+  for (unsigned long e = 0L; e < lLength; e++)
     if (list_data[e] > res) {
       res = list_data[e];
     }
   return res;
 }
 
+/**
+ * @brief Finds the minimum value in the list.
+ * @return The minimum value in the list.
+ */
 long _SimpleList::Min(void) const {
   long res = LONG_MAX;
-  for (long e = 0L; e < lLength; e++)
+  for (unsigned long e = 0L; e < lLength; e++)
     if (list_data[e] < res) {
       res = list_data[e];
     }
   return res;
 }
 
-// Merge 2 lists (sorted)
-
+/**
+ * @brief Merges two sorted lists into this list.
+ * @param l1 The first sorted list.
+ * @param l2 The second sorted list.
+ * @param mergeResults1 An optional list to store the indices of elements from
+ * l1 in the merged list.
+ * @param mergeResults2 An optional list to store the indices of elements from
+ * l2 in the merged list.
+ */
 void _SimpleList::Merge(_SimpleList &l1, _SimpleList &l2,
                         _SimpleList *mergeResults1,
                         _SimpleList *mergeResults2) {
@@ -1114,11 +1353,18 @@ void _SimpleList::Merge(_SimpleList &l1, _SimpleList &l2,
   }
 }
 
-// Together with the next function
-// Implements algorithm NEXKSB from p.27 of
-// http://www.math.upenn.edu/~wilf/website/CombinatorialAlgorithms.pdf
+/**
+ * @brief Initializes the state for the NChooseK algorithm.
+ * @param state A SimpleList to store the state of the algorithm.
+ * @param store A SimpleList to store the current combination.
+ * @param stride The number of elements to choose (k).
+ * @param algorithm A boolean flag (unused in this implementation).
+ * @return True if initialization is successful, false otherwise.
+ * @note This function is part of the implementation of algorithm NEXKSB from
+ * "Combinatorial Algorithms" by Albert Nijenhuis and Herbert S. Wilf.
+ */
 bool _SimpleList::NChooseKInit(_SimpleList &state, _SimpleList &store,
-                               unsigned long stride, bool algorithm) {
+                               unsigned long stride, bool) {
   if (stride <= lLength && lLength) {
     state.Clear();
     state.RequestSpace(stride + 3);
@@ -1130,8 +1376,17 @@ bool _SimpleList::NChooseKInit(_SimpleList &state, _SimpleList &store,
   return false;
 }
 
-// Implements algorithm NEXKSB from p.27 of
-// http://www.math.upenn.edu/~wilf/website/CombinatorialAlgorithms.pdf
+/**
+ * @brief Generates the next combination for NChooseK algorithm.
+ * @param state A SimpleList storing the state of the algorithm (modified by
+ * this function).
+ * @param store A SimpleList to store the current combination (modified by this
+ * function).
+ * @return True if a new combination is generated, false if all combinations
+ * have been generated.
+ * @note This function is part of the implementation of algorithm NEXKSB from
+ * "Combinatorial Algorithms" by Albert Nijenhuis and Herbert S. Wilf.
+ */
 bool _SimpleList::NChooseK(_SimpleList &state, _SimpleList &store) {
   if (state.lLength == 1) {      // first pass
     state << 0;                  // m
@@ -1142,7 +1397,7 @@ bool _SimpleList::NChooseK(_SimpleList &state, _SimpleList &store) {
       return false;
     }
   } else {
-    if (state.list_data[1] < lLength - state.list_data[2]) {
+    if (state.list_data[1] < (long)lLength - state.list_data[2]) {
       state.list_data[2] = 0;
     }
     state.list_data[2]++;
@@ -1155,39 +1410,55 @@ bool _SimpleList::NChooseK(_SimpleList &state, _SimpleList &store) {
     state.list_data[anIndex + 2] = anIndex2 - 1;
     store.list_data[anIndex - 1] = list_data[anIndex2 - 1];
   }
-  return state.list_data[3] < lLength - state.list_data[0];
+  return state.list_data[3] < (long)lLength - state.list_data[0];
 }
 
-// Coordinate normalizer
+/**
+ * @brief Normalizes 'from' and 'to' coordinates based on a reference length.
+ * @param from The starting coordinate (modified by this function).
+ * @param to The ending coordinate (modified by this function).
+ * @param refLength The reference length to normalize against.
+ */
 void _SimpleList::NormalizeCoordinates(long &from, long &to,
                                        const unsigned long refLength) {
   if (to < 0) {
     to = refLength + to;
   } else {
-    to = to < refLength - 1 ? to : refLength - 1;
+    to = to < (long)refLength - 1 ? to : (long)refLength - 1;
   }
   if (from < 0) {
     from = refLength + from;
   }
 }
 
+/**
+ * @brief Offsets all elements in the list by a given shift value.
+ * @param shift The value to add to each element.
+ */
 void _SimpleList::Offset(long shift) {
   for (unsigned long k = 0UL; k < lLength; k++) {
     list_data[k] += shift;
   }
 }
 
+/**
+ * @brief Creates a subset of the list.
+ * @param size The desired size of the subset.
+ * @param replacement If true, sampling is done with replacement. Otherwise,
+ * without replacement.
+ * @return A new SimpleList containing the subset.
+ */
 _SimpleList *_SimpleList::Subset(unsigned long size, bool replacement) {
   _SimpleList *result = new _SimpleList;
   if (size > 0UL && lLength > 0UL) {
     size = MIN(size, lLength);
     if (replacement) {
-      for (long k = 0; k < size; k++) {
+      for (unsigned long k = 0; k < size; k++) {
         (*result) << list_data[genrand_int32() % lLength];
       }
     } else {
       (*result) << (*this);
-      for (long k = 0; k < size; k++) {
+      for (unsigned long k = 0; k < size; k++) {
         long idx = list_data[genrand_int32() % (lLength - k)];
         long t = result->list_data[k];
         result->list_data[k] = result->list_data[idx];
@@ -1200,7 +1471,11 @@ _SimpleList *_SimpleList::Subset(unsigned long size, bool replacement) {
   return result;
 }
 
-// Create a permutation of the list's elements
+/**
+ * @brief Creates a random permutation of the list's elements.
+ * @param blockLength The size of blocks to permute. If 1, individual elements
+ * are permuted.
+ */
 void _SimpleList::Permute(long blockLength) {
 
   unsigned long blockCount = lLength / blockLength;
@@ -1208,7 +1483,7 @@ void _SimpleList::Permute(long blockLength) {
   if (blockCount > 1) {
     if (blockLength > 1) {
       for (unsigned long k = 0; k < blockCount - 1; k = k + 1) {
-        unsigned long k2 = genrand_real2() * (blockCount - k);
+        unsigned long k2 = (unsigned long)(genrand_real2() * (blockCount - k));
         if (k2) {
           k2 += k;
           k2 *= blockLength;
@@ -1221,7 +1496,7 @@ void _SimpleList::Permute(long blockLength) {
 
     } else {
       for (unsigned long k = 0L; k < blockCount - 1; k = k + 1) {
-        unsigned long k2 = genrand_real2() * (blockCount - k);
+        unsigned long k2 = (unsigned long)(genrand_real2() * (blockCount - k));
         if (k2) {
           k2 += k;
           Exchange(list_data[k2], list_data[k]);
@@ -1231,7 +1506,11 @@ void _SimpleList::Permute(long blockLength) {
   }
 }
 
-// Create a permutation of the list's elements
+/**
+ * @brief Returns a random index from the list.
+ * @return A random index within the list's bounds, or kNotFound if the list is
+ * empty.
+ */
 long _SimpleList::Choice() const {
   if (lLength) {
     return genrand_int32() % lLength;
@@ -1239,7 +1518,11 @@ long _SimpleList::Choice() const {
   return kNotFound;
 }
 
-// Sample with replacement
+/**
+ * @brief Samples elements from the list with replacement.
+ * @param size The number of elements to sample.
+ * @return A new SimpleList containing the sampled elements.
+ */
 _SimpleList const _SimpleList::Sample(unsigned long size) const {
   // TODO SLKP 20171026: this is new, need to check correctness
   if (size >= lLength) {
@@ -1249,7 +1532,7 @@ _SimpleList const _SimpleList::Sample(unsigned long size) const {
   _SimpleList result(size, 0, 0), tracker(size, 0, 0);
 
   for (unsigned long k = 0; k < size; k++) {
-    unsigned long k2 = k + genrand_real2() * (lLength - k);
+    unsigned long k2 = k + (unsigned long)(genrand_real2() * (lLength - k));
     result.list_data[k] = list_data[k2];
     tracker[k] = k2;
     if (k2 != k) {
@@ -1266,21 +1549,26 @@ _SimpleList const _SimpleList::Sample(unsigned long size) const {
   return result;
 }
 
-// Create a permutation of the list's elements with possible repetitions
+/**
+ * @brief Creates a permutation of the list's elements with possible
+ * repetitions.
+ * @param blockLength The size of blocks to permute.
+ */
 void _SimpleList::PermuteWithReplacement(long blockLength) {
   unsigned long blockCount = lLength / blockLength;
-  _SimpleList result((unsigned long)(blockCount * blockLength));
+  _SimpleList result(static_cast<unsigned long>(blockCount * blockLength));
   if (blockLength > 1)
-    for (long i = 0; i < blockCount; i++) {
-      unsigned long sample = (unsigned long)(genrand_real2() * blockCount);
+    for (unsigned long i = 0; i < blockCount; i++) {
+      unsigned long sample =
+          static_cast<unsigned long>(genrand_real2() * blockCount);
       sample *= blockLength;
       for (long j = 0; j < blockLength; j++, sample++) {
         result << list_data[sample];
       }
     }
   else {
-    for (long i = 0; i < blockCount; i++) {
-      unsigned long sample = genrand_real2() * blockCount;
+    for (unsigned long i = 0; i < blockCount; i++) {
+      unsigned long sample = (unsigned long)(genrand_real2() * blockCount);
       result << list_data[sample];
     }
   }
@@ -1289,6 +1577,12 @@ void _SimpleList::PermuteWithReplacement(long blockLength) {
   Duplicate(&result);
 }
 
+/**
+ * @brief Removes and returns an element from the end of the list.
+ * @param discard The number of elements to discard from the end before popping.
+ * @return The popped element, or 0L if the list is empty or `discard` is too
+ * large.
+ */
 long _SimpleList::Pop(unsigned long discard) {
   if (lLength > discard) {
     return list_data[lLength -= (discard + 1UL)];
@@ -1296,7 +1590,12 @@ long _SimpleList::Pop(unsigned long discard) {
   return 0L;
 }
 
-// Length constructor and populator
+/**
+ * @brief Populates the list with a sequence of numbers.
+ * @param l The number of elements to populate.
+ * @param start The starting value of the sequence.
+ * @param step The increment between consecutive elements.
+ */
 void _SimpleList::Populate(long l, long start, long step) {
   RequestSpace(l);
 
@@ -1310,6 +1609,12 @@ void _SimpleList::Populate(long l, long start, long step) {
   lLength = l;
 }
 
+/**
+ * @brief Appends a range of numbers to the list.
+ * @param how_many The number of elements to append.
+ * @param start The starting value of the sequence.
+ * @param step The increment between consecutive elements.
+ */
 void _SimpleList::AppendRange(unsigned long how_many, long start, long step) {
   RequestSpace(how_many + lLength);
   for (unsigned long k = 0UL; k < how_many; k++, start += step) {
@@ -1318,6 +1623,14 @@ void _SimpleList::AppendRange(unsigned long how_many, long start, long step) {
   lLength = how_many + lLength;
 }
 
+/**
+ * @brief Recursively sorts a portion of the list and updates an index list
+ * accordingly.
+ * @param from The starting index of the portion to sort.
+ * @param to The ending index of the portion to sort.
+ * @param index A pointer to a SimpleList that stores the original indices of
+ * the elements.
+ */
 void _SimpleList::RecursiveIndexSort(long from, long to, _SimpleList *index) {
   long middle = (from + to) >> 1, middleV = list_data[middle], bottommove = 1,
        topmove = 1, i, imiddleV = (*index)(middle);
@@ -1403,59 +1716,59 @@ void _SimpleList::RecursiveIndexSort(long from, long to, _SimpleList *index) {
   }
 }
 
-// Append & store operator
-void _SimpleList::RequestSpace(long slots) {
+/**
+ * @brief Requests additional space for the list.
+ * @param slots The number of slots to request.
+ */
+void _SimpleList::RequestSpace(unsigned long slots) {
   if (slots > laLength) {
     laLength = (slots / MEMORYSTEP + 1) * MEMORYSTEP;
     _EnsureCorrectStorageType();
   }
 }
 
-// Compute the union of two sorted lists
-// Each repeat appears exactly once
+/**
+ * @brief Computes the set difference of two sorted lists (this = l1 - l2).
+ * @param l1 The first list.
+ * @param l2 The second list (elements to subtract).
+ */
 void _SimpleList::Subtract(_SimpleList const &l1, _SimpleList const &l2) {
   if (lLength) {
     Clear();
   }
 
-  long c1 = 0L, c2 = 0L;
+  auto add_to_result = [this](long element) -> void { (*this) << element; };
+  auto noop = [](long) -> void {};
 
-  while (c1 < l1.lLength && c2 < l2.lLength) {
-    while (c1 < l1.lLength && l1.list_data[c1] < l2.list_data[c2]) {
-      (*this) << l1.list_data[c1++];
-    }
-    if (c1 == l1.lLength) {
-      break;
-    }
-    while (c1 < l1.lLength && c2 < l2.lLength &&
-           l1.list_data[c1] == l2.list_data[c2]) {
-      c1++;
-      c2++;
-    }
-    if (c1 == l1.lLength || c2 == l2.lLength) {
-      break;
-    }
-    while (c2 < l2.lLength && l2.list_data[c2] < l1.list_data[c1]) {
-      c2++;
-    }
-  }
-
-  while (c1 < l1.lLength) {
-    (*this) << l1.list_data[c1++];
-  }
+  IterateOverTwoSortedLists(l1, l2, noop, add_to_result, noop);
 }
 
+/**
+ * @brief Swaps two elements in the list.
+ * @param i The index of the first element.
+ * @param j The index of the second element.
+ */
 void _SimpleList::Swap(long i, long j) {
-  if (i >= lLength || j >= lLength) {
+  if (i >= (long)lLength || j >= (long)lLength) {
     return;
   }
   Exchange(list_data[i], list_data[j]);
 }
 
-// Char* conversion
+/**
+ * @brief Converts the list to a string representation.
+ * @param unused An unused parameter.
+ * @return A BaseRef to a _StringBuffer containing the string representation of
+ * the list.
+ * @code
+ *  _SimpleList list;
+ *  list << 1 << 2 << 3;
+ *  // list.toStr() would return "{1,2,3}"
+ * @endcode
+ */
 BaseRef _SimpleList::toStr(unsigned long) {
   if (lLength) {
-    unsigned long ma = lLength * (1 + log10((double)lLength));
+    unsigned long ma = (unsigned long)(lLength * (1. + log10((double)lLength)));
 
     _StringBuffer *s = new _StringBuffer(MAX(32UL, ma));
 
@@ -1475,7 +1788,10 @@ BaseRef _SimpleList::toStr(unsigned long) {
   }
 }
 
-// Delete item at index (>=0)
+/**
+ * @brief Trims the allocated memory to match the current length of the list, or
+ * to MEMORYSTEP if the list is smaller.
+ */
 void _SimpleList::TrimMemory(void) {
   if (laLength > lLength) {
     laLength = Maximum(lLength, (unsigned long)MEMORYSTEP);
@@ -1489,6 +1805,11 @@ Sort Methods
 ==============================================================
 */
 
+/**
+ * @brief Sorts the elements in the list.
+ * @param ascending If true, sorts in ascending order. Otherwise, sorts in
+ * descending order.
+ */
 void _SimpleList::Sort(bool ascending) {
   if (lLength > 0UL) {
     if (lLength < 10UL) { // use bubble sort
@@ -1505,6 +1826,9 @@ void _SimpleList::Sort(bool ascending) {
   }
 }
 
+/**
+ * @brief Sorts the elements in the list using the Bubble Sort algorithm.
+ */
 void _SimpleList::BubbleSort(void) {
   bool done = lLength == 0UL;
   while (!done) {
@@ -1520,88 +1844,81 @@ void _SimpleList::BubbleSort(void) {
   }
 }
 
-void _SimpleList::QuickSort(long from, long to) {
-  long middle = (from + to) >> 1, middleV = ((long *)list_data)[middle],
-       top = to, bottommove = 1, topmove = 1, i;
+/**
+ * @brief Sorts a portion of the list using the Quick Sort algorithm.
+ * @param from The starting index of the portion to sort.
+ * @param to The ending index of the portion to sort.
+ */
+/**
+ * @brief Partitions a sub-array using the Hoare partition scheme.
+ * @param from The starting index of the sub-array.
+ * @param to The ending index of the sub-array.
+ * @return An index that splits the array into two partitions. Note: This index
+ * is NOT the final sorted position of the pivot. All elements to the
+ * left of the returned index are <= the pivot, and all elements to the
+ * right are >= the pivot.
+ */
+long _SimpleList::Partition(long from, long to) {
+  // We'll use the middle element as the pivot to be consistent with the
+  // original and to avoid worst-case behavior with already-sorted data.
+  long pivot_idx = from + (to - from) / 2;
+  long i = from - 1;
+  long j = to + 1;
 
-  if (middle)
-    // while
-    // ((middle-bottommove>=from)&&(((long*)list_data)[middle-bottommove]>middleV))
-    while ((middle - bottommove >= from) &&
-           (Compare(middle - bottommove, middle) == kCompareGreater)) {
-      bottommove++;
+  while (true) {
+    // Find an element on the left side that should be on the right side
+    // (i.e., an element >= pivot)
+    do {
+      i++;
+    } while (Compare(i, pivot_idx) == kCompareLess);
+
+    // Find an element on the right side that should be on the left side
+    // (i.e., an element <= pivot)
+    do {
+      j--;
+    } while (Compare(j, pivot_idx) == kCompareGreater);
+
+    // If the pointers have crossed, the partition is done.
+    if (i >= j) {
+      return j; // Return the split point
     }
 
-  if (from < to)
-    // while
-    // ((middle+topmove<=to)&&(((long*)list_data)[middle+topmove]<middleV))
-    while ((middle + topmove <= to) &&
-           (Compare(middle + topmove, middle) == kCompareLess)) {
-      topmove++;
+    // Swap the two elements that are in the wrong partition.
+    // Important: If the pivot itself is swapped, we must update its index.
+    if (i == pivot_idx) {
+      pivot_idx = j;
+    } else if (j == pivot_idx) {
+      pivot_idx = i;
     }
-  // now shuffle
-  for (i = from; i < middle - bottommove; i++) {
-    if (Compare(i, middle) == kCompareGreater) {
-      Exchange(list_data[middle - bottommove], list_data[i]);
-      bottommove++;
-
-      // while
-      // ((middle-bottommove>=from)&&(((long*)list_data)[middle-bottommove]>middleV))
-      while ((middle - bottommove >= from) &&
-             (Compare(middle - bottommove, middle) == kCompareGreater)) {
-        bottommove++;
-      }
-    }
-  }
-
-  for (i = middle + topmove + 1; i <= top; i++) {
-    if (Compare(i, middle) == kCompareLess) {
-      Exchange(list_data[middle + topmove], list_data[i]);
-      topmove++;
-
-      // while
-      // ((middle+topmove<=to)&&(((long*)list_data)[middle+topmove]<middleV))
-      while ((middle + topmove <= to) &&
-             (Compare(middle + topmove, middle) == kCompareLess)) {
-        topmove++;
-      }
-    }
-  }
-
-  if (topmove == bottommove) {
-    for (i = 1; i < bottommove; i++) {
-      Exchange(list_data[middle + i], list_data[middle - i]);
-    }
-  } else if (topmove > bottommove) {
-    long shift = topmove - bottommove;
-    for (i = 1; i < bottommove; i++) {
-      Exchange(list_data[middle + i + shift], list_data[middle - i]);
-    }
-    for (i = 0; i < shift; i++) {
-      list_data[middle + i] = list_data[middle + i + 1];
-    }
-    middle += shift;
-    list_data[middle] = middleV;
-  } else {
-    long shift = bottommove - topmove;
-    for (i = 1; i < topmove; i++) {
-      Exchange(list_data[middle - i - shift], list_data[middle + i]);
-    }
-    for (i = 0; i < shift; i++) {
-      list_data[middle - i] = list_data[middle - i - 1];
-    }
-    middle -= shift;
-    list_data[middle] = middleV;
-  }
-  if (to > middle + 1) {
-    QuickSort(middle + 1, top);
-  }
-  if (from < middle - 1) {
-    QuickSort(from, middle - 1);
+    Exchange(list_data[i], list_data[j]);
   }
 }
 
-// TODO: This is a global. Should it be here?
+/**
+ * @brief Sorts the list using the QuickSort algorithm with Hoare partitioning.
+ * @param from The starting index for the sort.
+ * @param to The ending index for the sort.
+ */
+void _SimpleList::QuickSort(long from, long to) {
+  // Base case: if the segment has 0 or 1 elements, it's already sorted.
+  if (from < to) {
+    // Get the split point from the partition function.
+    long pi = Partition(from, to);
+
+    // Recursively sort the two sub-arrays.
+    // Because Hoare's scheme doesn't place the pivot at its final spot,
+    // the partition index 'pi' is included in the first sub-array.
+    QuickSort(from, pi);
+    QuickSort(pi + 1, to);
+  }
+}
+
+/**
+ * @brief Sorts a list and updates an index list accordingly.
+ * @param ref A pointer to the SimpleList to sort.
+ * @param index A pointer to a SimpleList that stores the original indices of
+ * the elements.
+ */
 void SortLists(_SimpleList *ref, _SimpleList *index) {
   if (ref->lLength > 0UL) {
     if (ref->lLength != index->lLength) {
@@ -1634,131 +1951,59 @@ Set Methods
 ==============================================================
 */
 
-// Compute the intersection of two sorted lists
+/**
+ * @brief Computes the intersection of two sorted lists.
+ * @param l1 The first sorted list.
+ * @param l2 The second sorted list.
+ */
 void _SimpleList::Intersect(_SimpleList &l1, _SimpleList &l2) {
   if (lLength) {
     Clear();
   }
 
-  long c1 = 0, c2 = 0;
+  auto add_to_result = [this](long element) -> void { (*this) << element; };
+  auto noop = [](long) -> void {};
 
-  while (c1 < l1.lLength && c2 < l2.lLength) {
-    while (l1.list_data[c1] < l2.list_data[c2]) {
-      c1++;
-      if (c1 == l1.lLength) {
-        break;
-      }
-    }
-    if (c1 == l1.lLength) {
-      break;
-    }
-
-    while (l1.list_data[c1] == l2.list_data[c2]) {
-      (*this) << l1.list_data[c1++];
-      c2++;
-      if (c1 == l1.lLength || c2 == l2.lLength) {
-        break;
-      }
-    }
-    if (c1 == l1.lLength || c2 == l2.lLength) {
-      break;
-    }
-    while (l2.list_data[c2] < l1.list_data[c1]) {
-      c2++;
-      if (c2 == l2.lLength) {
-        break;
-      }
-    }
-  }
+  IterateOverTwoSortedLists(l1, l2, add_to_result, noop, noop);
 }
 
-// Compute the union of two sorted lists
-// Each repeat appears exactly once
+/**
+ * @brief Computes the union of two sorted lists. Each element appears exactly
+ * once.
+ * @param l1 The first sorted list.
+ * @param l2 The second sorted list.
+ */
 void _SimpleList::Union(_SimpleList &l1, _SimpleList &l2) {
   if (lLength) {
     Clear();
   }
-
-  long c1 = 0, c2 = 0;
-
-  while (c1 < l1.lLength && c2 < l2.lLength) {
-    while (l1.list_data[c1] < l2.list_data[c2]) {
-      (*this) << l1.list_data[c1++];
-      if (c1 == l1.lLength) {
-        break;
-      }
-    }
-
-    if (c1 == l1.lLength) {
-      break;
-    }
-
-    while (l1.list_data[c1] == l2.list_data[c2]) {
-      (*this) << l1.list_data[c1++];
-      c2++;
-      if (c1 == l1.lLength || c2 == l2.lLength) {
-        break;
-      }
-    }
-
-    if (c1 == l1.lLength || c2 == l2.lLength) {
-      break;
-    }
-
-    while (l2.list_data[c2] < l1.list_data[c1]) {
-      (*this) << l2.list_data[c2++];
-      if (c2 == l2.lLength) {
-        break;
-      }
-    }
-  }
-
-  while (c1 < l1.lLength) {
-    (*this) << l1.list_data[c1++];
-  }
-  while (c2 < l2.lLength) {
-    (*this) << l2.list_data[c2++];
-  }
+  auto add_to_result = [this](long element) -> void { (*this) << element; };
+  IterateOverTwoSortedLists(l1, l2, add_to_result, add_to_result,
+                            add_to_result);
 }
 
-// Compute the union of two sorted lists
-// Each repeat appears exactly once
+/**
+ * @brief Computes the symmetric difference (XOR) of two sorted lists.
+ * @param l1 The first sorted list.
+ * @param l2 The second sorted list.
+ */
 void _SimpleList::XOR(_SimpleList &l1, _SimpleList &l2) {
   if (lLength) {
     Clear();
   }
+  auto add_to_result = [this](long element) -> void { (*this) << element; };
+  auto noop = [](long) -> void {};
 
-  long c1 = 0, c2 = 0;
-
-  while (c1 < l1.lLength && c2 < l2.lLength) {
-    while (c1 < l1.lLength && l1.list_data[c1] < l2.list_data[c2]) {
-      (*this) << l1.list_data[c1++];
-    }
-    if (c1 == l1.lLength) {
-      break;
-    }
-    while (c1 < l1.lLength && c2 < l2.lLength &&
-           l1.list_data[c1] == l2.list_data[c2]) {
-      c1++;
-      c2++;
-    }
-    if (c1 == l1.lLength || c2 == l2.lLength) {
-      break;
-    }
-
-    while (c2 < l2.lLength && l2.list_data[c2] < l1.list_data[c1]) {
-      (*this) << l2.list_data[c2++];
-    }
-  }
-
-  while (c1 < l1.lLength) {
-    (*this) << l1.list_data[c1++];
-  }
-  while (c2 < l2.lLength) {
-    (*this) << l2.list_data[c2++];
-  }
+  IterateOverTwoSortedLists(l1, l2, noop, add_to_result, add_to_result);
 }
 
+/**
+ * @brief Maps an index to a value in the list.
+ * @param index The index to map.
+ * @param map_failed The value to return if the index is out of bounds.
+ * @return The value at the given index, or `map_failed` if the index is out of
+ * bounds.
+ */
 long _SimpleList::Map(long index, long map_failed) const {
-  return index >= 0L && index < lLength ? list_data[index] : map_failed;
+  return index_in_range(index) ? list_data[index] : map_failed;
 }
