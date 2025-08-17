@@ -4555,10 +4555,10 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
                             vfmaq_f64(vld1q_f64(res + idx + 2), value_op,
                                       vld1q_f64(secArg + idx + 2)));
 #else
-                  res[i] += value * secArg[idx];
-                  res[i + 1] += value * secArg[idx + 1];
-                  res[i + 2] += value * secArg[idx + 2];
-                  res[i + 3] += value * secArg[idx + 3];
+                  res[idx] += value * secArg[idx];
+                  res[idx + 1] += value * secArg[idx + 1];
+                  res[idx + 2] += value * secArg[idx + 2];
+                  res[idx + 3] += value * secArg[idx + 3];
 #endif
                 }
                 for (long index = loopBound; index < vDim; index++) {

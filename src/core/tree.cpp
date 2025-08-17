@@ -1743,7 +1743,7 @@ void _TheTree::TreePSRecurse(node<nodeCoord> *iterator, _StringBuffer &res,
   bool is_leaf = descendants == 0UL;
   // lineW    = halfFontSize/3+1;
 
-  hyFloat vc, hc, vcl, hcl, hc1, hc2;
+  hyFloat vc, hc, vcl, hcl = 0., hc1 = 0., hc2 = 0.;
 
   _String t, varName, colorString("0 0 0 setrgbcolor\n");
 
