@@ -112,7 +112,6 @@ public:
   int fputc(int chr);
   size_t tell(void);
   int read_char(void);
->>>>>>> ea7586cd4995e13a7959e901c82afcbaf1b69d7f
 #ifdef __ZLIB__
   inline bool valid(void) const {
     return _fileReference != NULL || _fileReferenceDirect != NULL;
