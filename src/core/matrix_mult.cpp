@@ -1457,7 +1457,7 @@ void _hy_matrix_multiply_4x1x1(double *C, double *A, double *B, int stride) {
   C[S3] += _mm_cvtsd_f64(_mm_unpackhi_pd(C2, C2));
 }
 
-void _hy_matrix_multiply_1x1x4(double *C, double *A, double *B, int stride) {
+void _hy_matrix_multiply_1x1x4(double *C, double *A, double *B, int) {
 
   __m128d A1 = _mm_load1_pd(A), C1 = _mm_loadu_pd(C), C2 = _mm_loadu_pd(C + 2);
 
@@ -1531,7 +1531,7 @@ void _hy_matrix_multiply_4x4x2(double *C, double *A, double *B, int stride,
   int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
 
   __m128d A1, A2, A3, A4;
-  __m128d B1, B2; // current row in B
+  __m128d B1; // current row in B
   __m128d C11, C21, C31, C41;
 
   A1 = _mm_loaddup_pd(A);      // A[0][0] x2
@@ -1578,7 +1578,6 @@ void _hy_matrix_multiply_4x4x2(double *C, double *A, double *B, int stride,
   A3 = _mm_loaddup_pd(A + S2 + 2); // A[2][1] x2
   A4 = _mm_loaddup_pd(A + S3 + 2); // A[3][1] x2
   B1 = _mm_loadu_pd(B + S2);       // 10,11
-  B2 = _mm_loadu_pd(B + S2 + 2);   // 12,13
 
   handle_block_madd();
 
@@ -1587,7 +1586,6 @@ void _hy_matrix_multiply_4x4x2(double *C, double *A, double *B, int stride,
   A3 = _mm_loaddup_pd(A + S2 + 3); // A[2][1] x2
   A4 = _mm_loaddup_pd(A + S3 + 3); // A[3][1] x2
   B1 = _mm_loadu_pd(B + S3);       // 10,11
-  B2 = _mm_loadu_pd(B + S3 + 2);   // 12,13
 
   handle_block_madd();
 
@@ -1627,7 +1625,7 @@ void _hy_matrix_multiply_2x4x4(double *C, double *A, double *B, int stride,
 
   int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
 
-  __m128d A1, A2, A3, A4;
+  __m128d A1, A2;
   __m128d B1, B2; // current row in B
   __m128d C11, C12, C21, C22;
 
@@ -1689,7 +1687,7 @@ void _hy_matrix_multiply_2x4x4(double *C, double *A, double *B, int stride,
 }
 
 void _hy_matrix_multiply_2x2x4(double *C, double *A, double *B, int stride) {
-  int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
+  int S1 = stride;
 
   __m128d A1, A2;
   __m128d B1, B2; // current row in B
@@ -1818,16 +1816,6 @@ void _hy_matrix_multiply_4x3x4(double *C, double *A, double *B, int stride) {
   B1 = _mm_loadu_pd(B);     // 00,01
   B2 = _mm_loadu_pd(B + 2); // 02,03
 
-  auto handle_block_mult = [&]() -> void {
-    C11 = _mm_mul_pd(A1, B1); // 00*00, 00*01
-    C12 = _mm_mul_pd(A1, B2); // 00*02, 00*03
-    C21 = _mm_mul_pd(A2, B1); // 10*00, 10*01
-    C22 = _mm_mul_pd(A2, B2); // 10*02, 10*03
-    C31 = _mm_mul_pd(A3, B1); // 20*00, 20*01
-    C32 = _mm_mul_pd(A3, B2); // 20*02, 20*03
-    C41 = _mm_mul_pd(A4, B1); // 20*00, 20*01
-    C42 = _mm_mul_pd(A4, B2); // 20*02, 20*03
-  };
 
   auto handle_block_madd = [&]() -> void {
     C11 = _mm_add_pd(C11, _mm_mul_pd(A1, B1)); // 00*00, 00*01
@@ -1890,7 +1878,7 @@ void _hy_matrix_multiply_4x4x3(double *C, double *A, double *B, int stride,
   int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
 
   __m128d A1, A2, A3, A4;
-  __m128d B1, B_LC1, B_LC2; // current row in B (first two elements)
+  __m128d B1, B_LC1; // current row in B (first two elements)
   __m128d C11, C21, C31, C41, C_LC1, C_LC2;
 
   A1 = _mm_loaddup_pd(A);      // A[0][0] x2
@@ -1981,7 +1969,7 @@ void _hy_matrix_multiply_4x3x3(double *C, double *A, double *B, int stride,
   int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
 
   __m128d A1, A2, A3, A4;
-  __m128d B1, B_LC1, B_LC2; // current row in B (first two elements)
+  __m128d B1, B_LC1; // current row in B (first two elements)
   __m128d C11, C21, C31, C41, C_LC1, C_LC2;
 
   A1 = _mm_loaddup_pd(A);      // A[0][0] x2
@@ -2061,7 +2049,7 @@ void _hy_matrix_multiply_3x3x4(double *C, double *A, double *B, int stride,
   // 13 = 10*03 + 11*13 + 12*23
   // 23 = 20*03 + 21*13 + 22*23
 
-  int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
+  int S1 = stride, S2 = stride << 1;
 
   __m128d A1, A2, A3;
   __m128d B1, B2; // current row in B
