@@ -9601,13 +9601,21 @@ hyFloat _LikelihoodFunction::ComputeBlock(long index, hyFloat *siteRes,
      }*/
 #ifdef _OPENMP
 #if _OPENMP >= 201511
-#pragma omp parallel for default(shared)                                       \
-    schedule(monotonic : guided, 1) private(blockID) proc_bind(spread)         \
-    num_threads(np) if (np > 1)
+#pragma omp parallel for default(none)                                         \
+    shared(t, sl, branches, tcc, df, inc, conditionalTerminalNodeStateFlag,    \
+               ssf, conditionalTerminalNodeLikelihoodCaches,                   \
+               overallScalingFactors, sitesPerP, catID, siteRes, scc,          \
+               branchIndex, branchValues, thread_results, np, index)           \
+    schedule(monotonic : guided, 1) private(blockID)                           \
+    proc_bind(spread) if (np > 1)
 #else
 #if _OPENMP >= 200803
-#pragma omp parallel for default(shared) schedule(guided, 1) private(blockID)  \
-    proc_bind(spread) num_threads(np) if (np > 1)
+#pragma omp parallel for default(none)                                         \
+    shared(t, sl, branches, tcc, df, inc, conditionalTerminalNodeStateFlag,    \
+               ssf, conditionalTerminalNodeLikelihoodCaches,                   \
+               overallScalingFactors, sitesPerP, catID, siteRes, scc,          \
+               branchIndex, branchValues, thread_results, np, index)           \
+    schedule(guided, 1) private(blockID) proc_bind(spread) if (np > 1)
 #endif
 #endif
 #endif
@@ -9728,13 +9736,20 @@ hyFloat _LikelihoodFunction::ComputeBlock(long index, hyFloat *siteRes,
 
 #ifdef _OPENMP
 #if _OPENMP >= 201511
-#pragma omp parallel for default(shared)                                       \
-    schedule(monotonic : guided, 1) private(blockID) proc_bind(spread)         \
-    num_threads(np) if (np > 1)
+#pragma omp parallel for default(none)                                         \
+    shared(t, sl, doCachedComp, bc, df, inc, conditionalTerminalNodeStateFlag, \
+               ssf, scc, conditionalTerminalNodeLikelihoodCaches,              \
+               overallScalingFactors, sitesPerP, catID, tcc, siteRes, np,      \
+               index) schedule(monotonic : guided, 1) private(blockID)         \
+    proc_bind(close) if (np > 1)
 #else
 #if _OPENMP >= 200803
-#pragma omp parallel for default(shared) schedule(guided, 1) private(blockID)  \
-    proc_bind(spread) num_threads(np) if (np > 1)
+#pragma omp parallel for default(none)                                         \
+    shared(t, sl, doCachedComp, bc, df, inc, conditionalTerminalNodeStateFlag, \
+               ssf, scc, conditionalTerminalNodeLikelihoodCaches,              \
+               overallScalingFactors, sitesPerP, catID, tcc, siteRes, np,      \
+               index) schedule(guided, 1) private(blockID)                     \
+    proc_bind(close) if (np > 1)
 #endif
 #endif
 #endif

@@ -4105,11 +4105,11 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
           for (long r = 0; r < hDim; r++) {
 #ifdef _OPENMP
 #if _OPENMP >= 201511
-#pragma omp parallel for default(none) shared(r, secondArg, storage)           \
+#pragma omp parallel for default(none) shared(r, secondArg, storage, theData)  \
     schedule(monotonic : guided) proc_bind(spread) if (nt > 1) num_threads(nt)
 #else
 #if _OPENMP >= 200803
-#pragma omp parallel for default(none) shared(r, secondArg, storage)           \
+#pragma omp parallel for default(none) shared(r, secondArg, storage, this)     \
     schedule(guided) proc_bind(spread) if (nt > 1) num_threads(nt)
 #endif
 #endif
@@ -5628,6 +5628,46 @@ void _Matrix::CompressSparseMatrix(bool transpose, hyFloat *stash) {
 
 //_____________________________________________________________________________________________
 
+void _Matrix::CopyMatrixToDenseAndMultiply(_Matrix const &source, hyFloat C,
+                                           bool assume_zeros) {
+  try {
+    if (is_dense() && is_numeric()) {
+      if (source.is_numeric()) {
+        if (hDim == source.hDim && vDim == source.vDim) {
+          if (source.is_dense()) {
+#pragma unroll
+            for (unsigned long r = 0; r < lDim; r++) {
+              theData[r] = source.theData[r] * C;
+            }
+          } else {
+            if (!assume_zeros) {
+              memset(theData, 0, sizeof(hyFloat) * lDim);
+            }
+#pragma unroll
+            for (unsigned long r = 0; r < source.lDim; r++) {
+              const long idx = source.theIndex[r];
+              if (idx >= 0)
+                theData[idx] = source.theData[r] * C;
+            }
+          }
+        } else {
+          throw(_String(
+              "The source and target arguments must have the same dimensions"));
+        }
+      } else {
+        throw(_String("The source argument must be a numeric matrix"));
+      }
+    } else {
+      throw(_String("The target argument must be a dense numeric matrix"));
+    }
+  } catch (_String const err) {
+    HandleApplicationError(_String("Internal error in ") &
+                           _String(__PRETTY_FUNCTION__).Enquote() & ": " & err);
+  }
+}
+
+//_____________________________________________________________________________________________
+
 _Matrix *_Matrix::Exponentiate(hyFloat scale_to, bool check_transition,
                                _Matrix *existing_storage) {
   // find the maximal elements of the matrix
@@ -5689,27 +5729,34 @@ _Matrix *_Matrix::Exponentiate(hyFloat scale_to, bool check_transition,
 
     _Matrix *result;
 
+    bool assume_zeros = false;
+
     if (!is_polynomial() && existing_storage &&
         existing_storage->hDim == hDim && existing_storage->vDim == vDim &&
         existing_storage->is_numeric() && existing_storage->is_dense()) {
       result = existing_storage;
       // InitializeArray(result->theData, result->lDim, 0.0);
-      memset(result->theData, 0, result->lDim * sizeof(hyFloat));
+      // memset(result->theData, 0, result->lDim * sizeof(hyFloat));
     } else {
       result = new _Matrix(hDim, vDim, is_polynomial(), !is_polynomial());
+      assume_zeros = true;
     }
 
     // put ones on the diagonal
 
     if (power2 > 0 && max > 0.0) {
-      (*result) += (*this);
-      (*result) *= 1.0 / max;
+      result->CopyMatrixToDenseAndMultiply(*this, 1.0 / max, assume_zeros);
+      //(*result) += (*this);
+      //(*result) *= 1.0 / max;
       long step = vDim + 1;
       for (long diag = 0; diag < result->lDim; diag += step) {
         result->theData[diag] += 1.;
       }
     } else {
       if (!is_polynomial()) {
+        if (!assume_zeros) {
+          memset(result->theData, 0, result->lDim * sizeof(hyFloat));
+        }
         long step = vDim + 1;
         for (long diag = 0; diag < result->lDim; diag += step) {
           result->theData[diag] = 1.;
