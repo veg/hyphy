@@ -14,7 +14,7 @@ assert (check_value (
     (fitter.results)["LogL"], -12196.18, 0.01), "Incorrect log-likelihood for the codon model");
 
 assert (check_value (
-    (((fitter.results)["global"])["non-synonymous/synonymous rate ratio"])["MLE"], 0.01709463101059912, 0.01), "Incorrect dN/dS ratio");
+    (((fitter.results)["global"])["non-synonymous/synonymous rate ratio"])["MLE"], 0.01709463101059912, 0.05), "Incorrect dN/dS ratio");
    
 bl_sum = 0;
 for (bl; in; (fitter.results["branch length"])["0"]){

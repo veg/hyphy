@@ -51,6 +51,11 @@ _Vector::_Vector(bool iscol)
   is_column = iscol;
 }
 
+_Vector::_Vector(unsigned long size) : _Matrix(size, 1, false, true) {
+  used = size;
+  is_column = false;
+}
+
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
 void _Vector::Trim(void) { Resize(used); }
@@ -129,4 +134,21 @@ void _Vector::Duplicate(BaseRefConst obj) {
   _Matrix::Duplicate(obj);
   used = ((_Vector *)obj)->used;
   is_column = ((_Vector *)obj)->is_column;
+}
+
+//_____________________________________________________________________________________________
+
+BaseRef _Vector::toStr(unsigned long padding) {
+
+  unsigned long allocated_space = hDim;
+  hDim = used;
+  lDim = used;
+
+  _StringBuffer *serialized = new _StringBuffer(2048L);
+  internal_to_str(serialized, nil, padding);
+
+  hDim = allocated_space;
+  lDim = allocated_space;
+
+  return serialized;
 }

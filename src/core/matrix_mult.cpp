@@ -32,8 +32,7 @@ extern "C" void cblas_dgemm(const enum CBLAS_ORDER __Order,
 void _hy_matrix_multiply_4x4(double *__restrict__ C, double *__restrict__ A,
                              double *__restrict__ B, int stride, bool add) {
 
-  float64x2x2_t B1;
-  float64x2x2_t C1, C2, C3, C4;
+  float64x2x2_t C1, C2, C3, C4, B1;
 
   auto handle_block = [&](float64x2_t a1, float64x2_t a2, float64x2_t a3,
                           float64x2_t a4) -> void {
@@ -1815,7 +1814,6 @@ void _hy_matrix_multiply_4x3x4(double *C, double *A, double *B, int stride) {
 
   B1 = _mm_loadu_pd(B);     // 00,01
   B2 = _mm_loadu_pd(B + 2); // 02,03
-
 
   auto handle_block_madd = [&]() -> void {
     C11 = _mm_add_pd(C11, _mm_mul_pd(A1, B1)); // 00*00, 00*01

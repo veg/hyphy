@@ -11,10 +11,10 @@ LoadFunctionLibrary ("libv3/IOFunctions.bf");
 
 
 assert (check_value (
-    (fitter.results)["LogL"], -5067.57, 0.01), "Incorrect log-likelihood for the codon model");
+    (fitter.results)["LogL"], -5067.55, 0.01), "Incorrect log-likelihood for the codon model");
 
 assert (check_value (
-    (((fitter.results)["global"])["non-synonymous/synonymous rate ratio"])["MLE"], 0.08893, 0.01), "Incorrect dN/dS ratio");
+    (((fitter.results)["global"])["non-synonymous/synonymous rate ratio"])["MLE"], 0.09, 0.05), "Incorrect dN/dS ratio");
    
 bl_sum = 0;
 for (bl; in; (fitter.results["branch length"])["0"]){

@@ -91,6 +91,8 @@ public:
 protected:
   // data
 
+  void internal_to_str(_StringBuffer *, hyFile *, unsigned long padding);
+
   long hDim, vDim, lDim; // matrix physical dimensions; lDim - length of
   // actual storage allocated
 
@@ -654,7 +656,6 @@ public:
   void TransposeIntoStorage(hyFloat *storage, bool check = true) const;
 
 private:
-  void internal_to_str(_StringBuffer *, hyFile *, unsigned long padding);
   void SetupSparseMatrixAllocations(void);
   bool is_square_numeric(bool dense = true) const;
 
