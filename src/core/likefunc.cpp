@@ -220,7 +220,7 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
 
   hyFloat cached_value = lf->GetIthIndependent(alterIndex),
           lb = lf->GetIthIndependentBound(alterIndex, true),
-          range = (lf->GetIthIndependentBound(alterIndex, false) - lb) * 0.001,
+          range = (lf->GetIthIndependentBound(alterIndex, false) - lb) * 0.5,
           nv;
 
   // printf ("\n\n%g %g %g\n", lb, range, cached_value);
@@ -255,6 +255,8 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
                   lf->GetIthIndependentName(alterIndex)->Enquote() & "): " &
                   tdiff);
 
+    hyFloat baseDiff = minDiff;
+
     for (long k = 2; k <= hy_global::system_CPU_count; k++) {
       reflush_conditionals = true;
       lf->SetThreadCount(k);
@@ -264,7 +266,7 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
       lf->Compute();
       tdiff = calculation_timer.TimeSinceStart();
       ReportWarning(_String("Benchmark for ") & k & " threads: " & tdiff);
-      if (tdiff < minDiff) {
+      if (tdiff < minDiff / (k / bestTC * 0.8)) {
         minDiff = tdiff;
         bestTC = k;
       } else {
@@ -4998,8 +5000,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
     bool forward = false;
 
-    auto get_parameter_step = [](_Vector const &v,
-                                 unsigned long steps = 4) -> hyFloat {
+    auto get_parameter_step = [](_Vector const &v, long steps = 4) -> hyFloat {
       hyFloat average = 0.;
       long counter = steps;
       for (long i = v.get_used() - 1; i >= 0 && counter >= 0; i--) {
@@ -5009,8 +5010,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           counter--;
         }
       }
-      if (counter < steps) {
-        return average / (4 - counter);
+      if (counter <= steps) {
+        return average / (steps - counter);
       }
       return 0.0;
     };
@@ -5033,7 +5034,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
         _variables_that_dont_change(indexInd.lLength, 0, 0);
 
     _List *stepHistory = nil;
-    _Vector logLHistory;
+    _Vector logLHistory, logLDeltaHistory;
 
     lastMaxValue = Compute();
     maxSoFar = lastMaxValue;
@@ -5089,7 +5090,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       }
     }
 
-    long last_gradient_search = -0xffff;
+    long last_gradient_search = 0;
 
     _Matrix variableImpact(
         _SimpleList(indexInd.lLength, (long)indexInd.lLength, -1), 1);
@@ -5146,36 +5147,58 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           }
           // printf ("\n");
 
-          if (steps > 2 && diffs[0] >= diffs[1]) {
+          if (steps > 2 && diffs[0] >= GOLDEN_RATIO * diffs[1]) {
             convergenceMode = 1;
           }
 
-          if (diffs[0] < precision * 0.001) {
+          if (diffs[0] < precision * 0.1) {
             convergenceMode = 3;
           }
 
           if (convergenceMode < 2) {
-            if (steps > 3) {
-              if (diffs[0] > 0. && diffs[1] > 0. && diffs[2] > 0.) {
-                if (diffs[0] / diffs[1] >= _HY_SLOW_CONVERGENCE_RATIO_INV &&
-                    diffs[0] / diffs[1] <= _HY_SLOW_CONVERGENCE_RATIO &&
-                    diffs[1] / diffs[2] >= _HY_SLOW_CONVERGENCE_RATIO_INV &&
-                    diffs[1] / diffs[2] <= _HY_SLOW_CONVERGENCE_RATIO) {
-                  convergenceMode = 2;
-                  if (steps > 4) {
-                    if (diffs[3] > 0.) {
-                      if (diffs[2] / diffs[3] >=
-                              _HY_SLOW_CONVERGENCE_RATIO_INV &&
-                          diffs[2] / diffs[3] <= _HY_SLOW_CONVERGENCE_RATIO) {
+            long changed_v = 0;
+            for (unsigned long i = 0; i < _variables_that_dont_change.lLength;
+                 i++) {
+              if (_variables_that_dont_change.get(i) == 0) {
+                changed_v++;
+              }
+            }
+            if (changed_v <= 1) {
+              convergenceMode = 3;
+            } else {
+              if (steps > 3) {
+                hyFloat average_change3 =
+                            get_parameter_step(logLDeltaHistory, 3),
+                        average_change5 =
+                            get_parameter_step(logLDeltaHistory, 5);
+
+                // printf ("\n===>\n %g %g %g\n\n", average_change3,
+                // average_change5, diffs[0]);
+                // ObjectToConsole(&logLDeltaHistory);
+                // ObjectToConsole(&logLHistory);
+
+                if (diffs[0] > 0. && diffs[1] > 0. && diffs[2] > 0.) {
+                  /*if ((diffs[0] / diffs[1] >= _HY_SLOW_CONVERGENCE_RATIO_INV
+                   || diffs[0] / diffs[1] <= _HY_SLOW_CONVERGENCE_RATIO) &&
+                   (diffs[1] / diffs[2] >= _HY_SLOW_CONVERGENCE_RATIO_INV ||
+                   diffs[1] / diffs[2] <= _HY_SLOW_CONVERGENCE_RATIO)) {*/
+                  if (average_change3 / diffs[0] > 4.0) {
+                    convergenceMode = 2;
+                    if (steps > 4) {
+                      /*if (diffs[3] > 0.) {
+                       if (diffs[2] / diffs[3] >=
+                       _HY_SLOW_CONVERGENCE_RATIO_INV ||
+                       diffs[2] / diffs[3] <= _HY_SLOW_CONVERGENCE_RATIO) {
+                       convergenceMode = 3;
+                       }*/
+                      if (average_change5 / MAX(diffs[0], diffs[1]) > 5.0) {
                         convergenceMode = 3;
                       }
-                    } else {
-                      convergenceMode = 3;
                     }
                   }
+                } else {
+                  convergenceMode = 2;
                 }
-              } else {
-                convergenceMode = 2;
               }
             }
           }
@@ -5187,10 +5210,10 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             shrink_factor = GOLDEN_RATIO_R;
             break;
           case 2:
-            shrink_factor = pow(stdFactor, 1.5);
+            shrink_factor = stdFactor;
             break;
           case 3:
-            shrink_factor = pow(stdFactor, 2.25);
+            shrink_factor = stdFactor * stdFactor;
             break;
             // default:
             //   shrink_factor = 4.;
@@ -5266,7 +5289,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       }
 
       if (use_adaptive_step) {
-        if (verbosity_level > 5) {
+        if (verbosity_level > 1) {
           unsigned long ncp = 0;
           for (unsigned long i = 0; i < _variables_that_dont_change.lLength;
                i++) {
@@ -5305,14 +5328,13 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             break;
           }
 
-          if (loopCounter - last_gradient_search > 3L) {
+          if (loopCounter - last_gradient_search >= 3L) {
 
             _Matrix bestMSoFar;
             GetAllIndependent(bestMSoFar);
             hyFloat prec = Minimum(diffs[0], diffs[1]),
-                    grad_precision =
-                        GOLDEN_RATIO * GOLDEN_RATIO *
-                        Maximum(precision, get_parameter_step(logLHistory, 5));
+                    grad_precision = Maximum(
+                        precision, get_parameter_step(logLDeltaHistory, 5));
 
             prec = Minimum(Maximum(prec, precision), 1.);
 
@@ -5321,8 +5343,9 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                 _SimpleList *this_block = (_SimpleList *)(gradientBlocks(b));
                 if (this_block->countitems() <= maxGradientBlockDimension) {
                   maxSoFar = ConjugateGradientDescent(
-                      prec, bestMSoFar, true, kMaxGradientStepCount, this_block,
-                      maxSoFar, grad_precision);
+                      prec / pow(indexInd.lLength, .25), bestMSoFar, true,
+                      kMaxGradientStepCount, this_block, maxSoFar,
+                      grad_precision);
                 }
                 // maxSoFar = ConjugateGradientDescent (prec,
                 // bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
@@ -5344,28 +5367,44 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             }
 
             logLHistory.Store(maxSoFar);
+            if (logLHistory.get_used() > 1) {
+              logLDeltaHistory.Store(
+                  maxSoFar - logLHistory.theData[logLHistory.get_used() - 2]);
+            } else {
+              logLDeltaHistory.Store(0);
+            }
+
             last_gradient_search = loopCounter;
             convergenceMode = 0;
           }
         }
       }
 
+      // BufferToConsole ("\n####VI:\n");
+      // ObjectToConsole (&variableImpact);
       large_change.Sort();
 
       if (!do_large_change_only) {
-        if (large_change.countitems() >= 2 &&
-            (large_change.countitems() <= indexInd.countitems() / 8L ||
-             large_change.countitems() <= 4)) {
+        if (large_change.countitems() >= 3 &&
+            (large_change.countitems() <= indexInd.countitems() / 4L ||
+             large_change.countitems() <= 8)) {
           // iterate only the variables that are changing a lot, until they stop
           // changing
           do_large_change_only = true;
           last_large_change = large_change;
         }
       } else {
-        if (large_change.countitems() < 2) {
+        if (large_change.countitems() < 3) {
           do_large_change_only = false;
         } else {
-          last_large_change = large_change;
+          unsigned long logLStep = logLDeltaHistory.get_used();
+          if (logLDeltaHistory.theData[logLStep - 1] /
+                  logLDeltaHistory.theData[logLStep - 2] <
+              GOLDEN_RATIO_R) {
+            do_large_change_only = false;
+          } else {
+            last_large_change = large_change;
+          }
         }
       }
 
@@ -5568,8 +5607,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
         }
 
         hyFloat ll_delta = (maxSoFar - lastLogL);
-        variableImpact.theData[current_index] =
-            ll_delta + (is_global ? -lastLogL : 0);
+        variableImpact.theData[current_index] = ll_delta;
 
         if ((maxSoFar - lastLogL) / lastLogL > kNonDecreaseBound) {
           _TerminateAndDump(
@@ -5614,7 +5652,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
         variableValues[current_index] = ch;
 
-        if (verbosity_level > 1) {
+        if (verbosity_level > 5) {
           snprintf(buffer, sizeof(buffer),
                    "\nindex = %ld\tlog(L)/diff = %14.10g/%14.10g\t param value "
                    "= %10.6g ( "
@@ -5694,9 +5732,16 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       }
 
       logLHistory.Store(maxSoFar);
+      if (logLHistory.get_used() > 1) {
+        logLDeltaHistory.Store(maxSoFar -
+                               logLHistory.theData[logLHistory.get_used() - 2]);
+      } else {
+        logLDeltaHistory.Store(0);
+      }
+
       loopCounter++;
 
-      if (verbosity_level > 5) {
+      if (verbosity_level > 1) {
         snprintf(buffer, sizeof(buffer),
                  "\nAverage Variable Change: %g, percent done: %g, "
                  "shrink_factor: %g, oldAverage/averageChange: %g",
@@ -7364,10 +7409,10 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
 
   if (gradL > 0.0) {
 
-    // current_direction = gradient * (1. / gradL);
-    // gradient = current_direction;
+    current_direction = gradient * (1. / gradL);
+    gradient = current_direction;
 
-    current_direction = gradient;
+    // current_direction = gradient;
 
     for (unsigned long index = 0;
          index < MAX(dim, 10) && index < iterationLimit;
@@ -7403,9 +7448,9 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
 
       if (CheckEqual(gradL, 0.0)) {
         break;
-      } /*else {
+      } else {
         gradient *= 1. / gradL;
-      }*/
+      }
 
       previous_direction = current_direction;
       hyFloat beta = 0., scalar_product = 0.;
@@ -7418,20 +7463,20 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
       }*/
 
       // Dai–Yuan
-      /*for (unsigned long i = 0UL; i < dim; i++) {
+      for (unsigned long i = 0UL; i < dim; i++) {
         scalar_product += gradient.theData[i] * gradient.theData[i];
-        beta += gradient.theData[i] * (gradient.theData[i] -
-      previous_gradient.theData[i]);
-      }*/
+        beta += gradient.theData[i] *
+                (gradient.theData[i] - previous_gradient.theData[i]);
+      }
 
       // use Polak–Ribière direction
 
-      for (unsigned long i = 0UL; i < dim; i++) {
+      /*for (unsigned long i = 0UL; i < dim; i++) {
         scalar_product +=
             previous_gradient.theData[i] * previous_gradient.theData[i];
         beta += previous_gradient.theData[i] *
                 (gradient.theData[i] - previous_gradient.theData[i]);
-      }
+      }*/
       // beta = -beta;
 
       // Hestenes-Stiefel
@@ -8302,14 +8347,17 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
     }
     if (CheckEqual(ith_coordinate, lb)) {
       simplex[i + 1][i] += MIN(DEFAULT_STEP_OFF_BOUND, (ub - lb) * 0.5);
-    }
-    if (ub - ith_coordinate > DEFAULT_STEP) {
-      simplex[i + 1][i] += DEFAULT_STEP;
     } else {
-      if (ub - ith_coordinate > ith_coordinate - lb) {
-        simplex[i + 1][i] += (ub - ith_coordinate) * 0.5;
+      hyFloat x_step = NonZero(ith_coordinate) ? ith_coordinate * DEFAULT_STEP
+                                               : DEFAULT_STEP;
+      if (ub - ith_coordinate > x_step) {
+        simplex[i + 1][i] += x_step;
       } else {
-        simplex[i + 1][i] -= (ith_coordinate - lb) * 0.5;
+        if (ub - ith_coordinate > ith_coordinate - lb) {
+          simplex[i + 1][i] += (ub - ith_coordinate) * 0.5;
+        } else {
+          simplex[i + 1][i] -= (ith_coordinate - lb) * 0.5;
+        }
       }
     }
 

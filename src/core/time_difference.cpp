@@ -1,21 +1,21 @@
 /*
- 
+
  HyPhy - Hypothesis Testing Using Phylogenies.
- 
+
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
- 
+
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
  Martin Smith (martin.audacis@gmail.com)
- 
+
  Significant contributions from:
  Spencer V Muse (muse@stat.ncsu.edu)
  Simon DW Frost (sdf22@cam.ac.uk)
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the
  "Software"), to deal in the Software without restriction, including
@@ -23,10 +23,10 @@
  distribute, sublicense, and/or sell copies of the Software, and to
  permit persons to whom the Software is furnished to do so, subject to
  the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included
  in all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -34,43 +34,41 @@
  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- 
+
  */
 
 #include "time_difference.h"
 
 #if defined(__APPLE__) && defined(__MACH__)
-  #include <mach/mach.h>
-  #include <mach/mach_time.h>
-  mach_timebase_info_data_t    sTimebaseInfo;
+#include <mach/mach.h>
+#include <mach/mach_time.h>
+mach_timebase_info_data_t sTimebaseInfo;
 #endif
 
+TimeDifference::TimeDifference(void) { this->Start(); }
 
-TimeDifference::TimeDifference (void) {
-  this->Start();
-}
-
-void TimeDifference::Start (void) {
+void TimeDifference::Start(void) {
 #if defined(__APPLE__) && defined(__MACH__)
-  base_time = mach_absolute_time();
-#elif defined   __UNIX__
-  gettimeofday (&base_time,NULL);
+  base_time = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW);
+#elif defined __UNIX__
+  gettimeofday(&base_time, NULL);
 #endif
 }
 
-double TimeDifference::TimeSinceStart (void) const {
-  
-  #if defined(__APPLE__) && defined(__MACH__)
-    if ( sTimebaseInfo.denom == 0 ) {
-      (void) mach_timebase_info(&sTimebaseInfo);
-    }
-    uint64_t diff = mach_absolute_time()- base_time;
-    return diff * 1e-9 * sTimebaseInfo.numer / sTimebaseInfo.denom;
-  #elif  defined __UNIX__
-    timeval current_time;
-    gettimeofday (&current_time,NULL);
-    return (current_time.tv_sec-base_time.tv_sec) + (current_time.tv_usec-base_time.tv_usec)*0.000001;
-  #endif
-  
+double TimeDifference::TimeSinceStart(void) const {
+
+#if defined(__APPLE__) && defined(__MACH__)
+  if (sTimebaseInfo.denom == 0) {
+    (void)mach_timebase_info(&sTimebaseInfo);
+  }
+  uint64_t diff = clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW) - base_time;
+  return diff * 1e-9 /** sTimebaseInfo.numer / sTimebaseInfo.denom*/;
+#elif defined __UNIX__
+  timeval current_time;
+  gettimeofday(&current_time, NULL);
+  return (current_time.tv_sec - base_time.tv_sec) +
+         (current_time.tv_usec - base_time.tv_usec) * 0.000001;
+#endif
+
   return 0.0;
 }
