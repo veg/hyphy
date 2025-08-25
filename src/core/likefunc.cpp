@@ -267,10 +267,10 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
       tdiff = calculation_timer.TimeSinceStart();
       ReportWarning(_String("Benchmark for ") & k & " threads: " & tdiff);
       hyFloat expected_boost = k / (hyFloat)bestTC;
-      printf("THREADS %d. Time %g. BEST THREADS %d. BEST TIME %g. RATIO "
-             "%g,FACTOR %g\n",
-             k, tdiff, bestTC, minDiff, minDiff / tdiff,
-             (1. + expected_boost) * 0.5);
+      // printf("THREADS %d. Time %g. BEST THREADS %d. BEST TIME %g. RATIO "
+      //        "%g,FACTOR %g\n",
+      //        k, tdiff, bestTC, minDiff, minDiff / tdiff,
+      //        (1. + expected_boost) * 0.5);
       if (tdiff * (1. + expected_boost) * 0.5 < minDiff) {
         minDiff = tdiff;
         bestTC = k;
