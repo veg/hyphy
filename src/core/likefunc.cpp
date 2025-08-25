@@ -271,11 +271,11 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
       //        "%g,FACTOR %g\n",
       //        k, tdiff, bestTC, minDiff, minDiff / tdiff,
       //        (1. + expected_boost) * 0.5);
-      if (tdiff * (1. + expected_boost) * 0.5 < minDiff) {
+      if (tdiff * (1. + (1. - expected_boost) / 3.) < minDiff) {
         minDiff = tdiff;
         bestTC = k;
       } else {
-        if (tdiff > minDiff) {
+        if (tdiff > minDiff && k <= hy_global::system_CPU_count / 2) {
           break;
         }
       }
