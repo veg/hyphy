@@ -2255,73 +2255,61 @@ inline __m256d _hy_matrix_handle_axv_mfma(__m256d c, __m256d a, __m256d b) {
 
 void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
                              bool add) {
-  // 4x4 NEON multiplication using NEON intrinsics
+  // 4x4 AVX multiplication using AVX intrinsics
+  // This function has been optimized to load the 4x4 block of matrix A
+  // into registers row-wise to improve cache performance.
 
   int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
 
-  __m256d A1, A2, A3, A4;
-  __m256d B1; // current row in B
-  __m256d C1, C2, C3, C4;
+  __m256d a_r0, a_r1, a_r2, a_r3;
+  __m256d b_k;
+  __m256d c_r0, c_r1, c_r2, c_r3;
 
-  A1 = _mm256_broadcast_sd(A);      // A[0][0] x4
-  A2 = _mm256_broadcast_sd(A + S1); // A[1][0] x4
-  A3 = _mm256_broadcast_sd(A + S2); // A[2][0] x4
-  A4 = _mm256_broadcast_sd(A + S3); // A[3][0] x4
-
-  B1 = _mm256_loadu_pd(B); // 00,01
-
-  auto handle_block_mult = [&]() -> void {
-    C1 = _mm256_mul_pd(A1, B1); // 00*00, 00*01
-    C2 = _mm256_mul_pd(A2, B1); // 10*01, 01*11, 01*12, 01*13
-    C3 = _mm256_mul_pd(A3, B1); // 10*00, 10*01
-    C4 = _mm256_mul_pd(A4, B1); // 10*02, 10*03
-  };
-
-  auto handle_block_madd = [&]() -> void {
-    C1 = _hy_matrix_handle_axv_mfma(C1, A1, B1); // 00*00, 00*01
-    C2 = _hy_matrix_handle_axv_mfma(C2, A2, B1); // 01*10, 01*11, 01*12, 01*13
-    C3 = _hy_matrix_handle_axv_mfma(C3, A3, B1); // 10*00, 10*01
-    C4 = _hy_matrix_handle_axv_mfma(C4, A4, B1); // 10*02, 10*03
-  };
+  // Load the 4x4 A matrix block row by row for better cache performance
+  a_r0 = _mm256_loadu_pd(A);
+  a_r1 = _mm256_loadu_pd(A + S1);
+  a_r2 = _mm256_loadu_pd(A + S2);
+  a_r3 = _mm256_loadu_pd(A + S3);
 
   if (add) {
-    C1 = _mm256_loadu_pd(C);
-    C2 = _mm256_loadu_pd(C + S1);
-    C3 = _mm256_loadu_pd(C + S2);
-    C4 = _mm256_loadu_pd(C + S3);
-    handle_block_madd();
+    c_r0 = _mm256_loadu_pd(C);
+    c_r1 = _mm256_loadu_pd(C + S1);
+    c_r2 = _mm256_loadu_pd(C + S2);
+    c_r3 = _mm256_loadu_pd(C + S3);
   } else {
-    handle_block_mult();
+    c_r0 = _mm256_setzero_pd();
+    c_r1 = _mm256_setzero_pd();
+    c_r2 = _mm256_setzero_pd();
+    c_r3 = _mm256_setzero_pd();
   }
 
-  A1 = _mm256_broadcast_sd(A + 1);      // A[0][1] x2
-  A2 = _mm256_broadcast_sd(A + S1 + 1); // A[1][1] x2
-  A3 = _mm256_broadcast_sd(A + S2 + 1); // A[2][1] x2
-  A4 = _mm256_broadcast_sd(A + S3 + 1); // A[3][1] x2
-  B1 = _mm256_loadu_pd(B + S1);         // 00,01
+  // Pre-calculated shuffle masks for broadcasting elements 0, 1, 2, 3
+  const int masks[] = {0x00, 0x55, 0xAA, 0xFF};
 
-  handle_block_madd();
+  for (int k = 0; k < 4; k++) {
+    int shuffle_mask = masks[k];
+    
+    // Load k-th row of B
+    b_k = _mm256_loadu_pd(B + k * stride);
 
-  A1 = _mm256_broadcast_sd(A + 2);      // A[0][1] x2
-  A2 = _mm256_broadcast_sd(A + S1 + 2); // A[1][1] x2
-  A3 = _mm256_broadcast_sd(A + S2 + 2); // A[2][1] x2
-  A4 = _mm256_broadcast_sd(A + S3 + 2); // A[3][1] x2
-  B1 = _mm256_loadu_pd(B + S2);         // 00,01
+    // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
+    __m256d bcast_a0 = _mm256_permute4x64_pd(a_r0, shuffle_mask);
+    __m256d bcast_a1 = _mm256_permute4x64_pd(a_r1, shuffle_mask);
+    __m256d bcast_a2 = _mm256_permute4x64_pd(a_r2, shuffle_mask);
+    __m256d bcast_a3 = _mm256_permute4x64_pd(a_r3, shuffle_mask);
 
-  handle_block_madd();
+    // Fused multiply-add
+    c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
+    c_r1 = _hy_matrix_handle_axv_mfma(c_r1, bcast_a1, b_k);
+    c_r2 = _hy_matrix_handle_axv_mfma(c_r2, bcast_a2, b_k);
+    c_r3 = _hy_matrix_handle_axv_mfma(c_r3, bcast_a3, b_k);
+  }
 
-  A1 = _mm256_broadcast_sd(A + 3);      // A[0][1] x2
-  A2 = _mm256_broadcast_sd(A + S1 + 3); // A[1][1] x2
-  A3 = _mm256_broadcast_sd(A + S2 + 3); // A[2][1] x2
-  A4 = _mm256_broadcast_sd(A + S3 + 3); // A[3][1] x2
-  B1 = _mm256_loadu_pd(B + S3);         // 00,01
-
-  handle_block_madd();
-
-  _mm256_storeu_pd(C, C1);
-  _mm256_storeu_pd(C + S1, C2);
-  _mm256_storeu_pd(C + S2, C3);
-  _mm256_storeu_pd(C + S3, C4);
+  // Store the results
+  _mm256_storeu_pd(C, c_r0);
+  _mm256_storeu_pd(C + S1, c_r1);
+  _mm256_storeu_pd(C + S2, c_r2);
+  _mm256_storeu_pd(C + S3, c_r3);
 }
 
 /**
