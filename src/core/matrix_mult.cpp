@@ -1178,7 +1178,7 @@ void _hy_matrix_multiply_3x4x3(double *C, double *A, double *B, int stride,
 #endif
 
 #if defined _SLKP_USE_SSE_INTRINSICS
-#include <smmintrin.h>
+#include <immintrin.h>
 
 void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
                              bool add) {
@@ -1209,14 +1209,14 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
   };
 
   auto handle_block_madd = [&]() -> void {
-    C11 = _mm_add_pd(C11, _mm_mul_pd(A1, B1)); // 00*00, 00*01
-    C12 = _mm_add_pd(C12, _mm_mul_pd(A1, B2)); // 00*02, 00*03
-    C21 = _mm_add_pd(C21, _mm_mul_pd(A2, B1)); // 10*00, 10*01
-    C22 = _mm_add_pd(C22, _mm_mul_pd(A2, B2)); // 10*02, 10*03
-    C31 = _mm_add_pd(C31, _mm_mul_pd(A3, B1)); // 20*00, 20*01
-    C32 = _mm_add_pd(C32, _mm_mul_pd(A3, B2)); // 20*02, 20*03
-    C41 = _mm_add_pd(C41, _mm_mul_pd(A4, B1)); // 20*00, 20*01
-    C42 = _mm_add_pd(C42, _mm_mul_pd(A4, B2)); // 20*02, 20*03
+    C11 = _mm_fmadd_pd(A1, B1, C11);
+    C12 = _mm_fmadd_pd(A1, B2, C12);
+    C21 = _mm_fmadd_pd(A2, B1, C21);
+    C22 = _mm_fmadd_pd(A2, B2, C22);
+    C31 = _mm_fmadd_pd(A3, B1, C31);
+    C32 = _mm_fmadd_pd(A3, B2, C32);
+    C41 = _mm_fmadd_pd(A4, B1, C41);
+    C42 = _mm_fmadd_pd(A4, B2, C42);
   };
 
   if (add) {
@@ -2283,27 +2283,62 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
     c_r3 = _mm256_setzero_pd();
   }
 
-  // Pre-calculated shuffle masks for broadcasting elements 0, 1, 2, 3
-  const int masks[] = {0x00, 0x55, 0xAA, 0xFF};
 
-  for (int k = 0; k < 4; k++) {
-    int shuffle_mask = masks[k];
     
     // Load k-th row of B
-    b_k = _mm256_loadu_pd(B + k * stride);
+    b_k = _mm256_loadu_pd(B );
 
     // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
-    __m256d bcast_a0 = _mm256_permute4x64_pd(a_r0, shuffle_mask);
-    __m256d bcast_a1 = _mm256_permute4x64_pd(a_r1, shuffle_mask);
-    __m256d bcast_a2 = _mm256_permute4x64_pd(a_r2, shuffle_mask);
-    __m256d bcast_a3 = _mm256_permute4x64_pd(a_r3, shuffle_mask);
+    __m256d bcast_a0 = _mm256_permute4x64_pd(a_r0, 0x00);
+    __m256d bcast_a1 = _mm256_permute4x64_pd(a_r1, 0x00);
+    __m256d bcast_a2 = _mm256_permute4x64_pd(a_r2, 0x00);
+    __m256d bcast_a3 = _mm256_permute4x64_pd(a_r3, 0x00);
 
     // Fused multiply-add
     c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
     c_r1 = _hy_matrix_handle_axv_mfma(c_r1, bcast_a1, b_k);
     c_r2 = _hy_matrix_handle_axv_mfma(c_r2, bcast_a2, b_k);
     c_r3 = _hy_matrix_handle_axv_mfma(c_r3, bcast_a3, b_k);
-  }
+
+   b_k = _mm256_loadu_pd(B + stride);
+    // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
+     bcast_a0 = _mm256_permute4x64_pd(a_r0, 0x55);
+     bcast_a1 = _mm256_permute4x64_pd(a_r1, 0x55);
+     bcast_a2 = _mm256_permute4x64_pd(a_r2, 0x55);
+     bcast_a3 = _mm256_permute4x64_pd(a_r3, 0x55);
+
+    // Fused multiply-add
+    c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
+    c_r1 = _hy_matrix_handle_axv_mfma(c_r1, bcast_a1, b_k);
+    c_r2 = _hy_matrix_handle_axv_mfma(c_r2, bcast_a2, b_k);
+    c_r3 = _hy_matrix_handle_axv_mfma(c_r3, bcast_a3, b_k);
+
+    // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
+    b_k = _mm256_loadu_pd(B + 2*stride);
+      bcast_a0 = _mm256_permute4x64_pd(a_r0, 0xAA);
+     bcast_a1 = _mm256_permute4x64_pd(a_r1, 0xAA);
+     bcast_a2 = _mm256_permute4x64_pd(a_r2, 0xAA);
+     bcast_a3 = _mm256_permute4x64_pd(a_r3, 0xAA);
+
+    // Fused multiply-add
+    c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
+    c_r1 = _hy_matrix_handle_axv_mfma(c_r1, bcast_a1, b_k);
+    c_r2 = _hy_matrix_handle_axv_mfma(c_r2, bcast_a2, b_k);
+    c_r3 = _hy_matrix_handle_axv_mfma(c_r3, bcast_a3, b_k);
+
+    // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
+     b_k = _mm256_loadu_pd(B + 3*stride);
+     bcast_a0 = _mm256_permute4x64_pd(a_r0, 0xFF);
+     bcast_a1 = _mm256_permute4x64_pd(a_r1, 0xFF);
+     bcast_a2 = _mm256_permute4x64_pd(a_r2, 0xFF);
+     bcast_a3 = _mm256_permute4x64_pd(a_r3, 0xFF);
+
+    // Fused multiply-add
+    c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
+    c_r1 = _hy_matrix_handle_axv_mfma(c_r1, bcast_a1, b_k);
+    c_r2 = _hy_matrix_handle_axv_mfma(c_r2, bcast_a2, b_k);
+    c_r3 = _hy_matrix_handle_axv_mfma(c_r3, bcast_a3, b_k);
+
 
   // Store the results
   _mm256_storeu_pd(C, c_r0);
@@ -2319,7 +2354,6 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
 void _hy_matrix_multiply_4x1x4(double *C, double *A, double *B, int stride) {
   __m256d A1, A2, A3, A4;
   __m256d B1;
-  __m256d C1, C2, C3, C4;
 
   int S1 = stride, S2 = stride << 1, S3 = stride + S2;
 
