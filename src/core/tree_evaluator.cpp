@@ -851,7 +851,7 @@ template <int D>
 void _hy_mvp_blocked_4x4(double *C, double const *M, double const *V) {
   _hy_matrix_vector_product_blocked_4x4(C, M, V, D);
 }
-
+/*
 void _mx_vect_8x8(float64x2x4_t &cv, double const *M, double const *V,
                   int stride) {
 
@@ -1024,6 +1024,8 @@ template <int D>
 void _hy_mvp_blocked_8x8(double *C, double const *M, double const *V) {
   _hy_matrix_vector_product_blocked_8x8(C, M, V, D);
 }
+
+ */
 
 inline double _handle4x4_pruning_case_direct(double const *childVector, void *T,
                                              double *parentConditionals) {
