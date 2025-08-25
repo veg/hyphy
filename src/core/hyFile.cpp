@@ -35,10 +35,12 @@
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include "global_things.h"
 #include "hy_strings.h"
 #include "hy_types.h"
+#include <stdio.h>
+#include <sys/stat.h>
+// #include <unistd.h>
 
 //____________________________________________________________________________________
 hyFile *hyFile::openFile(const char *file_path, hyFileOpenMode mode, bool error,
@@ -52,6 +54,18 @@ hyFile *hyFile::openFile(const char *file_path, hyFileOpenMode mode, bool error,
                                         str_mode & "'.");
     }
   };
+
+  switch (mode) {
+  case kFileRead:
+  case kFileReadBinary: {
+    struct stat path_stat;
+    stat(file_path, &path_stat);
+    if (!S_ISREG(path_stat.st_mode)) {
+      handle_error(nullptr);
+      return nullptr;
+    }
+  }
+  }
 
   hyFile *f = new hyFile;
 #ifdef __ZLIB__

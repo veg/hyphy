@@ -7,10 +7,10 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
-	Lance Hepler (nlhepler@gmail.com)
-	Martin Smith (martin.audacis@gmail.com)
+        Lance Hepler (nlhepler@gmail.com)
+        Martin Smith (martin.audacis@gmail.com)
 
 Significant contributions from:
   Spencer V Muse (muse@stat.ncsu.edu)
@@ -37,720 +37,751 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __MATRIX__
-#define     __MATRIX__
+#ifndef __MATRIX__
+#define __MATRIX__
 
-#include "hy_strings.h"
 #include "avllistx.h"
-#include "variablecontainer.h"
+#include "hy_strings.h"
 #include "trie.h"
+#include "variablecontainer.h"
 
-#define     _POLYNOMIAL_TYPE 0
-#define     _NUMERICAL_TYPE  1
-#define     _FORMULA_TYPE 2
-#define     _SIMPLE_FORMULA_TYPE 3
-
-
+#define _POLYNOMIAL_TYPE 0
+#define _NUMERICAL_TYPE 1
+#define _FORMULA_TYPE 2
+#define _SIMPLE_FORMULA_TYPE 3
 
 //_____________________________________________________________________________________________
 
-#define      _HY_MATRIX_RANDOM_DIRICHLET         01L
-#define      _HY_MATRIX_RANDOM_GAUSSIAN          02L
-#define      _HY_MATRIX_RANDOM_WISHART           03L
-#define      _HY_MATRIX_RANDOM_INVERSE_WISHART   04L
-#define      _HY_MATRIX_RANDOM_MULTINOMIAL       05L
+#define _HY_MATRIX_RANDOM_DIRICHLET 01L
+#define _HY_MATRIX_RANDOM_GAUSSIAN 02L
+#define _HY_MATRIX_RANDOM_WISHART 03L
+#define _HY_MATRIX_RANDOM_INVERSE_WISHART 04L
+#define _HY_MATRIX_RANDOM_MULTINOMIAL 05L
 
-extern        _Trie        _HY_MatrixRandomValidPDFs;
+extern _Trie _HY_MatrixRandomValidPDFs;
 
 //_____________________________________________________________________________________________
 
 class _Formula;
-/*__________________________________________________________________________________________________________________________________________ */
+/*__________________________________________________________________________________________________________________________________________
+ */
 
-struct      _CompiledMatrixData {
+struct _CompiledMatrixData {
 
-    _SimpleFormulaDatum * theStack,
-                        * varValues;
+  _SimpleFormulaDatum *theStack, *varValues;
 
-    hyFloat             * formulaValues;
+  hyFloat *formulaValues;
 
-    long                * formulaRefs;
-    long                stackDepth;
-    bool                has_volatile_entries;
+  long *formulaRefs;
+  long stackDepth;
+  bool has_volatile_entries;
 
-    _SimpleList varIndex,
-                formulasToEval;
-
+  _SimpleList varIndex, formulasToEval;
 };
 
-/*__________________________________________________________________________________________________________________________________________ */
+/*__________________________________________________________________________________________________________________________________________
+ */
 
-class       _Matrix: public _MathObject {
-    
-// data members
+class _Matrix : public _MathObject {
+
+  // data members
 public:
-    hyFloat   *theData;                            // matrix elements
-    
+  hyFloat *theData; // matrix elements
+
 protected:
-    
-    // data
-    
-    long        hDim, vDim, lDim;               // matrix physical dimensions; lDim - length of
-    // actual storage allocated
-    
-    long*       theIndex;                       // indices of matrix elements in logical storage
-    long*       compressedIndex;
-        /**
-            20200821 SLKP to speed sparse caclulations CompressSparseMatrix will create this DENSE index, which has the following structure
-                - Entries in theIndex are expected to be compressed (no -1) and arranged BY ROW
-                - First hDim values: the INDEX of the non-first non zero index for this ROW in theData
-                - Next lDim values: the COLUMN index for the corresponding entry
-         
-                [x,1,2,x]
-                [1,2,x,x]
-                [x,x,2,x]
-                [x,x,x,3]
-         
-                theIndex : [1,2,4,5,10,15]
-                compressedIndex: [0,2,4,5,1,2,0,1,2,3]
-                        
-        */
-    
-private:
-    
-    long        storageType,                    // true element matrix(1) or a matrix of pointers(0) which do not need to be deleted
-    // 2, if elements of the matrix are actually formulas which must be initialized to numerics before use
-    // matrices of type two are merely storage tables and can not be operated on directly, i.e their
-    // numerical values are computed first
-                bufferPerRow,                   // values reflecting internal storage structure for
-                overflowBuffer,                 // sparse matrices
-                allocationBlock;
-    
-    _CompiledMatrixData*
-    cmd;
-    
-    HBLObjectRef   theValue;                       // stores evaluated values of the matrix
+  // data
 
-    static      int     storageIncrement,       // how many percent of full matrix size
-    // to allocate to the matrix storage per increment
-    
-                        precisionArg,                    // how many elements in exp series to truncate after
-    
-                        switchThreshold;                 // maximum percentage of non-zero elements
-    // to keep the matrix sparse
-    
-    static      hyFloat truncPrecision;
-    
-    // matrix exp truncation precision
-    
-    bool        _validateCompressedStorage (void) const;
+  void internal_to_str(_StringBuffer *, hyFile *, unsigned long padding);
+
+  long hDim, vDim, lDim; // matrix physical dimensions; lDim - length of
+  // actual storage allocated
+
+  long *theIndex; // indices of matrix elements in logical storage
+  long *compressedIndex;
+  /**
+      20200821 SLKP to speed sparse caclulations CompressSparseMatrix will
+     create this DENSE index, which has the following structure
+          - Entries in theIndex are expected to be compressed (no -1) and
+     arranged BY ROW
+          - First hDim values: the INDEX of the non-first non zero index for
+     this ROW in theData
+          - Next lDim values: the COLUMN index for the corresponding entry
+
+          [x,1,2,x]
+          [1,2,x,x]
+          [x,x,2,x]
+          [x,x,x,3]
+
+          theIndex : [1,2,4,5,10,15]
+          compressedIndex: [0,2,4,5,1,2,0,1,2,3]
+
+  */
+
+private:
+  long storageType, // true element matrix(1) or a matrix of pointers(0) which
+                    // do not need to be deleted
+      // 2, if elements of the matrix are actually formulas which must be
+      // initialized to numerics before use matrices of type two are merely
+      // storage tables and can not be operated on directly, i.e their numerical
+      // values are computed first
+      bufferPerRow,   // values reflecting internal storage structure for
+      overflowBuffer, // sparse matrices
+      allocationBlock;
+
+  _CompiledMatrixData *cmd;
+
+  HBLObjectRef theValue; // stores evaluated values of the matrix
+
+  static int
+      storageIncrement, // how many percent of full matrix size
+                        // to allocate to the matrix storage per increment
+
+      precisionArg, // how many elements in exp series to truncate after
+
+      switchThreshold; // maximum percentage of non-zero elements
+  // to keep the matrix sparse
+
+  static hyFloat truncPrecision;
+
+  // matrix exp truncation precision
+
+  bool _validateCompressedStorage(void) const;
 
 public:
-    
+  // constructors
+
+  _Matrix(); // default constructor, doesn't do much
+
+  _Matrix(_String const &, bool, _FormulaParsingContext &,
+          bool use_square_brackets = false);
+  // matrix from a string of the form
+  // {{i11,i12,...}{i21,i22,..}{in1,in2..)})
+  // or {# rows,<# cols>{i1,j1,expr}{i2,j2,expr}..}
+  // elements may be arbitrary formulas
+
+  _Matrix(long theHDim, long theVDim, bool sparse = false,
+          bool allocateStorage =
+              false); // create an empty matrix of given dimensions;
+
+  // creates an empty matrix of given dimensions;
+  // the first flag specifies whether it is sparse or not
+  // the second is the storage type -- see below
+
+  //  _Matrix (long, long, int, bool);
+  // a test function which generates a random matrix of given dimensions
+  // where the third parameter specifies the percentage of 0 entries and
+  // the first flag indicates how to store the matrix: as spars or usual
+
+  _Matrix(_Matrix const &); // duplicator
+
+  _Matrix(_SimpleList const &, long = -1); // make matrix from simple list
+  // the optional argument C (if > 0) tells HyPhy
+  // to make a matrix with C elements per row
+  // if <= 0 - a row matrix is returned
+
+  _Matrix(_List const &,
+          bool parse_escapes = true); // make string matrix from a list
+
+  _Matrix(const hyFloat *, unsigned long, unsigned long);
+  /*
+      20110616 SLKP
+          added a simple constructor from a list of floating point values
+          first argument: the values (must be at least 2nd arg x 3rd arg long)
+          second argument: how many rows
+          second argument: how many columns
+
+  */
+  _Matrix(hyFloat, unsigned long, unsigned long);
+  /**
+    20180919 SLKP
+        make an rxc matrix that is constant (each cell is the same)
+  */
+
+  ~_Matrix(void); // destructor
+
+  virtual void
+  Clear(bool complete =
+            true); // deletes all the entries w/o destroying the matrix
+  virtual void
+  ZeroNumericMatrix(void); // deletes all the entries w/o destroying the matrix
+
+  void Initialize(bool = true); // zeros all matrix structures
+
+  virtual void Serialize(_StringBuffer &, _String const &, _List * = nil);
+  // write the matrix definition in HBL
+
+  //_____________________________________________________________________________________________
+
+  inline bool is_empty(void) const {
+    return GetVDim() == 0UL || GetHDim() == 0UL;
+  }
+  inline bool is_row(void) const { return GetHDim() == 1UL; }
+  inline bool is_column(void) const { return GetVDim() == 1UL; }
+  inline bool is_square(void) const { return GetVDim() == GetHDim(); }
+  inline bool is_dense(void) const { return theIndex == nil; }
+  inline bool is_expression_based(void) const {
+    return storageType == _FORMULA_TYPE;
+  }
+  inline bool is_numeric(void) const { return storageType == _NUMERICAL_TYPE; }
+  inline bool is_polynomial(void) const {
+    return storageType == _POLYNOMIAL_TYPE;
+  }
+  inline bool has_type(int t) const { return storageType == t; }
+
+  HBLObjectRef
+  Evaluate(bool replace = true); // evaluates the matrix if contains formulas
+  // if replace is true, overwrites the original
+
+  virtual HBLObjectRef
+  ExecuteSingleOp(long opCode, _List *arguments = nil,
+                  _hyExecutionContext *context = _hyDefaultExecutionContext,
+                  HBLObjectRef cache = nil);
+  // execute this operation with the list of Args
+
+  HBLObjectRef MAccess(HBLObjectRef, HBLObjectRef, HBLObjectRef cache = nil);
+  // implements the M[i][j] operation for formulas
+  HBLObjectRef MCoord(HBLObjectRef, HBLObjectRef, HBLObjectRef cache = nil);
+  // implements the M[i][j] operation for formulas
+
+  void MStore(long, long, _Formula &, long = -1);
+  void MStore(long, long, HBLObjectRef, long);
+  bool MResolve(HBLObjectRef, HBLObjectRef, long &, long &);
+  // resolve coordiates from two Number arguments
+
+  bool CheckCoordinates(long &, long &);
+  // validate matrix coordinates
 
-    // constructors
+  bool ValidateFormulaEntries(bool(long, long, _Formula *));
+  // validate matrix coordinates
 
-    _Matrix ();                                 // default constructor, doesn't do much
+  void CopyMatrixToDenseAndMultiply(_Matrix const &, hyFloat C,
+                                    bool assume_zeros = false);
 
-    _Matrix (_String const&, bool, _FormulaParsingContext&, bool use_square_brackets = false);
-    // matrix from a string of the form
-    // {{i11,i12,...}{i21,i22,..}{in1,in2..)})
-    // or {# rows,<# cols>{i1,j1,expr}{i2,j2,expr}..}
-    // elements may be arbitrary formulas
+  void MStore(HBLObjectRef, HBLObjectRef, _Formula &, long = HY_OP_CODE_NONE);
+  // implements the M[i][j]= operation for formulas
+  /*
+      20100811: the last argument provides an op code (-1 = none)
+      to perform on the _Formula argument and the current value in the matrix;
+      this only applies to constant _Formula arguments
 
-    _Matrix (long theHDim, long theVDim, bool sparse = false, bool allocateStorage = false);    // create an empty matrix of given dimensions;
-
+      e.g. passing HY_OP_CODE_ADD implements +=
+   */
 
+  HBLObjectRef get_value() { return theValue; }
+  void MStore(long, long, HBLObjectRef);
+  void MStore(HBLObjectRef, HBLObjectRef, HBLObjectRef);
+  // implements the M[i][j]= operation for objects
+  virtual HBLObjectRef
+  Compute(void); // returns the numeric value of this matrix
+
+  virtual HBLObjectRef
+  ComputeNumeric(bool = false); // returns the numeric value of this matrix
+  virtual HBLObjectRef
+  RetrieveNumeric(void); // returns the numeric value of this matrix
 
-    // creates an empty matrix of given dimensions;
-    // the first flag specifies whether it is sparse or not
-    // the second is the storage type -- see below
+  virtual void ScanForVariables(_AVLList &, bool inclG = false,
+                                _AVLListX *tagger = nil, long weight = 0) const;
+  virtual void ScanForVariables2(_AVLList &, bool inclG = false,
+                                 long modelID = -1, bool inclCat = true,
+                                 _AVLListX *tagger = nil,
+                                 long weight = 0) const;
+  // scans for all local independent variables on which the matrix depends
+  // and stores them in the list passed as the parameter
 
-//  _Matrix (long, long, int, bool);
-    // a test function which generates a random matrix of given dimensions
-    // where the third parameter specifies the percentage of 0 entries and
-    // the first flag indicates how to store the matrix: as spars or usual
-
-    _Matrix ( _Matrix const &);                       //duplicator
-
-    _Matrix ( _SimpleList const &, long = -1);        // make matrix from simple list
-    // the optional argument C (if > 0) tells HyPhy
-    // to make a matrix with C elements per row
-    // if <= 0 - a row matrix is returned
-
-    _Matrix ( _List const &, bool parse_escapes = true);                         //make string matrix from a list
-
-    _Matrix (const hyFloat *, unsigned long, unsigned long);
-    /*
-        20110616 SLKP
-            added a simple constructor from a list of floating point values
-            first argument: the values (must be at least 2nd arg x 3rd arg long)
-            second argument: how many rows
-            second argument: how many columns
+  virtual bool IsIndependent(void) { return storageType != _FORMULA_TYPE; }
+  // used to determine whether the matrix contains references
+  // to other unknowns
 
-    */
-    _Matrix (hyFloat, unsigned long, unsigned long);
-    /**
-      20180919 SLKP
-          make an rxc matrix that is constant (each cell is the same)
-    */
+  virtual unsigned long ObjectClass(void) const { return MATRIX; }
 
-    ~_Matrix (void);                            //destructor
+  _Matrix const &operator=(_Matrix const &); // assignment operation on matrices
+  _Matrix const &operator=(
+      _Matrix const *); // assignment operation on matrices with temp results
 
-    virtual void    Clear (bool complete = true);               //deletes all the entries w/o destroying the matrix
-    virtual void    ZeroNumericMatrix (void);               //deletes all the entries w/o destroying the matrix
+  virtual HBLObjectRef Random(HBLObjectRef,
+                              HBLObjectRef cache); // reshuffle the matrix
 
-    void    Initialize (bool = true);                  // zeros all matrix structures
+  virtual HBLObjectRef
+  AddObj(HBLObjectRef, HBLObjectRef cache); // addition operation on matrices
 
-    virtual void        Serialize (_StringBuffer&,_String const&, _List * = nil);
-    // write the matrix definition in HBL
+  virtual HBLObjectRef
+  SubObj(HBLObjectRef, HBLObjectRef cache); // subtraction operation on matrices
 
-    //_____________________________________________________________________________________________
-    
-    
+  virtual HBLObjectRef
+  MultObj(HBLObjectRef,
+          HBLObjectRef cache); // multiplication operation on matrices
 
-    inline bool        is_empty (void) const {return GetVDim () == 0UL || GetHDim () == 0UL;}
-    inline bool        is_row (void) const { return GetHDim() == 1UL;}
-    inline bool        is_column (void) const { return GetVDim() == 1UL;}
-    inline bool        is_square (void) const { return GetVDim() == GetHDim();}
-    inline bool        is_dense (void) const {return theIndex == nil;}
-    inline bool        is_expression_based (void) const {return storageType == _FORMULA_TYPE;}
-    inline bool        is_numeric (void) const {return storageType == _NUMERICAL_TYPE;}
-    inline bool        is_polynomial (void) const {return storageType == _POLYNOMIAL_TYPE;}
-    inline bool        has_type (int t) const {return storageType == t;}
+  virtual HBLObjectRef
+  MultElements(HBLObjectRef, bool elementWiseDivide,
+               HBLObjectRef cache); // element wise multiplication/division
+                                    // operation on matrices
 
-    HBLObjectRef           Evaluate (bool replace = true); // evaluates the matrix if contains formulas
-    // if replace is true, overwrites the original
+  virtual HBLObjectRef Sum(HBLObjectRef cache);
 
-    virtual HBLObjectRef   ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext, HBLObjectRef cache = nil);
-    // execute this operation with the list of Args
+  _Matrix operator+(_Matrix &); // addition operation on matrices
 
-    HBLObjectRef   MAccess (HBLObjectRef, HBLObjectRef, HBLObjectRef cache = nil);
-    // implements the M[i][j] operation for formulas
-    HBLObjectRef   MCoord (HBLObjectRef, HBLObjectRef, HBLObjectRef cache = nil);
-    // implements the M[i][j] operation for formulas
+  _Matrix operator-(_Matrix &); // subtraction operation on matrices
+
+  _Matrix operator*(_Matrix &); // multiplication operation on matrices
 
-    void        MStore (long, long, _Formula&, long = -1);
-    void        MStore (long, long, HBLObjectRef, long);
-    bool        MResolve (HBLObjectRef, HBLObjectRef, long&, long&);
-    // resolve coordiates from two Number arguments
+  _Matrix operator*(hyFloat); // multiplication of a matrix by a number
+
+  void operator+=(_Matrix &); // add/store operation on matrices
 
-    bool        CheckCoordinates ( long&, long&);
-    // validate matrix coordinates
+  void operator-=(_Matrix &); // subtract/store operation on matrices
 
-    bool        ValidateFormulaEntries (bool (long, long, _Formula*));
-    // validate matrix coordinates
+  void operator*=(_Matrix &); // multiply/store operation on matrices
 
-    void        MStore (HBLObjectRef, HBLObjectRef, _Formula&, long = HY_OP_CODE_NONE);
-    // implements the M[i][j]= operation for formulas
-    /*
-        20100811: the last argument provides an op code (-1 = none)
-        to perform on the _Formula argument and the current value in the matrix;
-        this only applies to constant _Formula arguments
+  void operator*=(hyFloat); // multiply by a #/store operation on matrices
 
-        e.g. passing HY_OP_CODE_ADD implements +=
-     */
-    
-    HBLObjectRef    get_value () {return theValue;}
-    void        MStore (long, long, HBLObjectRef);
-    void        MStore (HBLObjectRef, HBLObjectRef, HBLObjectRef);
-    // implements the M[i][j]= operation for objects
-    virtual HBLObjectRef   Compute (void);         // returns the numeric value of this matrix
+  void AplusBx(_Matrix &, hyFloat); // A = A + B*x (scalar)
 
-    virtual HBLObjectRef   ComputeNumeric (bool = false);  // returns the numeric value of this matrix
-    virtual HBLObjectRef   RetrieveNumeric (void); // returns the numeric value of this matrix
+  hyFloat Sqr(hyFloat *_hprestrict_);
+  // square the matrix; takes a scratch vector
+  // of at least lDim doubles
+  // return the maximum absolute element-wise difference between X and X^2
 
-    virtual void        ScanForVariables  (_AVLList&, bool inclG = false, _AVLListX* tagger = nil,long weight = 0) const;
-    virtual void        ScanForVariables2 (_AVLList&, bool inclG = false, long modelID = -1, bool inclCat = true, _AVLListX* tagger = nil,long weight = 0) const;
-    // scans for all local independent variables on which the matrix depends
-    // and stores them in the list passed as the parameter
+  _List *ComputeRowAndColSums(void);
+  _Matrix *MutualInformation(void);
+  void FillInList(_List &, bool convert_numbers = false) const;
+  // SLKP 20101108:
+  //               added a boolean flag to allow numeric matrices
+  //               to be implicitly converted to strings
 
-    virtual bool        IsIndependent (void)   {
-        return storageType!=_FORMULA_TYPE;
-    }
-    // used to determine whether the matrix contains references
-    // to other unknowns
+  _Matrix *NeighborJoin(bool, HBLObjectRef cache);
+  _Matrix *MakeTreeFromParent(long, HBLObjectRef cache);
+  _Matrix *ExtractElementsByEnumeration(_SimpleList *, _SimpleList *,
+                                        bool = false);
+  _Matrix *SimplexSolve(hyFloat = 1.e-6);
 
-    virtual unsigned long        ObjectClass (void) const      {
-        return MATRIX;
-    }
+  //  void        SqrStrassen (void);
+  // square the matrix by Strassen's Multiplication
 
-    _Matrix const&     operator = (_Matrix const&);             // assignment operation on matrices
-    _Matrix const&     operator = (_Matrix const*);             // assignment operation on matrices with temp results
+  _Matrix *Exponentiate(hyFloat scale_to = 0.5, bool check_transition = false,
+                        _Matrix *write_here = nil); // exponent of a matrix
+  void Transpose(void);                             // transpose a matrix
+  _Matrix Gauss(void); // Gaussian Triangularization process
+  HBLObjectRef LUDecompose(void) const;
+  HBLObjectRef CholeskyDecompose(void) const;
+  // added by afyp July 6, 2009
+  HBLObjectRef Eigensystem(HBLObjectRef) const;
+  HBLObjectRef LUSolve(HBLObjectRef) const;
+  HBLObjectRef Inverse(HBLObjectRef cache) const;
+  HBLObjectRef Abs(HBLObjectRef cache); // returns the norm of a matrix
+  // if it is a vector - returns the Euclidean length
+  // otherwise returns the largest element
 
-    virtual HBLObjectRef    Random (HBLObjectRef, HBLObjectRef cache);    // reshuffle the matrix
+  hyFloat AbsValue(void) const;
+  hyFloat L11Norm(void) const;
 
-    virtual HBLObjectRef    AddObj (HBLObjectRef, HBLObjectRef cache);    // addition operation on matrices
+  template <typename CALLBACK>
+  HBLObjectRef ApplyScalarOperation(CALLBACK &&functor,
+                                    HBLObjectRef cache) const;
 
-    virtual HBLObjectRef    SubObj (HBLObjectRef, HBLObjectRef cache);    // subtraction operation on matrices
+  // return the matrix of logs of every matrix element
 
-    virtual HBLObjectRef    MultObj (HBLObjectRef, HBLObjectRef cache);   // multiplication operation on matrices
+  void SwapRows(const long, const long);
+  long CompareRows(const long, const long);
 
-    virtual HBLObjectRef    MultElements (HBLObjectRef, bool elementWiseDivide, HBLObjectRef cache);  // element wise multiplication/division operation on matrices
+  hyFloat operator()(long, long) const; // read access to an element in a matrix
+  hyFloat &operator[](long); // read/write access to an element in a matrix
 
-    virtual HBLObjectRef    Sum          (HBLObjectRef cache);
+  hyFloat &get_dense_numeric_cell(unsigned long r, unsigned long c) {
+    return theData[r * vDim + c];
+  }
 
-    _Matrix     operator + (_Matrix&);          // addition operation on matrices
+  void Store(long, long, hyFloat); // write access to an element in a matrix
+  void StoreObject(long, long, _MathObject *, bool dup = false);
+  void StoreObject(long, _MathObject *, bool dup = false);
+  void StoreFormula(long, long, _Formula &, bool = true, bool = true);
+  void NonZeroEntries(_SimpleList &);
 
-    _Matrix     operator - (_Matrix&);          // subtraction operation on matrices
+  void UpdateDiag(long, long, _MathObject *);
 
-    _Matrix     operator * (_Matrix&);          // multiplication operation on matrices
+  void Swap(_Matrix &);          // fast swap matrix data
+  friend void SetIncrement(int); // storage parameter access
+  // an auxiliary function which creates an empty
+  // matrix of given dimensions and storage class (normal/sparse)
+  // and storage type (pointer/array)
 
-    _Matrix     operator * (hyFloat);        // multiplication of a matrix by a number
+  friend void DuplicateMatrix(_Matrix *, _Matrix const *);
+  // an auxiliary function which duplicates a matrix
 
-    void        operator += (_Matrix&);         // add/store operation on matrices
+  hyFloat MaxElement(char doSum = 0, long * = nil) const;
+  // SLKP 20101022: added an option to return the sum of all elements as an
+  // option (doSum = 1) or the sum of all absolute values (doSum == 2) returns
+  // the largest element's abs value for given matrix SLKP 20110523: added an
+  // option (doSum == 3) to return the largest element (no abs value) for run
+  // modes 0 and 3, if the 2nd argument is non-nil, the index of the winning
+  // element will be stored
 
-    void        operator -= (_Matrix&);         // subtract/store operation on matrices
+  hyFloat MinElement(char doAbs = 1, long * = nil);
 
-    void        operator *= (_Matrix&);         // multiply/store operation on matrices
+  // SLKP 20110620: added the 2nd argument to optionally store the index of the
+  // smallest element
+  //              : added the option to NOT do absolute values
+  // returns the smallest, non-zero element value for given matrix
 
-    void        operator *= (hyFloat);       // multiply by a #/store operation on matrices
+  bool IsMaxElement(hyFloat);
+  // true if there is an elem abs val of which is greater than the arg
+  // false otherwise
 
-    void        AplusBx  (_Matrix&, hyFloat); // A = A + B*x (scalar)
+  hyFloat MaxRelError(_Matrix &);
 
-    hyFloat        Sqr         (hyFloat* _hprestrict_);
-    // square the matrix; takes a scratch vector
-    // of at least lDim doubles
-    // return the maximum absolute element-wise difference between X and X^2
+  //  friend      _Matrix     IterateStrassen (_Matrix&, _Matrix&);
+  // used in Strassen Squaring
 
-    _List*      ComputeRowAndColSums            (void);
-    _Matrix*    MutualInformation               (void);
-    void        FillInList                      (_List&, bool convert_numbers = false) const;
-    // SLKP 20101108:
-    //               added a boolean flag to allow numeric matrices
-    //               to be implicitly converted to strings
+  virtual BaseRef
+  makeDynamic(void) const; // duplicate this object into a dynamic copy
 
-    _Matrix*    NeighborJoin                    (bool, HBLObjectRef cache);
-    _Matrix*    MakeTreeFromParent              (long, HBLObjectRef cache);
-    _Matrix*    ExtractElementsByEnumeration    (_SimpleList*,_SimpleList*,bool=false);
-    _Matrix*    SimplexSolve                    (hyFloat = 1.e-6);
+  virtual void
+  Duplicate(BaseRefConst obj); // duplicate this object into a dynamic copy
 
-    
+  virtual BaseRef toStr(unsigned long = 0UL); // convert this matrix to a string
 
-//  void        SqrStrassen (void);
-// square the matrix by Strassen's Multiplication
+  virtual void toFileStr(hyFile *dest, unsigned long = 0UL);
 
+  bool AmISparse(void);
 
-    _Matrix*    Exponentiate (hyFloat scale_to = 0.5, bool check_transition = false, _Matrix * write_here = nil);                // exponent of a matrix
-    void        Transpose (void);                   // transpose a matrix
-    _Matrix     Gauss   (void);                     // Gaussian Triangularization process
-    HBLObjectRef   LUDecompose (void) const;
-    HBLObjectRef   CholeskyDecompose (void) const;
-    // added by afyp July 6, 2009
-    HBLObjectRef   Eigensystem (HBLObjectRef) const;
-    HBLObjectRef   LUSolve (HBLObjectRef) const;
-    HBLObjectRef   Inverse (HBLObjectRef cache) const;
-    HBLObjectRef   Abs (HBLObjectRef cache);                     // returns the norm of a matrix
-    // if it is a vector - returns the Euclidean length
-    // otherwise returns the largest element
+  hyFloat ExpNumberOfSubs(_Matrix *, bool);
 
-    hyFloat  AbsValue                        (void) const;
-    hyFloat  L11Norm                         (void) const;
- 
-    template <typename CALLBACK>  HBLObjectRef ApplyScalarOperation (CALLBACK && functor, HBLObjectRef cache) const;
-    
-    // return the matrix of logs of every matrix element
-    
-    void        SwapRows (const long, const long);
-    long        CompareRows (const long, const long);
+  virtual bool IsVariable(void) { return storageType != _NUMERICAL_TYPE; }
+  // is this matrix a constant or a variable quantity?
 
-    hyFloat  operator () (long, long) const;       // read access to an element in a matrix
-    hyFloat& operator [] (long);             // read/write access to an element in a matrix
-  
-    hyFloat& get_dense_numeric_cell (unsigned long r, unsigned long c) {
-        return theData[r*vDim + c];
-    }
+  virtual bool IsConstant(void);
 
-    void        Store               (long, long, hyFloat);                       // write access to an element in a matrix
-    void        StoreObject         (long, long, _MathObject*, bool dup = false);
-    void        StoreObject         (long,  _MathObject*,bool dup = false);
-    void        StoreFormula        (long, long, _Formula&, bool = true, bool = true);
-    void        NonZeroEntries      (_SimpleList&);
+  virtual bool IsPrintable(void) { return storageType != _FORMULA_TYPE; }
 
-    void        UpdateDiag          (long ,long , _MathObject*);
+  virtual bool Equal(HBLObjectRef);
 
-    void        Swap                (_Matrix&);         // fast swap matrix data
-    friend      void                SetIncrement (int); // storage parameter access
-    // an auxiliary function which creates an empty
-    // matrix of given dimensions and storage class (normal/sparse)
-    // and storage type (pointer/array)
+  bool CompareMatrices(_Matrix const *rhs,
+                       hyFloat tolerance = kMachineEpsilon) const;
 
-    friend      void                DuplicateMatrix (_Matrix*,  _Matrix const*);
-    // an auxiliary function which duplicates a matrix
+  void ExportMatrixExp(_Matrix *, hyFile *);
+  bool ImportMatrixExp(hyFile *);
 
+  hyFloat FisherExact(hyFloat, hyFloat, hyFloat);
 
-    hyFloat          MaxElement      (char doSum = 0, long * = nil) const;
-    // SLKP 20101022: added an option to return the sum of all elements as an option (doSum = 1) or
-    // the sum of all absolute values (doSum == 2)
-    // returns the largest element's abs value for given matrix
-    // SLKP 20110523: added an option (doSum == 3) to return the largest element (no abs value)
-    // for run modes 0 and 3, if the 2nd argument is non-nil, the index of the winning element will be stored
+  virtual bool HasChanged(bool = false, _AVLListX *cache = nil);
+  // have any variables which are referenced by the elements changed?
 
-    hyFloat          MinElement      (char doAbs = 1, long * = nil);
+  virtual unsigned long GetHDim(void) const { return hDim; }
 
-    // SLKP 20110620: added the 2nd argument to optionally store the index of the smallest element
-    //              : added the option to NOT do absolute values
-    // returns the smallest, non-zero element value for given matrix
+  bool check_dimension(long rows, long columns) const {
+    return hDim == rows && vDim == columns;
+  }
 
-    bool                IsMaxElement    (hyFloat);
-    // true if there is an elem abs val of which is greater than the arg
-    // false otherwise
+  unsigned long GetVDim(void) const { return vDim; }
+  unsigned long GetSize(void) const { return lDim; }
+  long GetMySize(void) {
+    return sizeof(_Matrix) + lDim * (storageType == _NUMERICAL_TYPE
+                                         ? sizeof(hyFloat)
+                                         : sizeof(hyPointer));
+  }
 
+  void PopulateConstantMatrix(hyFloat);
+  /* SLKP 20090818
+          fill out a numeric matrix with a fixed value
+          if the matrix is sparse, only will out the non-void entries
+   */
 
-    hyFloat              MaxRelError(_Matrix&);
+  _Formula *GetFormula(long, long) const;
+  HBLObjectRef GetMatrixCell(long, long, HBLObjectRef cache = nil) const;
+  HBLObjectRef MultByFreqs(long, bool = false);
+  HBLObjectRef EvaluateSimple(_Matrix *existing_receptacle = nil);
+  HBLObjectRef SortMatrixOnColumn(HBLObjectRef, HBLObjectRef cache);
+  HBLObjectRef K_Means(HBLObjectRef, HBLObjectRef cache);
+  HBLObjectRef pFDR(HBLObjectRef,
+                    HBLObjectRef cache); // positive false discovery rate
+  HBLObjectRef
+  PoissonLL(HBLObjectRef,
+            HBLObjectRef cache); // log likelihood of a vector of poisson
+                                 // samples given a parameter value
 
-//  friend      _Matrix     IterateStrassen (_Matrix&, _Matrix&);
-    // used in Strassen Squaring
+  // added by afyp, July 1, 2009
+  HBLObjectRef
+  DirichletDeviate(void); // this matrix used for alpha hyperparameters
+  HBLObjectRef
+  GaussianDeviate(_Matrix &); //  "   "   "   "       mean hyperparameter,
+                              //  additional argument for variance
+  HBLObjectRef
+  InverseWishartDeviate(_Matrix &); //  "   "   "   "       rho hyperparameter,
+                                    //  additional for phi matrix
+  HBLObjectRef WishartDeviate(_Matrix &, _Matrix &), WishartDeviate(_Matrix &);
 
-    virtual     BaseRef     makeDynamic (void) const; // duplicate this object into a dynamic copy
+  HBLObjectRef MultinomialSample(_Constant *);
+  /* SLKP 20110208: an internal function to draw the multinomial sample
 
-    virtual     void        Duplicate   (BaseRefConst obj); // duplicate this object into a dynamic copy
+      the matrix _base_ must be 2xN, where each _row_ lists
 
-    virtual     BaseRef     toStr       (unsigned long = 0UL);       // convert this matrix to a string
+          value (integer 0 to N-1, but not enforced), probability
 
-    virtual     void        toFileStr   (hyFile *dest, unsigned long = 0UL);
+      the function will normalize by sum of all the values in the second column
 
-    bool        AmISparse               (void);
+      the constant argument is the number of replicates (M) to draw
 
-    hyFloat  ExpNumberOfSubs         (_Matrix*,bool);
+      returns an 1xN matrix with counts of how often each value has been drawn
 
-    virtual     bool        IsVariable  (void) {
-        return storageType != _NUMERICAL_TYPE;
-    }
-    // is this matrix a constant or a variable quantity?
+   */
 
-    virtual     bool        IsConstant  (void);
+  bool IsValidTransitionMatrix() const;
 
-    virtual     bool        IsPrintable (void) {
-        return storageType != _FORMULA_TYPE;
-    }
-    
-    virtual     bool        Equal       (HBLObjectRef);
+  bool IsReversible(_Matrix * = nil);
+  // check if the matrix is reversible
+  // if given a base frequencies assumes that rate matrix entries will not be
+  // multiplied by freq terms
 
-    bool        CompareMatrices         (_Matrix const* rhs, hyFloat tolerance = kMachineEpsilon) const;
-    
-    void        ExportMatrixExp         (_Matrix*, hyFile*);
-    bool        ImportMatrixExp         (hyFile*);
+  bool IsAStringMatrix(void) const;
+  void MakeMeSimple(void);
+  void MakeMeGeneral(void);
+  void ConvertToSimpleList(_SimpleList &);
+  void CompressSparseMatrix(bool, hyFloat *);
+  // prepare the transition probs matrix for exponentiation
 
-    hyFloat  FisherExact             (hyFloat, hyFloat, hyFloat);
+  long Hash(long, long) const; // hashing function, which finds matrix
+  // physical element in local storage buffer
+  // returns -1 if insufficient storage
+  // returns a negative number
+  // if element was not found, the number returned
+  // indicates the first available slot
 
-    virtual     bool        HasChanged  (bool = false, _AVLListX * cache = nil);
-    // have any variables which are referenced by the elements changed?
-
-    virtual     unsigned long
-    GetHDim                     (void) const{
-        return hDim;
-    }
-    
-    bool     check_dimension                         (long rows, long columns) const {
-        return hDim == rows && vDim == columns;
-    }
-    
-    unsigned long        GetVDim                     (void) const {
-        return vDim;
-    }
-    unsigned long        GetSize                     (void) const {
-        return lDim;
-    }
-    long        GetMySize                   (void) {
-        return sizeof(_Matrix)+lDim*(storageType==_NUMERICAL_TYPE?sizeof(hyFloat):sizeof(hyPointer));
-    }
-
-    void        PopulateConstantMatrix      (hyFloat);
-    /* SLKP 20090818
-            fill out a numeric matrix with a fixed value
-            if the matrix is sparse, only will out the non-void entries
-     */
-
-    _Formula*      GetFormula                  (long, long) const;
-    HBLObjectRef   GetMatrixCell               (long, long, HBLObjectRef cache = nil) const;
-    HBLObjectRef   MultByFreqs                 (long, bool = false);
-    HBLObjectRef   EvaluateSimple              (_Matrix* existing_receptacle = nil);
-    HBLObjectRef   SortMatrixOnColumn          (HBLObjectRef, HBLObjectRef cache);
-    HBLObjectRef   K_Means                     (HBLObjectRef, HBLObjectRef cache);
-    HBLObjectRef   pFDR                        (HBLObjectRef, HBLObjectRef cache);    // positive false discovery rate
-    HBLObjectRef   PoissonLL                   (HBLObjectRef, HBLObjectRef cache);    // log likelihood of a vector of poisson samples given a parameter value
-
-
-    // added by afyp, July 1, 2009
-    HBLObjectRef   DirichletDeviate            (void);         // this matrix used for alpha hyperparameters
-    HBLObjectRef   GaussianDeviate             (_Matrix &);    //  "   "   "   "       mean hyperparameter, additional argument for variance
-    HBLObjectRef   InverseWishartDeviate       (_Matrix &);    //  "   "   "   "       rho hyperparameter, additional for phi matrix
-    HBLObjectRef   WishartDeviate              (_Matrix &, _Matrix &),
-                WishartDeviate                (_Matrix &);
-
-    HBLObjectRef   MultinomialSample           (_Constant*);
-    /* SLKP 20110208: an internal function to draw the multinomial sample
-
-        the matrix _base_ must be 2xN, where each _row_ lists
-
-            value (integer 0 to N-1, but not enforced), probability
-
-        the function will normalize by sum of all the values in the second column
-
-        the constant argument is the number of replicates (M) to draw
-
-        returns an 1xN matrix with counts of how often each value has been drawn
-
-     */
-
-
-    bool        IsValidTransitionMatrix     () const;
-
-    bool        IsReversible                (_Matrix* = nil);
-    // check if the matrix is reversible
-    // if given a base frequencies assumes that rate matrix entries will not be multiplied by freq terms
-
-    bool        IsAStringMatrix             (void) const;
-    void        MakeMeSimple                (void);
-    void        MakeMeGeneral               (void);
-    void        ConvertToSimpleList         (_SimpleList&);
-    void        CompressSparseMatrix        (bool, hyFloat*);
-    //prepare the transition probs matrix for exponentiation
-
-    long        Hash (long, long) const;                  // hashing function, which finds matrix
-    // physical element in local storage buffer
-    // returns -1 if insufficient storage
-    // returns a negative number
-    // if element was not found, the number returned
-    // indicates the first available slot
-
-    hyFloat*       fastIndex(void)  const {
-        return (!theIndex)&&(storageType==_NUMERICAL_TYPE)?(hyFloat*)theData:nil;
-    }
-    inline            hyFloat&         directIndex(long k)   {
-        return theData[k];
-    }
-    long              MatrixType (void) {
-        return storageType;
-    }
-    
-    template <typename CALLBACK, typename EXTRACTOR>  void ForEach (CALLBACK&& cbv, EXTRACTOR&& accessor) const {
-        if (theIndex) {
-            for (unsigned long i=0UL; i<(unsigned long)lDim; i++) {
-                if (theIndex[i] >= 0L) {
-                    cbv (accessor (i), theIndex[i], i);
-                }
-            }
-        } else {
-            for (unsigned long i=0UL; i<(unsigned long)lDim; i++) {
-                cbv (accessor (i), i, i);
-            }
+  hyFloat *fastIndex(void) const {
+    return (!theIndex) && (storageType == _NUMERICAL_TYPE) ? (hyFloat *)theData
+                                                           : nil;
+  }
+  inline hyFloat &directIndex(long k) { return theData[k]; }
+  long MatrixType(void) { return storageType; }
+
+  template <typename CALLBACK, typename EXTRACTOR>
+  void ForEach(CALLBACK &&cbv, EXTRACTOR &&accessor) const {
+    if (theIndex) {
+      for (unsigned long i = 0UL; i < (unsigned long)lDim; i++) {
+        if (theIndex[i] >= 0L) {
+          cbv(accessor(i), theIndex[i], i);
         }
+      }
+    } else {
+      for (unsigned long i = 0UL; i < (unsigned long)lDim; i++) {
+        cbv(accessor(i), i, i);
+      }
     }
+  }
 
-    template <typename CALLBACK> void ForEachCellNumeric (CALLBACK&& cbv) const {
-        if (theIndex) {
-            for (unsigned long i=0UL; i<(unsigned long)lDim; i++) {
-                long idx = theIndex[i];
-                if (idx >= 0L) {
-                    long row = idx / vDim;
-                    cbv (theData[i], idx, row, idx - row*vDim);
-                }
-            }
-        } else {
-            for (unsigned long i=0UL, c = 0UL; i<(unsigned long)hDim; i++) {
-                for (unsigned long j=0UL; j<(unsigned long)vDim; j++, c++) {
-                    cbv (theData[c], c, i, j);
-                }
-            }
+  template <typename CALLBACK> void ForEachCellNumeric(CALLBACK &&cbv) const {
+    if (theIndex) {
+      for (unsigned long i = 0UL; i < (unsigned long)lDim; i++) {
+        long idx = theIndex[i];
+        if (idx >= 0L) {
+          long row = idx / vDim;
+          cbv(theData[i], idx, row, idx - row * vDim);
         }
-    }
-
-    template <typename CALLBACK, typename EXTRACTOR>  bool Any (CALLBACK&& cbv, EXTRACTOR&& accessor) const {
-        if (theIndex) {
-            for (unsigned long i=0UL; i<(unsigned long)lDim; i++) {
-                if (theIndex[i] >= 0L) {
-                    if (cbv (accessor (i), theIndex[i])) {
-                        return true;
-                    }
-                }
-            }
-        } else {
-            for (unsigned long i=0UL; i<(unsigned long)lDim; i++) {
-                if (cbv (accessor (i), i)) {
-                    return true;
-                }
-            }
+      }
+    } else {
+      for (unsigned long i = 0UL, c = 0UL; i < (unsigned long)hDim; i++) {
+        for (unsigned long j = 0UL; j < (unsigned long)vDim; j++, c++) {
+          cbv(theData[c], c, i, j);
         }
-        return false;
+      }
     }
+  }
 
-    bool              CheckIfSparseEnough (bool = false, bool copy = true);       // check if matrix is sparse enough to justify
-    void              Convert2Formulas      (void);     // converts a numeric matrix to formula-based mx
-    // sparse storage
-
-    void              Resize                (long);     // resize a dense numeric matrix to have more rows
-  
-
-    inline            hyFloat    get_direct        (long const index) const {
-        return theData [index];
+  template <typename CALLBACK, typename EXTRACTOR>
+  bool Any(CALLBACK &&cbv, EXTRACTOR &&accessor) const {
+    if (theIndex) {
+      for (unsigned long i = 0UL; i < (unsigned long)lDim; i++) {
+        if (theIndex[i] >= 0L) {
+          if (cbv(accessor(i), theIndex[i])) {
+            return true;
+          }
+        }
+      }
+    } else {
+      for (unsigned long i = 0UL; i < (unsigned long)lDim; i++) {
+        if (cbv(accessor(i), i)) {
+          return true;
+        }
+      }
     }
+    return false;
+  }
 
-    inline            hyFloat    get        (long const row, long const column) const {
-      return theData [row * vDim + column];
-    }
-  
-    inline            hyFloat&    set        (long const row, long const column)  {
-      return theData [row * vDim + column];
-    }
+  bool CheckIfSparseEnough(
+      bool = false,
+      bool copy = true);       // check if matrix is sparse enough to justify
+  void Convert2Formulas(void); // converts a numeric matrix to formula-based mx
+  // sparse storage
 
-    _String*          BranchLengthExpression(_Matrix*, bool);
+  void Resize(long); // resize a dense numeric matrix to have more rows
 
-    void              CopyABlock                        (_Matrix*, long, long, long = 0, long = 0);
-    /* starting at element (row -- 2nd argument, column -- 3rd argument)
-       copy the source matrix (1st argument) row by row
+  inline hyFloat get_direct(long const index) const { return theData[index]; }
 
-       e.g. if this matrix is 3x4 and the source matrix is 2x2
-       then copying from element 2,2 (0 - based as always)
-       will result in
+  inline hyFloat get(long const row, long const column) const {
+    return theData[row * vDim + column];
+  }
 
-    [[ x x x x]
-       [ x x x x]
-     [ x x y y]]
+  inline hyFloat &set(long const row, long const column) {
+    return theData[row * vDim + column];
+  }
 
-       where y is used to denote an element copied from the source
-     4th and 5th arguments override source.hDim and source.vDim,
-       respectively, if they are positive
+  _String *BranchLengthExpression(_Matrix *, bool);
 
-     Note that both matrices are ASSUMED to be numeric and dense
+  void CopyABlock(_Matrix *, long, long, long = 0, long = 0);
+  /* starting at element (row -- 2nd argument, column -- 3rd argument)
+     copy the source matrix (1st argument) row by row
 
-       NO ERROR CHECKING IS DONE!
+     e.g. if this matrix is 3x4 and the source matrix is 2x2
+     then copying from element 2,2 (0 - based as always)
+     will result in
 
-     */
-    /*---------------------------------------------------*/
+  [[ x x x x]
+     [ x x x x]
+   [ x x y y]]
 
-    static void    CreateMatrix    (_Matrix* theMatrix, long theHDim, long theVDim,  bool sparse = false, bool allocateStorage = false, bool isFla = false);
+     where y is used to denote an element copied from the source
+   4th and 5th arguments override source.hDim and source.vDim,
+     respectively, if they are positive
 
-    void        RecursiveIndexSort      (long, long, _SimpleList*);
-    void        TransposeIntoStorage    (hyFloat* storage, bool check = true) const;
+   Note that both matrices are ASSUMED to be numeric and dense
 
+     NO ERROR CHECKING IS DONE!
+
+   */
+  /*---------------------------------------------------*/
+
+  static void CreateMatrix(_Matrix *theMatrix, long theHDim, long theVDim,
+                           bool sparse = false, bool allocateStorage = false,
+                           bool isFla = false);
+
+  void RecursiveIndexSort(long, long, _SimpleList *);
+  void TransposeIntoStorage(hyFloat *storage, bool check = true) const;
 
 private:
+  void SetupSparseMatrixAllocations(void);
+  bool is_square_numeric(bool dense = true) const;
 
-    void     internal_to_str (_StringBuffer*, hyFile*, unsigned long padding);
-    void     SetupSparseMatrixAllocations (void);
-    bool     is_square_numeric   (bool dense = true) const;
-    
-    hyFloat  computePFDR         (hyFloat, hyFloat);
-    void        InitMxVar           (_SimpleList&   , hyFloat);
-    bool        ProcessFormulas     (long&, _AVLList&, _SimpleList&, _SimpleList&, _AVLListX&, bool = false, _Matrix* = nil);
+  hyFloat computePFDR(hyFloat, hyFloat);
+  void InitMxVar(_SimpleList &, hyFloat);
+  bool ProcessFormulas(long &, _AVLList &, _SimpleList &, _SimpleList &,
+                       _AVLListX &, bool = false, _Matrix * = nil);
 
-    HBLObjectRef   PathLogLikelihood   (HBLObjectRef, HBLObjectRef cache);
-    /* SLKP: 20100812
+  HBLObjectRef PathLogLikelihood(HBLObjectRef, HBLObjectRef cache);
+  /* SLKP: 20100812
 
-     This function assumes that 'this' an 3xK matrix, where each column is of the form
-     A: integer in [0,N-1], B: integer in [0,N-1], T: real >= 0
+   This function assumes that 'this' an 3xK matrix, where each column is of the
+   form A: integer in [0,N-1], B: integer in [0,N-1], T: real >= 0
 
-     and the argument is an NxN RATE matrix for a Markov chain
+   and the argument is an NxN RATE matrix for a Markov chain
 
-     The return value is the \sum_ j = 0 ^ {K-1} Prob {A_j -> B_j | T_j}
-     */
+   The return value is the \sum_ j = 0 ^ {K-1} Prob {A_j -> B_j | T_j}
+   */
 
-    _Matrix*    BranchLengthStencil (void) const;
+  _Matrix *BranchLengthStencil(void) const;
 
-    //bool      IsAStringMatrix     (void);
-    void        AddMatrix           (_Matrix&, _Matrix&, bool sub = false);
-    // aux arithmetic rountines
-    bool        AddWithThreshold    (_Matrix&, hyFloat);
-    void        RowAndColumnMax     (hyFloat&, hyFloat&, hyFloat* = nil);
-    void        Subtract            (_Matrix&, _Matrix&);
-    void        Multiply            (_Matrix&, hyFloat);
-    void        Multiply            (_Matrix&, _Matrix const &) const;
-    bool        IsNonEmpty          (long) const;
-    // checks to see if the i-th position in the storage is non-empty
-    bool        CheckDimensions     (_Matrix&) const;
-    // compare dims of 2 matrices to see if they can be multiplied
-    long        HashBack            (long) const;
-    // hashing function, which finds matrix
-    // physical element given local storage
-    void        MultbyS             (_Matrix&,bool,_Matrix* = nil, hyFloat* = nil);
-    // internal function used in exponentiating sparse matrices
+  // bool      IsAStringMatrix     (void);
+  void AddMatrix(_Matrix &, _Matrix &, bool sub = false);
+  // aux arithmetic rountines
+  bool AddWithThreshold(_Matrix &, hyFloat);
+  void RowAndColumnMax(hyFloat &, hyFloat &, hyFloat * = nil);
+  void Subtract(_Matrix &, _Matrix &);
+  void Multiply(_Matrix &, hyFloat);
+  void Multiply(_Matrix &, _Matrix const &) const;
+  bool IsNonEmpty(long) const;
+  // checks to see if the i-th position in the storage is non-empty
+  bool CheckDimensions(_Matrix &) const;
+  // compare dims of 2 matrices to see if they can be multiplied
+  long HashBack(long) const;
+  // hashing function, which finds matrix
+  // physical element given local storage
+  void MultbyS(_Matrix &, bool, _Matrix * = nil, hyFloat * = nil);
+  // internal function used in exponentiating sparse matrices
 
-    void        Balance             (void);  // perform matrix balancing; i.e. a norm reduction which preserves the eigenvalues
-    // lifted from balanc function in NR
+  void Balance(void); // perform matrix balancing; i.e. a norm reduction which
+                      // preserves the eigenvalues
+  // lifted from balanc function in NR
 
-    void        Schur               (void);  // reduce the matrix to Hessenberg form preserving eigenvalues
-    // lifted from elmhes function in NR
+  void
+  Schur(void); // reduce the matrix to Hessenberg form preserving eigenvalues
+  // lifted from elmhes function in NR
 
-    void        EigenDecomp         (_Matrix&,_Matrix&) const;  // find the eigenvalues of a real matrix
-    // return real and imaginary parts
-    // lifted from hqr in NR
+  void EigenDecomp(_Matrix &,
+                   _Matrix &) const; // find the eigenvalues of a real matrix
+  // return real and imaginary parts
+  // lifted from hqr in NR
 
+  bool AmISparseFast(_Matrix &);
 
-    bool        AmISparseFast       (_Matrix&);
+  bool IncreaseStorage(void);
+  // expand the buffer, where elements are held
+  // returns TRUE/FALSE for success/failure
 
-    bool        IncreaseStorage     (void);
-    // expand the buffer, where elements are held
-    // returns TRUE/FALSE for success/failure
+  void BreakPoints(long, long, _SimpleList *);
+  void ConvertFormulas2Poly(bool force2numbers = true);
+  void ConvertNumbers2Poly(void);
+  void AgreeObjects(_Matrix &);
 
+  void ClearFormulae(void); // internal reuseable purger
+  void ClearObjects(void);  // internal reuseable purger
+  inline _MathObject *&GetMatrixObject(long ind) const {
+    return ((_MathObject **)theData)[ind];
+  }
+  inline bool CheckObject(long ind) const {
+    return ((_MathObject **)theData)[ind] != nil;
+  }
 
-    void        BreakPoints             (long, long, _SimpleList*);
-    void        ConvertFormulas2Poly    (bool force2numbers=true);
-    void        ConvertNumbers2Poly     (void);
-    void        AgreeObjects            (_Matrix&);
+  void SimplexHelper1(long, _SimpleList &, long, bool, long &, hyFloat &);
+  void SimplexHelper2(long &, long, hyFloat);
+  void SimplexHelper3(long, long, long, long);
+  //  helper functions for SimplexSolver
 
-    void        ClearFormulae           (void);             // internal reuseable purger
-    void        ClearObjects            (void);             // internal reuseable purger
-    inline
-    _MathObject*&
-    GetMatrixObject         (long ind) const {
-        return ((_MathObject**)theData)[ind];
-    }
-    inline
-    bool        CheckObject             (long ind) const{
-        return ((_MathObject**)theData)[ind]!=nil;
-    }
-
-    void        SimplexHelper1          (long, _SimpleList&, long, bool, long&, hyFloat&);
-    void        SimplexHelper2          (long&, long, hyFloat);
-    void        SimplexHelper3          (long,long,long,long);
-    //  helper functions for SimplexSolver
-
-    // if nil - matrix stored conventionally
-
+  // if nil - matrix stored conventionally
 };
 
-/*__________________________________________________________________________________________________________________________________________ */
+/*__________________________________________________________________________________________________________________________________________
+ */
 
-void _hy_matrix_multiply_4x4 (double * C, double *A, double *B, int stride, bool add);
-void _hy_matrix_multiply_NxN_blocked4 (double * C, double *A, double *B, int D);
-void _hy_matrix_transpose_blocked (double * __restrict C, double * __restrict A, int nrow, int ncol);
+void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
+                             bool add);
+void _hy_matrix_multiply_NxN_blocked4(double *C, double *A, double *B, int D);
+void _hy_matrix_transpose_blocked(double *__restrict C, double *__restrict A,
+                                  int nrow, int ncol);
 
-/*__________________________________________________________________________________________________________________________________________ */
+/*__________________________________________________________________________________________________________________________________________
+ */
 
-extern  _Matrix *GlobalFrequenciesMatrix;
-// the matrix of frequencies for the trees to be set by block likelihood evaluator
-extern  long  ANALYTIC_COMPUTATION_FLAG;
+extern _Matrix *GlobalFrequenciesMatrix;
+// the matrix of frequencies for the trees to be set by block likelihood
+// evaluator
+extern long ANALYTIC_COMPUTATION_FLAG;
 
-HBLObjectRef _returnMatrixOrUseCache (long nrow, long ncol, long type, bool is_sparse, HBLObjectRef cache);
+HBLObjectRef _returnMatrixOrUseCache(long nrow, long ncol, long type,
+                                     bool is_sparse, HBLObjectRef cache);
 
-#ifdef  _SLKP_USE_AVX_INTRINSICS
-    inline double _avx_sum_4 (__m256d const & x) {
-      /*__m256d t = _mm256_add_pd (_mm256_shuffle_pd (x, x, 0x0),
-                                 // (x3,x3,x1,x1)
-                                 _mm256_shuffle_pd (x, x, 0xf)
-                                 // (x2,x2,x0,x0);
-                                 );
-      return _mm_cvtsd_f64 (_mm_add_pd(
-                                       _mm256_castpd256_pd128 (t), // (x3+x2,x3+x2)
-                                       _mm256_extractf128_pd(t,1)  // (x1+x0,x0+x1);
-                                       ));
-       */
-        __m256d sum      = _mm256_hadd_pd(x, x);
-        // sum now has (x[0]+x[1],x[0]+x[1],x[2]+x[3],x[2]+x[3])
-        return _mm_cvtsd_f64(_mm_add_pd(_mm256_extractf128_pd(sum, 1), _mm256_castpd256_pd128(sum)));
-        /*double  __attribute__ ((aligned (32))) array[4];
-        _mm256_store_pd (array, x);
-        return (array[0]+array[1])+(array[2]+array[3])  ;*/
-      
-    }
+#ifdef _SLKP_USE_AVX_INTRINSICS
+inline double _avx_sum_4(__m256d const &x) {
+  /*__m256d t = _mm256_add_pd (_mm256_shuffle_pd (x, x, 0x0),
+                             // (x3,x3,x1,x1)
+                             _mm256_shuffle_pd (x, x, 0xf)
+                             // (x2,x2,x0,x0);
+                             );
+  return _mm_cvtsd_f64 (_mm_add_pd(
+                                   _mm256_castpd256_pd128 (t), // (x3+x2,x3+x2)
+                                   _mm256_extractf128_pd(t,1)  // (x1+x0,x0+x1);
+                                   ));
+   */
+  __m256d sum = _mm256_hadd_pd(x, x);
+  // sum now has (x[0]+x[1],x[0]+x[1],x[2]+x[3],x[2]+x[3])
+  return _mm_cvtsd_f64(
+      _mm_add_pd(_mm256_extractf128_pd(sum, 1), _mm256_castpd256_pd128(sum)));
+  /*double  __attribute__ ((aligned (32))) array[4];
+  _mm256_store_pd (array, x);
+  return (array[0]+array[1])+(array[2]+array[3])  ;*/
+}
 #endif
 
 #ifdef _SLKP_USE_ARM_NEON
-    inline double _neon_sum_2 (float64x2_t const & x) {
-        return vgetq_lane_f64 (x,0) + vgetq_lane_f64 (x,1);
-    }
+inline double _neon_sum_2(float64x2_t const &x) {
+  return vgetq_lane_f64(x, 0) + vgetq_lane_f64(x, 1);
+}
 #endif
 
 #endif

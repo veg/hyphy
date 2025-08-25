@@ -620,8 +620,8 @@ void _mx_vect_4x4(double *cv, double const *M, double const *V, int stride) {
   cv[3] = M[O3] * V[0] + M[O3 + 1] * V[1] + M[O3 + 2] * V[2] + M[O3 + 3] * V[3];
 }
 
-void _mx_vect_4x4_add(double *cv, double const *M, double const *V,
-                      int stride) {
+void _mx_vect_4x4_add(double *_hprestrict_ cv, double const *_hprestrict_ M,
+                      double const *_hprestrict_ V, int stride) {
   int O2 = stride << 1, O3 = O2 + stride;
 
   cv[0] += M[0] * V[0] + M[1] * V[1] + M[2] * V[2] + M[3] * V[3];
@@ -650,6 +650,7 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
       double accumulator[4];
       int off = offset(0, i);
       _mx_vect_4x4(accumulator, M + offset(i, 0), V, D);
+#pragma unroll
       for (int j = 1; j < blocks; j++) {
         _mx_vect_4x4_add(accumulator, M + offset(i, j), V + offset(0, j), D);
       }
@@ -667,6 +668,7 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
       double accumulator[4];
       int off = offset(0, i);
       _mx_vect_4x4(accumulator, M + offset(i, 0), V, D);
+#pragma unroll
       for (int j = 1; j < blocks; j++) {
         _mx_vect_4x4_add(accumulator, M + offset(i, j), V + offset(0, j), D);
       }
@@ -710,6 +712,7 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
       double accumulator[4];
       int off = offset(0, i);
       _mx_vect_4x4(accumulator, M + offset(i, 0), V, D);
+#pragma unroll
       for (int j = 1; j < blocks; j++) {
         _mx_vect_4x4_add(accumulator, M + offset(i, j), V + offset(0, j), D);
       }
@@ -771,6 +774,7 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
       double accumulator[4];
       int off = offset(0, i);
       _mx_vect_4x4(accumulator, M + offset(i, 0), V, D);
+#pragma unroll
       for (int j = 1; j < blocks; j++) {
         _mx_vect_4x4_add(accumulator, M + offset(i, j), V + offset(0, j), D);
       }
@@ -847,6 +851,181 @@ template <int D>
 void _hy_mvp_blocked_4x4(double *C, double const *M, double const *V) {
   _hy_matrix_vector_product_blocked_4x4(C, M, V, D);
 }
+/*
+void _mx_vect_8x8(float64x2x4_t &cv, double const *M, double const *V,
+                  int stride) {
+
+  // Load the 8-element vector V into four 128-bit registers.
+  // col.val[0] contains {V[0], V[1]}
+  // col.val[1] contains {V[2], V[3]}
+  // col.val[2] contains {V[4], V[5]}
+  // col.val[3] contains {V[6], V[7]}
+  float64x2x4_t col = vld1q_f64_x4(V);
+
+  // Load all eight rows of the 8x8 matrix M.
+  float64x2x4_t row1 = vld1q_f64_x4(M);
+  float64x2x4_t row2 = vld1q_f64_x4(M + stride);
+  float64x2x4_t row3 = vld1q_f64_x4(M + 2 * stride);
+  float64x2x4_t row4 = vld1q_f64_x4(M + 3 * stride);
+  float64x2x4_t row5 = vld1q_f64_x4(M + 4 * stride);
+  float64x2x4_t row6 = vld1q_f64_x4(M + 5 * stride);
+  float64x2x4_t row7 = vld1q_f64_x4(M + 6 * stride);
+  float64x2x4_t row8 = vld1q_f64_x4(M + 7 * stride);
+
+  // Calculate the first partial dot product for each of the 8 rows.
+  float64x2_t res1 = vmulq_f64(row1.val[0], col.val[0]);
+  float64x2_t res2 = vmulq_f64(row2.val[0], col.val[0]);
+  float64x2_t res3 = vmulq_f64(row3.val[0], col.val[0]);
+  float64x2_t res4 = vmulq_f64(row4.val[0], col.val[0]);
+  float64x2_t res5 = vmulq_f64(row5.val[0], col.val[0]);
+  float64x2_t res6 = vmulq_f64(row6.val[0], col.val[0]);
+  float64x2_t res7 = vmulq_f64(row7.val[0], col.val[0]);
+  float64x2_t res8 = vmulq_f64(row8.val[0], col.val[0]);
+
+  // Use fused multiply-add (FMA) for the remaining vector elements.
+  res1 = vfmaq_f64(res1, row1.val[1], col.val[1]);
+  res2 = vfmaq_f64(res2, row2.val[1], col.val[1]);
+  res3 = vfmaq_f64(res3, row3.val[1], col.val[1]);
+  res4 = vfmaq_f64(res4, row4.val[1], col.val[1]);
+  res5 = vfmaq_f64(res5, row5.val[1], col.val[1]);
+  res6 = vfmaq_f64(res6, row6.val[1], col.val[1]);
+  res7 = vfmaq_f64(res7, row7.val[1], col.val[1]);
+  res8 = vfmaq_f64(res8, row8.val[1], col.val[1]);
+
+  res1 = vfmaq_f64(res1, row1.val[2], col.val[2]);
+  res2 = vfmaq_f64(res2, row2.val[2], col.val[2]);
+  res3 = vfmaq_f64(res3, row3.val[2], col.val[2]);
+  res4 = vfmaq_f64(res4, row4.val[2], col.val[2]);
+  res5 = vfmaq_f64(res5, row5.val[2], col.val[2]);
+  res6 = vfmaq_f64(res6, row6.val[2], col.val[2]);
+  res7 = vfmaq_f64(res7, row7.val[2], col.val[2]);
+  res8 = vfmaq_f64(res8, row8.val[2], col.val[2]);
+
+  res1 = vfmaq_f64(res1, row1.val[3], col.val[3]);
+  res2 = vfmaq_f64(res2, row2.val[3], col.val[3]);
+  res3 = vfmaq_f64(res3, row3.val[3], col.val[3]);
+  res4 = vfmaq_f64(res4, row4.val[3], col.val[3]);
+  res5 = vfmaq_f64(res5, row5.val[3], col.val[3]);
+  res6 = vfmaq_f64(res6, row6.val[3], col.val[3]);
+  res7 = vfmaq_f64(res7, row7.val[3], col.val[3]);
+  res8 = vfmaq_f64(res8, row8.val[3], col.val[3]);
+
+  // Horizontally add the partial results to get the final dot products.
+  float64x2_t sum12 = vaddq_f64(vzip1q_f64(res1, res2), vzip2q_f64(res1, res2));
+  float64x2_t sum34 = vaddq_f64(vzip1q_f64(res3, res4), vzip2q_f64(res3, res4));
+  float64x2_t sum56 = vaddq_f64(vzip1q_f64(res5, res6), vzip2q_f64(res5, res6));
+  float64x2_t sum78 = vaddq_f64(vzip1q_f64(res7, res8), vzip2q_f64(res7, res8));
+
+  // Store the final results into the output vector.
+  cv.val[0] = sum12;
+  cv.val[1] = sum34;
+  cv.val[2] = sum56;
+  cv.val[3] = sum78;
+}
+
+void _mx_vect_8x8_add(float64x2x4_t &cv, double const *__restrict M,
+                      double const *__restrict V, int stride) {
+
+  // Load the entire 8-element vector V into four 2-element registers
+  const float64x2x4_t v = vld1q_f64_x4(V);
+
+  // Load the 8x8 matrix M, 8 rows at a time
+  const float64x2x4_t m_row1 = vld1q_f64_x4(M);
+  const float64x2x4_t m_row2 = vld1q_f64_x4(M + stride);
+  const float64x2x4_t m_row3 = vld1q_f64_x4(M + (stride << 1));
+  const float64x2x4_t m_row4 =
+      vld1q_f64_x4(M + (stride << 2) - stride);                 // (stride*3)
+  const float64x2x4_t m_row5 = vld1q_f64_x4(M + (stride << 2)); // (stride*4)
+  const float64x2x4_t m_row6 =
+      vld1q_f64_x4(M + (stride << 2) + stride); // (stride*5)
+  const float64x2x4_t m_row7 =
+      vld1q_f64_x4(M + (stride << 3) - stride);                 // (stride*6)
+  const float64x2x4_t m_row8 = vld1q_f64_x4(M + (stride << 3)); // (stride*7)
+
+  // Calculate dot product parts for each of the 8 rows
+  float64x2_t dp1 = vmulq_f64(m_row1.val[0], v.val[0]);
+  float64x2_t dp2 = vmulq_f64(m_row2.val[0], v.val[0]);
+  float64x2_t dp3 = vmulq_f64(m_row3.val[0], v.val[0]);
+  float64x2_t dp4 = vmulq_f64(m_row4.val[0], v.val[0]);
+  float64x2_t dp5 = vmulq_f64(m_row5.val[0], v.val[0]);
+  float64x2_t dp6 = vmulq_f64(m_row6.val[0], v.val[0]);
+  float64x2_t dp7 = vmulq_f64(m_row7.val[0], v.val[0]);
+  float64x2_t dp8 = vmulq_f64(m_row8.val[0], v.val[0]);
+
+  // Use Fused Multiply-Add (FMA) for the remaining vector elements
+  dp1 = vfmaq_f64(dp1, m_row1.val[1], v.val[1]);
+  dp2 = vfmaq_f64(dp2, m_row2.val[1], v.val[1]);
+  dp3 = vfmaq_f64(dp3, m_row3.val[1], v.val[1]);
+  dp4 = vfmaq_f64(dp4, m_row4.val[1], v.val[1]);
+  dp5 = vfmaq_f64(dp5, m_row5.val[1], v.val[1]);
+  dp6 = vfmaq_f64(dp6, m_row6.val[1], v.val[1]);
+  dp7 = vfmaq_f64(dp7, m_row7.val[1], v.val[1]);
+  dp8 = vfmaq_f64(dp8, m_row8.val[1], v.val[1]);
+
+  dp1 = vfmaq_f64(dp1, m_row1.val[2], v.val[2]);
+  dp2 = vfmaq_f64(dp2, m_row2.val[2], v.val[2]);
+  dp3 = vfmaq_f64(dp3, m_row3.val[2], v.val[2]);
+  dp4 = vfmaq_f64(dp4, m_row4.val[2], v.val[2]);
+  dp5 = vfmaq_f64(dp5, m_row5.val[2], v.val[2]);
+  dp6 = vfmaq_f64(dp6, m_row6.val[2], v.val[2]);
+  dp7 = vfmaq_f64(dp7, m_row7.val[2], v.val[2]);
+  dp8 = vfmaq_f64(dp8, m_row8.val[2], v.val[2]);
+
+  dp1 = vfmaq_f64(dp1, m_row1.val[3], v.val[3]);
+  dp2 = vfmaq_f64(dp2, m_row2.val[3], v.val[3]);
+  dp3 = vfmaq_f64(dp3, m_row3.val[3], v.val[3]);
+  dp4 = vfmaq_f64(dp4, m_row4.val[3], v.val[3]);
+  dp5 = vfmaq_f64(dp5, m_row5.val[3], v.val[3]);
+  dp6 = vfmaq_f64(dp6, m_row6.val[3], v.val[3]);
+  dp7 = vfmaq_f64(dp7, m_row7.val[3], v.val[3]);
+  dp8 = vfmaq_f64(dp8, m_row8.val[3], v.val[3]);
+
+  // Horizontally sum parts and accumulate into the result vector cv
+  const float64x2_t sum12 =
+      vaddq_f64(vzip1q_f64(dp1, dp2), vzip2q_f64(dp1, dp2));
+  const float64x2_t sum34 =
+      vaddq_f64(vzip1q_f64(dp3, dp4), vzip2q_f64(dp3, dp4));
+  const float64x2_t sum56 =
+      vaddq_f64(vzip1q_f64(dp5, dp6), vzip2q_f64(dp5, dp6));
+  const float64x2_t sum78 =
+      vaddq_f64(vzip1q_f64(dp7, dp8), vzip2q_f64(dp7, dp8));
+
+  // The result vector cv is a `float64x2x4_t` type, which is an array of 4
+  // `float64x2_t` so we need to add to each of the four components
+  cv.val[0] = vaddq_f64(cv.val[0], sum12);
+  cv.val[1] = vaddq_f64(cv.val[1], sum34);
+  cv.val[2] = vaddq_f64(cv.val[2], sum56);
+  cv.val[3] = vaddq_f64(cv.val[3], sum78);
+}
+
+void _hy_matrix_vector_product_blocked_8x8(double *C, double const *M,
+                                           double const *V, int D) {
+  auto offset = [D](int i, int j) -> int { return (i << 3) * D + (j << 3); };
+
+  int blocks = D >> 3;
+  int remainder = D - (blocks << 3);
+
+  if (remainder == 0) {
+    for (int i = 0; i < blocks; i++) {
+      float64x2x4_t accumulator;
+      _mx_vect_8x8(accumulator, M + offset(i, 0), V, D);
+#pragma unroll
+      for (int j = 1; j < blocks; j++) {
+        _mx_vect_8x8_add(accumulator, M + offset(i, j), V + offset(0, j), D);
+      }
+      vst1q_f64_x4(C + offset(0, i), accumulator);
+    }
+  } else {
+    _hy_matrix_vector_product_generic(C, M, V, D);
+  }
+}
+
+template <int D>
+void _hy_mvp_blocked_8x8(double *C, double const *M, double const *V) {
+  _hy_matrix_vector_product_blocked_8x8(C, M, V, D);
+}
+
+ */
 
 inline double _handle4x4_pruning_case_direct(double const *childVector, void *T,
                                              double *parentConditionals) {
@@ -986,8 +1165,8 @@ void _mx_vect_4x4(__m128d *cv, double const *M, double const *V, int stride) {
                      _mm_shuffle_pd(accumulator3[0], accumulator4[0], 3));
 }
 
-void _mx_vect_4x4_add(__m128d *cv, double const *M, double const *V,
-                      int stride) {
+void _mx_vect_4x4_add(__m128d *cv, double const *_hprestrict_ M,
+                      double const *_hprestrict_ V, int stride) {
   __m128d col[2], accumulator[2], accumulator2[2], accumulator3[2],
       accumulator4[2];
 
@@ -1033,6 +1212,7 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
       __m128d accumulator[2];
       int off = offset(0, i);
       _mx_vect_4x4(accumulator, M + offset(i, 0), V, D);
+#pragma unroll
       for (int j = 1; j < blocks; j++) {
         _mx_vect_4x4_add(accumulator, M + offset(i, j), V + offset(0, j), D);
       }
@@ -1048,6 +1228,7 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
       __m128d accumulator[2];
       int off = offset(0, i);
       _mx_vect_4x4(accumulator, M + offset(i, 0), V, D);
+#pragma unroll
       for (int j = 1; j < blocks; j++) {
         _mx_vect_4x4_add(accumulator, M + offset(i, j), V + offset(0, j), D);
       }
@@ -1096,6 +1277,7 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
       __m128d accumulator[2];
       int off = offset(0, i);
       _mx_vect_4x4(accumulator, M + offset(i, 0), V, D);
+#pragma unroll
       for (int j = 1; j < blocks; j++) {
         _mx_vect_4x4_add(accumulator, M + offset(i, j), V + offset(0, j), D);
       }
@@ -1162,6 +1344,7 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
       __m128d accumulator[2];
       int off = offset(0, i);
       _mx_vect_4x4(accumulator, M + offset(i, 0), V, D);
+#pragma unroll
       for (int j = 1; j < blocks; j++) {
         _mx_vect_4x4_add(accumulator, M + offset(i, j), V + offset(0, j), D);
       }
@@ -1704,8 +1887,8 @@ void _mx_vect_4x4(__m256d &cv, double const *M, double const *V, int stride) {
                      _mm256_add_pd(accumulator3, accumulator4));
 }
 
-void _mx_vect_4x4_add(__m256d &cv, double const *M, double const *V,
-                      int stride) {
+void _mx_vect_4x4_add(__m256d &cv, double const *_hprestrict_ M,
+                      double const *_hprestrict_ V, int stride) {
   __m256d col, accumulator, accumulator2, accumulator3, accumulator4;
 
   col = _mm256_loadu_pd(V);
@@ -2293,57 +2476,8 @@ void _mx_vect_4x4(float64x2x2_t &cv, double const *M, double const *V,
   cv.val[1] = vaddq_f64(r34_z1, r34_z2);
 }
 
-void _mx_vect_4x4_add(float64x2x2_t &cv, double const *M, double const *V,
-                      int stride) {
-  /*
-          Compute M = M + M*V, where M is a 4x4 matrix (in a larger matrix if
-     stride > 4) and V is a 1x4 vector (but stored as 4x1)
-
-   */
-
-  /*float64x2x2_t col,
-                accumulator,
-                accumulator2,
-                accumulator3,
-                accumulator4,
-                row,
-                row2,
-                row3,
-                row4;
-
-  col  = vld1q_f64_x2 (V);
-
-  row  = vld1q_f64_x2 (M);
-  accumulator.val[0] = vmulq_f64 (col.val[0], row.val[0]);
-  accumulator.val[1] = vmulq_f64 (col.val[1], row.val[1]);
-
-  row2 = vld1q_f64_x2 (M+stride);
-  accumulator2.val[0] = vmulq_f64 (col.val[0], row2.val[0]);
-  accumulator2.val[1] = vmulq_f64 (col.val[1], row2.val[1]);
-
-  row3 = vld1q_f64_x2 (M+2*stride);
-  accumulator3.val[0] = vmulq_f64 (col.val[0], row3.val[0]);
-  accumulator3.val[1] = vmulq_f64 (col.val[1], row3.val[1]);
-
-  row4 = vld1q_f64_x2 (M+3*stride);
-  accumulator4.val[0] = vmulq_f64 (col.val[0], row4.val[0]);
-  accumulator4.val[1] = vmulq_f64 (col.val[1], row4.val[1]);
-
-  accumulator.val[0]  = vaddq_f64 (accumulator.val[0],accumulator.val[1]);
-  accumulator2.val[0] = vaddq_f64 (accumulator2.val[0],accumulator2.val[1]);
-  accumulator3.val[0] = vaddq_f64 (accumulator3.val[0],accumulator3.val[1]);
-  accumulator4.val[0] = vaddq_f64 (accumulator4.val[0],accumulator4.val[1]);
-
-
-  cv.val[0] = vaddq_f64(cv.val[0], vaddq_f64(vzip1q_f64
-  (accumulator.val[0],accumulator2.val[0]),vzip2q_f64
-  (accumulator.val[0],accumulator2.val[0]))); cv.val[1] = vaddq_f64(cv.val[1],
-  vaddq_f64(vzip1q_f64 (accumulator3.val[0],accumulator4.val[0]),vzip2q_f64
-  (accumulator3.val[0],accumulator4.val[0])));*/
-
-  /*
-          Compute cv = cv + M*V, where M is a 4x4 matrix and V is a 4x1 vector.
-      */
+void _mx_vect_4x4_add(float64x2x2_t &cv, double const *__restrict M,
+                      double const *__restrict V, int stride) {
 
   // Load the entire vector V into two registers {V0,V1} and {V2,V3}
   const float64x2x2_t v = vld1q_f64_x2(V);
@@ -2351,23 +2485,25 @@ void _mx_vect_4x4_add(float64x2x2_t &cv, double const *M, double const *V,
   // Group loads to allow the CPU to hide memory latency
   const float64x2x2_t m_row1 = vld1q_f64_x2(M);
   const float64x2x2_t m_row2 = vld1q_f64_x2(M + stride);
-  const float64x2x2_t m_row3 = vld1q_f64_x2(M + 2 * stride);
-  const float64x2x2_t m_row4 = vld1q_f64_x2(M + 3 * stride);
+  const float64x2x2_t m_row3 = vld1q_f64_x2(M + (stride << 1));
+  const float64x2x2_t m_row4 = vld1q_f64_x2(M + (stride << 1) + stride);
+
+  float64x2_t dp1 = vmulq_f64(m_row1.val[0], v.val[0]);
+  float64x2_t dp2 = vmulq_f64(m_row2.val[0], v.val[0]);
+
+  dp1 = vfmaq_f64(dp1, m_row1.val[1],
+                  v.val[1]); // FMA: dp1 += m_row1.val[1] * v.val[1]
+
+  dp2 = vfmaq_f64(dp2, m_row2.val[1],
+                  v.val[1]); // FMA: dp2 += m_row2.val[1] * v.val[1]
 
   // --- Calculate dot product parts for each row using FMA ---
   // The pattern is: dp = (m_row.part1 * v.part1) + (m_row.part2 * v.part2)
   // We compute the first product, then use FMA for the second.
 
   // Process rows 1 & 2
-  float64x2_t dp1 = vmulq_f64(m_row1.val[0], v.val[0]);
-  float64x2_t dp2 = vmulq_f64(m_row2.val[0], v.val[0]);
   float64x2_t dp3 = vmulq_f64(m_row3.val[0], v.val[0]);
   float64x2_t dp4 = vmulq_f64(m_row4.val[0], v.val[0]);
-
-  dp1 = vfmaq_f64(dp1, m_row1.val[1],
-                  v.val[1]); // FMA: dp1 += m_row1.val[1] * v.val[1]
-  dp2 = vfmaq_f64(dp2, m_row2.val[1],
-                  v.val[1]); // FMA: dp2 += m_row2.val[1] * v.val[1]
 
   // Process rows 3 & 4
   dp3 = vfmaq_f64(dp3, m_row3.val[1],
@@ -2377,14 +2513,160 @@ void _mx_vect_4x4_add(float64x2x2_t &cv, double const *M, double const *V,
 
   // --- Horizontally sum parts and accumulate into the result vector cv ---
   // The `vadd(vzip1, vzip2)` pattern efficiently performs the horizontal sum.
-
   const float64x2_t sum12 =
       vaddq_f64(vzip1q_f64(dp1, dp2), vzip2q_f64(dp1, dp2));
+
   const float64x2_t sum34 =
       vaddq_f64(vzip1q_f64(dp3, dp4), vzip2q_f64(dp3, dp4));
 
   cv.val[0] = vaddq_f64(cv.val[0], sum12);
   cv.val[1] = vaddq_f64(cv.val[1], sum34);
+}
+
+void _mx_vect_8x8(float64x2x4_t &cv, double const *M, double const *V,
+                  int stride) {
+
+  // Load the 8-element vector V into four 128-bit registers.
+  // col.val[0] contains {V[0], V[1]}
+  // col.val[1] contains {V[2], V[3]}
+  // col.val[2] contains {V[4], V[5]}
+  // col.val[3] contains {V[6], V[7]}
+  float64x2x4_t col = vld1q_f64_x4(V);
+
+  // Load all eight rows of the 8x8 matrix M.
+  float64x2x4_t row1 = vld1q_f64_x4(M);
+  float64x2x4_t row2 = vld1q_f64_x4(M + stride);
+  float64x2x4_t row3 = vld1q_f64_x4(M + 2 * stride);
+  float64x2x4_t row4 = vld1q_f64_x4(M + 3 * stride);
+  float64x2x4_t row5 = vld1q_f64_x4(M + 4 * stride);
+  float64x2x4_t row6 = vld1q_f64_x4(M + 5 * stride);
+  float64x2x4_t row7 = vld1q_f64_x4(M + 6 * stride);
+  float64x2x4_t row8 = vld1q_f64_x4(M + 7 * stride);
+
+  // Calculate the first partial dot product for each of the 8 rows.
+  float64x2_t res1 = vmulq_f64(row1.val[0], col.val[0]);
+  float64x2_t res2 = vmulq_f64(row2.val[0], col.val[0]);
+  float64x2_t res3 = vmulq_f64(row3.val[0], col.val[0]);
+  float64x2_t res4 = vmulq_f64(row4.val[0], col.val[0]);
+  float64x2_t res5 = vmulq_f64(row5.val[0], col.val[0]);
+  float64x2_t res6 = vmulq_f64(row6.val[0], col.val[0]);
+  float64x2_t res7 = vmulq_f64(row7.val[0], col.val[0]);
+  float64x2_t res8 = vmulq_f64(row8.val[0], col.val[0]);
+
+  // Use fused multiply-add (FMA) for the remaining vector elements.
+  res1 = vfmaq_f64(res1, row1.val[1], col.val[1]);
+  res2 = vfmaq_f64(res2, row2.val[1], col.val[1]);
+  res3 = vfmaq_f64(res3, row3.val[1], col.val[1]);
+  res4 = vfmaq_f64(res4, row4.val[1], col.val[1]);
+  res5 = vfmaq_f64(res5, row5.val[1], col.val[1]);
+  res6 = vfmaq_f64(res6, row6.val[1], col.val[1]);
+  res7 = vfmaq_f64(res7, row7.val[1], col.val[1]);
+  res8 = vfmaq_f64(res8, row8.val[1], col.val[1]);
+
+  res1 = vfmaq_f64(res1, row1.val[2], col.val[2]);
+  res2 = vfmaq_f64(res2, row2.val[2], col.val[2]);
+  res3 = vfmaq_f64(res3, row3.val[2], col.val[2]);
+  res4 = vfmaq_f64(res4, row4.val[2], col.val[2]);
+  res5 = vfmaq_f64(res5, row5.val[2], col.val[2]);
+  res6 = vfmaq_f64(res6, row6.val[2], col.val[2]);
+  res7 = vfmaq_f64(res7, row7.val[2], col.val[2]);
+  res8 = vfmaq_f64(res8, row8.val[2], col.val[2]);
+
+  res1 = vfmaq_f64(res1, row1.val[3], col.val[3]);
+  res2 = vfmaq_f64(res2, row2.val[3], col.val[3]);
+  res3 = vfmaq_f64(res3, row3.val[3], col.val[3]);
+  res4 = vfmaq_f64(res4, row4.val[3], col.val[3]);
+  res5 = vfmaq_f64(res5, row5.val[3], col.val[3]);
+  res6 = vfmaq_f64(res6, row6.val[3], col.val[3]);
+  res7 = vfmaq_f64(res7, row7.val[3], col.val[3]);
+  res8 = vfmaq_f64(res8, row8.val[3], col.val[3]);
+
+  // Horizontally add the partial results to get the final dot products.
+  float64x2_t sum12 = vaddq_f64(vzip1q_f64(res1, res2), vzip2q_f64(res1, res2));
+  float64x2_t sum34 = vaddq_f64(vzip1q_f64(res3, res4), vzip2q_f64(res3, res4));
+  float64x2_t sum56 = vaddq_f64(vzip1q_f64(res5, res6), vzip2q_f64(res5, res6));
+  float64x2_t sum78 = vaddq_f64(vzip1q_f64(res7, res8), vzip2q_f64(res7, res8));
+
+  // Store the final results into the output vector.
+  cv.val[0] = sum12;
+  cv.val[1] = sum34;
+  cv.val[2] = sum56;
+  cv.val[3] = sum78;
+}
+
+void _mx_vect_8x8_add(float64x2x4_t &cv, double const *__restrict M,
+                      double const *__restrict V, int stride) {
+
+  // Load the entire 8-element vector V into four 2-element registers
+  const float64x2x4_t v = vld1q_f64_x4(V);
+
+  // Load the 8x8 matrix M, 8 rows at a time
+  const float64x2x4_t m_row1 = vld1q_f64_x4(M);
+  const float64x2x4_t m_row2 = vld1q_f64_x4(M + stride);
+  const float64x2x4_t m_row3 = vld1q_f64_x4(M + (stride << 1));
+  const float64x2x4_t m_row4 =
+      vld1q_f64_x4(M + (stride << 2) - stride);                 // (stride*3)
+  const float64x2x4_t m_row5 = vld1q_f64_x4(M + (stride << 2)); // (stride*4)
+  const float64x2x4_t m_row6 =
+      vld1q_f64_x4(M + (stride << 2) + stride); // (stride*5)
+  const float64x2x4_t m_row7 =
+      vld1q_f64_x4(M + (stride << 3) - stride);                 // (stride*6)
+  const float64x2x4_t m_row8 = vld1q_f64_x4(M + (stride << 3)); // (stride*7)
+
+  // Calculate dot product parts for each of the 8 rows
+  float64x2_t dp1 = vmulq_f64(m_row1.val[0], v.val[0]);
+  float64x2_t dp2 = vmulq_f64(m_row2.val[0], v.val[0]);
+  float64x2_t dp3 = vmulq_f64(m_row3.val[0], v.val[0]);
+  float64x2_t dp4 = vmulq_f64(m_row4.val[0], v.val[0]);
+  float64x2_t dp5 = vmulq_f64(m_row5.val[0], v.val[0]);
+  float64x2_t dp6 = vmulq_f64(m_row6.val[0], v.val[0]);
+  float64x2_t dp7 = vmulq_f64(m_row7.val[0], v.val[0]);
+  float64x2_t dp8 = vmulq_f64(m_row8.val[0], v.val[0]);
+
+  // Use Fused Multiply-Add (FMA) for the remaining vector elements
+  dp1 = vfmaq_f64(dp1, m_row1.val[1], v.val[1]);
+  dp2 = vfmaq_f64(dp2, m_row2.val[1], v.val[1]);
+  dp3 = vfmaq_f64(dp3, m_row3.val[1], v.val[1]);
+  dp4 = vfmaq_f64(dp4, m_row4.val[1], v.val[1]);
+  dp5 = vfmaq_f64(dp5, m_row5.val[1], v.val[1]);
+  dp6 = vfmaq_f64(dp6, m_row6.val[1], v.val[1]);
+  dp7 = vfmaq_f64(dp7, m_row7.val[1], v.val[1]);
+  dp8 = vfmaq_f64(dp8, m_row8.val[1], v.val[1]);
+
+  dp1 = vfmaq_f64(dp1, m_row1.val[2], v.val[2]);
+  dp2 = vfmaq_f64(dp2, m_row2.val[2], v.val[2]);
+  dp3 = vfmaq_f64(dp3, m_row3.val[2], v.val[2]);
+  dp4 = vfmaq_f64(dp4, m_row4.val[2], v.val[2]);
+  dp5 = vfmaq_f64(dp5, m_row5.val[2], v.val[2]);
+  dp6 = vfmaq_f64(dp6, m_row6.val[2], v.val[2]);
+  dp7 = vfmaq_f64(dp7, m_row7.val[2], v.val[2]);
+  dp8 = vfmaq_f64(dp8, m_row8.val[2], v.val[2]);
+
+  dp1 = vfmaq_f64(dp1, m_row1.val[3], v.val[3]);
+  dp2 = vfmaq_f64(dp2, m_row2.val[3], v.val[3]);
+  dp3 = vfmaq_f64(dp3, m_row3.val[3], v.val[3]);
+  dp4 = vfmaq_f64(dp4, m_row4.val[3], v.val[3]);
+  dp5 = vfmaq_f64(dp5, m_row5.val[3], v.val[3]);
+  dp6 = vfmaq_f64(dp6, m_row6.val[3], v.val[3]);
+  dp7 = vfmaq_f64(dp7, m_row7.val[3], v.val[3]);
+  dp8 = vfmaq_f64(dp8, m_row8.val[3], v.val[3]);
+
+  // Horizontally sum parts and accumulate into the result vector cv
+  const float64x2_t sum12 =
+      vaddq_f64(vzip1q_f64(dp1, dp2), vzip2q_f64(dp1, dp2));
+  const float64x2_t sum34 =
+      vaddq_f64(vzip1q_f64(dp3, dp4), vzip2q_f64(dp3, dp4));
+  const float64x2_t sum56 =
+      vaddq_f64(vzip1q_f64(dp5, dp6), vzip2q_f64(dp5, dp6));
+  const float64x2_t sum78 =
+      vaddq_f64(vzip1q_f64(dp7, dp8), vzip2q_f64(dp7, dp8));
+
+  // The result vector cv is a `float64x2x4_t` type, which is an array of 4
+  // `float64x2_t` so we need to add to each of the four components
+  cv.val[0] = vaddq_f64(cv.val[0], sum12);
+  cv.val[1] = vaddq_f64(cv.val[1], sum34);
+  cv.val[2] = vaddq_f64(cv.val[2], sum56);
+  cv.val[3] = vaddq_f64(cv.val[3], sum78);
 }
 
 inline double _handle4x4_pruning_case_direct(double const *childVector,
@@ -2426,15 +2708,26 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
   case 0: {
     for (int i = 0; i < blocks; i++) {
       float64x2x2_t accumulator;
+      if (i + 1 < blocks) {
+        __builtin_prefetch(M + offset(i + 1, 0), 0, 0);
+        __builtin_prefetch(V + offset(0, i + 1), 0, 3);
+      }
       _mx_vect_4x4(accumulator, M + offset(i, 0), V, D);
+#pragma unroll
       for (int j = 1; j < blocks; j++) {
+        if (j + 1 < blocks) {
+          __builtin_prefetch(M + offset(i, j + 1), 0, 0);
+          __builtin_prefetch(V + offset(0, j + 1), 0, 3);
+        }
         _mx_vect_4x4_add(accumulator, M + offset(i, j), V + offset(0, j), D);
+      }
+      if (i + 1 < blocks) {
+        __builtin_prefetch(M + offset(i + 1, 0), 0, 0);
+        __builtin_prefetch(V, 0, 3);
       }
 
       vst1q_f64(C + offset(0, i), accumulator.val[0]);
       vst1q_f64(C + offset(0, i) + 2, accumulator.val[1]);
-      // handle_small_product_add <4,1> (C + offset (0,i), M + offset
-      // (i,blocks), V + offset (0,blocks), D);
     }
     break;
   }
@@ -2442,8 +2735,17 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
   case 1: {
     for (int i = 0; i < blocks; i++) {
       float64x2x2_t accumulator;
+      if (i + 1 < blocks) {
+        __builtin_prefetch(M + offset(i + 1, 0), 0, 0);
+        __builtin_prefetch(V + offset(0, i + 1), 0, 0);
+      }
       _mx_vect_4x4(accumulator, M + offset(i, 0), V, D);
+#pragma unroll
       for (int j = 1; j < blocks; j++) {
+        if (j + 1 < blocks) {
+          __builtin_prefetch(M + offset(i, j + 1), 0, 0);
+          __builtin_prefetch(V + offset(0, j + 1), 0, 3);
+        }
         _mx_vect_4x4_add(accumulator, M + offset(i, j), V + offset(0, j), D);
       }
 
@@ -2458,8 +2760,11 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
       vst1q_f64(C + offset(0, i), accumulator.val[0]);
       accumulator.val[1] = vfmaq_f64(accumulator.val[1], mv2, v);
       vst1q_f64(C + offset(0, i) + 2, accumulator.val[1]);
-      // handle_small_product_add <4,1> (C + offset (0,i), M + offset
-      // (i,blocks), V + offset (0,blocks), D);
+
+      if (i + 1 < blocks) {
+        __builtin_prefetch(M + offset(i + 1, 0), 0, 0);
+        __builtin_prefetch(V, 0, 3);
+      }
     }
     M += offset(blocks, 0);
     float64x2x2_t accumulator, row = vld1q_f64_x2(M), col = vld1q_f64_x2(V);
@@ -2486,8 +2791,17 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
 
     for (int i = 0; i < blocks; i++) {
       float64x2x2_t accumulator;
+      if (i + 1 < blocks) {
+        __builtin_prefetch(M + offset(i + 1, 0), 0, 0);
+        __builtin_prefetch(V + offset(0, i + 1), 0, 0);
+      }
       _mx_vect_4x4(accumulator, M + offset(i, 0), V, D);
+#pragma unroll
       for (int j = 1; j < blocks; j++) {
+        if (j + 1 < blocks) {
+          __builtin_prefetch(M + offset(i, j + 1), 0, 0);
+          __builtin_prefetch(V + offset(0, j + 1), 0, 3);
+        }
         _mx_vect_4x4_add(accumulator, M + offset(i, j), V + offset(0, j), D);
       }
 
@@ -2512,8 +2826,10 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
       vst1q_f64(C + offset(0, i), accumulator.val[0]);
       accumulator.val[1] = vfmaq_f64(accumulator.val[1], mv2, v);
       vst1q_f64(C + offset(0, i) + 2, accumulator.val[1]);
-      // handle_small_product_add <4,1> (C + offset (0,i), M + offset
-      // (i,blocks), V + offset (0,blocks), D);
+      if (i + 1 < blocks) {
+        __builtin_prefetch(M + offset(i + 1, 0), 0, 0);
+        __builtin_prefetch(V, 0, 3);
+      }
     }
 
     M += offset(blocks, 0);
@@ -2551,8 +2867,17 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
   case 3: {
     for (int i = 0; i < blocks; i++) {
       float64x2x2_t accumulator;
+      if (i + 1 < blocks) {
+        __builtin_prefetch(M + offset(i + 1, 0), 0, 0);
+        __builtin_prefetch(V + offset(0, i + 1), 0, 0);
+      }
       _mx_vect_4x4(accumulator, M + offset(i, 0), V, D);
+#pragma unroll
       for (int j = 1; j < blocks; j++) {
+        if (j + 1 < blocks) {
+          __builtin_prefetch(M + offset(i, j + 1), 0, 0);
+          __builtin_prefetch(V + offset(0, j + 1), 0, 3);
+        }
         _mx_vect_4x4_add(accumulator, M + offset(i, j), V + offset(0, j), D);
       }
 
@@ -2585,8 +2910,11 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
       accumulator.val[1] = vfmaq_f64(accumulator.val[1], mv2, v);
       vst1q_f64(C + offset(0, i), accumulator.val[0]);
       vst1q_f64(C + offset(0, i) + 2, accumulator.val[1]);
-      // handle_small_product_add <4,1> (C + offset (0,i), M + offset
-      // (i,blocks), V + offset (0,blocks), D);
+
+      if (i + 1 < blocks) {
+        __builtin_prefetch(M + offset(i + 1, 0), 0, 0);
+        __builtin_prefetch(V, 0, 3);
+      }
     }
 
     M += offset(blocks, 0);

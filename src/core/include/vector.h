@@ -52,6 +52,7 @@ class _Vector : public _Matrix
 
 public:
   _Vector(bool is_col = true);
+  _Vector(unsigned long size);
   virtual ~_Vector(void) {};
 
   virtual BaseRef
@@ -59,6 +60,8 @@ public:
   virtual void Duplicate(BaseRefConst); // duplicate an object from reference
 
   virtual void Clear(bool complete = true);
+
+  virtual BaseRef toStr(unsigned long = 0UL); // convert this matrix to a string
 
   virtual unsigned long GetHDim(void) const {
     if (is_column) {

@@ -2997,20 +2997,8 @@ void _TheTree::ExponentiateMatrices(_List &expNodes, long tc, long catID) {
   // update %d)\n", parallel.lLength, serial.lLength, nt);
 
   if (parallel.lLength) {
-#ifdef _OPENMP
-#if _OPENMP >= 201511
-#pragma omp parallel for default(shared)                                       \
-    schedule(dynamic, cBase < 20 ? 10 : (cBase < 60 ? 2 : 1))                  \
-    proc_bind(spread) if (nt > 1) num_threads(nt)
-#else
-#if _OPENMP >= 200803
-#pragma omp parallel for default(shared) schedule(guided)                      \
-    proc_bind(spread) if (nt > 1) num_threads(nt)
-#endif
-#endif
-#endif
-    for (unsigned long id = 0L; id < parallel.lLength; id++) {
-      long matrixID = parallel.get(id);
+    if (parallel.lLength == 1) {
+      long matrixID = parallel.get(0);
       if (isExplicitForm.list_data[matrixID] == 0 ||
           !hasExpForm) { // normal matrix to exponentiate
         ((_CalcNode *)nodesToDo(matrixID))
@@ -3018,6 +3006,34 @@ void _TheTree::ExponentiateMatrices(_List &expNodes, long tc, long catID) {
       } else {
         (*computedExponentials)[matrixID] =
             ((_Matrix *)matrixQueue(matrixID))->Exponentiate(1., true);
+      }
+    } else {
+#ifdef _OPENMP
+#if _OPENMP >= 201511
+#pragma omp parallel for default(none)                                         \
+    shared(parallel, isExplicitForm, hasExpForm, nodesToDo, matrixQueue,       \
+               computedExponentials, catID)                                    \
+    schedule(monotonic : dynamic, cBase < 20 ? 10 : (cBase < 60 ? 2 : 1))      \
+    proc_bind(close) if (nt > 1) num_threads(nt)
+#else
+#if _OPENMP >= 200803
+#pragma omp parallel for default(none)                                         \
+    shared(parallel, isExplicitForm, hasExpForm, nodesToDo, matrixQueue,       \
+               computedExponentials, catID) schedule(guided)                   \
+    proc_bind(close) if (nt > 1) num_threads(nt)
+#endif
+#endif
+#endif
+      for (unsigned long id = 0L; id < parallel.lLength; id++) {
+        long matrixID = parallel.get(id);
+        if (isExplicitForm.list_data[matrixID] == 0 ||
+            !hasExpForm) { // normal matrix to exponentiate
+          ((_CalcNode *)nodesToDo(matrixID))
+              ->SetCompExp((_Matrix *)matrixQueue(matrixID), catID, true);
+        } else {
+          (*computedExponentials)[matrixID] =
+              ((_Matrix *)matrixQueue(matrixID))->Exponentiate(1., true);
+        }
       }
     }
   }

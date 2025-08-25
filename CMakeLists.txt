@@ -29,6 +29,7 @@ option(CODE_COVERAGE "Enable code coverage" OFF)
 option(USE_ASAN "Enable Address Sanitizer" OFF)
 option(USE_GCC_ANALYZER "Enable GCC static analyzer" OFF)
 option(TARGET_NATIVE "Target the native CPU" ON)
+option(INCLUDE_DEBUG_INFO "Include debug info in all builds" OFF)
 
 if(RUN_CLANG_TIDY)
   find_program(CLANG_TIDY_EXE NAMES clang-tidy)
@@ -72,6 +73,10 @@ include(CheckCXXSourceCompiles)
 
 set(COMMON_COMPILE_FLAGS "-fsigned-char;-O3;-D_FORTIFY_SOURCE=2;-Wall;")
 set(HYPHY_SIMD_FLAGS "")
+if(INCLUDE_DEBUG_INFO)
+    list(APPEND COMMON_COMPILE_FLAGS "-g")
+endif()
+
 if(USE_GCC_ANALYZER)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         list(APPEND COMMON_COMPILE_FLAGS "-fanalyzer")
