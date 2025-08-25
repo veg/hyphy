@@ -9712,6 +9712,7 @@ hyFloat _LikelihoodFunction::ComputeBlock(long index, hyFloat *siteRes,
       long sitesPerP = df->GetPatternCount();
 #ifdef _OPENMP
       np = MIN(MAX(GetThreadCount(), 1), omp_get_max_threads());
+      long thread_count = np;
       if (np > sitesPerP) {
         np = sitesPerP;
         sitesPerP = 1;
@@ -9730,7 +9731,7 @@ hyFloat _LikelihoodFunction::ComputeBlock(long index, hyFloat *siteRes,
      }*/
 #ifdef _OPENMP
 #if _OPENMP >= 201511
-#pragma omp parallel for default(none)                                         \
+#pragma omp parallel for default(none) num_threads(thread_count)               \
     shared(t, sl, branches, tcc, df, inc, conditionalTerminalNodeStateFlag,    \
                ssf, conditionalTerminalNodeLikelihoodCaches,                   \
                overallScalingFactors, sitesPerP, catID, siteRes, scc,          \
@@ -9739,7 +9740,7 @@ hyFloat _LikelihoodFunction::ComputeBlock(long index, hyFloat *siteRes,
     proc_bind(spread) if (np > 1)
 #else
 #if _OPENMP >= 200803
-#pragma omp parallel for default(none)                                         \
+#pragma omp parallel for default(none) num_threads(thread_count)               \
     shared(t, sl, branches, tcc, df, inc, conditionalTerminalNodeStateFlag,    \
                ssf, conditionalTerminalNodeLikelihoodCaches,                   \
                overallScalingFactors, sitesPerP, catID, siteRes, scc,          \
@@ -9865,7 +9866,7 @@ hyFloat _LikelihoodFunction::ComputeBlock(long index, hyFloat *siteRes,
 
 #ifdef _OPENMP
 #if _OPENMP >= 201511
-#pragma omp parallel for default(none)                                         \
+#pragma omp parallel for default(none) num_threads(thread_count)               \
     shared(t, sl, doCachedComp, bc, df, inc, conditionalTerminalNodeStateFlag, \
                ssf, scc, conditionalTerminalNodeLikelihoodCaches,              \
                overallScalingFactors, sitesPerP, catID, tcc, siteRes, np,      \
@@ -9873,7 +9874,7 @@ hyFloat _LikelihoodFunction::ComputeBlock(long index, hyFloat *siteRes,
     proc_bind(close) if (np > 1)
 #else
 #if _OPENMP >= 200803
-#pragma omp parallel for default(none)                                         \
+#pragma omp parallel for default(none) num_threads(thread_count)               \
     shared(t, sl, doCachedComp, bc, df, inc, conditionalTerminalNodeStateFlag, \
                ssf, scc, conditionalTerminalNodeLikelihoodCaches,              \
                overallScalingFactors, sitesPerP, catID, tcc, siteRes, np,      \
