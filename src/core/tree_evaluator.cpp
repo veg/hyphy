@@ -2479,8 +2479,61 @@ void _mx_vect_4x4(float64x2x2_t &cv, double const *M, double const *V,
 void _mx_vect_4x4_add(float64x2x2_t &cv, double const *__restrict M,
                       double const *__restrict V, int stride) {
 
-  // Load the entire vector V into two registers {V0,V1} and {V2,V3}
+  // 1. Load the input vector V.
+  // v.val[0] = {V0, V1}, v.val[1] = {V2, V3}
   const float64x2x2_t v = vld1q_f64_x2(V);
+
+  // 2. Load the Matrix M. Group loads to hide memory latency.
+  // Pre-calculate pointers for clarity and to assist compiler address
+  // generation.
+  const double *M_row2_ptr = M + stride;
+  const double *M_row3_ptr = M + (stride << 1);   // stride * 2
+  const double *M_row4_ptr = M_row3_ptr + stride; // stride * 3
+
+  const float64x2x2_t m_row1 = vld1q_f64_x2(M);
+  const float64x2x2_t m_row2 = vld1q_f64_x2(M_row2_ptr);
+  const float64x2x2_t m_row3 = vld1q_f64_x2(M_row3_ptr);
+  const float64x2x2_t m_row4 = vld1q_f64_x2(M_row4_ptr);
+
+  // 3. Calculate partial dot products.
+
+  // --- Optimization 1: Improve Instruction-Level Parallelism (ILP) ---
+  // Group all independent initial multiplications (vmulq_f64) first.
+  // This exposes maximum parallelism to the CPU's out-of-order execution
+  // engine.
+  float64x2_t dp1 = vmulq_f64(m_row1.val[0], v.val[0]);
+  // M[0][0]*V[0], M[0][1]*V[1]
+  float64x2_t dp2 = vmulq_f64(m_row2.val[0], v.val[0]);
+  // M[1][0]*V[0], M[1][1]*V[1]
+  float64x2_t dp3 = vmulq_f64(m_row3.val[0], v.val[0]);
+  // M[2][0]*V[0], M[2][1]*V[1]
+  float64x2_t dp4 = vmulq_f64(m_row4.val[0], v.val[0]);
+  // M[3][0]*V[0], M[3][1]*V[1]
+
+  // Group the dependent Fused Multiply-Add (vfmaq_f64) operations.
+  // These are independent of each other and can also run in parallel.
+  dp1 = vfmaq_f64(dp1, m_row1.val[1], v.val[1]);
+  // M[0][0]*V[0]+M[0][2]*V[2],  M[0][1]*V[1]+M[0][3]*V[3]
+  dp2 = vfmaq_f64(dp2, m_row2.val[1], v.val[1]);
+  // M[1][0]*V[0]+M[1][2]*V[2],  M[1][1]*V[1]+M[1][3]*V[3]
+  dp3 = vfmaq_f64(dp3, m_row3.val[1], v.val[1]);
+  dp4 = vfmaq_f64(dp4, m_row4.val[1], v.val[1]);
+
+  // 4. Horizontal Reduction.
+
+  // --- Optimization 2: Efficient Horizontal Summation ---
+  // Use AArch64 specialized pairwise addition (FADDP instruction) via
+  // vpaddq_f64. vpaddq_f64(A, B) calculates {A0+A1, B0+B1}. This replaces the
+  // slower vzip1/vzip2/vadd sequence.
+  const float64x2_t sum12 = vpaddq_f64(dp1, dp2);
+  const float64x2_t sum34 = vpaddq_f64(dp3, dp4);
+
+  // 5. Accumulate into the result vector cv.
+  cv.val[0] = vaddq_f64(cv.val[0], sum12);
+  cv.val[1] = vaddq_f64(cv.val[1], sum34);
+
+  // Load the entire vector V into two registers {V0,V1} and {V2,V3}
+  /*const float64x2x2_t v = vld1q_f64_x2(V);
 
   // Group loads to allow the CPU to hide memory latency
   const float64x2x2_t m_row1 = vld1q_f64_x2(M);
@@ -2520,7 +2573,7 @@ void _mx_vect_4x4_add(float64x2x2_t &cv, double const *__restrict M,
       vaddq_f64(vzip1q_f64(dp3, dp4), vzip2q_f64(dp3, dp4));
 
   cv.val[0] = vaddq_f64(cv.val[0], sum12);
-  cv.val[1] = vaddq_f64(cv.val[1], sum34);
+  cv.val[1] = vaddq_f64(cv.val[1], sum34);*/
 }
 
 void _mx_vect_8x8(float64x2x4_t &cv, double const *M, double const *V,

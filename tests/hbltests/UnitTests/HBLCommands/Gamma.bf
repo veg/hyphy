@@ -1,5 +1,5 @@
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
-runATest ();
+return runATest ();
 
 function getTestName ()
 {
@@ -8,6 +8,7 @@ function getTestName ()
 
 function runTest()
 {
+ASSERTION_BEHAVIOR = 1;
   testResult = 0;
 
   x = {{ //np.concatenate([np.linspace(-10.5, -.5, 10), np.linspace(1, 10, 15)])

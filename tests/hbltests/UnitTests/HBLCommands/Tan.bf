@@ -1,5 +1,5 @@
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
-runATest ();
+return runATest ();
 
 function getTestName ()
 {
@@ -8,6 +8,7 @@ function getTestName ()
 
 function runTest()
 {
+ASSERTION_BEHAVIOR = 1;
   testResult = 0;
   // Critical values
   assert(Tan(0) == 0, "Tangent of zero is not 0");

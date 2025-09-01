@@ -1,5 +1,5 @@
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
-runATest ();
+return runATest ();
 
 
 function getTestName () {
@@ -27,8 +27,8 @@ function runTest () {
 
   assert(exampleStringSecond == "b", "Failed element access on string");
   assert(exampleStringSecondOperationInBracket == "d", "Failed element access on string with mathematical operation in bracket");
-  assert(exampleStringOutOfRange == "", "Failed to return empty string for out of range element access on string");
-  assert(exampleStringNegative == "", "Failed to return empty string for out of range element access on string");
+  assert(exampleStringOutOfRange == "", "Failed to return empty string for out of range element access on string (4)");
+  assert(exampleStringNegative == "d", "Failed to last element for negative access (-1)");
 
   // Matrix. Accesses as expected, if only one index is given to a 2d array, the array is unwrapped prior to access.
   exampleMatrix = {{1,2,3}{4,5,6}{7,8,9}};

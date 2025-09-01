@@ -38,11 +38,10 @@ function runTest ()
 
 fprintf    (stdout, "[Running COVERAGE TEST '", getTestName(), "']\n");
 result  =  runTest();
-if (result)
-{
+if (result) {
 	fprintf (stdout, "[TEST PASSED]\n");
 }
-else
-{
+else {
 	fprintf (stdout, "[TEST FAILED]\n");
 }
+return !result;

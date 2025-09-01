@@ -29,11 +29,11 @@ function runATest () {
     if (result)
     {
         fprintf (stdout, "[TEST PASSED]\n");
-        return 1;
+        return 0;
     }
     else
     {
         fprintf (stdout, "[TEST FAILED]\n");
     }
-    return 0;
+    return 1;
 }

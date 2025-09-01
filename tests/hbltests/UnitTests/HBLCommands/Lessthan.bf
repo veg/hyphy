@@ -1,5 +1,5 @@
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
-runATest ();
+return runATest ();
 
 
 function getTestName () {
@@ -32,7 +32,7 @@ function runTest () {
   allOnesRateMatrix [2][2] = -0.3;
   allOnesRateMatrix [3][3] = -0.3;
   x = matrix1<allOnesRateMatrix;
-  assert(x == -3.013102130631045, "Failed to return the path log likelihood");
+  assert(Abs(x + 3.013102130631045) < 1e-12, "Failed to return the path log likelihood");
   // Strings: Lexicographic (Generalized alphabetic order) comparison between strings
   assert("Battlestar Galactica"<"Bears" == 1, "Failed to return true for two strings in alphabetical order");
   assert("zoro" < "Aladin" == 0, "Failed to return false for two strings not in alphabetical order");

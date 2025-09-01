@@ -1,11 +1,12 @@
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
-runATest ();
+return runATest ();
 
 function getTestName () {
 	return "Absolute value";
 }
 
 function runTest () {
+  ASSERTION_BEHAVIOR = 1;
   testResult = FALSE;
   assert(Abs({"key":"value", "key2":"value2"}) == 2, "Does not return number of items in an associative array");
   assert(Abs({{1,2,3}}) == 3.741657386773941, "Does not return L2 norm of a vector");

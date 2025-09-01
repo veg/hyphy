@@ -1,5 +1,5 @@
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
-runATest ();
+return runATest ();
 
 function getTestName () {
 	return "ReplicateConstraint";
@@ -84,6 +84,7 @@ lfunction check_both0 (name) {
 
 function runTest () {
 
+ASSERTION_BEHAVIOR = 1;
 	/** load test data **/
 	
 	ExecuteAFile ("res/replicate_constraint.nex");
@@ -135,7 +136,7 @@ function runTest () {
 	//fprintf (stdout, LAST_SET_OF_CONSTRAINTS, "\n\n");
 	
 	assert (checkTree ("givenTree", "check_syn_rate"), 
-			"Incorrectly generated constraints on synRate from ReplicateConstraint ('this1.?.synRate := this2.?.nonSynRate', givenTree, third_tree)"
+			"Incorrectly generated constraints on synRate from ReplicateConstraint ('this1.?.synRate := dNdS * this2.?.nonSynRate', givenTree, third_tree)"
 		   );
 	
 	ReplicateConstraint ('this1.?.synRate := this2.?.nonSynRate', givenTree, third_tree);
