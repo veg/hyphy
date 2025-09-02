@@ -14,21 +14,21 @@ jobs:
   update-homebrew:
     runs-on: ubuntu-latest
     steps:
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout hyphy repo
         uses: actions/checkout@v4
         with:
           repository: veg/hyphy
-          ref: ${{ github.event.release.tag_name || inputs.version }}
-          
-      - name: Set version
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" == "release" ]; then
-            echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
-          else
-            echo "VERSION=${{ inputs.version }}" >> $GITHUB_OUTPUT
-          fi
-          
+          ref: ${{ steps.version.outputs.VERSION }}
+
       - name: Download release tarball and calculate SHA256
         id: sha256
         run: |
@@ -38,14 +38,14 @@ jobs:
           SHA256=$(sha256sum hyphy-${VERSION}.tar.gz | awk '{print $1}')
           echo "SHA256=$SHA256" >> $GITHUB_OUTPUT
           echo "Calculated SHA256: $SHA256"
-          
+
       - name: Checkout homebrew-bio
         uses: actions/checkout@v4
         with:
           repository: brewsci/homebrew-bio
           path: homebrew-bio
           token: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Create feature branch
         run: |
           cd homebrew-bio
@@ -54,38 +54,35 @@ jobs:
           BRANCH="update-hyphy-${{ steps.version.outputs.VERSION }}"
           git checkout -b "$BRANCH"
           echo "BRANCH=$BRANCH" >> $GITHUB_ENV
-          
+
       - name: Update Formula
         run: |
           cd homebrew-bio
           VERSION=${{ steps.version.outputs.VERSION }}
           SHA256=${{ steps.sha256.outputs.SHA256 }}
-          
-          # Update version and sha256 in the formula
+
           sed -i "s/version \".*\"/version \"${VERSION}\"/" Formula/hyphy.rb
           sed -i "s/sha256 \".*\"/sha256 \"${SHA256}\"/" Formula/hyphy.rb
-          
-          # Also update the URL if it uses the version
           sed -i "s|archive/refs/tags/[0-9.]*\.tar\.gz|archive/refs/tags/${VERSION}.tar.gz|" Formula/hyphy.rb
-          
+
       - name: Commit changes
         run: |
           cd homebrew-bio
           git add Formula/hyphy.rb
           git commit -m "hyphy: update to ${{ steps.version.outputs.VERSION }}"
-          
+
       - name: Push branch
         run: |
           cd homebrew-bio
           git push origin "${{ env.BRANCH }}"
-          
+
       - name: Create Pull Request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd homebrew-bio
           VERSION=${{ steps.version.outputs.VERSION }}
-          
+
           PR_BODY="Updates HyPhy to version ${VERSION}.
 
 ## Changes
