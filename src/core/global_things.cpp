@@ -114,7 +114,7 @@ _String const kEmptyString, kPromptForFilePlaceholder("PROMPT_FOR_FILE"),
                     "\"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line "
                     "argument. This often resolves the issue, which is "
                     "indicative of numerical instability."),
-    kHyPhyVersion = _String("2.5.78"),
+    kHyPhyVersion = _String("2.5.79"),
 
     kNoneToken = "None", kNullToken = "null",
     kNoKWMatch = "__input_value_not_given__",
@@ -151,9 +151,8 @@ int _reg_exp_err_code = 0;
 std::regex *hy_float_regex = _String::PrepRegExp(
                "^\\ *[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?",
                _reg_exp_err_code, true),
-           *hy_replicate_constraint_regexp =
-               _String::PrepRegExp("^this([0-9]+)\\.([\\.][\\.][\\.])?(.+)$",
-                                   _reg_exp_err_code, true);
+           *hy_replicate_constraint_regexp = _String::PrepRegExp(
+               "^this([0-9]+)\\.(.+)$", _reg_exp_err_code, true);
 
 //____________________________________________________________________________________
 

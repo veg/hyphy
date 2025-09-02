@@ -17,7 +17,15 @@ inf_exists = new_test_string/"*inf*";
 nan_exists = new_test_string/"*-nan*";
 e999_exists = new_test_string/"*1e999*";
 null_exists = new_test_string/"*null*";
+
+test_result = 0;
+
+ASSERTION_BEHAVIOR = 1;
+
 assert(!inf_exists, "inf still exists in JSON");
 assert(!nan_exists, "-nan still exists in JSON");
 assert(e999_exists, "1e999 does not exist in JSON");
 assert(null_exists, "null does not exist in JSON");
+
+test_result = 1;
+return !test_result;

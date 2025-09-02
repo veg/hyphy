@@ -1109,7 +1109,11 @@ int main(int argc, char *argv[]) {
       return 0;
     }
 
-    ex.Execute();
+    HBLObjectRef exectuion_result = ex.Execute();
+    int return_value = 0;
+    if (exectuion_result && exectuion_result->ObjectClass() == NUMBER) {
+      return_value = (int)(exectuion_result->Compute()->Value());
+    }
 
 #ifdef __HYPHYMPI__
   }
@@ -1152,7 +1156,7 @@ int main(int argc, char *argv[]) {
   }
 #endif
 
-  return 0;
+  return return_value;
 }
 
 #endif

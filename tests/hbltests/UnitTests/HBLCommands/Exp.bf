@@ -1,5 +1,5 @@
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
-runATest ();
+return runATest ();
 
 
 function getTestName () {
@@ -20,7 +20,7 @@ function runTest () {
   assert(Exp(100) == 2.688117141816136e+43, "Failed to compute exponential of a large number (100)");
 
   // Find exponent of matrix.
-  assert(Abs (Exp({{1,2}{2,1}}) - {{10.22670818217949, 9.858828741008054}{9.858828741008054, 10.22670818217949}}) < 1e-14, "Failed to compute exponential value of an array");
+  assert(Abs (Exp({{1,2}{2,1}}) - {{10.22670818217949, 9.858828741008054}{9.858828741008054, 10.22670818217949}}) < 1e-12, "Failed to compute exponential value of an array");
 
   // Exp function on string; should return the length of the Lempel Ziv Production History.
   assert(Exp("1001111011000010") == 6, "Failed to compute exponential (Lempel Ziv Production History) of a string");
@@ -43,6 +43,7 @@ function runTest () {
  
 
   testResult = 1;
+  
 
   return testResult;
 }

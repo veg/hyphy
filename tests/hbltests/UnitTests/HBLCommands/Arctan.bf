@@ -1,5 +1,5 @@
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
-runATest ();
+return runATest ();
 
 function getTestName ()
 {
@@ -8,6 +8,7 @@ function getTestName ()
 
 function runTest()
 {
+ASSERTION_BEHAVIOR = 1;
   testResult = 0;
   // Critical values
   assert(4*Arctan(1) == 3.141592653589793, "Arctan of pi over 4 is not 1");

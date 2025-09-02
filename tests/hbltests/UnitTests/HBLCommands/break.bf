@@ -1,6 +1,6 @@
 
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
-runATest ();
+return runATest ();
 
 
 function getTestName () {

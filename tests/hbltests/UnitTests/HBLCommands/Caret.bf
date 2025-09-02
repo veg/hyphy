@@ -1,5 +1,5 @@
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
-runATest ();
+return runATest ();
 
 
 function getTestName () {
@@ -15,6 +15,7 @@ function power(x, n) {
 }
 
 function runTest () {
+    ASSERTION_BEHAVIOR = 1;
 	testResult = 0;
   
   //---------------------------------------------------------------------------------------------------------

@@ -44,3 +44,5 @@ if (result) {
 } else {
 	fprintf (stdout, "[TEST FAILED]\n");
 }
+
+return !result;

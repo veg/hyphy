@@ -56,16 +56,20 @@ private:
         return _returnConstantOrUseCache(
             functor(Value(), ((_Constant *)operand)->Value()), cache);
       } else {
-        hy_global::HandleApplicationError(
+        _String error_message =
             _String("<'constant' operation 'X'>, where 'X' is not a number. "
                     "\nconstant = ") &
             (_String((_String *)toStr())) & "\n'X' = " &
-            (_String((_String *)operand->toStr())));
+            (_String((_String *)operand->toStr()));
+
+        throw error_message;
       }
     } else {
-      hy_global::HandleApplicationError(
+      _String error_message =
           _String("<'constant' operation 'null'>, where constant = ") &
-          (_String((_String *)toStr())));
+          (_String((_String *)toStr()));
+
+      throw error_message;
     }
     return new _MathObject;
   }
@@ -81,8 +85,10 @@ private:
                   ((_Constant *)operand2)->Value()),
           cache);
     }
-    hy_global::HandleApplicationError(
+
+    _String err_msg(
         "Not a numeric 'X' type in a <'constant' operation 'X'> call");
+    throw(err_msg);
     return new _MathObject;
   }
 

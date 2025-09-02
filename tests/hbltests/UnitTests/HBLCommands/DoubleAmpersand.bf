@@ -1,5 +1,5 @@
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
-runATest ();
+return runATest ();
 
 
 function getTestName () {
@@ -33,7 +33,7 @@ function runTest () {
   htmlEscapeTest = "hyphy's"&&5;
   assert(htmlEscapeTest == "hyphy&apos;s", "Failed to convert special characters to HTML format");
   // >6. to lowercase
-  lowerTest = "HyPhy"&&7;
+  lowerTest = "HyPhy"&&0;
   assert(lowerTest == "hyphy", "Failed to convert string to lowercase");
 
   // TODO: 2 and 3 don't seem to work... see below

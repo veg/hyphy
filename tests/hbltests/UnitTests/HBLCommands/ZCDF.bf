@@ -1,5 +1,5 @@
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
-runATest ();
+return runATest ();
 
 function getTestName ()
 {
@@ -7,7 +7,8 @@ function getTestName ()
 }
 
 function runTest()
-{
+{  
+  ASSERTION_BEHAVIOR = 1;
   testResult = 0;
   // Critical values
   assert(ZCDF(0) == .5, "ZCDF of zero is not .5");

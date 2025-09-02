@@ -222,179 +222,186 @@ HBLObjectRef _returnNullOrUseCache(HBLObjectRef cache) {
 HBLObjectRef _MathObject::ExecuteSingleOp(long opCode, _List *arguments,
                                           _hyExecutionContext *context,
                                           HBLObjectRef cache) {
-
-  switch (opCode) {    // first check operations without arguments
-  case HY_OP_CODE_NOT: // !
-    return LNot(cache);
-  case HY_OP_CODE_ABS: // Abs
-    return Abs(cache);
-  case HY_OP_CODE_ARCTAN: // Arctan
-    return Arctan(cache);
-  case HY_OP_CODE_COS: // Cos
-    return Cos(cache);
-  case HY_OP_CODE_COLUMNS: // Columns
-  case HY_OP_CODE_ROWS:    // Rows
-    return _returnConstantOrUseCache(0., cache);
-  case HY_OP_CODE_ERF: // Erf
-    return Erf(cache);
-  case HY_OP_CODE_EVAL:
-    return (HBLObjectRef)Compute()->makeDynamic();
-  case HY_OP_CODE_EXP: // Exp
-    return Exp(cache);
-  case HY_OP_CODE_GAMMA: // Gamma
-    return Gamma(cache);
-  case HY_OP_CODE_LNGAMMA: // LnGamma
-    return LnGamma(cache);
-  case HY_OP_CODE_LOG: // Log
-    return Log(cache);
-  case HY_OP_CODE_MACCESS:
-    return new _MathObject; // indexing None returns None
-  case HY_OP_CODE_SIMPLEX:  // Simplex
-    return Simplex(cache);
-  case HY_OP_CODE_SIN: // Sin
-    return Sin(cache);
-  case HY_OP_CODE_POLYNOMIAL: // Sin
-    return ConvertToPolynomial(cache);
-  case HY_OP_CODE_SQRT: // Sqrt
-    return Sqrt(cache);
-  case HY_OP_CODE_TAN: // Tan
-    return Tan(cache);
-  case HY_OP_CODE_TIME: // Time
-    return Time(cache);
-  case HY_OP_CODE_TYPE: // Type
-    return Type(cache);
-  case HY_OP_CODE_ZCDF: // ZCDF
-    return ZCDF(cache);
-  }
-
-  _MathObject *arg0 = _extract_argument(arguments, 0UL, false);
-
-  switch (
-      opCode) { // next check operations without arguments or with one argument
-  case HY_OP_CODE_ADD: // +
-    if (arg0)
-      return Add(arg0, cache);
-    return Sum(cache);
-  case HY_OP_CODE_SUB: // -
-    if (arg0)
-      return Sub(arg0, cache);
-    return Minus(cache);
-    break;
-  }
-
-  if (arg0) {
-    switch (opCode) {    // operations that require exactly one argument
-    case HY_OP_CODE_NEQ: // !=
-      if (ObjectClass() == HY_UNDEFINED) {
-        if (arg0->ObjectClass() == HY_UNDEFINED)
-          return _returnConstantOrUseCache(0., cache);
-        // return new HY_CONSTANT_FALSE;
-        else
-          return _returnConstantOrUseCache(1., cache);
-        // return new HY_CONSTANT_TRUE;
-      }
-      if (arg0->ObjectClass() == NUMBER)
-        return NotEqual(arg0, cache);
-      return new HY_CONSTANT_TRUE;
-    case HY_OP_CODE_IDIV: // $
-      return longDiv(arg0, cache);
-    case HY_OP_CODE_MOD: // %
-      return lDiv(arg0, cache);
-    case HY_OP_CODE_AND: // &&
-      return LAnd(arg0, cache);
-    case HY_OP_CODE_MUL: // *
-      return Mult(arg0, cache);
-    case HY_OP_CODE_DIV: // /
-      return Div(arg0, cache);
-    case HY_OP_CODE_LESS: // <
-      return Less(arg0, cache);
-    case HY_OP_CODE_LEQ: // <=
-      return LessEq(arg0, cache);
-    case HY_OP_CODE_EQ: // ==
-    {
-      if (ObjectClass() == HY_UNDEFINED) {
-        if (arg0->ObjectClass() == HY_UNDEFINED)
-          return _returnConstantOrUseCache(1., cache);
-        // return new HY_CONSTANT_TRUE;
-        else
-          return _returnConstantOrUseCache(0., cache);
-        // return new HY_CONSTANT_FALSE;
-      }
-      if (arg0->ObjectClass() == NUMBER)
-        return AreEqual(arg0, cache);
-      return new HY_CONSTANT_FALSE;
-    } break;
-    case HY_OP_CODE_GREATER: // >
-      return Greater(arg0, cache);
-    case HY_OP_CODE_GEQ: // >=
-      return GreaterEq(arg0, cache);
-    case HY_OP_CODE_BETA: // Beta
-      return Beta(arg0, cache);
-    case HY_OP_CODE_CCHI2: // CChi2
-      return CChi2(arg0, cache);
-    case HY_OP_CODE_IGAMMA: // IGamma
-      return IGamma(arg0, cache);
-    case HY_OP_CODE_INVCHI2: // InvChi2
-      return InvChi2(arg0, cache);
-    case HY_OP_CODE_MAX: // Max
-      return Max(arg0, cache);
-    case HY_OP_CODE_MIN: // Min
-      return Min(arg0, cache);
-    case HY_OP_CODE_RANDOM: // Random
-      return Random(arg0, cache);
-    case HY_OP_CODE_POWER: // ^
-      return Raise(arg0, cache);
-    case HY_OP_CODE_OR: // ||
-      return LOr(arg0, cache);
+  try {
+    switch (opCode) {    // first check operations without arguments
+    case HY_OP_CODE_NOT: // !
+      return LNot(cache);
+    case HY_OP_CODE_ABS: // Abs
+      return Abs(cache);
+    case HY_OP_CODE_ARCTAN: // Arctan
+      return Arctan(cache);
+    case HY_OP_CODE_COS: // Cos
+      return Cos(cache);
+    case HY_OP_CODE_COLUMNS: // Columns
+    case HY_OP_CODE_ROWS:    // Rows
+      return _returnConstantOrUseCache(0., cache);
+    case HY_OP_CODE_ERF: // Erf
+      return Erf(cache);
+    case HY_OP_CODE_EVAL:
+      return (HBLObjectRef)Compute()->makeDynamic();
+    case HY_OP_CODE_EXP: // Exp
+      return Exp(cache);
+    case HY_OP_CODE_GAMMA: // Gamma
+      return Gamma(cache);
+    case HY_OP_CODE_LNGAMMA: // LnGamma
+      return LnGamma(cache);
+    case HY_OP_CODE_LOG: // Log
+      return Log(cache);
+    case HY_OP_CODE_MACCESS:
+      return new _MathObject; // indexing None returns None
+    case HY_OP_CODE_SIMPLEX:  // Simplex
+      return Simplex(cache);
+    case HY_OP_CODE_SIN: // Sin
+      return Sin(cache);
+    case HY_OP_CODE_POLYNOMIAL: // Sin
+      return ConvertToPolynomial(cache);
+    case HY_OP_CODE_SQRT: // Sqrt
+      return Sqrt(cache);
+    case HY_OP_CODE_TAN: // Tan
+      return Tan(cache);
+    case HY_OP_CODE_TIME: // Time
+      return Time(cache);
+    case HY_OP_CODE_TYPE: // Type
+      return Type(cache);
+    case HY_OP_CODE_ZCDF: // ZCDF
+      return ZCDF(cache);
     }
 
-    _MathObject *arg1 = _extract_argument(arguments, 1UL, false);
+    _MathObject *arg0 = _extract_argument(arguments, 0UL, false);
 
-    if (arg1) {
-      /** ops that require exactly TWO arguments */
+    switch (opCode) {    // next check operations without arguments or with one
+                         // argument
+    case HY_OP_CODE_ADD: // +
+      if (arg0)
+        return Add(arg0, cache);
+      return Sum(cache);
+    case HY_OP_CODE_SUB: // -
+      if (arg0)
+        return Sub(arg0, cache);
+      return Minus(cache);
+      break;
+    }
 
-      switch (opCode) {
-      case HY_OP_CODE_CGAMMADIST: // CGammaDist
-        return CGammaDist(arg0, arg1, cache);
-      case HY_OP_CODE_FORMAT: // Format
-        return FormatNumberString(arg0, arg1, cache);
-      case HY_OP_CODE_GAMMADIST: // GammaDist
-        return GammaDist(arg0, arg1, cache);
-      case HY_OP_CODE_IBETA: // IBeta
-        return IBeta(arg0, arg1, cache);
+    if (arg0) {
+      switch (opCode) {    // operations that require exactly one argument
+      case HY_OP_CODE_NEQ: // !=
+        if (ObjectClass() == HY_UNDEFINED) {
+          if (arg0->ObjectClass() == HY_UNDEFINED)
+            return _returnConstantOrUseCache(0., cache);
+          // return new HY_CONSTANT_FALSE;
+          else
+            return _returnConstantOrUseCache(1., cache);
+          // return new HY_CONSTANT_TRUE;
+        }
+        if (arg0->ObjectClass() == NUMBER)
+          return NotEqual(arg0, cache);
+        return new HY_CONSTANT_TRUE;
+      case HY_OP_CODE_IDIV: // $
+        return longDiv(arg0, cache);
+      case HY_OP_CODE_MOD: // %
+        return lDiv(arg0, cache);
+      case HY_OP_CODE_AND: // &&
+        return LAnd(arg0, cache);
+      case HY_OP_CODE_MUL: // *
+        return Mult(arg0, cache);
+      case HY_OP_CODE_DIV: // /
+        return Div(arg0, cache);
+      case HY_OP_CODE_LESS: // <
+        return Less(arg0, cache);
+      case HY_OP_CODE_LEQ: // <=
+        return LessEq(arg0, cache);
+      case HY_OP_CODE_EQ: // ==
+      {
+        if (ObjectClass() == HY_UNDEFINED) {
+          if (arg0->ObjectClass() == HY_UNDEFINED)
+            return _returnConstantOrUseCache(1., cache);
+          // return new HY_CONSTANT_TRUE;
+          else
+            return _returnConstantOrUseCache(0., cache);
+          // return new HY_CONSTANT_FALSE;
+        }
+        if (arg0->ObjectClass() == NUMBER)
+          return AreEqual(arg0, cache);
+        return new HY_CONSTANT_FALSE;
+      } break;
+      case HY_OP_CODE_GREATER: // >
+        return Greater(arg0, cache);
+      case HY_OP_CODE_GEQ: // >=
+        return GreaterEq(arg0, cache);
+      case HY_OP_CODE_BETA: // Beta
+        return Beta(arg0, cache);
+      case HY_OP_CODE_CCHI2: // CChi2
+        return CChi2(arg0, cache);
+      case HY_OP_CODE_IGAMMA: // IGamma
+        return IGamma(arg0, cache);
+      case HY_OP_CODE_INVCHI2: // InvChi2
+        return InvChi2(arg0, cache);
+      case HY_OP_CODE_MAX: // Max
+        return Max(arg0, cache);
+      case HY_OP_CODE_MIN: // Min
+        return Min(arg0, cache);
+      case HY_OP_CODE_RANDOM: // Random
+        return Random(arg0, cache);
+      case HY_OP_CODE_POWER: // ^
+        return Raise(arg0, cache);
+      case HY_OP_CODE_OR: // ||
+        return LOr(arg0, cache);
+      }
+
+      _MathObject *arg1 = _extract_argument(arguments, 1UL, false);
+
+      if (arg1) {
+        /** ops that require exactly TWO arguments */
+
+        switch (opCode) {
+        case HY_OP_CODE_CGAMMADIST: // CGammaDist
+          return CGammaDist(arg0, arg1, cache);
+        case HY_OP_CODE_FORMAT: // Format
+          return FormatNumberString(arg0, arg1, cache);
+        case HY_OP_CODE_GAMMADIST: // GammaDist
+          return GammaDist(arg0, arg1, cache);
+        case HY_OP_CODE_IBETA: // IBeta
+          return IBeta(arg0, arg1, cache);
+        }
       }
     }
-  }
 
-  switch (opCode) {
-  case HY_OP_CODE_CGAMMADIST: // CGammaDist
-  case HY_OP_CODE_FORMAT:     // Format
-  case HY_OP_CODE_GAMMADIST:  // GammaDist
-  case HY_OP_CODE_IBETA:      // IBeta
-  case HY_OP_CODE_NEQ:        // !=
-  case HY_OP_CODE_IDIV:       // $
-  case HY_OP_CODE_MOD:        // %
-  case HY_OP_CODE_AND:        // &&
-  case HY_OP_CODE_MUL:        // *
-  case HY_OP_CODE_DIV:        // /
-  case HY_OP_CODE_LESS:       // <
-  case HY_OP_CODE_LEQ:        // <=
-  case HY_OP_CODE_EQ:         // ==
-  case HY_OP_CODE_GREATER:    // >
-  case HY_OP_CODE_GEQ:        // >=
-  case HY_OP_CODE_BETA:       // Beta
-  case HY_OP_CODE_CCHI2:      // CChi2
-  case HY_OP_CODE_IGAMMA:     // IGamma
-  case HY_OP_CODE_INVCHI2:    // InvChi2
-  case HY_OP_CODE_MAX:        // Max
-  case HY_OP_CODE_MIN:        // Min
-  case HY_OP_CODE_RANDOM:     // Random
-  case HY_OP_CODE_POWER:      // ^
-  case HY_OP_CODE_OR:         // ||
-    WarnWrongNumberOfArguments(this, opCode, context, arguments);
-    break;
-  default:
-    WarnNotDefined(this, opCode, context);
+    switch (opCode) {
+    case HY_OP_CODE_CGAMMADIST: // CGammaDist
+    case HY_OP_CODE_FORMAT:     // Format
+    case HY_OP_CODE_GAMMADIST:  // GammaDist
+    case HY_OP_CODE_IBETA:      // IBeta
+    case HY_OP_CODE_NEQ:        // !=
+    case HY_OP_CODE_IDIV:       // $
+    case HY_OP_CODE_MOD:        // %
+    case HY_OP_CODE_AND:        // &&
+    case HY_OP_CODE_MUL:        // *
+    case HY_OP_CODE_DIV:        // /
+    case HY_OP_CODE_LESS:       // <
+    case HY_OP_CODE_LEQ:        // <=
+    case HY_OP_CODE_EQ:         // ==
+    case HY_OP_CODE_GREATER:    // >
+    case HY_OP_CODE_GEQ:        // >=
+    case HY_OP_CODE_BETA:       // Beta
+    case HY_OP_CODE_CCHI2:      // CChi2
+    case HY_OP_CODE_IGAMMA:     // IGamma
+    case HY_OP_CODE_INVCHI2:    // InvChi2
+    case HY_OP_CODE_MAX:        // Max
+    case HY_OP_CODE_MIN:        // Min
+    case HY_OP_CODE_RANDOM:     // Random
+    case HY_OP_CODE_POWER:      // ^
+    case HY_OP_CODE_OR:         // ||
+      WarnWrongNumberOfArguments(this, opCode, context, arguments);
+      break;
+    default:
+      WarnNotDefined(this, opCode, context);
+    }
+  } catch (const _String err) {
+    if (context) {
+      context->ReportError(err);
+    } else {
+      HandleApplicationError(err);
+    }
   }
 
   return new _MathObject;

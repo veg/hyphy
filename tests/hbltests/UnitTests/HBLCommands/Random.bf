@@ -1,5 +1,5 @@
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
-runATest ();
+return runATest ();
 
 
 function getTestName () {
@@ -79,8 +79,8 @@ function runTest () {
   exampleList = {"key1": "val1", "key2": "val2"};
 
   assert (runCommandWithSoftErrors ('Random(exampleList, exampleList)', "Unsupported argument type"), "Failed error checking for trying to run Random(AssociativeList, AssociativeList)");
-  assert (runCommandWithSoftErrors ('Random(exampleTree, exampleTree)', "Unsupported agrument type 'Tree'"), "Failed error checking for trying to run Random(Tree, Tree)");
-  assert (runCommandWithSoftErrors ('Random(exampleTopology, exampleTopology)', "Unsupported agrument type 'Topology'"), "Failed error checking for trying to run Random(Topology, Topology)");
+  assert (runCommandWithSoftErrors ('Random(exampleTree, exampleTree)', "Unsupported argument type 'Tree'"), "Failed error checking for trying to run Random(Tree, Tree)");
+  assert (runCommandWithSoftErrors ('Random(exampleTopology, exampleTopology)', "Unsupported argument type 'Topology'"), "Failed error checking for trying to run Random(Topology, Topology)");
   assert (runCommandWithSoftErrors ('Random(exampleString, exampleString)', "Operation 'Random' is not implemented/defined for a String"), "Failed error checking for trying to run Random(string, string)");
 
   testResult = 1;

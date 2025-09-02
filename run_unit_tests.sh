@@ -7,7 +7,7 @@
 currentDir=$PWD
 export ASAN_OPTIONS=detect_leaks=1
 #HYPHYMP=$PWD/HYPHYDEBUG
-HYPHYMP=$PWD/HYPHYMP
+HYPHYMP=$PWD/hyphy
 
 testsRun=0
 testsFailed=0
@@ -17,7 +17,8 @@ for filename in ./tests/hbltests/UnitTests/HBLCommands/*.bf; do
   echo $filename
 
   # Run the test checking to see if it faield
-  if $HYPHYMP $filename | grep -q "Error"; then
+  $HYPHYMP $filename 2>&1 >/dev/null
+  if [ $? -ne 0 ]; then
     ((testFailed++))
     failedTests+=($filename)
   fi
@@ -32,7 +33,7 @@ then
   echo "\n The following tests failed:"
 
   for failedTest in "${failedTests[@]}"; do
-    $failedTest
+    echo $failedTest
   done
 
   echo "\n The output of the failed tests is below: \n"
