@@ -972,6 +972,7 @@ int main(int argc, char *argv[]) {
   }
 
   _ExecutionList ex;
+  int return_value = 0;
 
 #ifdef __HYPHYMPI__
   if (hy_mpi_node_rank == 0L)
@@ -1110,7 +1111,6 @@ int main(int argc, char *argv[]) {
     }
 
     HBLObjectRef exectuion_result = ex.Execute();
-    int return_value = 0;
     if (exectuion_result && exectuion_result->ObjectClass() == NUMBER) {
       return_value = (int)(exectuion_result->Compute()->Value());
     }
