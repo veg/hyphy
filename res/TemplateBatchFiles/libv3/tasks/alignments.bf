@@ -737,7 +737,7 @@ lfunction alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, offse
 
     for (frame = 0; frame < 3; frame += 1) {
         try_run = alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, frame, code, lookup);
-
+        
         translation = ""; translation * 128;
 
         frame_result = {utility.getGlobalValue ("terms.sense_codons") : 0,

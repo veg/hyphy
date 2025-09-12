@@ -667,10 +667,10 @@ bool _LikelihoodFunction::MapTreeTipsToData(long f, _String *errorMessage,
       }
       if (iterator->GetModelIndex() == HY_NO_MODEL) {
         throw _String("No model is not associated with node ") &
-            iterator->ContextFreeName().Enquote();
+            iterator->GetName()->Enquote();
       } else if (iterator->GetModelDimension() != dfDim) {
         throw _String("The dimension of the transition matrix at node ") &
-            iterator->ContextFreeName().Enquote() &
+            iterator->GetName()->Enquote() &
             " is not equal to the state count in the data filter associated "
             "with the tree.";
       }

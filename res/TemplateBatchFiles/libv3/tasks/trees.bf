@@ -114,7 +114,6 @@ lfunction trees.GetTreeString._sanitize(string) {
  * @returns {String} a newick tree string
  */
 lfunction trees.GetTreeString(look_for_newick_tree) {
-
     
     UseModel(USE_NO_MODEL);
 
