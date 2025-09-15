@@ -653,17 +653,17 @@ bool _ElementaryCommand::HandleGetDataInfo(_ExecutionList &current_program) {
             _AssociativeList *parameterInfo = new _AssociativeList;
 
             (*parameterInfo) <
-                (_associative_list_key_value){
+                _associative_list_key_value{
                     "ATOM_SIZE",
                     new _Constant(filter_source->GetUnitLength())} <
-                (_associative_list_key_value){
+                _associative_list_key_value{
                     "EXCLUSIONS",
                     new _FString(filter_source->GetExclusions())} <
-                (_associative_list_key_value){
+                _associative_list_key_value{
                     "SITES_STRING",
                     new _FString((_String *)filter_source->theOriginalOrder
                                      .ListToPartitionString())} <
-                (_associative_list_key_value){
+                _associative_list_key_value{
                     "SEQUENCES_STRING",
                     new _FString((_String *)filter_source->theNodeMap
                                      .ListToPartitionString())};
@@ -3972,7 +3972,7 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &current_program) {
               _String const *my_key = key_value.get_key();
               HBLObjectRef my_object = (HBLObjectRef)key_value.get_object();
 
-              (*kwargs) << (_associative_list_key_value){*my_key, my_object};
+              (*kwargs) << _associative_list_key_value{*my_key, my_object};
             }
           }
         }
@@ -3992,13 +3992,13 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &current_program) {
 
           if (currentLevel->kwarg_tags &&
               currentLevel->kwarg_tags->countitems()) {
-            currentLevel->kwarg_tags->ForEach([&kwargs, &count](BaseRef item,
-                                                                unsigned long) {
-              _List *kwarg = (_List *)item;
-              (*kwargs) < (_associative_list_key_value){_String(count),
-                                                        new _Matrix(*kwarg)};
-              count++;
-            });
+            currentLevel->kwarg_tags->ForEach(
+                [&kwargs, &count](BaseRef item, unsigned long) {
+                  _List *kwarg = (_List *)item;
+                  (*kwargs) < _associative_list_key_value{_String(count),
+                                                          new _Matrix(*kwarg)};
+                  count++;
+                });
           }
         }
       }
@@ -4022,13 +4022,12 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &current_program) {
                   " object with index " & index1);
           }
           if (type_index == HY_BL_HBL_FUNCTION) {
-            return_value =
-                &((*new _AssociativeList) <
-                  (_associative_list_key_value){"ID",
-                                                new _FString(*object_name)} <
-                  (_associative_list_key_value){
-                      "Arguments",
-                      new _Matrix(GetBFFunctionArgumentList(index1))});
+            return_value = &(
+                (*new _AssociativeList) <
+                _associative_list_key_value{"ID", new _FString(*object_name)} <
+                _associative_list_key_value{
+                    "Arguments",
+                    new _Matrix(GetBFFunctionArgumentList(index1))});
           } else {
             return_value = make_fstring(*object_name);
           }
@@ -4105,13 +4104,13 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &current_program) {
       case HY_BL_HBL_FUNCTION: {
         return_value = &(
             (*new _AssociativeList) <
-            (_associative_list_key_value){
+            _associative_list_key_value{
                 "ID", new _FString(*GetObjectNameByType(HY_BL_HBL_FUNCTION,
                                                         object_index, false))} <
-            (_associative_list_key_value){
+            _associative_list_key_value{
                 "Arguments",
                 new _Matrix(GetBFFunctionArgumentList(object_index))} <
-            (_associative_list_key_value){
+            _associative_list_key_value{
                 "Body", new _FString(GetBFFunctionBody(object_index).sourceText,
                                      false)});
         break;
@@ -4204,12 +4203,12 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &current_program) {
             {
               return_value =
                   &((*new _AssociativeList) <
-                    (_associative_list_key_value){
+                    _associative_list_key_value{
                         "RATE_MATRIX", new _FString(*rates->GetName())} <
-                    (_associative_list_key_value){
+                    _associative_list_key_value{
                         "EQ_FREQS", new _FString(*freqs->GetName())} <
-                    (_associative_list_key_value){"MULT_BY_FREQ",
-                                                  new _Constant(is_canonical)});
+                    _associative_list_key_value{"MULT_BY_FREQ",
+                                                new _Constant(is_canonical)});
             }
           } else {
             throw _String("Failed to retrieve model rate matrix");

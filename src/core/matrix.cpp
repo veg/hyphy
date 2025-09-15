@@ -5646,7 +5646,7 @@ void _Matrix::CopyMatrixToDenseAndMultiply(_Matrix const &source, hyFloat C,
         if (hDim == source.hDim && vDim == source.vDim) {
           if (source.is_dense()) {
 #pragma unroll
-            for (unsigned long r = 0; r < lDim; r++) {
+            for (long r = 0; r < lDim; r++) {
               theData[r] = source.theData[r] * C;
             }
           } else {
@@ -5654,7 +5654,7 @@ void _Matrix::CopyMatrixToDenseAndMultiply(_Matrix const &source, hyFloat C,
               memset(theData, 0, sizeof(hyFloat) * lDim);
             }
 #pragma unroll
-            for (unsigned long r = 0; r < source.lDim; r++) {
+            for (long r = 0; r < source.lDim; r++) {
               const long idx = source.theIndex[r];
               if (idx >= 0)
                 theData[idx] = source.theData[r] * C;

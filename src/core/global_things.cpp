@@ -114,7 +114,7 @@ _String const kEmptyString, kPromptForFilePlaceholder("PROMPT_FOR_FILE"),
                     "\"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line "
                     "argument. This often resolves the issue, which is "
                     "indicative of numerical instability."),
-    kHyPhyVersion = _String("2.5.79"),
+    kHyPhyVersion = _String("2.5.80"),
 
     kNoneToken = "None", kNullToken = "null",
     kNoKWMatch = "__input_value_not_given__",
@@ -172,7 +172,8 @@ hyPointer MemAllocate(size_t bytes, bool zero, size_t alignment) {
   result = (hyPointer)zero ? calloc(bytes, 1) : malloc(bytes);
 
   if (result == nil) {
-    HandleApplicationError(_String("Failed to allocate '") & (unsigned long)bytes & "' bytes'",
+    HandleApplicationError(_String("Failed to allocate '") &
+                               (unsigned long)bytes & "' bytes'",
                            true);
   }
   return result;
@@ -184,8 +185,9 @@ hyPointer MemReallocate(hyPointer old_pointer, size_t new_size) {
   hyPointer result = (hyPointer)realloc(old_pointer, new_size);
 
   if (result == nil) {
-    HandleApplicationError(
-        _String("Failed to resize memory to '") & (unsigned long)new_size & "' bytes'", true);
+    HandleApplicationError(_String("Failed to resize memory to '") &
+                               (unsigned long)new_size & "' bytes'",
+                           true);
   }
 
   return result;
@@ -496,8 +498,7 @@ bool GlobalShutdown(void) {
 #endif
 
   _String *prefix[2] = {&hy_error_log_name, &hy_messages_log_name};
-  char const *messages[] = {"\nCheck %s for execution error details.\n",
-                            "\nCheck %s for diagnostic messages.\n"};
+
   hyFile *handle[2] = {hy_error_log_file, hy_message_log_file};
 
   for (long file_index = 0; file_index < 2; file_index++) {
@@ -508,7 +509,16 @@ bool GlobalShutdown(void) {
       handle[file_index]->seek(0, SEEK_END);
       unsigned long fileSize = handle[file_index]->tell();
       if (fileSize) {
-        fprintf(stderr, messages[file_index], prefix[file_index]->get_str());
+        switch (file_index) {
+        case 0:
+          fprintf(stderr, "\nCheck %s for execution error details.\n",
+                  prefix[file_index]->get_str());
+          break;
+        case 1:
+          fprintf(stderr, "\nCheck %s for execution message details.\n",
+                  prefix[file_index]->get_str());
+          break;
+        }
         if (file_index == 0) {
           no_errors = false;
         }

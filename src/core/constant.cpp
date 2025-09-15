@@ -604,7 +604,7 @@ HBLObjectRef _Constant::Exp(HBLObjectRef cache) {
 HBLObjectRef _Constant::FormatNumberString(HBLObjectRef p, HBLObjectRef p2,
                                            HBLObjectRef cache) {
 
-  char format[32], buffer[256];
+  char buffer[256];
 
   if (p->ObjectClass() == STRING) {
     time_t sec_epoc = (time_t)Value();
@@ -615,18 +615,17 @@ HBLObjectRef _Constant::FormatNumberString(HBLObjectRef p, HBLObjectRef p2,
 
     if (a1 >= 0 && a2 >= 0) {
       if (a1 > 0) {
-        snprintf(format, 32, "%%%ld.%ldf", (long)a1, (long)a2);
+        snprintf(buffer, 256, "%*.*f", (int)a1, (int)a2, Value());
       } else {
-        snprintf(format, 32, "%%.%ldf", (long)a2);
+        snprintf(buffer, 256, "%.*f", (int)a2, Value());
       }
     } else if (a1 >= 0) {
-      snprintf(format, 32, "%%%ldf", (long)a1);
+      snprintf(buffer, 256, "%*f", (int)a1, Value());
     } else if (a2 >= 0) {
-      snprintf(format, 32, "%%.%ldf", (long)a2);
+      snprintf(buffer, 256, "%.*f", (int)a2, Value());
     } else {
-      snprintf(format, 32, "%%g");
+      snprintf(buffer, 256, "%g", Value());
     }
-    snprintf(buffer, 256, format, Value());
   }
 
   return _returnStringOrUseCache(buffer, cache);

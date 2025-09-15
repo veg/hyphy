@@ -978,6 +978,7 @@ int main(int argc, char *argv[]) {
   if (hy_mpi_node_rank == 0L)
 #endif
     ex.SetKWArgs(&kwargs);
+  hy_env::EnvVariableSet(hy_env::global_kwargs, &kwargs, true);
 
   if (calculatorMode) {
     if (argFile.length()) {
