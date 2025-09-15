@@ -55,16 +55,13 @@ hyFile *hyFile::openFile(const char *file_path, hyFileOpenMode mode, bool error,
     }
   };
 
-  switch (mode) {
-  case kFileRead:
-  case kFileReadBinary: {
+  if (mode == kFileRead || mode == kFileReadBinary) {
     struct stat path_stat;
     stat(file_path, &path_stat);
     if (!S_ISREG(path_stat.st_mode)) {
       handle_error(nullptr);
       return nullptr;
     }
-  }
   }
 
   hyFile *f = new hyFile;

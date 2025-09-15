@@ -3682,14 +3682,14 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
 
 #ifdef _SLKP_USE_ARM_NEON
       float64x2x2_t tmatrix_transpose[4] = {
-          (float64x2x2_t){transitionMatrix[0], transitionMatrix[4],
-                          transitionMatrix[8], transitionMatrix[12]},
-          (float64x2x2_t){transitionMatrix[1], transitionMatrix[5],
-                          transitionMatrix[9], transitionMatrix[13]},
-          (float64x2x2_t){transitionMatrix[2], transitionMatrix[6],
-                          transitionMatrix[10], transitionMatrix[14]},
-          (float64x2x2_t){transitionMatrix[3], transitionMatrix[7],
-                          transitionMatrix[11], transitionMatrix[15]}};
+          float64x2x2_t{transitionMatrix[0], transitionMatrix[4],
+                        transitionMatrix[8], transitionMatrix[12]},
+          float64x2x2_t{transitionMatrix[1], transitionMatrix[5],
+                        transitionMatrix[9], transitionMatrix[13]},
+          float64x2x2_t{transitionMatrix[2], transitionMatrix[6],
+                        transitionMatrix[10], transitionMatrix[14]},
+          float64x2x2_t{transitionMatrix[3], transitionMatrix[7],
+                        transitionMatrix[11], transitionMatrix[15]}};
 #endif
 
 #ifdef _SLKP_USE_SSE_INTRINSICS
@@ -4520,14 +4520,14 @@ void _TheTree::ComputeBranchCache(
 
 #ifdef _SLKP_USE_ARM_NEON
       float64x2x2_t tmatrix_transpose[4] = {
-          (float64x2x2_t){transitionMatrix[0], transitionMatrix[4],
-                          transitionMatrix[8], transitionMatrix[12]},
-          (float64x2x2_t){transitionMatrix[1], transitionMatrix[5],
-                          transitionMatrix[9], transitionMatrix[13]},
-          (float64x2x2_t){transitionMatrix[2], transitionMatrix[6],
-                          transitionMatrix[10], transitionMatrix[14]},
-          (float64x2x2_t){transitionMatrix[3], transitionMatrix[7],
-                          transitionMatrix[11], transitionMatrix[15]}};
+          float64x2x2_t{transitionMatrix[0], transitionMatrix[4],
+                        transitionMatrix[8], transitionMatrix[12]},
+          float64x2x2_t{transitionMatrix[1], transitionMatrix[5],
+                        transitionMatrix[9], transitionMatrix[13]},
+          float64x2x2_t{transitionMatrix[2], transitionMatrix[6],
+                        transitionMatrix[10], transitionMatrix[14]},
+          float64x2x2_t{transitionMatrix[3], transitionMatrix[7],
+                        transitionMatrix[11], transitionMatrix[15]}};
 #endif
 
 #ifdef _SLKP_USE_SSE_INTRINSICS

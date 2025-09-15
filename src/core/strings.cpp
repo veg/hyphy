@@ -138,14 +138,12 @@ _String::_String(const hyFloat val, const char *format) {
 //=============================================================
 
 _String::_String(const hyFloat val, unsigned char digits) {
-  char format_str[64];
-  if (digits > 0) {
-    snprintf(format_str, 64, "%%.%dg", MIN(digits, 20));
-  } else {
-    snprintf(format_str, 64, "%%g");
-  }
   char s_val[128];
-  s_length = snprintf(s_val, 128, format_str, val);
+  if (digits > 0) {
+    s_length = snprintf(s_val, 128, "%.*g", MIN(digits, 20), val);
+  } else {
+    s_length = snprintf(s_val, 128, "%g", val);
+  }
   AllocateAndCopyString(s_val, s_length);
 }
 

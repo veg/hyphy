@@ -255,8 +255,6 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
                   lf->GetIthIndependentName(alterIndex)->Enquote() & "): " &
                   tdiff);
 
-    hyFloat baseDiff = minDiff;
-
     for (long k = 2; k <= hy_global::system_CPU_count; k++) {
       reflush_conditionals = true;
       lf->SetThreadCount(k);
@@ -667,10 +665,10 @@ bool _LikelihoodFunction::MapTreeTipsToData(long f, _String *errorMessage,
       }
       if (iterator->GetModelIndex() == HY_NO_MODEL) {
         throw _String("No model is not associated with node ") &
-            iterator->ContextFreeName().Enquote();
+            iterator->GetName()->Enquote();
       } else if (iterator->GetModelDimension() != dfDim) {
         throw _String("The dimension of the transition matrix at node ") &
-            iterator->ContextFreeName().Enquote() &
+            iterator->GetName()->Enquote() &
             " is not equal to the state count in the data filter associated "
             "with the tree.";
       }
@@ -4182,16 +4180,15 @@ void _LikelihoodFunction::LoggerAddGradientPhase(hyFloat gradient_precision,
   if (optimizatonHistory) {
     _AssociativeList *new_phase = new _AssociativeList;
     (*new_phase) <
-        (_associative_list_key_value){"type",
-                                      new _FString("Gradient descent")} <
-        (_associative_list_key_value){"precision",
-                                      new _Constant(gradient_precision)} <
-        (_associative_list_key_value){"beta", new _Constant(beta)} <
-        (_associative_list_key_value){"current_gradient",
-                                      new _Constant(current_gradient)};
+        _associative_list_key_value{"type", new _FString("Gradient descent")} <
+        _associative_list_key_value{"precision",
+                                    new _Constant(gradient_precision)} <
+        _associative_list_key_value{"beta", new _Constant(beta)} <
+        _associative_list_key_value{"current_gradient",
+                                    new _Constant(current_gradient)};
 
     *((_AssociativeList *)this->optimizatonHistory->GetByKey("Phases")) <
-        (_associative_list_key_value){nil, new_phase};
+        _associative_list_key_value{nil, new_phase};
   }
 }
 
@@ -4218,13 +4215,12 @@ void _LikelihoodFunction::LoggerAddCoordinatewisePhase(hyFloat shrinkage,
 
     _AssociativeList *new_phase = new _AssociativeList;
     (*new_phase) <
-        (_associative_list_key_value){"type",
-                                      new _FString("Directional pass")} <
-        (_associative_list_key_value){"shrinkage", new _Constant(shrinkage)} <
-        (_associative_list_key_value){"mode", new _FString(phase_kind)};
+        _associative_list_key_value{"type", new _FString("Directional pass")} <
+        _associative_list_key_value{"shrinkage", new _Constant(shrinkage)} <
+        _associative_list_key_value{"mode", new _FString(phase_kind)};
 
     *((_AssociativeList *)this->optimizatonHistory->GetByKey("Phases")) <
-        (_associative_list_key_value){nil, new_phase};
+        _associative_list_key_value{nil, new_phase};
   }
 }
 
@@ -4252,25 +4248,24 @@ void _LikelihoodFunction::LoggerSingleVariable(
   if (optimizatonHistory) {
     _AssociativeList *new_phase = new _AssociativeList;
     (*new_phase) <
-        (_associative_list_key_value){
+        _associative_list_key_value{
             "type", new _FString(*GetIthIndependentName(index))} <
-        (_associative_list_key_value){"bracket precision",
-                                      new _Constant(bracket_precision)} <
-        (_associative_list_key_value){"brent precision",
-                                      new _Constant(brent_precision)} <
-        (_associative_list_key_value){"bracket width",
-                                      new _Constant(bracket_width)} <
-        (_associative_list_key_value){"bracket evals",
-                                      new _Constant(bracket_evals)} <
-        (_associative_list_key_value){"brent evals",
-                                      new _Constant(brent_evals)} <
-        (_associative_list_key_value){
+        _associative_list_key_value{"bracket precision",
+                                    new _Constant(bracket_precision)} <
+        _associative_list_key_value{"brent precision",
+                                    new _Constant(brent_precision)} <
+        _associative_list_key_value{"bracket width",
+                                    new _Constant(bracket_width)} <
+        _associative_list_key_value{"bracket evals",
+                                    new _Constant(bracket_evals)} <
+        _associative_list_key_value{"brent evals", new _Constant(brent_evals)} <
+        _associative_list_key_value{
             "matrix exponents/eval",
             new _Constant(exp_count / (bracket_evals + brent_evals))} <
-        (_associative_list_key_value){"movement", new _Constant(movement)};
+        _associative_list_key_value{"movement", new _Constant(movement)};
 
     *((_AssociativeList *)this->optimizatonHistory->GetByKey("Phases")) <
-        (_associative_list_key_value){nil, new_phase};
+        _associative_list_key_value{nil, new_phase};
 
     LoggerLogL(logL);
     *((_Vector *)(((_AssociativeList *)this->optimizatonHistory->GetByKey(
@@ -4530,12 +4525,12 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
   if (keepOptimizationLog) {
     optimizatonHistory = new _AssociativeList;
-    (*optimizatonHistory) < (_associative_list_key_value){"LogL", new _Vector}
+    (*optimizatonHistory) < _associative_list_key_value{"LogL", new _Vector}
         /*
          2 values per entry:
          logL ; optimization stage (indexed from 0 to max)
          */
-        < (_associative_list_key_value){"Phases", new _AssociativeList};
+        < _associative_list_key_value{"Phases", new _AssociativeList};
     /*
      0 - N-1 indices
      */
@@ -4560,12 +4555,12 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       _AssociativeList *variable_traces = new _AssociativeList;
       for (unsigned long var_id = 0; var_id < indexInd.lLength; var_id++) {
         (*variable_traces) <
-            (_associative_list_key_value){
+            _associative_list_key_value{
                 GetIthIndependentVar(var_id)->GetName()->get_str(),
                 new _Vector};
       }
       (*optimizatonHistory) <
-          (_associative_list_key_value){"Parameters", variable_traces};
+          _associative_list_key_value{"Parameters", variable_traces};
     }
   }
 
@@ -5447,7 +5442,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
         bestVal = GetIthIndependent(current_index);
 
         _Vector parameter_change_history;
-        for (long k = 0; k < changes_history.lLength; k++) {
+        for (unsigned long k = 0; k < changes_history.lLength; k++) {
           _Vector *iter_changes = (_Vector *)changes_history(k);
           parameter_change_history.Store(iter_changes->theData[current_index]);
         }

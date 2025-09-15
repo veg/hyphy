@@ -114,7 +114,6 @@ lfunction trees.GetTreeString._sanitize(string) {
  * @returns {String} a newick tree string
  */
 lfunction trees.GetTreeString(look_for_newick_tree) {
-
     
     UseModel(USE_NO_MODEL);
 
@@ -122,8 +121,16 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
         treeString = trees.GetTreeString._sanitize(look_for_newick_tree);
         look_for_newick_tree = None;
     } else {
+    
+       
+ 
         if (look_for_newick_tree == FALSE) {
             utility.SetEnvVariable("IS_TREE_PRESENT_IN_DATA", FALSE);
+        } else {
+            tree_argument =  trees.CheckTreeArgument ();
+            if (Type (tree_argument) == "String") {
+                 utility.SetEnvVariable("IS_TREE_PRESENT_IN_DATA", FALSE);
+            }
         }
 
         if (utility.GetEnvVariable("IS_TREE_PRESENT_IN_DATA")) {
@@ -277,6 +284,16 @@ lfunction trees.LoadAnnotatedTopologyAndMap(look_for_newick_tree, mapping) {
     return result;
 }
 
+
+lfunction trees.CheckTreeArgument () {
+    global_kwargs = utility.GetEnvVariable("GLOBAL_KWARGS");
+    tree = utility.GetByKey (global_kwargs, "tree", "String");
+    if (null == tree) {
+         tree = utility.GetByKey (global_kwargs, "tree", "AssociativeList");
+   }
+    return tree;
+}
+
 /**
  * Loads a tree topology with node name label mappings and annotations from a list of partitions
  * @name trees.LoadAnnotatedTreeTopology.match_partitions
@@ -314,8 +331,14 @@ lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
     partition_count = Rows(partitions);
     partrees = {};
     
-
-    tree_matrix = utility.GetEnvVariable("NEXUS_FILE_TREE_MATRIX");
+    tree_argument =  trees.CheckTreeArgument ();
+    
+    
+    if (null == tree_argument) {    
+        tree_matrix = utility.GetEnvVariable("NEXUS_FILE_TREE_MATRIX");
+    } else {
+        tree_matrix = None;
+    }
 
     if (Type(tree_matrix) == "Matrix") {
         io.CheckAssertion("Rows(`&tree_matrix`) >= partition_count", "The number of trees in the NEXUS block cannot be smaller than the number of partitions in the file");

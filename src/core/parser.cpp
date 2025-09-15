@@ -117,13 +117,11 @@ void parameterToCharBuffer(hyFloat value, char *dump, long length, bool json) {
       snprintf(dump, length, PRINTF_FORMAT_STRING, value);
     }
   } else {
-    _String format("%-");
 #ifdef __USE_LONG_DOUBLE__
-    format = format & _String(digs) & "Lg";
+    snprintf(dump, length, "%-.*Lg", (int)digs, value);
 #else
-    format = format & _String(digs) & 'g';
+    snprintf(dump, length, "%-.*g", (int)digs, value);
 #endif
-    snprintf(dump, length, (const char *)format, value);
   }
 }
 

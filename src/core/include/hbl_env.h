@@ -159,7 +159,7 @@ extern const _String accept_rooted_trees, accept_branch_lengths,
     include_model_spec, lf_convergence_criterion, try_numeric_sequence_match,
     short_mpi_return, kSCFGCorpus, verbosity_level_string,
     tolerate_numerical_errors, tolerate_constraint_violation, number_threads,
-    gzip_compression_level, tree_parser_namespace;
+    gzip_compression_level, tree_parser_namespace, global_kwargs;
 
 ;
 

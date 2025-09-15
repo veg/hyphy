@@ -240,19 +240,41 @@ _String *MPIRecvString(long senderT, long &senderID) {
 
   MPI_Status status;
 
-  // nonagressive polling mode
+  // --- Configuration for the adaptive sleep ---
+  // You can tune these values based on your expected message frequency.
+  const int MIN_DELAY_US = 1; // Start with a 1 microsecond sleep.
+  const int MAX_DELAY_US =
+      131072; // Cap the sleep at 10 milliseconds to stay responsive.
 
-  // ReportWarning ("Step 1");
+  // This should be managed in a scope that persists between calls to this wait
+  // loop. A static variable is a simple way to achieve this for demonstration.
+  static int s_current_delay_us = MIN_DELAY_US;
 
+  // --- Your Improved Loop ---
   int message_received = 0;
   while (!message_received) {
+    // Probe for the message without blocking.
     MPI_Iprobe(senderT, HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD, &message_received,
                MPI_STATUS_IGNORE);
-    usleep(10);
+
+    // If no message, sleep and increase the delay for the next iteration.
+    if (!message_received) {
+      usleep(s_current_delay_us);
+
+      // Double the delay for the next wait.
+      s_current_delay_us *= 2;
+
+      // Cap the delay at the maximum value.
+      if (s_current_delay_us > MAX_DELAY_US) {
+        s_current_delay_us = MAX_DELAY_US;
+      }
+    }
   }
 
-  // ReportWarning ("Step 2");
-  //  nonagressive polling mode
+  // --- Message has been detected ---
+
+  // CRITICAL: Reset the delay so the *next* wait will be fast again.
+  s_current_delay_us = MIN_DELAY_US;
 
   ReportMPIError(MPI_Recv(&messageLength, 1, MPI_LONG, senderT,
                           HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD, &status),

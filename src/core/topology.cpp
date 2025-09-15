@@ -1474,10 +1474,10 @@ HBLObjectRef _TreeTopology::MaximumParsimony(HBLObjectRef parameters,
             iterator->in_object = store_values.get(iterator->in_object);
             _AssociativeList *substitution_record = new _AssociativeList;
             *substitution_record <
-                (_associative_list_key_value){
+                _associative_list_key_value{
                     "from",
                     new _FString((*(_String *)id2name.GetItem(parent_label)))} <
-                (_associative_list_key_value){
+                _associative_list_key_value{
                     "to",
                     new _FString((*(_String *)id2name.GetItem(my_label)))};
             inferred_substitutions->MStore(GetNodeName(iterator),

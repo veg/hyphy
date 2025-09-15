@@ -114,6 +114,11 @@ namespace terms{
         lower_bound: "100",
         upper_bound: "1e10"
     };
+
+    range_1_100 = {
+        lower_bound: "1",
+        upper_bound: "100"
+    };
     
     range_small_fraction = {
         lower_bound: "0",

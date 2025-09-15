@@ -1,4 +1,4 @@
-RequireVersion ("2.5.51");
+RequireVersion ("2.5.79");
 
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
@@ -514,17 +514,24 @@ for (busted.i = 1; busted.i < busted.rate_classes; busted.i += 1) {
     parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.i)), terms.range01);
 }
 
+busted.omega_eds_parameter = terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes);
+busted.omega_eds_w_parameter = terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), busted.rate_classes-1);
+
+
 if (busted.error_sink) {
+     parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,1)), terms.range_high);
+     parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,1)), terms.range_high);
+     parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , busted.omega_eds_parameter), terms.range_1_100);
+     parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , busted.omega_eds_parameter), terms.range_1_100);
      parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,1)), terms.range_high);
      parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,1)), terms.range_high);
      parameters.SetRange  (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), 1)),terms.range_small_fraction);
      parameters.SetRange  (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), 1)),terms.range_small_fraction);
+} else {
+    parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , busted.omega_eds_parameter), terms.range_gte1);
 }
 
-busted.omega_eds_parameter = terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes);
-busted.omega_eds_w_parameter = terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), busted.rate_classes-1);
 
-parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , busted.omega_eds_parameter), terms.range_gte1);
 
 busted.branch_length_string = busted.test.bsrel_model [terms.model.branch_length_string];
 busted.model_parameters = busted.test.bsrel_model[terms.parameters];

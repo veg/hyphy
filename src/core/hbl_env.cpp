@@ -225,7 +225,7 @@ _String const accept_branch_lengths("ACCEPT_BRANCH_LENGTHS"),
     // instead of returing {0,0,1,0} for a 'G' character in GetDataInfo (r,
     // filter, species, pattern) return only the index of 'G', e.g. 2 in this
     // case. -1 is returned for ambigs
-    false_const("FALSE"),
+    global_kwargs("GLOBAL_KWARGS"), false_const("FALSE"),
     // the FALSE (0.0) constant
     fprintf_redirect("GLOBAL_FPRINTF_REDIRECT"),
     // if set to a string path, then all stdout will go to the file at the path
