@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/veg/hyphy.svg?branch=master)](https://travis-ci.org/veg/hyphy)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/hyphy/README.html)
 
 # HyPhy - Hypothesis testing using Phylogenies
 
