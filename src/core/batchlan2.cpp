@@ -256,7 +256,8 @@ void _HBL_Init_Const_Arrays(void) {
       (BaseRef)HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY,
       (long)_hyInitCommandExtras(
           _HY_ValidHBLExpressions.Insert("LoadFunctionLibrary(",
-                                         HY_HBL_COMMAND_EXECUTE_A_FILE, false),
+                                         HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY,
+                                         false),
           -1,
           "LoadFunctionLibrary(<file path | library name>, [optional "
           "<'compiled' | (input redirect , [optional <namespace>]) ])",

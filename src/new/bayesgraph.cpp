@@ -1107,13 +1107,13 @@ void _BayesianGraphicalModel::CacheNodeScores(void) {
         }
 
         // farm out jobs to idle compute nodes until none are left
-        for (long node_id = 0; node_id < num_nodes;
+        for (unsigned long node_id = 0; node_id < num_nodes;
              node_id++) { // node_id iterates over network nodes
           long maxp = max_parents.get(node_id);
 
           _String mxString, mxName;
 
-          hyFloat score = compute_singleton_scores(node_id);
+          compute_singleton_scores(node_id);
 
           //_Constant   orphan_score (score);
 
@@ -1162,12 +1162,13 @@ void _BayesianGraphicalModel::CacheNodeScores(void) {
         }
 
         // shut down compute nodes
-        for (long shutdown = -1, mpi_node = 1L; mpi_node < size; mpi_node++) {
-          ReportMPIError(MPI_Send(&shutdown, 1, MPI_LONG, mpi_node,
+        for (long shutdown = -1, mpi_node_id = 1L; mpi_node_id < size;
+             mpi_node_id++) {
+          ReportMPIError(MPI_Send(&shutdown, 1, MPI_LONG, mpi_node_id,
                                   HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD),
                          true);
           ReportWarning(_String("Node 0 sending shutdown signal to node ") &
-                        mpi_node);
+                        mpi_node_id);
         }
       } else { // compute node
 
@@ -1197,7 +1198,7 @@ void _BayesianGraphicalModel::CacheNodeScores(void) {
                                   MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG,
                                   MPI_COMM_WORLD),
                          true);
-          list_of_matrices->ForEach([&](BaseRef mx, unsigned long idx) -> void {
+          list_of_matrices->ForEach([&](BaseRef mx, unsigned long) -> void {
             _Matrix *storedMx = (_Matrix *)mx;
             ReportMPIError(MPI_Send(storedMx->theData, storedMx->GetHDim(),
                                     MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG,
@@ -1275,8 +1276,6 @@ void _BayesianGraphicalModel::MPIReceiveScores(_Matrix *mpi_node_status,
 
   _SimpleList parents, all_but_one(num_nodes - 1, 0, 1), aux_list, nk_tuple;
 
-  hyFloat score;
-
   // parse nk-tuple results
   for (long np = 2; np <= maxp; np++) {
     _NTupleStorage family_scores(num_nodes - 1, np);
@@ -1285,8 +1284,7 @@ void _BayesianGraphicalModel::MPIReceiveScores(_Matrix *mpi_node_status,
     if (all_but_one.NChooseKInit(aux_list, nk_tuple, np, false)) {
       long score_index = 0,
            num_ktuples = exp(_ln_gamma(num_nodes) - _ln_gamma(num_nodes - np) -
-                             _ln_gamma(np + 1)),
-           ntuple_receipt;
+                             _ln_gamma(np + 1));
 
       _Matrix scores_to_store(num_ktuples, 1, false, true);
 
@@ -1299,8 +1297,7 @@ void _BayesianGraphicalModel::MPIReceiveScores(_Matrix *mpi_node_status,
       do {
         remaining = all_but_one.NChooseK(
             aux_list, nk_tuple); // update nk-tuple in aux_list
-        ntuple_receipt =
-            family_scores.Store(scores_to_store(score_index, 0), nk_tuple);
+        family_scores.Store(scores_to_store(score_index, 0), nk_tuple);
         score_index++;
       } while (remaining);
     } else {
@@ -1359,7 +1356,7 @@ function add_gaussian_node (id,maxp,size,mean,prec,scale) {\
 }\
 nodes = {};";
 
-  for (long node_id = 0L; node_id < num_nodes; node_id++) {
+  for (unsigned long node_id = 0L; node_id < num_nodes; node_id++) {
     if (is_node_discrete(node_id)) {
       rec << "nodes + add_discrete_node("
           << *(_String *)node_names.GetItem(node_id) << max_parents.get(node_id)
