@@ -188,20 +188,91 @@ public:
 
     char            rooted;
 
+    /**
+     * @brief Write the topology to a file
+     *
+     * @param file The file to write to
+     * @param u The format to use
+     */
     virtual void            toFileStr                           (hyFile*, unsigned long);
+    /**
+     * @brief Convert the topology to a string
+     *
+     * @param u The format to use
+     * @return BaseRef The string representation of the topology
+     */
     virtual BaseRef         toStr                               (unsigned long = 0UL);
+    /**
+     * @brief Reroot the tree using an internal traverser
+     *
+     * @param iterator The iterator
+     * @param l The long value
+     * @param b The boolean value
+     * @param sb The string buffer
+     * @param settings The parse settings
+     * @param branch_length_mode The branch length mode
+     * @param variable_ref The variable reference
+     * @param b2 The second boolean value
+     */
     void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_StringBuffer&, _TreeTopologyParseSettings const& settings,  hyTopologyBranchLengthMode branch_length_mode, long variable_ref  = -1L, bool = false) const;
 
+    /**
+     * @brief Construct a new _TreeTopology object
+     */
     _TreeTopology                       (void);
+    /**
+     * @brief Construct a new _TreeTopology object
+     *
+     * @param s1 The first string
+     * @param s2 The second string
+     * @param b The boolean value
+     * @param mapping The mapping
+     */
     _TreeTopology                       (_String const&, _String const&, bool = true, _AssociativeList* mapping = nil);
+    /**
+     * @brief Construct a new _TreeTopology object
+     *
+     * @param s The string
+     */
     _TreeTopology                       (_String const*);
+    /**
+     * @brief Construct a new _TreeTopology object
+     *
+     * @param t The tree
+     */
     _TreeTopology                       (_TheTree const*);
+    /**
+     * @brief Construct a new _TreeTopology object
+     *
+     * @param t The topology to copy
+     */
     _TreeTopology                       (const _TreeTopology& );
+    /**
+     * @brief The assignment operator
+     *
+     * @param t The topology to assign from
+     * @return const _TreeTopology&
+     */
     _TreeTopology const&                operator = (const _TreeTopology& );
 
+    /**
+     * @brief Destroy the _TreeTopology object
+     */
     virtual                 ~_TreeTopology                      (void);
 
+    /**
+     * @brief Compare this topology with another
+     *
+     * @param t The topology to compare with
+     * @param cache The cache
+     * @return _FString* The result of the comparison
+     */
     virtual  _FString*      Compare                             (HBLObjectRefConst, HBLObjectRef cache) const;
+    /**
+     * @brief Create a dynamic copy of the object
+     *
+     * @return BaseRef The dynamic copy
+     */
     virtual  BaseRef        makeDynamic                         (void) const;
     node<long>* CopyTreeStructure                   (node<long>*, bool) const;
     virtual  _String           FinalizeNode                        (node<long>*, long, _String, _String const&, _String&, _TreeTopologyParseSettings const & settings);

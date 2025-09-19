@@ -51,54 +51,191 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "translation_table.h"
 
 
-// data set file state data struct
+/**
+ * @brief A struct to store the state of a data set file
+ */
 struct FileState {
 
+  /**
+   * @brief The translation table for the file
+   */
   _TranslationTable *translationTable;
-  long curSpecies, totalSpeciesRead, totalSitesRead, totalSpeciesExpected,
-       totalSitesExpected, curSite, maxStringLength, pInSrc, currentFileLine;
-  bool acceptingCommands, allSpeciesDefined, interleaved, autoDetect,
+  /**
+   * @brief The current species being read
+   */
+  long curSpecies,
+       /**
+        * @brief The total number of species read
+        */
+       totalSpeciesRead,
+       /**
+        * @brief The total number of sites read
+        */
+       totalSitesRead,
+       /**
+        * @brief The total number of species expected
+        */
+       totalSpeciesExpected,
+       /**
+        * @brief The total number of sites expected
+        */
+       totalSitesExpected,
+       /**
+        * @brief The current site being read
+        */
+       curSite,
+       /**
+        * @brief The maximum string length
+        */
+       maxStringLength,
+       /**
+        * @brief The position in the source
+        */
+       pInSrc,
+       /**
+        * @brief The current line in the file
+        */
+       currentFileLine;
+  /**
+   * @brief Whether the file is accepting commands
+   */
+  bool acceptingCommands,
+       /**
+        * @brief Whether all species have been defined
+        */
+       allSpeciesDefined,
+       /**
+        * @brief Whether the file is interleaved
+        */
+       interleaved,
+       /**
+        * @brief Whether to auto-detect the file type
+        */
+       autoDetect,
+       /**
+        * @brief Whether to skip in NEXUS
+        */
        isSkippingInNEXUS;
-  int fileType, baseLength;
-  char repeat, skip;
+  /**
+   * @brief The file type
+   */
+  int fileType,
+      /**
+       * @brief The base length
+       */
+      baseLength;
+  /**
+   * @brief The repeat character
+   */
+  char repeat,
+       /**
+        * @brief The skip character
+        */
+       skip;
 
-  _String *theSource, *theNamespace;
+  /**
+   * @brief The source string
+   */
+  _String *theSource,
+          /**
+           * @brief The namespace
+           */
+          *theNamespace;
     
+  /**
+   * @brief The line buffer
+   */
   _StringBuffer lineBuffer;
+  /**
+   * @brief The raw lines format
+   */
   _SimpleList rawLinesFormat;
 
 };
 //_________________________________________________________
 
+/**
+ * @brief A class to represent a site in a sequence
+ */
 class _Site : public _StringBuffer {
 
 public:
 
-  // does nothing
+  /**
+   * @brief Construct a new _Site object
+   */
   _Site(void);
 
-  // length allocation
+  /**
+   * @brief Construct a new _Site object
+   *
+   * @param length The length of the site
+   * @param ref_no The reference number
+   */
   _Site(unsigned long length, long ref_no);
 
-  // data constructor
+  /**
+   * @brief Construct a new _Site object
+   *
+   * @param s The string to construct from
+   */
   _Site(_String const &);
 
-  // data constructor
+  /**
+   * @brief Construct a new _Site object
+   *
+   * @param c The character to construct from
+   */
   _Site(char);
 
-  // reference constructor
+  /**
+   * @brief Construct a new _Site object
+   *
+   * @param l The long to construct from
+   */
   _Site(long);
 
-  // destructor
+  /**
+   * @brief Destroy the _Site object
+   */
   virtual ~_Site(void);
 
+  /**
+   * @brief Complete the site
+   */
   void Complete(void);
 
+  /**
+   * @brief Get the reference number
+   *
+   * @return long The reference number
+   */
   long GetRefNo     (void) const { return refNo < 0L ? -refNo - 2L : refNo - 2L; }
+  /**
+   * @brief Check if the site is complete
+   *
+   * @return true if the site is complete, false otherwise
+   */
   bool IsComplete   (void) const    { return refNo < 0L; }
+  /**
+   * @brief Set the reference number
+   *
+   * @param r The reference number
+   */
   void SetRefNo     (long r) { refNo = -r - 2L; }
     
+  /**
+   * @brief The new operator for the _Site class
+   *
+   * @param size The size to allocate
+   * @return void* A pointer to the allocated memory
+   */
   void *      operator new       (size_t size);
+  /**
+   * @brief The delete operator for the _Site class
+   *
+   * @param p A pointer to the memory to deallocate
+   */
   void        operator delete    (void * p);
 
 

@@ -71,16 +71,56 @@ class _TheTree : public _TreeTopology {
   // initialization stage
 
 public:
+  /**
+   * @brief Construct a new _TheTree object
+   */
   _TheTree(); // default constructor - doesn't do much
+  /**
+   * @brief Construct a new _TheTree object
+   *
+   * @param name The name of the tree
+   * @param parms The parameters of the tree
+   * @param b Whether the tree is rooted
+   */
   _TheTree(_String const &name, _String const &parms,
            bool = true); // builds a tree from a string
+  /**
+   * @brief Construct a new _TheTree object
+   *
+   * @param name The name of the tree
+   * @param t The topology of the tree
+   */
   _TheTree(_String const &name,
            _TreeTopology *); // builds a tree from a tree topology
+  /**
+   * @brief Construct a new _TheTree object
+   *
+   * @param name The name of the tree
+   * @param t The tree to copy
+   */
   _TheTree(_String const &name, _TheTree *); // builds a tree from another tree
 
+  /**
+   * @brief Destroy the _TheTree object
+   */
   virtual ~_TheTree(void);
+  /**
+   * @brief Check if the tree has changed
+   *
+   * @param b Whether to check for changes
+   * @param cache The cache
+   * @return true if the tree has changed, false otherwise
+   */
   virtual bool HasChanged(bool = false, _AVLListX *cache = nil);
+  /**
+   * @brief Mark the tree as done
+   */
   virtual void MarkDone(void);
+  /**
+   * @brief Check if the tree has changed
+   *
+   * @return true if the tree has changed, false otherwise
+   */
   bool HasChanged2(void);
 
   virtual _String FinalizeNode(node<long> *, long, _String, _String const &,

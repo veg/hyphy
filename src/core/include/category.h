@@ -57,12 +57,20 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //__________________________________________________________________________________
 
+/**
+ * @brief A category variable
+ *
+ */
 class     _CategoryVariable: public _Variable
 {
 
 public:
     // c&d
 
+    /**
+     * @brief Construct a new _CategoryVariable object
+     *
+     */
     _CategoryVariable () {
         values = nil;
         intervalEnds = nil;
@@ -70,12 +78,30 @@ public:
         conditionalWeights = nil;
     };
     
+    /**
+     * @brief Construct a new _CategoryVariable object
+     *
+     * @param cv
+     */
     _CategoryVariable (_CategoryVariable const & cv) {
         Duplicate (&cv);
     }
     
+    /**
+     * @brief Construct a new _CategoryVariable object
+     *
+     * @param name
+     * @param parms
+     * @param vc
+     */
     _CategoryVariable (_String& name, _List* parms, _VariableContainer*);
     
+    /**
+     * @brief Assignment operator
+     *
+     * @param cv
+     * @return _CategoryVariable const&
+     */
     _CategoryVariable const & operator = (_CategoryVariable const& cv) {
         if (this != &cv) {
             Duplicate (&cv);
@@ -84,34 +110,92 @@ public:
     }
 
     // std functions
+    /**
+     * @brief Destroy the _CategoryVariable object
+     *
+     */
     virtual
     ~_CategoryVariable () {
         BatchDelete(values, intervalEnds, weights, conditionalWeights);
     };
+    /**
+     * @brief Make a dynamic copy of the object
+     *
+     * @return BaseRef
+     */
     virtual
     BaseRef     makeDynamic             (void) const;
+    /**
+     * @brief Duplicate the object from a reference
+     *
+     * @param brc
+     */
     virtual
     void        Duplicate               (BaseRefConst);
+    /**
+     * @brief Convert the object to a string
+     *
+     * @param ul
+     * @return BaseRef
+     */
     virtual
     BaseRef     toStr                   (unsigned long = 0UL);
 
+    /**
+     * @brief Check if the variable is global
+     *
+     * @return true
+     * @return false
+     */
     virtual
     bool        IsGlobal                (void);
 
+    /**
+     * @brief Check if the variable is constant
+     *
+     * @return true
+     * @return false
+     */
     virtual
     bool        IsConstant              (void);
 
+    /**
+     * @brief Check if the variable is a category
+     *
+     * @return true
+     * @return false
+     */
     virtual
     bool        IsCategory              (void) {
         return true;
     }
 
+    /**
+     * @brief Scan for variables
+     *
+     * @param avl
+     * @param b
+     * @param tagger
+     * @param weight
+     */
     virtual
     void       ScanForVariables         (_AVLList&, bool = false, _AVLListX* tagger = nil, long weight = 0) const;
 
+    /**
+     * @brief Scan for global variables
+     *
+     * @param avl
+     */
     virtual
     void       ScanForGVariables        (_AVLList&);
 
+    /**
+     * @brief Check if the parameters have changed
+     *
+     * @param l
+     * @return true
+     * @return false
+     */
     bool       HaveParametersChanged    (long = -1);
 
     /*virtual
@@ -119,80 +203,246 @@ public:
 
     // access functions
 
+    /**
+     * @brief Get the Number Of Intervals
+     *
+     * @return long
+     */
     long        GetNumberOfIntervals () const {
         return intervals;
     }
 
+    /**
+     * @brief Get the Representation Type
+     *
+     * @return char
+     */
     char        GetRepresentationType () const {
         return representation;
     }
 
+    /**
+     * @brief Set the Interval Value
+     *
+     * @param l
+     * @param recacl
+     * @return hyFloat
+     */
     hyFloat  SetIntervalValue (long, bool recacl = true);
     // set interval value is returned
 
+    /**
+     * @brief Get the Mean
+     *
+     * @return hyFloat
+     */
     hyFloat  Mean (void);
 
+    /**
+     * @brief Get the Interval Value
+     *
+     * @param l
+     * @return hyFloat
+     */
     hyFloat  GetIntervalValue (long);
 
+    /**
+     * @brief Get the Interval Weight
+     *
+     * @param l
+     * @return hyFloat
+     */
     hyFloat  GetIntervalWeight(long);
 
+    /**
+     * @brief Get the Interval Weights
+     *
+     * @return hyFloat*
+     */
     hyFloat* GetIntervalWeights(void) {
         return weights->fastIndex();
     }
 
+    /**
+     * @brief Get the Values
+     *
+     * @return _Matrix*
+     */
     _Matrix*    GetValues (void);
 
+    /**
+     * @brief Get the Weights
+     *
+     * @param b
+     * @return _Matrix*
+     */
     _Matrix*    GetWeights(bool = false);
 
+    /**
+     * @brief Get the Interval Ends
+     *
+     * @return _Matrix*
+     */
     _Matrix*    GetIntervalEnds (void);
 
+    /**
+     * @brief Compute the Hidden Markov model
+     *
+     * @return _Matrix*
+     */
     _Matrix*    ComputeHiddenMarkov (void);
+    /**
+     * @brief Compute the Hidden Markov frequencies
+     *
+     * @return _Matrix*
+     */
     _Matrix*    ComputeHiddenMarkovFreqs (void);
+    /**
+     * @brief Get the Hidden Markov model
+     *
+     * @return _Matrix*
+     */
     _Matrix*    GetHiddenMarkov (void) const;
+    /**
+     * @brief Get the Hidden Markov frequencies
+     *
+     * @return _Matrix*
+     */
     _Matrix*    GetHiddenMarkovFreqs (void) const;
 
+    /**
+     * @brief Get the Density
+     *
+     * @return _Formula&
+     */
     _Formula&   GetDensity(void) {
         return density;
     }
 
+    /**
+     * @brief Get the Cumulative
+     *
+     * @return _Formula&
+     */
     _Formula&   GetCumulative(void) {
         return cumulative;
     }
 
 
+    /**
+     * @brief Refresh the variable
+     *
+     * @param force
+     * @return true
+     * @return false
+     */
     bool        Refresh(bool force=false) {
         return UpdateIntervalsAndValues(force);
     }
 
+    /**
+     * @brief Get the Min X
+     *
+     * @return hyFloat
+     */
     hyFloat  GetMinX (void)  const {
         return x_min;
     }
+    /**
+     * @brief Get the Max X
+     *
+     * @return hyFloat
+     */
     hyFloat  GetMaxX (void)  const {
         return x_max;
     }
+    /**
+     * @brief Check if the model is a hidden markov model
+     *
+     * @return true
+     * @return false
+     */
     bool        is_hidden_markov (void)  const {
         return (hiddenMarkovModel!=-1);
     }
 
+    /**
+     * @brief Check if the model is constant on partition
+     *
+     * @return true
+     * @return false
+     */
     bool        is_constant_on_partition (void) const {
         return (flags&CONSTANT_ON_PARTITION);
     }
 
+    /**
+     * @brief Change the number of intervals
+     *
+     * @param l
+     */
     void        ChangeNumberOfIntervals (long);
     // assumes a 'standard' category variable - i.e.
     // EQUAL freqs, and density/cumulative
 
+    /**
+     * @brief Serialize the category
+     *
+     * @param sb
+     */
     void        SerializeCategory       (_StringBuffer &);
 
+    /**
+     * @brief Get the Current State
+     *
+     * @return long
+     */
     long        GetCurrentState         (void);
+    /**
+     * @brief Check if the model is uncorrelated
+     *
+     * @return true
+     * @return false
+     */
     bool        IsUncorrelated          (void);
+    /**
+     * @brief Check if the model is layered
+     *
+     * @return true
+     * @return false
+     */
     bool        IsLayered               (void);
 
 private:
 
+    /**
+     * @brief Update the intervals and values
+     *
+     * @param force
+     * @return true
+     * @return false
+     */
     bool        UpdateIntervalsAndValues (bool force = false);
+    /**
+     * @brief Construct the object
+     *
+     * @param l
+     * @param vc
+     */
     void        Construct   (_List&, _VariableContainer*);
+    /**
+     * @brief Clear the object
+     *
+     */
     void        Clear       (void);
+    /**
+     * @brief Check the weight matrix
+     *
+     * @param m
+     * @param l
+     * @return true
+     * @return false
+     */
     bool        checkWeightMatrix (_Matrix&, long = -1);
 
     // data members
@@ -229,6 +479,14 @@ private:
 
 };
 
+/**
+ * @brief Integrate over all possible assignments of a list of category variables.
+ *
+ * @tparam ACTION A function object that takes the current category and the weight as arguments.
+ * @param indices A list of indices of the category variables.
+ * @param refresh Whether to refresh the category variables.
+ * @param do_this The function to execute for each assignment.
+ */
 template <typename ACTION> void IntergrateOverAssignments (_SimpleList const& indices, bool refresh, ACTION&& do_this) {
     
     long                    current_category = 0L,

@@ -39,10 +39,24 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+/**
+ * @file function_templates.h
+ * @brief A collection of useful function templates.
+ */
+
 #include "mersenne_twister.h"
 #include "parser.h"
 #include "variablecontainer.h"
 
+/**
+ * @brief Check for a parameter in a variable container and assign a default value if not found.
+ *
+ * @tparam ARG_TYPE The type of the parameter.
+ * @param name The name of the parameter.
+ * @param dest The destination variable to store the parameter value.
+ * @param def The default value if the parameter is not found.
+ * @param theP The variable container to search in.
+ */
 template <typename ARG_TYPE>
 void checkParameter(_String const &name, ARG_TYPE &dest, const ARG_TYPE def,
                     const _VariableContainer *theP = nil) {
@@ -51,6 +65,14 @@ void checkParameter(_String const &name, ARG_TYPE &dest, const ARG_TYPE def,
   dest = v ? (ARG_TYPE)v->Value() : def;
 }
 
+/**
+ * @brief Store a value if it is greater than the current maximum.
+ *
+ * @tparam ARG_TYPE The type of the values.
+ * @param current_max The current maximum value.
+ * @param value_to_check The value to check.
+ * @return true if the value was stored, false otherwise.
+ */
 template <typename ARG_TYPE>
 bool StoreIfGreater(ARG_TYPE &current_max, ARG_TYPE const &value_to_check) {
   if (value_to_check > current_max) {
@@ -60,6 +82,14 @@ bool StoreIfGreater(ARG_TYPE &current_max, ARG_TYPE const &value_to_check) {
   return false;
 }
 
+/**
+ * @brief Returns the maximum of two values.
+ *
+ * @tparam ARG_TYPE The type of the values.
+ * @param a The first value.
+ * @param b The second value.
+ * @return The maximum of the two values.
+ */
 template <typename ARG_TYPE>
 ARG_TYPE Maximum(ARG_TYPE const a, ARG_TYPE const b) {
   if (a > b) {
@@ -68,6 +98,14 @@ ARG_TYPE Maximum(ARG_TYPE const a, ARG_TYPE const b) {
   return b;
 }
 
+/**
+ * @brief Returns the minimum of two values.
+ *
+ * @tparam ARG_TYPE The type of the values.
+ * @param a The first value.
+ * @param b The second value.
+ * @return The minimum of the two values.
+ */
 template <typename ARG_TYPE>
 ARG_TYPE Minimum(ARG_TYPE const a, ARG_TYPE const b) {
   if (a > b) {
@@ -76,12 +114,27 @@ ARG_TYPE Minimum(ARG_TYPE const a, ARG_TYPE const b) {
   return a;
 }
 
+/**
+ * @brief Exchanges the values of two variables.
+ *
+ * @tparam ARG_TYPE The type of the variables.
+ * @param a The first variable.
+ * @param b The second variable.
+ */
 template <typename ARG_TYPE> void Exchange(ARG_TYPE &a, ARG_TYPE &b) {
   ARG_TYPE t = a;
   a = b;
   b = t;
 }
 
+/**
+ * @brief Store a value if it is less than the current minimum.
+ *
+ * @tparam ARG_TYPE The type of the values.
+ * @param current_min The current minimum value.
+ * @param value_to_check The value to check.
+ * @return true if the value was stored, false otherwise.
+ */
 template <typename ARG_TYPE>
 bool StoreIfLess(ARG_TYPE &current_min, ARG_TYPE const &value_to_check) {
   if (value_to_check < current_min) {
@@ -91,6 +144,14 @@ bool StoreIfLess(ARG_TYPE &current_min, ARG_TYPE const &value_to_check) {
   return false;
 }
 
+/**
+ * @brief Computes the power of a number.
+ *
+ * @tparam ARG_TYPE The type of the number.
+ * @param base The base.
+ * @param exponent The exponent.
+ * @return The result of the power operation.
+ */
 template <typename ARG_TYPE>
 ARG_TYPE ComputePower(ARG_TYPE base, unsigned long exponent) {
   ARG_TYPE result = 1.;
@@ -112,6 +173,16 @@ ARG_TYPE ComputePower(ARG_TYPE base, unsigned long exponent) {
   return result;
 }
 
+/**
+ * @brief Checks if any element in an array satisfies a condition.
+ *
+ * @tparam ARG_TYPE The type of the array elements.
+ * @tparam LAMBDA The type of the condition.
+ * @param array The array to check.
+ * @param dimension The dimension of the array.
+ * @param condition The condition to check.
+ * @return true if any element satisfies the condition, false otherwise.
+ */
 template <typename ARG_TYPE, typename LAMBDA>
 bool ArrayAny(ARG_TYPE const *array, unsigned long dimension,
               LAMBDA &&condition) {
@@ -123,6 +194,16 @@ bool ArrayAny(ARG_TYPE const *array, unsigned long dimension,
   return false;
 }
 
+/**
+ * @brief Checks if all elements in an array satisfy a condition.
+ *
+ * @tparam ARG_TYPE The type of the array elements.
+ * @tparam LAMBDA The type of the condition.
+ * @param array The array to check.
+ * @param dimension The dimension of the array.
+ * @param condition The condition to check.
+ * @return true if all elements satisfy the condition, false otherwise.
+ */
 template <typename ARG_TYPE, typename LAMBDA>
 bool ArrayAll(ARG_TYPE const *array, unsigned long dimension,
               LAMBDA &&condition) {
@@ -134,6 +215,14 @@ bool ArrayAll(ARG_TYPE const *array, unsigned long dimension,
   return true;
 }
 
+/**
+ * @brief Checks if any element in a list satisfies a condition.
+ *
+ * @tparam LAMBDA The type of the condition.
+ * @param list The list to check.
+ * @param condition The condition to check.
+ * @return true if any element satisfies the condition, false otherwise.
+ */
 template <typename LAMBDA> bool ListAny(_SimpleList &list, LAMBDA &&condition) {
   unsigned long const list_length = list.countitems();
   for (unsigned long i = 0UL; i < list_length; i++) {
@@ -144,6 +233,15 @@ template <typename LAMBDA> bool ListAny(_SimpleList &list, LAMBDA &&condition) {
   return false;
 }
 
+/**
+ * @brief Applies a transformation to each element of an array.
+ *
+ * @tparam ARG_TYPE The type of the array elements.
+ * @tparam LAMBDA The type of the transformation.
+ * @param array The array to transform.
+ * @param dimension The dimension of the array.
+ * @param transform The transformation to apply.
+ */
 template <typename ARG_TYPE, typename LAMBDA>
 void ArrayForEach(ARG_TYPE *array, unsigned long dimension,
                   LAMBDA &&transform) {
@@ -152,6 +250,14 @@ void ArrayForEach(ARG_TYPE *array, unsigned long dimension,
   }
 }
 
+/**
+ * @brief Initializes an array with a given value.
+ *
+ * @tparam ARG_TYPE The type of the array elements.
+ * @param array The array to initialize.
+ * @param dimension The dimension of the array.
+ * @param value The value to initialize the array with.
+ */
 template <typename ARG_TYPE>
 void InitializeArray(ARG_TYPE *array, unsigned long dimension,
                      ARG_TYPE &&value) {
@@ -162,6 +268,14 @@ void InitializeArray(ARG_TYPE *array, unsigned long dimension,
   }
 }
 
+/**
+ * @brief Copies an array.
+ *
+ * @tparam ARG_TYPE The type of the array elements.
+ * @param to The destination array.
+ * @param from The source array.
+ * @param dimension The dimension of the arrays.
+ */
 template <typename ARG_TYPE>
 void CopyArray(ARG_TYPE *to, ARG_TYPE const *from, unsigned long dimension) {
   for (unsigned long i = 0UL; i < dimension; i++) {
@@ -169,6 +283,15 @@ void CopyArray(ARG_TYPE *to, ARG_TYPE const *from, unsigned long dimension) {
   }
 }
 
+/**
+ * @brief Copies an array with an offset.
+ *
+ * @tparam ARG_TYPE The type of the array elements.
+ * @param to The destination array.
+ * @param from The source array.
+ * @param dimension The dimension of the arrays.
+ * @param offset The offset to apply to the source array.
+ */
 template <typename ARG_TYPE>
 void CopyArrayWithOffset(ARG_TYPE *to, ARG_TYPE const *from,
                          unsigned long dimension, long offset) {
@@ -177,17 +300,21 @@ void CopyArrayWithOffset(ARG_TYPE *to, ARG_TYPE const *from,
   }
 }
 
+/**
+ * @brief Deconstruct a number into 'places' digits according to the supplied radix
+ *
+ * @tparam ARG_TYPE The type of the number.
+ * @param composition The number to deconstruct.
+ * @param places The number of places.
+ * @param radix The radix to use.
+ * @return _SimpleList The list of digits.
+ *
+ * @example SplitIntoDigits (5,3,2) will return (higher to lower significe digits)
+ * 1,0,1 (e.g. 101 in binary)
+ */
 template <typename ARG_TYPE>
 const _SimpleList SplitIntoDigits(ARG_TYPE composition, unsigned long places,
                                   unsigned long radix) {
-  /**
-   Deconstruct a number into 'places' digits according to the supplied radix
-
-   SplitIntoDigits (5,3,2) will return (higher to lower significe digits)
-   1,0,1 (e.g. 101 in binary)
-
-   */
-
   _SimpleList result(places, 0, 0);
 
   ARG_TYPE remainder = composition;
@@ -201,15 +328,21 @@ const _SimpleList SplitIntoDigits(ARG_TYPE composition, unsigned long places,
   return result;
 }
 
+/**
+ * @brief Reconstruct a number from digits according to the supplied radix.
+ *
+ * @tparam ARG_TYPE The type of the number.
+ * @param digits The digits to use.
+ * @param places The number of places.
+ * @param radix The radix to use.
+ * @return The reconstructed number.
+ *
+ * @example CombineDigits ([5,3,2], 3, 4) will return
+ * 2 + 3*4 + 5*16 = 94
+ */
 template <typename ARG_TYPE>
 const ARG_TYPE CombineDigits(ARG_TYPE const *digits, unsigned long places,
                              unsigned long radix) {
-  /**
-   Reconstruct a number from digits according to the supplied radix.
-
-   CombineDigits ([5,3,2], 3, 4) will return
-    2 + 3*4 + 5*16 = 94
-   */
 
   ARG_TYPE number = 0, multiplier = 1;
 
@@ -221,24 +354,27 @@ const ARG_TYPE CombineDigits(ARG_TYPE const *digits, unsigned long places,
   return number;
 }
 
+/**
+ * @brief Delete (or decrease ref count) of an object pointer. If the object was deleted, set the pointer to NULL.
+ *
+ * @tparam ARG_TYPE The type of the object.
+ * @param object The object to delete.
+ */
 template <typename ARG_TYPE> void DeleteAndZeroObject(ARG_TYPE &object) {
-  /**
-      Delete (or decrease ref count) of an object pointer
-      If the object was deleted, set the pointer to NULL
-  */
-
   DeleteObject(object);
   object = NULL;
 }
 
+/**
+ * @brief Draw a random index from a discrete distribution.
+ *
+ * @tparam ARG_TYPE The type of the probabilities.
+ * @param cdf The cumulative distribution function.
+ * @param dimension The dimension of the distribution.
+ * @return The drawn index.
+ */
 template <typename ARG_TYPE>
 unsigned long DrawFromDiscrete(ARG_TYPE const *cdf, unsigned long dimension) {
-  /**
-    assuming that cdf is an array of probabilities summing to 1,
-    draw a random index from the distribution
-
-  */
-
   unsigned long index = 0UL;
   ARG_TYPE sum_so_far = cdf[0], random_draw = genrand_real2();
 
@@ -249,15 +385,17 @@ unsigned long DrawFromDiscrete(ARG_TYPE const *cdf, unsigned long dimension) {
   return index;
 }
 
+/**
+ * @brief Draw a random index from a discrete distribution using a generator function.
+ *
+ * @tparam FUNCTOR The type of the generator function.
+ * @param generator The generator function.
+ * @param dimension The dimension of the distribution.
+ * @return The drawn index.
+ */
 template <typename FUNCTOR>
 unsigned long DrawFromDiscreteGenerator(FUNCTOR &&generator,
                                         unsigned long dimension) {
-  /**
-   assuming that cdf is an array of probabilities summing to 1,
-   draw a random index from the distribution
-
-   */
-
   unsigned long index = 0UL;
 
   auto sum_so_far = generator(0);
@@ -270,28 +408,70 @@ unsigned long DrawFromDiscreteGenerator(FUNCTOR &&generator,
   return index;
 }
 
+/**
+ * @brief Deletes a single object.
+ *
+ * @tparam ARG_TYPE The type of the object.
+ * @param first The object to delete.
+ */
 template <typename ARG_TYPE> void BatchDelete(ARG_TYPE first) { delete first; }
 
+/**
+ * @brief Deletes a single object using DeleteObject.
+ *
+ * @tparam ARG_TYPE The type of the object.
+ * @param first The object to delete.
+ */
 template <typename ARG_TYPE> void BatchDeleteObject(ARG_TYPE first) {
   DeleteObject(first);
 }
 
+/**
+ * @brief Deletes multiple objects.
+ *
+ * @tparam ARG_TYPE The type of the first object.
+ * @tparam Args The types of the other objects.
+ * @param first The first object to delete.
+ * @param args The other objects to delete.
+ */
 template <typename ARG_TYPE, typename... Args>
 void BatchDelete(ARG_TYPE first, const Args &...args) {
   delete first;
   BatchDelete(args...);
 }
 
+/**
+ * @brief Deletes multiple objects using DeleteObject.
+ *
+ * @tparam ARG_TYPE The type of the first object.
+ * @tparam Args The types of the other objects.
+ * @param first The first object to delete.
+ * @param args The other objects to delete.
+ */
 template <typename ARG_TYPE, typename... Args>
 void BatchDeleteObject(ARG_TYPE first, const Args &...args) {
   DeleteObject(first);
   BatchDeleteObject(args...);
 }
 
+/**
+ * @brief Deletes a single array.
+ *
+ * @tparam ARG_TYPE The type of the array.
+ * @param first The array to delete.
+ */
 template <typename ARG_TYPE> void BatchDeleteArray(ARG_TYPE first) {
   delete[] first;
 }
 
+/**
+ * @brief Deletes multiple arrays.
+ *
+ * @tparam ARG_TYPE The type of the first array.
+ * @tparam Args The types of the other arrays.
+ * @param first The first array to delete.
+ * @param args The other arrays to delete.
+ */
 template <typename ARG_TYPE, typename... Args>
 void BatchDeleteArray(ARG_TYPE first, const Args &...args) {
   delete[] first;

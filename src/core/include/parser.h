@@ -91,6 +91,12 @@ extern _Trie UnOps, FunctionNameList;
 
 extern long lastMatrixDeclared;
 
+/**
+ * @brief Locate a variable by its name
+ *
+ * @param name The name of the variable
+ * @return long The index of the variable
+ */
 long LocateVarByName(_String const &);
 inline _Variable *LocateVar(long index) {
   return (_Variable *)(((BaseRef *)variablePtrs.list_data)[index]);

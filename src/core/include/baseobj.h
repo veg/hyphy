@@ -55,10 +55,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class BaseObj {
     
-    /** 
+    /**
         This is a legacy implementation of reference - counted objects.
         The idea is that when an object reaches the reference count of 0,
-        it can be deleted, because it is no longer being used. 
+        it can be deleted, because it is no longer being used.
      
         Storing objects by reference or shallow cloning will increase reference counts,
         inverse operations will decrease said counts.
@@ -71,39 +71,93 @@ private:
     
 public:
     
+    /**
+     * @brief Construct a new Base Obj object
+     *
+     */
     BaseObj();
     
+    /**
+     * @brief Destroy the Base Obj object
+     *
+     */
     virtual ~BaseObj(void) {}
     
+    /**
+     * @brief string representation for the object
+     *
+     * @param padding is used to allow 'pretty' rendering of nested objects, like dictss
+     * @return BaseObj*
+     */
     virtual BaseObj *toStr (unsigned long padding = 0UL);
-        /** string representation for the object 
-            @param padding is used to allow 'pretty' rendering of nested objects, like dictss
-         */
     
+    /**
+     * @brief error string representation for the object
+     *
+     * @return BaseObj* (default = same as toStr)
+     */
     virtual BaseObj *toErrStr () ;
-        /** error string representation for the object 
-            (default = same as toStr) 
-         */
 
+    /**
+     * @brief file representation for the object
+     *
+     * @param hyFile
+     * @param padding is used to allow 'pretty' rendering of nested objects, like dictss
+     */
     virtual void toFileStr (hyFile *, unsigned long padding = 0UL) ;
-        /** file representation for the object
-            @param padding is used to allow 'pretty' rendering of nested objects, like dictss
-         */
     
+    /**
+     * @brief an object must be able to return a dynamically allocated copy of itself
+     *
+     * @return BaseObj*
+     */
     virtual BaseObj *makeDynamic(void) const = 0;
     
+    /**
+     * @brief Initialize the object
+     *
+     * @param p
+     */
     virtual void Initialize(bool = true) { reference_counter = 1L; }
     
+    /**
+     * @brief an object must be able to duplicate itself from a given reference
+     *
+     * @param ref
+     */
     virtual void Duplicate(BaseObj const * ref) = 0;
     
+    /**
+     * @brief Increment the reference counter
+     *
+     */
     inline void AddAReference(void) { reference_counter++; }
     
+    /**
+     * @brief Decrement the reference counter
+     *
+     */
     inline void RemoveAReference(void) { reference_counter--; }
     
+    /**
+     * @brief check if the object can be freed
+     *
+     * @return true if the object can be freed, false otherwise
+     */
     inline bool CanFreeMe (void)  const { return reference_counter <= 1L; }
     
+    /**
+     * @brief check if the object has a single reference
+     *
+     * @return true if the object has a single reference, false otherwise
+     */
     inline bool SingleReference (void)  const { return reference_counter == 1L; }
     
+    /**
+     * @brief Get the Reference Counter
+     *
+     * @return long
+     */
     inline long GetReferenceCounter (void) const {return reference_counter;}
     // comparison functions
     
@@ -114,16 +168,13 @@ typedef BaseObj*        BaseRef;
 typedef BaseObj const * BaseRefConst;
 
 
-bool    DeleteObject (BaseRef object);
-/** 
-    Remove one reference count from an object, and if it is no
-    longer pointed to by anything (counter = 0), then delete it.
- 
-    @param object the object to "delete"
-    
-    @retrun true if object was deleted, otherwise false
- 
+/**
+ * @brief Remove one reference count from an object, and if it is no longer pointed to by anything (counter = 0), then delete it.
+ *
+ * @param object the object to "delete"
+ * @return true if object was deleted, otherwise false
  */
+bool    DeleteObject (BaseRef object);
 
 
 

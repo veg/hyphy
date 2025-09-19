@@ -99,19 +99,44 @@ public:
    * @return Nothing.
    */
 
+  /**
+   * @brief Initialize the trie
+   *
+   * @param alphabet The alphabet to use
+   */
   void InitializeTrie(const _String *alphabet);
 
+  /**
+   * @brief Insert a key-value pair into the trie
+   *
+   * @tparam values The types of the values
+   * @param key The key to insert
+   * @param payload_data The value to insert
+   * @param data The rest of the data
+   * @return long The index of the inserted key
+   */
   template <typename... values>
   long Insert(const _String &key, long payload_data, values... data) {
     Insert(key, payload_data);
     return Insert(data...);
   }
 
+  /**
+   * @brief Construct a new _Trie object
+   *
+   * @tparam values The types of the values
+   * @param data The data to insert
+   */
   template <typename... values> _Trie(values... data) {
     InitializeTrie(nil);
     Insert(data...);
   }
 
+  /**
+   * @brief Get the number of items in the trie
+   *
+   * @return unsigned long The number of items
+   */
   virtual unsigned long countitems() const { return inserted_values; }
 
   virtual BaseRef toStr(unsigned long);
@@ -148,30 +173,33 @@ public:
    * @return Nothing.
    */
 
+  /**
+   * @brief Determine if 'key' is in the trie
+   *
+   * @param key The string to search for
+   * @param path Store the indices for the trie traversal history (if supplied)
+   * @param prefixOK Returns a match if a prefix of 'key' in the trie
+   * @param start_index If not null, start searching at this position of the string, and store where the key was matched (if prefixOK is set to true, this is useful to return up to what point the key was matched)
+   * @return long The index of the key in 'nodes' if found, kNotFound/kTrieInvalidLetter otherwise
+   */
   long FindKey(const _String &key, _SimpleList *path = nil,
                bool prefixOK = false, unsigned long *start_index = nil) const;
-  /**
-   * Determine if 'key' is in the trie
-   * @param  key      -- the string to search for
-   * @param  path     -- store the indices for the trie traversal history (if
-   supplied)
-   * @param  prefixOK -- returns a match if a prefix of 'key' in the trie
-   * @param  start_index -- if not null, start searching at this position of the
-   string, and store where the key was matched (if prefixOK is set to true, this
-   is useful to return up to what point the key was matched)
-   * @return the index of the key in 'nodes' if found,
-   kNotFound/kTrieInvalidLetter otherwise
-   */
 
+  /**
+   * @brief Determine if 'key' is in the trie
+   *
+   * @param key The character to search for
+   * @param prefixOK Returns a match if a prefix of 'key' in the trie
+   * @return long The index of the key in 'nodes' if found, kNotFound/kTrieInvalidLetter otherwise
+   */
   long FindKey(const char key, bool prefixOK = false) const;
-  /**
-   * Determine if 'key' is in the trie
-   * @param  key      -- the character to search for
-   * @param  prefixOK -- returns a match if a prefix of 'key' in the trie
-   * @return the index of the key in 'nodes' if found,
-   * kNotFound/kTrieInvalidLetter otherwise
-   */
 
+  /**
+   * @brief A convenience function which calls Find and then GetValue if the key is found
+   *
+   * @param key The string to search for
+   * @return long The value associated with the key if found, kNotFound otherwise
+   */
   long GetValueFromString(const _String &key);
   /**
    * A convenience function which calls Find and then GetValue if teh key is

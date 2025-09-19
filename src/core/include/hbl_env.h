@@ -45,94 +45,75 @@
 
 namespace hy_env {
 
+/**
+ * @brief Check if the value of the environment variable is "true".
+ *
+ * @param name The name of the environment variable (in HBL).
+ * @param default_true The default value to return if the variable is not defined.
+ * @return true if the variable is defined and true-like (not zero), false otherwise.
+ */
 bool EnvVariableTrue(_String const &name, bool default_true = false);
+
 /**
-     Check if the value of the environment variable is "true"
-
-     @param name the name of the env variable (in HBL)
-
-     @return TRUE if the variable is defined and true-ike (not zero)
-
+ * @brief Look up the default numeric value for a given environment variable.
+ *
+ * @param name The name of the environment variable (in HBL).
+ * @return The default value if available and of the correct type, otherwise HY_INVALID_RETURN_VALUE.
  */
-
 hyFloat EnvVariableGetDefaultNumber(_String const &name);
+
 /**
- Look up the default value _numeric_ for a given env variable,
-
- @param name the name of the env variable (in HBL)
-
- @return default value if available and of the correct type, otherwise
- HY_INVALID_RETURN_VALUE
-
+ * @brief Look up the default value for a given environment variable, checking that it is of a particular type.
+ *
+ * @param name The name of the environment variable (in HBL).
+ * @param type The expected type of the variable.
+ * @return The default value if available and of the correct type, otherwise nil.
  */
-
 HBLObjectRef EnvVariableGetDefault(_String const &name, unsigned long type);
+
 /**
-     Look up the default value for a given env variable,
-          checking that it is of a paricular type (could be any)
-
-     @param name the name of the env variable (in HBL)
-     @param type check for return type
-
-     @return default value if available and of the correct type, otherwise nil
-
+ * @brief Look up the value for a given environment variable, checking that it is of a particular type.
+ *
+ * @param name The name of the environment variable (in HBL).
+ * @param type The expected type of the variable.
+ * @return The current value if set and of the correct type, otherwise the default value if available and of the correct type, otherwise nil.
  */
-
 HBLObjectRef EnvVariableGet(_String const &name, unsigned long type);
+
 /**
- Look up the value for a given env variable,
- checking that it is of a paricular type (could be any)
-
- @param name the name of the env variable (in HBL)
- @param type check for return type
-
- @return current value if set and of the correct type, otherwise default value
- if available and of the correct type, otherwise nil
-
+ * @brief Look up the numeric value for a given environment variable.
+ *
+ * @param name The name of the environment variable (in HBL).
+ * @param default_value The default value to return if the variable is not defined.
+ * @return The current value if set and of the correct type, otherwise the default value if available and of the correct type, otherwise HY_INVALID_RETURN_VALUE.
  */
-
 hyFloat EnvVariableGetNumber(_String const &name,
                              hyFloat default_value = HY_INVALID_RETURN_VALUE);
+
 /**
- Look up the numeric value for a given env variable,
-
- @param name the name of the env variable (in HBL)
- @param default_value if no value is set, return this
-
- @return current value if set and of the correct type, otherwise default value
- if available and of the correct type, otherwise invalid return value
-
+ * @brief Set the value for an environment variable (global scope).
+ *
+ * @param name The name of the environment variable (in HBL).
+ * @param value The value to set the variable to.
+ * @param copy If true, make a deep copy of 'value' prior to setting.
  */
-
 void EnvVariableSet(_String const &name, HBLObjectRef value, bool copy);
+
 /**
- Set the value for a env variable (global scope)
- copying the value if requested
-
- @param name the name of the env variable (in HBL)
- @param value the value to set the variable to
- @param copy is set to true, make a deep copy of 'value' prior to copying
-
-
+ * @brief Set the value for an environment variable (in a given namespace if provided).
+ *
+ * @param name The name of the environment variable (in HBL).
+ * @param value The value to set the variable to.
+ * @param nmspace The namespace to set the variable in.
+ * @param copy If true, make a deep copy of 'value' prior to setting.
  */
-
 void EnvVariableSetNamespace(_String const &name, HBLObjectRef value,
                              _String *nmspace, bool copy);
+
 /**
- Set the value for a env variable (in a given namespace if provided)
- copying the value if requested
-
- @param name the name of the env variable (in HBL)
- @param value the value to set the variable to
- @param copy is set to true, make a deep copy of 'value' prior to copying
-
-
+ * @brief Populate default value arrays.
  */
-
 void SetupEnvDefaults(void);
-/**
-    Populate default value arrays
- */
 
 extern const _String accept_rooted_trees, accept_branch_lengths,
     automatically_convert_branch_lengths, always_reload_libraries,

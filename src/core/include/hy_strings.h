@@ -45,15 +45,22 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "wchar.h"
 #include <regex>
 
+/** @brief Extract options for ExtractEnclosedExpression */
 #define fExtractRespectQuote 0x01
+/** @brief Extract options for ExtractEnclosedExpression */
 #define fExtractRespectEscape 0x02
+/** @brief Extract options for ExtractEnclosedExpression */
 #define fExtractOneLevelOnly 0x04
 
+/** @brief Identifier options for IsValidIdentifier */
 #define fIDAllowFirstNumeric 0x01
+/** @brief Identifier options for IsValidIdentifier */
 #define fIDAllowCompound 0x02
 
+/** @brief String end constant */
 #define kStringEnd (-1L)
 
+/** @brief Reference types for ProcessVariableReferenceCases */
 enum hy_reference_type {
   kStringInvalidReference = 0x00,
   kStringDirectReference = 0x01,
@@ -61,8 +68,10 @@ enum hy_reference_type {
   kStringGlobalDeference = 0x03
 };
 
+/** @brief String case for ChangeCase */
 enum hy_string_case { kStringUpperCase, kStringLowerCase };
 
+/** @brief String search direction for various search functions */
 enum hy_string_search_direction {
   kStringDirectionForward,
   kStringDirectionBackward
@@ -73,6 +82,10 @@ class _List;
 class _ExecutionList;
 class _StringBuffer;
 
+/**
+ * @brief A string class that provides a variety of methods for string manipulation.
+ * This class is used throughout HyPhy to represent strings.
+ */
 class _String : public BaseObj {
 
 protected:
@@ -696,6 +709,13 @@ public:
       ]
    */
   const _String ChangeCase(hy_string_case conversion_type) const;
+  /**
+   * Converts string to a particular case (in place)
+   @param conversion_type: which case ? kStringUpperCase or kStringLowerCase
+
+   *  Revision history
+      -SLKP 20170614 reviewed while porting from v3 branch
+   */
   void ChangeCaseInPlace(hy_string_case conversion_type);
 
   /**
@@ -1593,19 +1613,88 @@ private:
 
 // _______________________________________________________________________
 
+/**
+ * @brief Sets the status bar value.
+ *
+ * @param l The long value.
+ * @param f The first float value.
+ * @param f2 The second float value.
+ */
 void SetStatusBarValue(long, hyFloat, hyFloat);
+/**
+ * @brief Sets the status line.
+ *
+ * @param s The string to set.
+ */
 void SetStatusLine(_String);
+/**
+ * @brief Sets the status line.
+ *
+ * @param s1 The first string.
+ * @param s2 The second string.
+ * @param s3 The third string.
+ * @param l The long value.
+ */
 void SetStatusLine(_String, _String, _String, long l);
+/**
+ * @brief Sets the status line.
+ *
+ * @param s1 The first string.
+ * @param s2 The second string.
+ * @param s3 The third string.
+ */
 void SetStatusLine(_String, _String, _String);
+/**
+ * @brief Sets the status line.
+ *
+ * @param s1 The first string.
+ * @param s2 The second string.
+ * @param s3 The third string.
+ * @param l The long value.
+ * @param c The char value.
+ */
 void SetStatusLine(_String, _String, _String, long, char);
 
+/**
+ * @brief Sets the status line from user input.
+ *
+ * @param s The string to set.
+ */
 void SetStatusLineUser(_String const);
 
+/**
+ * @brief Prints a string to the console.
+ *
+ * @param s The string to print.
+ * @param extra Extra data.
+ */
 void StringToConsole(_String const &, void *extra = nil);
+/**
+ * @brief Prints a buffer to the console.
+ *
+ * @param s The buffer to print.
+ * @param extra Extra data.
+ */
 void BufferToConsole(const char *, void *extra = nil);
+/**
+ * @brief Prints a newline to the console.
+ *
+ * @param extra Extra data.
+ */
 void NLToConsole(void *extra = nil);
+/**
+ * @brief Prints an object to the console.
+ *
+ * @param obj The object to print.
+ * @param extra Extra data.
+ */
 void ObjectToConsole(BaseRef, void *extra = nil);
 
+/**
+ * @brief Reads a string from the console.
+ *
+ * @return _String* The string read from the console.
+ */
 _String *StringFromConsole(void);
 
 #endif

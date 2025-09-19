@@ -254,14 +254,26 @@ public:
   long BinaryInsert(BaseRef);
 
   /**
+   * @brief Bumps the number of instances
+   * @deprecated This method is deprecated and should not be used.
    */
   void bumpNInst(void);
 
   /**
+   * @brief Compare two elements in the list
+   *
+   * @param i The index of the first element
+   * @param j The index of the second element
+   * @return hyComparisonType The result of the comparison
    */
   virtual hyComparisonType Compare(long, long) const;
 
   /**
+   * @brief Compare an element in the list with another object
+   *
+   * @param o The object to compare with
+   * @param i The index of the element in the list
+   * @return hyComparisonType The result of the comparison
    */
   virtual hyComparisonType Compare(BaseObj const *, long) const;
 
@@ -345,6 +357,12 @@ public:
                              bool pointer = true);
 
   /**
+   * @brief Intersect two lists
+   *
+   * @param L1 The first list
+   * @param L2 The second list
+   * @param L1I The indices of the elements in the first list
+   * @param L2I The indices of the elements in the second list
    */
   void Intersect(_List &, _List &, _SimpleList * = nil, _SimpleList * = nil);
 

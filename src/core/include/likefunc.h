@@ -52,62 +52,77 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define DEFAULTPARAMETERLBOUND 0.0
 #define DEFAULTPARAMETERUBOUND 10000.0
 
-/* various run modes for PopulateConditionalProbabilities */
-
+/** @name Run modes for PopulateConditionalProbabilities
+    @{
+*/
 #define _hyphyLFConditionProbsRawMatrixMode 0
 #define _hyphyLFConditionProbsScaledMatrixMode 1
 #define _hyphyLFConditionProbsWeightedSum 2
 #define _hyphyLFConditionProbsMaxProbClass 3
 #define _hyphyLFConditionProbsClassWeights 4
 #define _hyphyLFConditionMPIIterate 5
+///@}
 
-/* computational template kinds for the likelihood function */
-
+/** @name Computational template kinds for the likelihood function
+    @{
+*/
 #define _hyphyLFComputationalTemplateNone 0
 #define _hyphyLFComputationalTemplateBySite 1
 #define _hyphyLFComputationalTemplateByPartition 2
+///@}
 
-/* conditional likelihood matrix reconstruction modes */
-
+/** @name Conditional likelihood matrix reconstruction modes
+    @{
+*/
 #define _hyphyLFConstructCategoryMatrixConditionals 0
 #define _hyphyLFConstructCategoryMatrixClasses 1
 #define _hyphyLFConstructCategoryMatrixWeights 2
 #define _hyphyLFConstructCategoryMatrixPosteriors 3
 #define _hyphyLFConstructCategoryMatrixSiteProbabilities 4
 #define _hyphyLFConstructCategoryMatrixPartitions 5
+///@}
 
-/* likelihood seialization model */
-
+/** @name Likelihood serialization model
+    @{
+*/
 #define _hyphyLFSerializeModeVanilla 0
 #define _hyphyLFSerializeModeOptimize 1
 #define _hyphyLFSerializeModeLongMPI 2
 #define _hyphyLFSerializeModeCategoryAsGlobal 4
 #define _hyphyLFSerializeModeShortMPI 5
+///@}
 
-/* likelihood function parallelize mode */
-
+/** @name Likelihood function parallelize mode
+    @{
+*/
 #define _hyphyLFMPIModeNone 0
 #define _hyphyLFMPIModePartitions 1
 #define _hyphyLFMPIModeSiteTemplate 2
 #define _hyphyLFMPIModeREL 3
 #define _hyphyLFMPIModeAuto 4
+///@}
 
-/* partition category variable types */
-
+/** @name Partition category variable types
+    @{
+*/
 #define _hyphyCategoryNormal 0x1
 #define _hyphyCategoryHMM 0x2
 #define _hyphyCategoryCOP 0x4
+///@}
 
-/* interval mapping functions */
-
+/** @name Interval mapping functions
+    @{
+*/
 #define _hyphyIntervalMapID 0x0    // identify
 #define _hyphyIntervalMapExpit 0x1 // expit -- maps [-infty,infty) to [0,1]
 // 1/(1+exp[-x])
 #define _hyphyIntervalMapSqueeze 0x2 // maps [0,infty) to [0,1)
 // x / (1+x)
+///@}
 
 //_______________________________________________________________________________________
 
+/** @brief A cache for MST computation */
 struct MSTCache {
   _List computingOrder, storageOrder, referenceOrder, parentOrder,
       stashedLeafOrders;
@@ -115,6 +130,7 @@ struct MSTCache {
   _SimpleList statesNCache, resultCache, statesCache, cacheSize;
 };
 
+/** @brief Likelihood function count types */
 enum _LikelihoodFunctionCountType {
   kLFCountPartitions,
   kLFCountGlobalVariables,
@@ -125,36 +141,116 @@ enum _LikelihoodFunctionCountType {
 
 //_______________________________________________________________________________________
 
+/**
+ * @brief A class for likelihood functions
+ *
+ */
 class _LikelihoodFunction : public BaseObj {
 
 public:
-  // constructors
-
-  _LikelihoodFunction(void); // default - doesn't do much
+  /**
+   * @brief Construct a new _LikelihoodFunction object
+   *
+   */
+  _LikelihoodFunction(void);
+  /**
+   * @brief Construct a new _LikelihoodFunction object
+   *
+   * @param s The string to construct from
+   * @param vc The variable container
+   */
   _LikelihoodFunction(_String &, _VariableContainer *); // from triplets
+  /**
+   * @brief Construct a new _LikelihoodFunction object
+   *
+   * @param lf The likelihood function to copy
+   */
   _LikelihoodFunction(_LikelihoodFunction const &);     // stack copy
+  /**
+   * @brief The assignment operator
+   *
+   * @param lf The likelihood function to copy
+   * @return const _LikelihoodFunction&
+   */
   const _LikelihoodFunction &operator=(_LikelihoodFunction const &);
+  /**
+   * @brief Initialize the likelihood function
+   *
+   */
   void Init(void);
 
+  /**
+   * @brief Construct the likelihood function
+   *
+   * @param l The list of triplets
+   * @param vc The variable container
+   * @return true if the construction was successful, false otherwise
+   */
   bool Construct(_List &, _VariableContainer *);
 
+  /**
+   * @brief Destroy the _LikelihoodFunction object
+   *
+   */
   virtual ~_LikelihoodFunction(void) {
     Cleanup(); // destructor
   }
 
+  /**
+   * @brief Convert the likelihood function to a string
+   *
+   * @param ul The format to use
+   * @return BaseRef The string representation of the likelihood function
+   */
   virtual BaseRef toStr(unsigned long = 0UL);
 
+  /**
+   * @brief Make a dynamic copy of the likelihood function
+   *
+   * @return BaseRef The dynamic copy of the likelihood function
+   */
   virtual BaseRef makeDynamic(void) const; // dynamic copy of this object
 
+  /**
+   * @brief Duplicate the likelihood function
+   *
+   * @param brc The likelihood function to duplicate
+   */
   virtual void Duplicate(BaseRefConst); // duplicate an object into this one
 
+  /**
+   * @brief Get the Independent Vars object
+   *
+   * @return _SimpleList const&
+   */
   _SimpleList const &
   GetIndependentVars(void) const; // return a list of all indepenent variables
+  /**
+   * @brief Get the Dependent Vars object
+   *
+   * @return _SimpleList const&
+   */
   _SimpleList const &
   GetDependentVars(void) const; // get all dependent vars of this object
+  /**
+   * @brief Get the Category Vars object
+   *
+   * @return _SimpleList const&
+   */
   _SimpleList const &GetCategoryVars(void) const; // get all category variables
+  /**
+   * @brief Get the Global Vars object
+   *
+   * @param sl The simple list to store the global variables in
+   */
   void GetGlobalVars(_SimpleList &) const;
 
+  /**
+   * @brief Count the number of objects of a given type
+   *
+   * @param type The type of object to count
+   * @return unsigned long The number of objects of the given type
+   */
   unsigned long
       CountObjects(_LikelihoodFunctionCountType) const; // return object count
   // 0 - partitions
@@ -163,104 +259,435 @@ public:
   // 3 - dependents
   // 4 - category variables
 
+  /**
+   * @brief Get the Ith Independent object
+   *
+   * @param i The index of the independent variable
+   * @param b Whether to check for bounds
+   * @return hyFloat The value of the independent variable
+   */
   hyFloat GetIthIndependent(
       long, bool = true) const; // get the value of i-th independent variable
+  /**
+   * @brief Get the Ith Independent Name object
+   *
+   * @param i The index of the independent variable
+   * @return const _String* The name of the independent variable
+   */
   const _String *GetIthIndependentName(
       long) const; // get the name of i-th independent variable
+  /**
+   * @brief Get the Ith Dependent Name object
+   *
+   * @param i The index of the dependent variable
+   * @return const _String* The name of the dependent variable
+   */
   const _String *
   GetIthDependentName(long) const; // get the name of i-th independent variable
+  /**
+   * @brief Get the Ith Dependent object
+   *
+   * @param i The index of the dependent variable
+   * @return hyFloat The value of the dependent variable
+   */
   hyFloat
   GetIthDependent(long) const; // get the value of i-th dependent variable
+  /**
+   * @brief Get the All Independent object
+   *
+   * @param m The matrix to store the independent variables in
+   */
   void
   GetAllIndependent(_Matrix &) const; // store all indepenent values in a matrix
+  /**
+   * @brief Get the Ith Independent Var object
+   *
+   * @param i The index of the independent variable
+   * @return _Variable* The independent variable
+   */
   _Variable *GetIthIndependentVar(
       long) const; // get the variable object of i-th independent variable
+  /**
+   * @brief Get the Ith Dependent Var object
+   *
+   * @param i The index of the dependent variable
+   * @return _Variable* The dependent variable
+   */
   _Variable *GetIthDependentVar(
       long) const; // get the variable object of i-th dependent variable
+  /**
+   * @brief Get the Ith Category Var object
+   *
+   * @param i The index of the category variable
+   * @return _CategoryVariable* The category variable
+   */
   _CategoryVariable *GetIthCategoryVar(
       long) const; // get the variable object of i-th category variable
+  /**
+   * @brief Get the Ith Independent Bound object
+   *
+   * @param i The index of the independent variable
+   * @param isLower Whether to get the lower or upper bound
+   * @return hyFloat The bound of the independent variable
+   */
   hyFloat GetIthIndependentBound(long, bool isLower = true) const;
   // get the lower / upper bound for the i-th indepdendent variable
 
+  /**
+   * @brief Obtain the g'(x) for the chain rule differentiation under transformed variables
+   *
+   * @param i The index of the independent variable
+   * @param f The value of the independent variable
+   * @return hyFloat The derivative correction
+   */
   hyFloat DerivativeCorrection(
       long, hyFloat) const; // obtain the g'(x) for the chain rule
                             // differentiation under transformed variables
+  /**
+   * @brief Set the Ith Independent object
+   *
+   * @param i The index of the independent variable
+   * @param f The value to set
+   */
   void SetIthIndependent(long,
                          hyFloat); // set the value of i-th independent variable
+  /**
+   * @brief Check and set the Ith Independent object
+   *
+   * @param i The index of the independent variable
+   * @param f The value to set
+   * @return true if the value was set, false otherwise
+   */
   bool CheckAndSetIthIndependent(
       long, hyFloat); // set the value of i-th independent variable
+  /**
+   * @brief Check if the Ith parameter is global
+   *
+   * @param i The index of the parameter
+   * @return true if the parameter is global, false otherwise
+   */
   bool IsIthParameterGlobal(long) const;
 
+  /**
+   * @brief Set all independent variables
+   *
+   * @param m The matrix of independent variables
+   * @return long The number of independent variables set
+   */
   long SetAllIndependent(_Matrix *);
 
+  /**
+   * @brief Update an independent variable
+   *
+   * @param i The index of the independent variable
+   * @param b Whether to update the variable
+   * @param sl1 The first simple list
+   * @param sl2 The second simple list
+   */
   void UpdateIndependent(long, bool, _SimpleList * = nil, _SimpleList * = nil);
+  /**
+   * @brief Update a dependent variable
+   *
+   * @param i The index of the dependent variable
+   */
   void UpdateDependent(long);
+  /**
+   * @brief Update a dependent variable
+   *
+   * @param avl The AVL list of dependent variables to update
+   */
   void UpdateDependent(_AVLList const &);
 
+  /**
+   * @brief Pre-compute the likelihood function
+   *
+   * @return true if the pre-computation was successful, false otherwise
+   */
   bool PreCompute(void);
+  /**
+   * @brief Post-compute the likelihood function
+   *
+   */
   void PostCompute(void);
+  /**
+   * @brief Compute the likelihood function
+   *
+   * @return hyFloat The value of the likelihood function
+   */
   virtual hyFloat Compute(void);
 
+  /**
+   * @brief Prepare the likelihood function for computation
+   *
+   * @param b Whether to prepare the function
+   */
   void PrepareToCompute(bool = false);
+  /**
+   * @brief Finish the computation of the likelihood function
+   *
+   * @param b Whether to finish the computation
+   */
   void DoneComputing(bool = false);
+  /**
+   * @brief Optimize the likelihood function
+   *
+   * @param options The optimization options
+   * @return _Matrix* The result of the optimization
+   */
   virtual _Matrix *Optimize(_AssociativeList const *options = nil);
+  /**
+   * @brief Construct a category matrix
+   *
+   * @param sl The simple list of categories
+   * @param u The unsigned integer
+   * @param b Whether to construct the matrix
+   * @param s The string
+   * @return _Matrix* The category matrix
+   */
   _Matrix *ConstructCategoryMatrix(const _SimpleList &, unsigned, bool = true,
                                    _String * = nil);
+  /**
+   * @brief Get the name of the likelihood function
+   *
+   * @return const _String The name of the likelihood function
+   */
   const _String GetMyName(void) const;
 
+  /**
+   * @brief The Simplex method for optimization
+   *
+   * @param precision The precision of the optimization
+   * @param max_iterations The maximum number of iterations
+   * @param max_evals The maximum number of evaluations
+   * @return hyFloat The result of the optimization
+   */
   hyFloat SimplexMethod(hyFloat &precision,
                         unsigned long max_iterations = 100000UL,
                         unsigned long max_evals = 0xFFFFFF);
+  /**
+   * @brief Anneal the likelihood function
+   *
+   * @param precision The precision of the annealing
+   */
   void Anneal(hyFloat &precision);
 
+  /**
+   * @brief Simulate a dataset
+   *
+   * @param ds The dataset to simulate from
+   * @param l The list of parameters
+   * @param m1 The first matrix
+   * @param m2 The second matrix
+   * @param m3 The third matrix
+   * @param s The string
+   */
   void Simulate(_DataSet &, _List &, _Matrix * = nil, _Matrix * = nil,
                 _Matrix * = nil, _String const * = nil) const;
 
+  /**
+   * @brief Reconstruct ancestral sequences
+   *
+   * @param ds The dataset
+   * @param sl The simple list of nodes
+   * @param s The string
+   * @param b1 The first boolean
+   * @param b2 The second boolean
+   * @param b3 The third boolean
+   */
   void ReconstructAncestors(_DataSet &, _SimpleList &, _String &, bool = false,
                             bool = false, bool = false);
   // 20090224: added an argument to allow the marginal state reconstruction
   // 20091009: added an argument to allow the reconstruction of leaves
 
+  /**
+   * @brief Get the maximum dimension of the likelihood function
+   *
+   * @return long The maximum dimension
+   */
   long MaximumDimension(void);
 
+  /**
+   * @brief Get the covariance matrix
+   *
+   * @param sl The simple list of parameters
+   * @return HBLObjectRef The covariance matrix
+   */
   virtual HBLObjectRef CovarianceMatrix(_SimpleList * = nil);
 
   // compute  covariance matrix  based on the Hessian
   // optional list of parameters to estimate the conditional covariance for
 
+  /**
+   * @brief Rescan all variables in the likelihood function
+   *
+   * @param obtain_variable_mapping Whether to obtain the variable mapping
+   */
   virtual void RescanAllVariables(bool obtain_variable_mapping = false);
 
+  /**
+   * @brief Check if the likelihood function depends on a given tree
+   *
+   * @param s The name of the tree
+   * @return long The index of the tree if it is a dependency, -1 otherwise
+   */
   long DependOnTree(_String const &) const;
+  /**
+   * @brief Check if the likelihood function depends on a given model
+   *
+   * @param s The name of the model
+   * @return long The index of the model if it is a dependency, -1 otherwise
+   */
   long DependOnModel(_String const &) const;
+  /**
+   * @brief Check if the likelihood function depends on a given dataset
+   *
+   * @param l The index of the dataset
+   * @return long The index of the dataset if it is a dependency, -1 otherwise
+   */
   long DependOnDS(long) const;
+  /**
+   * @brief Check if the likelihood function depends on a given data filter
+   *
+   * @param ID The ID of the data filter
+   * @return true if the likelihood function depends on the data filter, false otherwise
+   */
   bool DependOnDF(long ID) const { return theDataFilters.Find(ID) >= 0; }
+  /**
+   * @brief Map the tree tips to the data
+   *
+   * @param l The index of the tree
+   * @param errorString The error string to store any errors in
+   * @param leafScan Whether to scan the leaves
+   * @return true if the mapping was successful, false otherwise
+   */
   bool MapTreeTipsToData(long, _String *errorString, bool leafScan = false);
+  /**
+   * @brief Void the old results
+   */
   void VoidOldResults(void) { computationalResults.ZeroUsed(); }
+  /**
+   * @brief Find a category variable
+   *
+   * @param l The index of the category variable
+   * @return _CategoryVariable* The category variable
+   */
   _CategoryVariable *FindCategoryVar(long);
   // return the category variable for a given partition
+  /**
+   * @brief Rank the variables
+   *
+   * @param tagger The tagger to use
+   */
   void RankVariables(_AVLListX *tagger = nil);
 
+  /**
+   * @brief Get the Ith Tree object
+   *
+   * @param i The index of the tree
+   * @return _TheTree* The tree
+   */
   _TheTree *GetIthTree(long) const;
+  /**
+   * @brief Get the Ith Filter object
+   *
+   * @param i The index of the filter
+   * @return _DataSetFilter const* The filter
+   */
   _DataSetFilter const *GetIthFilter(long) const;
+  /**
+   * @brief Get the Ith Filter Mutable object
+   *
+   * @param i The index of the filter
+   * @return _DataSetFilter* The filter
+   */
   _DataSetFilter *GetIthFilterMutable(long) const;
+  /**
+   * @brief Get the Ith Filter Name object
+   *
+   * @param i The index of the filter
+   * @return _String const* The name of the filter
+   */
   _String const *GetIthFilterName(long) const;
 
+  /**
+   * @brief Get the Ith Frequencies object
+   *
+   * @param i The index of the frequencies
+   * @return _Matrix* The frequencies
+   */
   _Matrix *GetIthFrequencies(long) const;
+  /**
+   * @brief Get the Ith Frequencies Name object
+   *
+   * @param i The index of the frequencies
+   * @return _String const* The name of the frequencies
+   */
   _String const *GetIthFrequenciesName(long) const;
 
+  /**
+   * @brief Fill in the conditional probabilities
+   *
+   * @param l The index of the partition
+   */
   void FillInConditionals(long = -1);
 
+  /**
+   * @brief Setup the likelihood function
+   *
+   * @param check_reversibility Whether to check for reversibility
+   */
   void Setup(bool check_reversibility = true);
 
+  /**
+   * @brief Get the number of sequences
+   *
+   * @param l The index of the partition
+   * @return long The number of sequences
+   */
   long SequenceCount(long);
+  /**
+   * @brief Get the number of sites
+   *
+   * @return unsigned long The number of sites
+   */
   unsigned long SiteCount(void) const;
+  /**
+   * @brief Rebuild the likelihood function
+   *
+   * @param rescan_parameters Whether to rescan the parameters
+   */
   void Rebuild(bool rescan_parameters = false);
+  /**
+   * @brief Serialize the likelihood function
+   *
+   * @param sb The string buffer to serialize to
+   * @param c The character to use
+   * @param sl1 The first simple list
+   * @param sl2 The second simple list
+   */
   virtual void SerializeLF(_StringBuffer &, char = 0, _SimpleList * = nil,
                            _SimpleList * = nil);
+  /**
+   * @brief Check if the likelihood function has a computing template
+   *
+   * @return _Formula* The computing template
+   */
   _Formula *HasComputingTemplate(void) const { return computingTemplate; }
+  /**
+   * @brief Compute the likelihood function using MPI
+   *
+   * @param l The index of the partition
+   * @param b Whether to use MPI
+   */
   void MPI_LF_Compute(long, bool = false);
 
 #if defined _OPENMP
+  /**
+   * @brief Set the Thread Count object
+   *
+   * @param tc The thread count
+   * @param fill_in Whether to fill in the conditionals
+   */
   void SetThreadCount(long tc, bool fill_in = true) {
     if (tc != lfThreadCount) {
       lfThreadCount = tc;
@@ -269,12 +696,23 @@ public:
       }
     }
   }
+  /**
+   * @brief Get the Thread Count object
+   *
+   * @return long The thread count
+   */
   long GetThreadCount(void) const { return lfThreadCount; }
 #else
   long GetThreadCount(void) const { return 1; }
   void SetThreadCount(long, bool = false) {};
 #endif
 
+  /**
+   * @brief Compute the dependency lists
+   *
+   * @param receptacle The list to store the dependency lists in
+   * @param max_dep The maximum number of dependencies to compute
+   */
   void ComputeDependencyLists(_List &receptacle,
                               long max_dep = 0x7fffffff) const;
   /**
@@ -287,6 +725,13 @@ public:
      paritcular independent to generate an explicit list
   */
 
+  /**
+   * @brief Process the partition list
+   *
+   * @param sl The simple list of partitions
+   * @param m The matrix of partitions
+   * @return true if the processing was successful, false otherwise
+   */
   bool ProcessPartitionList(_SimpleList &, _Matrix *) const;
   // given a matrix argument (argument 2; can be nil to include all)
   // populate a sorted list (argument 1)
@@ -295,6 +740,13 @@ public:
   // for error reporting returns true if at least one of the requested
   // partitions is valid otherwise returns false
 
+  /**
+   * @brief Get the total number of rate classes for a partition
+   *
+   * @param l The index of the partition
+   * @param c The character flag
+   * @return long The total number of rate classes
+   */
   long TotalRateClassesForAPartition(long, char = 0);
   // given a partition index (assuming that category caches have been set up)
   // returns how many total rate classes there are for this partition
@@ -305,6 +757,11 @@ public:
   //            1 - only HMM
   //            2 - only constant on partition
 
+  /**
+   * @brief Check if the likelihood function has been set up
+   *
+   * @return true if the likelihood function has been set up, false otherwise
+   */
   bool HasBeenSetup(void) { return hasBeenSetUp > 0; }
 
   /**
@@ -315,9 +772,24 @@ public:
   */
 
   _AssociativeList *CollectLFAttributes(void) const;
+  /**
+   * @brief Unregister the listeners
+   */
   void UnregisterListeners(void);
+  /**
+   * @brief Determine the local update policy
+   */
   void DetermineLocalUpdatePolicy(void);
+  /**
+   * @brief Flush the local update policy
+   */
   void FlushLocalUpdatePolicy(void);
+  /**
+   * @brief Terminate and dump the likelihood function
+   *
+   * @param error The error message
+   * @param sig_term Whether the termination was due to a signal
+   */
   void _TerminateAndDump(const _String &error, bool sig_term = false);
 
 protected:
@@ -725,13 +1197,41 @@ protected:
 
 //_______________________________________________________________________________________
 
+/**
+ * @brief A class for custom functions
+ *
+ */
 class _CustomFunction : public _LikelihoodFunction {
 
 public:
+  /**
+   * @brief Construct a new _CustomFunction object
+   *
+   * @param s The string to construct from
+   * @param vc The variable container
+   */
   _CustomFunction(const _String &, _VariableContainer const *context = nil);
 
+  /**
+   * @brief Compute the custom function
+   *
+   * @return hyFloat The value of the custom function
+   */
   virtual hyFloat Compute(void);
+  /**
+   * @brief Rescan all variables in the custom function
+   *
+   * @param b Whether to rescan the variables
+   */
   virtual void RescanAllVariables(bool = false) {}
+  /**
+   * @brief Serialize the custom function
+   *
+   * @param res The string buffer to serialize to
+   * @param c The character to use
+   * @param sl1 The first simple list
+   * @param sl2 The second simple list
+   */
   virtual void SerializeLF(_StringBuffer &res, char = 0, _SimpleList * = nil,
                            _SimpleList * = nil) {
     res.AppendNewInstance(
@@ -795,11 +1295,34 @@ autoParalellizeLF              ,
 addLFSmoothing                 ,
 reduceLFSmoothing              ;*/
 
+/**
+ * @brief Handle the result of a state counter
+ *
+ * @param f The formula
+ * @param sl The simple list
+ * @param l1 The first long
+ * @param l2 The second long
+ * @param l3 The third long
+ * @param m1 The first matrix
+ * @param m2 The second matrix
+ */
 void StateCounterResultHandler(_Formula &, _SimpleList *, long &, long &, long,
                                _Matrix &, _Matrix &);
 
+/**
+ * @brief Find a likelihood function by name
+ *
+ * @param s The name of the likelihood function
+ * @return _LikelihoodFunction* The likelihood function
+ */
 _LikelihoodFunction *FindLikeFuncByName(_String &);
 
+/**
+ * @brief Do something for each likelihood function
+ *
+ * @tparam ACTION The action to perform
+ * @param cb The callback function
+ */
 template <typename ACTION> void DoForEachLikelihoodFunction(ACTION cb) {
   for (unsigned long i = 0UL; i < likeFuncNamesList.lLength; i++) {
     if (((_String *)likeFuncNamesList.GetItem(i))->nonempty()) {
@@ -814,10 +1337,45 @@ extern hyFloat _lfScalerUpwards, _lfScalingFactorThreshold, _logLFScaler;
 
 extern _Vector _scalerMultipliers, _scalerDividers;
 
+/**
+ * @brief Acquire a scaler multiplier
+ *
+ * @param l The index of the scaler multiplier
+ * @return hyFloat The scaler multiplier
+ */
 hyFloat acquireScalerMultiplier(long);
+/**
+ * @brief A custom log function
+ *
+ * @param f The value to take the log of
+ * @return hyFloat The log of the value
+ */
 hyFloat myLog(hyFloat);
+/**
+ * @brief Add a scaler
+ *
+ * @param f The value to add
+ * @param l1 The first long
+ * @param l2 The second long
+ * @return long The result of the addition
+ */
 long addScaler(hyFloat, long, long);
+/**
+ * @brief Map a parameter to an interval
+ *
+ * @param f The parameter value
+ * @param l The interval
+ * @param b Whether to map the parameter
+ * @return hyFloat The mapped parameter
+ */
 hyFloat mapParameterToInverval(hyFloat, long const, bool);
+/**
+ * @brief Obtain the derivative correction
+ *
+ * @param f The value
+ * @param l The interval
+ * @return hyFloat The derivative correction
+ */
 hyFloat obtainDerivativeCorrection(hyFloat, long const);
 
 #ifdef __HYPHYMPI__
@@ -827,7 +1385,18 @@ extern _String mpiLoopSwitchToOptimize, mpiLoopSwitchToBGM;
 
 extern _SimpleList mpiNodesThatCantSwitch;
 
+/**
+ * @brief Retrieve the MPI count
+ *
+ * @param c The character
+ * @return long The MPI count
+ */
 long RetrieveMPICount(char);
+/**
+ * @brief Switch the MPI nodes to MPI mode
+ *
+ * @param l The MPI mode
+ */
 void MPISwitchNodesToMPIMode(long);
 
 #endif

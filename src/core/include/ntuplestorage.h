@@ -43,13 +43,17 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include   "matrix.h"
 /*__________________________________________________________________________________________________________________________________________ */
 
+/**
+ * @brief A class to associate floating points with ordered K-tuples indices of the form 0<=i_1 < i_2 < ... < i_K < N, where N>=K
+ * @see http://en.wikipedia.org/wiki/Combinadic
+ */
 class   _NTupleStorage: public _Matrix
-// a way to associate floating points
-// with ordered K-tuples indices of the form 0<=i_1 < i_2 < ... < i_K < N, where N>=K
-// see http://en.wikipedia.org/wiki/Combinadic
 {
 
 public:
+    /**
+     * @brief Construct a new _NTupleStorage object
+     */
     _NTupleStorage  (void) {
         storageN = 0;
         storageK = 0;
