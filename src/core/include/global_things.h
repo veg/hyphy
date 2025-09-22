@@ -306,7 +306,7 @@ extern hyFile *hy_error_log_file, *hy_message_log_file;
 
 extern bool hy_drop_into_debug_mode, hy_need_extra_nl, terminate_execution,
     has_terminal_stdout, has_terminal_stderr, ignore_kw_defaults,
-    force_verbosity_from_cli;
+    force_verbosity_from_cli, has_terminal_color;
 
 extern int hy_mpi_node_rank, hy_mpi_node_count;
 

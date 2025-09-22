@@ -8,7 +8,6 @@ LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary ("libv3/models/codon/MG_REV.bf");
 LoadFunctionLibrary("libv3/tasks/estimators.bf");
 LoadFunctionLibrary("libv3/tasks/alignments.bf");
-LoadFunctionLibrary("libv3/tasks/mpi.bf");
 LoadFunctionLibrary("libv3/tasks/trees.bf");
 LoadFunctionLibrary("libv3/tasks/ancestral.bf");
 LoadFunctionLibrary("libv3/models/rate_variation.bf");

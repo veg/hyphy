@@ -453,19 +453,21 @@ _StringBuffer &_StringBuffer::ConvertToTerminalColor(const _String &s) {
 #ifdef _USE_EMSCRIPTEN_
   static const _String kNONE("NONE");
 #endif
-  BaseRef color_lookup = _hyTerminalColors.GetDataByKey(&s);
-  if (color_lookup) {
+  if (hy_global::has_terminal_color) {
+    BaseRef color_lookup = _hyTerminalColors.GetDataByKey(&s);
+    if (color_lookup) {
 #ifdef _USE_EMSCRIPTEN_
-    if (s == kNONE) {
-      (*this) << "</span>";
-    } else {
-      (*this) << "<span style='color:" << s << "'>";
-    }
+      if (s == kNONE) {
+        (*this) << "</span>";
+      } else {
+        (*this) << "<span style='color:" << s << "'>";
+      }
 #else
-    (*this) << *(const _String *)color_lookup;
+      (*this) << *(const _String *)color_lookup;
 #endif
-  } else {
-    (*this) << s;
+    } else {
+      (*this) << s;
+    }
   }
   return *this;
 }

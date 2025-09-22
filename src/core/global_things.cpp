@@ -85,7 +85,8 @@ bool hy_drop_into_debug_mode = false,
 
     terminate_execution = false, has_terminal_stdout = true,
      has_terminal_stderr = true, ignore_kw_defaults = false,
-     exiting_with_error = false, force_verbosity_from_cli = false;
+     exiting_with_error = false, force_verbosity_from_cli = false,
+     has_terminal_color = false;
 
 hyFile *hy_error_log_file = NULL, *hy_message_log_file = NULL;
 
@@ -114,7 +115,7 @@ _String const kEmptyString, kPromptForFilePlaceholder("PROMPT_FOR_FILE"),
                     "\"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line "
                     "argument. This often resolves the issue, which is "
                     "indicative of numerical instability."),
-    kHyPhyVersion = _String("2.5.80"),
+    kHyPhyVersion = _String("2.5.81"),
 
     kNoneToken = "None", kNullToken = "null",
     kNoKWMatch = "__input_value_not_given__",
@@ -381,6 +382,18 @@ bool GlobalStartup(void) {
   has_terminal_stderr = false;
 #else
   has_terminal_stdout = isatty(STDOUT_FILENO);
+
+  if (has_terminal_stdout) {
+    const char *term_env = getenv("TERM");
+    if (term_env) {
+      const _String term_name(term_env);
+      has_terminal_color = term_name.Find("color") != kNotFound ||
+                           term_name.Find("xterm") != kNotFound ||
+                           term_name.Find("screen") != kNotFound ||
+                           term_name.Find("ansi") != kNotFound;
+    }
+    // printf ("%s\n\n",term_env);
+  }
   has_terminal_stderr = isatty(STDERR_FILENO);
 #endif
 
