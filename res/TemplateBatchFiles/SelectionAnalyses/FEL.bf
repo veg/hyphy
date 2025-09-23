@@ -97,7 +97,7 @@ selection.io.startTimer (fel.json [terms.json.timers], "Total time", 0);
 KeywordArgument ("code", "Which genetic code should be used", "Universal");
 KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
 KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
-KeywordArgument ("branches",  "Branches to test", "All");
+KeywordArgument ("branches",  "Branches to test. Options: 'All' (default), 'Internal', 'Leaves', 'Unlabeled', 'fg' (labeled branches), comma-separated branch names (e.g. 'Node1,Node2'), or regex patterns (e.g. '/^human/i')", "All");
 KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
 KeywordArgument ("multiple-hits",  "Include support for multiple nucleotide substitutions", "None");
 KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
