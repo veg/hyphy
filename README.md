@@ -1,4 +1,7 @@
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/hyphy/README.html)
+![https://anaconda.org/bioconda/hyphy/badges/version.svg](https://anaconda.org/bioconda/hyphy/badges/version.svg)
+![https://anaconda.org/bioconda/hyphy/badges/latest_release_date.svg](https://anaconda.org/bioconda/hyphy/badges/latest_release_date.svg)
+![https://anaconda.org/bioconda/hyphy/badges/downloads.svg](https://anaconda.org/bioconda/hyphy/badges/downloads.svg)
 
 # HyPhy - Hypothesis testing using Phylogenies
 
