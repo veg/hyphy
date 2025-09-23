@@ -1,4 +1,0 @@
-Target dependency graph (2 targets)
-Target 'HYPHYDEBUG' in project 'HyPhy'
-➜ Explicit dependency on target 'ZERO_CHECK' in project 'HyPhy'
-Target 'ZERO_CHECK' in project 'HyPhy' (no dependencies)
