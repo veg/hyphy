@@ -57,17 +57,71 @@ private:
   
   
 public:
+  /**
+   * @brief Construct a new _TreeIterator object
+   *
+   * @param source The tree to iterate over
+   * @param traversal_type The type of traversal
+   */
   _TreeIterator (_TheTree const * source, int traversal_type);
+  /**
+   * @brief Construct a new _TreeIterator object
+   *
+   * @param root The root of the tree
+   * @param root_node The root node
+   * @param traversal_type The type of traversal
+   */
   _TreeIterator (_CalcNode const * root,  node<long>* root_node, int traversal_type);
+  /**
+   * @brief Destroy the _TreeIterator object
+   */
   ~_TreeIterator (void);
+  /**
+   * @brief Reset the iterator
+   */
   void                    Reset (void);
   
+  /**
+   * @brief Get the next node in the traversal
+   *
+   * @return _CalcNode* The next node
+   */
   _CalcNode *             Next (void);
+  /**
+   * @brief Get the current node in the traversal
+   *
+   * @return _CalcNode* The current node
+   */
   _CalcNode *             Current (void) const;
+  /**
+   * @brief Get the depth of the current node
+   *
+   * @return long The depth
+   */
   long                    Depth (void) const;
+  /**
+   * @brief Get the history of the traversal
+   *
+   * @return const _SimpleList& The history
+   */
   const _SimpleList&      History (void) const;
+  /**
+   * @brief Check if the iterator is at a leaf
+   *
+   * @return true if the iterator is at a leaf, false otherwise
+   */
   bool  IsAtLeaf          (void) const;
+  /**
+   * @brief Check if the iterator is at the root
+   *
+   * @return true if the iterator is at the root, false otherwise
+   */
   bool  IsAtRoot          (void) const;
+  /**
+   * @brief Get the current node
+   *
+   * @return node<long>* The current node
+   */
   node <long>* GetNode    (void) const { return iterator.Current(); }
   
 };

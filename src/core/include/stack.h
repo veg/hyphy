@@ -52,18 +52,59 @@ class   _Stack   //computational stack
 
 public:
 
+    /**
+     * @brief Construct a new _Stack object
+     */
     _Stack (void);
+    /**
+     * @brief Destroy the _Stack object
+     */
     virtual ~_Stack (void);
 
+    /**
+     * @brief Push an item onto the stack
+     *
+     * @param data The item to push
+     * @param store Whether to store the item
+     * @return true if successful, false otherwise
+     */
     bool      Push (HBLObjectRef, bool = true);     // push object onto the stack
+    /**
+     * @brief Pop an item from the stack
+     *
+     * @param del Whether to delete the item
+     * @return HBLObjectRef The popped item
+     */
     HBLObjectRef Pop (bool del = true);            // pop object from the top of the stack
+    /**
+     * @brief Get the stack depth
+     *
+     * @return long The stack depth
+     */
     long      StackDepth (void) const;    // returns the depth of the stack
+    /**
+     * @brief Reset the stack
+     */
     void      Reset (void);         // clear the stack
+    /**
+     * @brief Peek at an item on the stack
+     *
+     * @param offset The offset from the top of the stack
+     * @return HBLObjectRef The item
+     */
     HBLObjectRef    Peek (long offset = 0L);
         // peek at the object 'offset'
         // units from the top of the stack
     
+    /**
+     * @brief Initialize the stack
+     */
     virtual   void    Initialize (void);
+    /**
+     * @brief Duplicate the stack
+     *
+     * @param brc The stack to duplicate
+     */
     virtual   void    Duplicate (BaseRefConst);
 
 protected:

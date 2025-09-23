@@ -59,10 +59,29 @@ class _Variable : public _Constant {
 
 public:
 
+    /**
+     * @brief Construct a new _Variable object
+     */
     _Variable (void);
+    /**
+     * @brief Construct a new _Variable object
+     *
+     * @param s The name of the variable
+     * @param isG Whether the variable is global
+     */
     _Variable (_String const&, bool isG = false); // name
+    /**
+     * @brief Construct a new _Variable object
+     *
+     * @param s The name of the variable
+     * @param f The formula of the variable
+     * @param isG Whether the variable is global
+     */
     _Variable (_String const&, _String const&, bool isG = false); // name and formula
 
+    /**
+     * @brief Destroy the _Variable object
+     */
     virtual ~_Variable (void);
 
     virtual   void          Initialize (bool = true);

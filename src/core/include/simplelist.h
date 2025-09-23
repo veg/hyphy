@@ -284,19 +284,15 @@ public:
    */
   long CorrectForExclusions(long index, long excluded = -1) const;
 
-  /** Adjust the [sorted] list of indcies argument for skipped elements in the
-   [0-max] range
-   * so that the arguments is remapped to the range with elements in this
-   * list excluded. (*this) list must be sorted
-   * Example: SimpleList (2,4,5).CorrectForExclusions ([2,3],2) = 1 (and the
-   list is now [2])
-
-   * @param index the list of indices to correct; corrected indices are written
-   here
+  /**
+   * @brief Adjust the [sorted] list of indcies argument for skipped elements in the [0-max] range so that the arguments is remapped to the range with elements in this list excluded. (*this) list must be sorted
+   *
+   * @param indices the list of indices to correct; corrected indices are written here
    * @param count the length of indices
    * @return the number of entires in the indices list that are not excluded
+   *
+   * @example SimpleList (2,4,5).CorrectForExclusions ([2,3],2) = 1 (and the list is now [2])
    */
-
   long CorrectForExclusions(long *indices, long count) const;
 
   /**
@@ -746,6 +742,12 @@ public:
 
 // TODO:Why is this a global function? If it needs to be, should be in
 // helpers.cpp
+/**
+ * @brief Sort two lists together
+ *
+ * @param s1 The first list
+ * @param s2 The second list
+ */
 void SortLists(_SimpleList *, _SimpleList *);
 
 #endif

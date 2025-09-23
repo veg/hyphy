@@ -36,9 +36,8 @@
  */
 
 /**
- Global functions and variables that don't naturally belong with classes
- or other headers go here .
-
+ * @file global_things.h
+ * @brief Global functions and variables that don't naturally belong with classes or other headers go here.
  */
 
 #ifndef __HYGLOBALTHINGS__
@@ -66,58 +65,43 @@ namespace hy_global {
  */
 
 /**
- Heap-allocate a specified number of bytes and return the pointer.
- Optionally zero the memory. If allocation fails, the program is halted
- via a fatal run-time error
-
- @param bytes the number of bytes to allocate
- @param zero if TRUE, zero the memory block
-
- @see FlagError, MemReallocate
- @return a pointer to the new memory block
-
+ * @brief Heap-allocate a specified number of bytes and return the pointer.
+ * Optionally zero the memory. If allocation fails, the program is halted via a fatal run-time error.
+ *
+ * @param bytes The number of bytes to allocate.
+ * @param zero If true, zero the memory block.
+ * @param alignment The alignment of the memory block.
+ * @return A pointer to the new memory block.
+ * @see FlagError, MemReallocate
  */
 hyPointer MemAllocate(size_t bytes, bool zero = false, size_t alignment = 0);
 
 /**
- Resize an existing pointer to 'new_bytes' bytes.
- If allocation fails, the program is halted
- via a fatal run-time error
-
- @param bytes the number of bytes to allocate
- @param old_pointer a previously allocated (with MemAllocate) pointer
-
- @see FlagError, MemReallocate
- @return a pointer to the resized; could be different from old_pointer
-
+ * @brief Resize an existing pointer to 'new_bytes' bytes.
+ * If allocation fails, the program is halted via a fatal run-time error.
+ *
+ * @param old_pointer A previously allocated (with MemAllocate) pointer.
+ * @param new_bytes The new number of bytes to allocate.
+ * @return A pointer to the resized memory block; could be different from old_pointer.
+ * @see FlagError, MemReallocate
  */
 hyPointer MemReallocate(hyPointer old_pointer, size_t new_bytes);
 
 /**
- Set up application environment
-
- -   initialize the list indicating which variables always exist in
- the global namespace  (_hy_application_globals)
-
- -   set up the paths where HyPhy will look for its library files
- _hy_standard_library_paths (via LoadFunctionLibrary), and which standard
- extensions will be used to look for files
- (_hy_standard_library_extensions)
-
- -   initialize parser arrays (_HBL_Init_Const_Arrays)
-
- -   set up some environment variables and language constants, like
- TRUE, FALSE, HYPHY_BASE_DIRECTORY, HYPHY_LIB_DIRECTORY
-
- -   call global set up for hy_env
+ * @brief Set up the application environment.
+ * This function initializes various global variables, paths, and constants.
+ * - Initializes the list of global variables (_hy_application_globals).
+ * - Sets up library paths (_hy_standard_library_paths) and extensions (_hy_standard_library_extensions).
+ * - Initializes parser arrays (_HBL_Init_Const_Arrays).
+ * - Sets up environment variables and language constants (e.g., TRUE, FALSE, HYPHY_BASE_DIRECTORY, HYPHY_LIB_DIRECTORY).
+ * - Calls the global setup for hy_env.
  */
 void InitializeGlobals(void);
 
 /**
- Return directory separator character for the
- build platform (e.g., '/' for *nix)
-
- @return the directory separator char
+ * @brief Get the directory separator character for the current platform.
+ *
+ * @return The directory separator character (e.g., '/' for *nix, '\\' for Windows).
  */
 char get_platform_directory_char(void);
 
@@ -125,146 +109,135 @@ char get_platform_directory_char(void);
  * be compressed */
 
 /**
- Open the file located at file_path using mode 'mode'
-
- @param file_path the path of the file to open
- @param mode standard (fopen) open modes
- @param error if true, then halt the program if the file could not be opened
-
- @return the FILE handle or nil (if file does not exist or could not be open
- with the requested mode)
+ * @brief Open the file located at file_path using mode 'mode'.
+ * This function is a wrapper around the standard `fopen` function that also handles compressed files.
+ *
+ * @param file_path The path of the file to open.
+ * @param mode The standard (fopen) open modes.
+ * @param error If true, then halt the program if the file could not be opened.
+ * @param compress If true, the file will be opened as a compressed file.
+ * @return The `hyFile` handle or nil (if file does not exist or could not be open with the requested mode).
  */
 hyFile *doFileOpen(const char *file_path, hyFileOpenMode mode,
                    bool error = false, bool compress = false);
 
 /**
- The omnibus clean-up function that attempts to deallocate all application
- memory and unwind various objects created; the idea is that upon successful
- completion, the state of the program is the same as it was after the initial
- startup
-
- TODO 20170414: does the function ever get called with the FALSE flag? if not,
- deprecate I don't recall what the use case for the FALSE flag was
- @param all if NOT set, a partial purge is understaken, that clears only user
- functions and attendant stuctures
-
-
+ * @brief The omnibus clean-up function that attempts to deallocate all application memory and unwind various objects created.
+ * The idea is that upon successful completion, the state of the program is the same as it was after the initial startup.
+ *
+ * @param all If true, a full purge is undertaken. If false, a partial purge is undertaken, that clears only user functions and attendant stuctures.
+ * @todo 20170414: does the function ever get called with the FALSE flag? if not, deprecate I don't recall what the use case for the FALSE flag was
  */
 void PurgeAll(bool all = true);
 
 /**
- This a general initialization function that deals with bookkeeping like
- * Call all other initializers
- * Define and set the global random seed
- * Create and open messages and errors logs (based on settings)
-
+ * @brief This a general initialization function that deals with bookkeeping.
+ * - Calls all other initializers.
+ * - Defines and sets the global random seed.
+ * - Creates and opens messages and errors logs (based on settings).
+ * @return true if the startup was successful, false otherwise.
  */
-
 bool GlobalStartup(void);
+
 /**
- The general clean up function that is called right before HyPhy exits
- * Call other object list destructors
- * Shut down MPI nodes (in MPI mode)
- * close log files
-
-
+ * @brief The general clean up function that is called right before HyPhy exits.
+ * - Calls other object list destructors.
+ * - Shuts down MPI nodes (in MPI mode).
+ * - Closes log files.
+ * @return true if the shutdown was successful, false otherwise.
  */
 bool GlobalShutdown();
 
 //_______________________________________________________________________
 
-/** If the settings request it, write a warning (diagonstic) message to the
- .log file
-
- @param message the diagnostic message to report
+/**
+ * @brief If the settings request it, write a warning (diagonstic) message to the .log file.
+ *
+ * @param message The diagnostic message to report.
  */
 void ReportWarning(_String const &message);
 
 //_______________________________________________________________________
 
-/** Push waring message to console (high impact warnings)
-
- @param message the diagnostic message to report
+/**
+ * @brief Push a warning message to the console (for high impact warnings).
+ *
+ * @param message The diagnostic message to report.
  */
 void ReportWarningConsole(_String const message);
 
 //_______________________________________________________________________
 
 /**
- This is a simple wrapper that will either store the error message in the
- provided pointer (for alternative handling), or go through the standard error
- handling procedure
-
- @param error_string if not null, then store message here, otherwise use
- standard error handling
- @message the error message
-
+ * @brief This is a simple wrapper that will either store the error message in the provided pointer (for alternative handling), or go through the standard error handling procedure.
+ *
+ * @param error_string If not null, then store message here, otherwise use standard error handling.
+ * @param message The error message.
  */
 void HandleOrStoreApplicationError(_String *error_string,
                                    _String const &message);
 
 /**
- This is a convenience function to report an error while parsing expressions
- (context)
+ * @brief This is a convenience function to report an error while parsing expressions.
+ *
+ * @param error_string The error message.
+ * @param context The context in which the error occurred.
  */
 void HandleErrorWhileParsing(_String const &error_string,
                              _String const &context);
 
 /**
- When HyPhy encounters a fatal error, this function reports the
- error to the user and tries to exit gracefully
-
- If the flag is set, then the error handling protocols for the current execution
- context is ignored, and the application exits
-
- @param message the error message
- @param force_exit force application exit
- @param dump_core dump the current HyPhy status to a /tmp/hyphy.dump file
- @param minimal_error_reporting if set, do not report call stacks and such (e.g.
- during assertion handling)
+ * @brief When HyPhy encounters a fatal error, this function reports the error to the user and tries to exit gracefully.
+ *
+ * @param message The error message.
+ * @param force_exit If true, the application will exit regardless of the current error handling protocols.
+ * @param dump_core If true, the current HyPhy status will be dumped to a file.
+ * @param minimal_error_reporting If true, do not report call stacks and such (e.g. during assertion handling).
  */
 void HandleApplicationError(_String const &message, bool force_exit = false,
                             bool dump_core = false,
                             bool minimal_error_reporting = false);
 
 /**
-     Wrapper around HandleApplicationError which reports and error message and
-   exits the program.
-*/
+ * @brief Wrapper around HandleApplicationError which reports an error message and exits the program.
+ *
+ * @param message The error message.
+ */
 [[noreturn]] void HandleApplicationErrorAndExit(_String const &message);
 
 /**
-  When HyPhy encounters an error in a particular expression, it may be useful
-  to report the location of the error in the string.
-
-  This function extracts the substring of the requested size from the context,
-  padding with ellipses if needed, and returns it
-*/
-
+ * @brief When HyPhy encounters an error in a particular expression, it may be useful to report the location of the error in the string.
+ * This function extracts the substring of the requested size from the context, padding with ellipses if needed, and returns it.
+ *
+ * @param context The context in which the error occurred.
+ * @param from The starting position of the error.
+ * @param size The size of the context to extract.
+ * @return The prepared error context.
+ */
 const _String PrepareErrorContext(_String const &context, long from,
                                   unsigned long size = 32UL);
 
 /**
- Return a path specification to one of the standard HyPhy directories
-
-
- @param which_one which directory to return; supported values are presently
- limited to HY_HBL_DIRECTORY_TEMPLATE_MODELS
- @return a path specification to one of the standard HyPhy directories
+ * @brief Get a path specification to one of the standard HyPhy directories.
+ *
+ * @param which_one Which directory to return; supported values are presently limited to HY_HBL_DIRECTORY_TEMPLATE_MODELS.
+ * @return A path specification to one of the standard HyPhy directories.
  */
 const _String GetStandardDirectory(const unsigned long which_one);
 
-/** resolve the path name contained in 'path', accoding to various flag settings
-
-
-
- * Revision history
- - SLKP 20170616; moved from _String, stripped much of the legacy code,
- basically only the UNIX branch is needed now
-
-
+/**
+ * @brief Resolve the path name contained in 'path', according to various flag settings.
+ *
+ * @param path The path to resolve.
+ * @param isWrite If true, the path is for writing.
+ * @param acceptStringVars If true, string variables are accepted.
+ * @param p If not nil, a pointer to a `_String` object.
+ * @param assume_platform_specific If true, assume platform-specific path.
+ * @param caller The caller of the function.
+ * @param relative_to_base If true, the path is relative to the base directory.
+ * @param relative_path_passthrough If true, relative paths are passed through.
+ * @return true if the path was resolved successfully, false otherwise.
  */
-
 bool ProcessFileName(_String &path, bool isWrite = false,
                      bool acceptStringVars = false, hyPointer = nil,
                      bool assume_platform_specific = false,
@@ -272,23 +245,21 @@ bool ProcessFileName(_String &path, bool isWrite = false,
                      bool relative_to_base = false,
                      bool relative_path_passthrough = false);
 
+/**
+ * @brief Logs to the console.
+ */
 void ConsoleLog(void);
 
-/** Return the full HyPhy version string
- e.g 'HYPHY 2.31alpha20170206beta(MP) for Darwin on x86_64'
- * Revision history
- - SLKP 20170616; moved from _String
+/**
+ * @brief Get the full HyPhy version string.
+ * @return The full HyPhy version string (e.g., 'HYPHY 2.31alpha20170206beta(MP) for Darwin on x86_64').
  */
-
 const _String GetVersionString(void);
 
-/** Return the full HyPhy version string
- Example: 'Fri Jun 16 22:29:10 2017' or '2017/6/17 5:29' (if do_gmt is set to
- true)
- @param do_gmt return GMT time as YYYY/[M]M/[D]D H:M
-
- * Revision history
- - SLKP 20170616; moved from _String
+/**
+ * @brief Get the current timestamp.
+ * @param do_gmt If true, return GMT time as YYYY/[M]M/[D]D H:M.
+ * @return The current timestamp (e.g., 'Fri Jun 16 22:29:10 2017' or '2017/6/17 5:29').
  */
 const _String GetTimeStamp(bool do_gmt = false);
 
@@ -296,6 +267,12 @@ const _String GetTimeStamp(bool do_gmt = false);
  Global variables (grouped by type, then alphabetically)
  */
 
+/**
+ * @brief Constructs an error message.
+ *
+ * @param s The string to include in the error message.
+ * @return _String* The error message.
+ */
 _String *ConstructAnErrorMessage(_String const &);
 
 extern _AVLList _hy_application_globals;

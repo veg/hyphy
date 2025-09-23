@@ -46,22 +46,43 @@ class _AVLListX; // forward declaration
 
 //_____________________________________________________________________________
 
+/**
+ * @brief A key-value pair for the AVLListXIterator
+ *
+ */
 class AVLListXIteratorKeyValue {
 private:
   long      index;
   long      value;
     
 public:
+  /**
+   * @brief Construct a new AVLListXIteratorKeyValue object
+   *
+   * @param idx
+   * @param val
+   */
   AVLListXIteratorKeyValue (long idx, long val) : index (idx), value (val) {}
+  /**
+   * @brief Get the index
+   *
+   * @return long
+   */
   long get_index (void) const {return index;}
+  /**
+   * @brief Get the value
+   *
+   * @return long
+   */
   long get_value (void) const {return value;}
   
 };
 
+/**
+ * @brief A C++ range compliant iterator for _AVLListX
+ *
+ */
 class AVLListXIterator {
-  /** 
-   * A C++ range compiant iterator for _AVLListX
-   */
   
 private:
   _AVLListX const * the_list;
@@ -71,72 +92,74 @@ private:
   
   
 public:
-  AVLListXIterator (_AVLListX const * the_list);
   /**
-    * Build an iterator on the underlying list
-    * 
-    * @param the_list the list to iterate over
-   */
-  
-
-  AVLListXIterator (AVLListXIterator const & the_list);
-  /**
-   * Copy constructor
+   * @brief Construct a new AVLListXIterator object
    *
-   * @param the_list the iterator to copy from
+   * @param the_list
    */
+  AVLListXIterator (_AVLListX const * the_list);
+  
+  /**
+   * @brief Construct a new AVLListXIterator object
+   *
+   * @param the_list
+   */
+  AVLListXIterator (AVLListXIterator const & the_list);
 
+  /**
+   * @brief Return an iterator pointing to the first element of the list
+   *
+   * @return AVLListXIterator&
+   */
    AVLListXIterator& begin (void);
   
   /**
-   * Return an iterator pointing to the first element of the list
-   * @return the iterator poiting the to the first element fo the list
-  */
-  
+   * @brief Return an iterator pointing past the end of the list
+   *
+   * @return AVLListXIterator&
+   */
   AVLListXIterator& end   (void);
 
   /**
-   * Return an iterator pointing past the end of the list
-   * @return the iterator poiting past the end of the list
+   * @brief Increment the iterator
+   *
+   * @return AVLListXIterator&
    */
-
   AVLListXIterator& operator ++ (void);
-
-  /**
-   * Return an iterator pointing past the end of the list
-   * @return the iterator poiting past the end of the list
-  */
-
   
+  /**
+   * @brief Compare two iterators
+   *
+   * @param compare
+   * @return true
+   * @return false
+   */
   bool      operator == (AVLListXIterator const & compare);
   
   /**
-   * Compare two iterators
-   * @return true if the iterators are the same
+   * @brief Assignment operator
+   *
+   * @param assign_from
+   * @return AVLListXIterator&
    */
-
   AVLListXIterator&       operator = (AVLListXIterator const & assign_from);
   
   /**
-   * Assignment operator
-   * @param assign_from assign from this object
-   * @return *this
+   * @brief Compare two iterators
+   *
+   * @param compare
+   * @return true
+   * @return false
    */
-
    bool      operator != (AVLListXIterator const & compare);
   
   /**
-   * Compare two iterators
-   * @return true if the iterators are not the same
+   * @brief Dereference the iterator
+   *
+   * @return AVLListXIteratorKeyValue
    */
-
    AVLListXIteratorKeyValue const    operator * (void);
   
-  /**
-   * Return an object pointed to by the iterator
-   * @return the object pointed to by the iterator
-   */
-
 };
 
 //_____________________________________________________________________________

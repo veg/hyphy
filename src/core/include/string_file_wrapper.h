@@ -69,36 +69,49 @@ public:
    
    */
   
+  /**
+   * @brief Destroy the StringFileWrapper object
+   */
   ~StringFileWrapper () {}
   
+  /**
+   * @brief Write a literal string to the underlying buffer
+   *
+   * @param buffer The buffer to write
+   * @return StringFileWrapper& This for chaining
+   */
   StringFileWrapper & operator << (const char* buffer);
-  /** Write a literal string to the underlying buffer 
-        
-      @param buffer the buffer to write
-      @return this for chaining
-   */
   
+  /**
+   * @brief Write a character to the underlying buffer
+   *
+   * @param letter The character to write
+   * @return StringFileWrapper& This for chaining
+   */
   StringFileWrapper & operator << (const char letter);
-  /** Write a character to the underlying buffer
-   
-   @param letter the character to write
-   @return this for chaining
-   */
   
+  /**
+   * @brief Write a _String to the underlying buffer
+   *
+   * @param buffer The string to write
+   * @return StringFileWrapper& This for chaining
+   */
   StringFileWrapper & operator << (const _String& buffer);
-  /** Write _String to the underlying buffer
-   
-   @param buffer the string to write
-   @return this for chaining
-   */
   
-  StringFileWrapper & operator << (const _String* buffer);
-  /** Write _String* to the underlying buffer
-   
-   @param buffer the string to write
-   @return this for chaining
+  /**
+   * @brief Write a _String* to the underlying buffer
+   *
+   * @param buffer The string to write
+   * @return StringFileWrapper& This for chaining
    */
+  StringFileWrapper & operator << (const _String* buffer);
 
+  /**
+   * @brief Write a special character to the underlying buffer
+   *
+   * @param constant The special character to write
+   * @return StringFileWrapper& This for chaining
+   */
   StringFileWrapper & operator << (const StringFileWrapperConstants& constant);
   /** Write a special character to the underlying buffer
    

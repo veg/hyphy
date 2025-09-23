@@ -52,10 +52,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 
+/**
+ * @brief A platform wrapper for Time Difference Functions
+ */
 class TimeDifference {
-  /** 
-    A platform wrapper for Time Difference Functions
-   */
 public:
   
   TimeDifference (void);

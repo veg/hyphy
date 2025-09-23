@@ -62,14 +62,46 @@ class   _VariableContainer: public _Variable {
 public:
 
     _VariableContainer (void);
+    /**
+     * @brief Construct a new _VariableContainer object
+     *
+     * @param theName The name of the container
+     * @param theTmplt The template of the container
+     * @param theP The parent of the container
+     */
     _VariableContainer (_String const & theName, _String theTmplt = "", _VariableContainer* theP = nil);
-    // name, matrix constructor, the parent (if there is one)
+    /**
+     * @brief Destroy the _VariableContainer object
+     */
     virtual ~_VariableContainer(void);
 
+    /**
+     * @brief Initialize the variable container
+     *
+     * @param s1 The first string
+     * @param s2 The second string
+     * @param vc The variable container
+     * @param avl The AVL list
+     */
     void                    InitializeVarCont       (_String const&, _String&, _VariableContainer*, _AVLListXL* = nil);
+    /**
+     * @brief Scan the model based variables
+     *
+     * @param s The string to scan
+     * @param avl The AVL list
+     */
     void                    ScanModelBasedVariables (_String const&, _AVLListXL*);
+    /**
+     * @brief Set the model
+     *
+     * @param l The model index
+     * @param avl The AVL list
+     */
     virtual     void        SetModel                (long,_AVLListXL*);
 
+    /**
+     * @brief Mark the container as done
+     */
     virtual     void        MarkDone (void);
 
     // variable access/operation functions

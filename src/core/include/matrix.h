@@ -739,9 +739,34 @@ private:
 /*__________________________________________________________________________________________________________________________________________
  */
 
+/**
+ * @brief Multiply two 4x4 matrices
+ *
+ * @param C The result matrix
+ * @param A The first matrix
+ * @param B The second matrix
+ * @param stride The stride
+ * @param add Whether to add to the result matrix
+ */
 void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
                              bool add);
+/**
+ * @brief Multiply two NxN matrices using a blocked algorithm
+ *
+ * @param C The result matrix
+ * @param A The first matrix
+ * @param B The second matrix
+ * @param D The dimension of the matrices
+ */
 void _hy_matrix_multiply_NxN_blocked4(double *C, double *A, double *B, int D);
+/**
+ * @brief Transpose a matrix using a blocked algorithm
+ *
+ * @param C The result matrix
+ * @param A The matrix to transpose
+ * @param nrow The number of rows
+ * @param ncol The number of columns
+ */
 void _hy_matrix_transpose_blocked(double *__restrict C, double *__restrict A,
                                   int nrow, int ncol);
 
@@ -753,10 +778,26 @@ extern _Matrix *GlobalFrequenciesMatrix;
 // evaluator
 extern long ANALYTIC_COMPUTATION_FLAG;
 
+/**
+ * @brief Return a matrix or use the cache
+ *
+ * @param nrow The number of rows
+ * @param ncol The number of columns
+ * @param type The type of the matrix
+ * @param is_sparse Whether the matrix is sparse
+ * @param cache The cache to use
+ * @return HBLObjectRef The matrix
+ */
 HBLObjectRef _returnMatrixOrUseCache(long nrow, long ncol, long type,
                                      bool is_sparse, HBLObjectRef cache);
 
 #ifdef _SLKP_USE_AVX_INTRINSICS
+/**
+ * @brief Sum the elements of a 4-element AVX vector
+ *
+ * @param x The vector to sum
+ * @return double The sum of the elements
+ */
 inline double _avx_sum_4(__m256d const &x) {
   /*__m256d t = _mm256_add_pd (_mm256_shuffle_pd (x, x, 0x0),
                              // (x3,x3,x1,x1)
@@ -779,6 +820,12 @@ inline double _avx_sum_4(__m256d const &x) {
 #endif
 
 #ifdef _SLKP_USE_ARM_NEON
+/**
+ * @brief Sum the elements of a 2-element NEON vector
+ *
+ * @param x The vector to sum
+ * @return double The sum of the elements
+ */
 inline double _neon_sum_2(float64x2_t const &x) {
   return vgetq_lane_f64(x, 0) + vgetq_lane_f64(x, 1);
 }

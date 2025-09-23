@@ -59,20 +59,40 @@ private:
   static _List _list_of_default_tables;
 
 public:
+  /**
+   * @brief Construct a new _TranslationTable object
+   */
   _TranslationTable(void);
+  /**
+   * @brief Construct a new _TranslationTable object
+   *
+   * @param c The character to construct from
+   */
   _TranslationTable(unsigned char);
+  /**
+   * @brief Construct a new _TranslationTable object
+   *
+   * @param s The string to construct from
+   */
   _TranslationTable(_String &);
-  /* 20100618: SLKP
-
-          - new constructor (needed to handle ExecuteCase52 / Simulate properly)
-            which takes an alphabet string and checks to see if it's a standard
-     one DNA/RNA/Protein or Binary
-
+  /**
+   * @brief Construct a new _TranslationTable object
+   *
+   * @param t The translation table to copy
    */
   _TranslationTable(_TranslationTable const &);
    
+   /**
+    * @brief The assignment operator
+    *
+    * @param t The translation table to assign from
+    * @return const _TranslationTable&
+    */
    _TranslationTable const& operator = (_TranslationTable const &);
 
+  /**
+   * @brief Destroy the _TranslationTable object
+   */
   virtual ~_TranslationTable(void) {
     if (checkTable) {
       free(checkTable);
