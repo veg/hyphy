@@ -9,194 +9,194 @@
   "branch attributes": {
     "0": {
       "NODE1": {
-        "Nucleotide GTR": 0.07904179404970266,
-        "Standard MG94": 0.2125225305140988,
-        "nonsynonymous": 0.04793121935225231,
-        "synonymous": 0.1645913111618461
+        "Nucleotide GTR": 0.07904043993924169,
+        "Standard MG94": 0.2146652008087343,
+        "nonsynonymous": 0.04803878832314753,
+        "synonymous": 0.1666264124855866
       },
       "NODE11": {
-        "Nucleotide GTR": 0.04359073692963841,
-        "Standard MG94": 0.06587202132280577,
-        "nonsynonymous": 0.01485643096551684,
-        "synonymous": 0.05101559035728893
+        "Nucleotide GTR": 0.0435106331028339,
+        "Standard MG94": 0.06611458886375439,
+        "nonsynonymous": 0.01479543366848585,
+        "synonymous": 0.05131915519526847
       },
       "NODE12": {
-        "Nucleotide GTR": 0.1191204418934964,
-        "Standard MG94": 0.1644676706750192,
-        "nonsynonymous": 0.03709317774641959,
-        "synonymous": 0.1273744929285995
+        "Nucleotide GTR": 0.119135153015158,
+        "Standard MG94": 0.1647321381366137,
+        "nonsynonymous": 0.03686453269626695,
+        "synonymous": 0.1278676054403468
       },
       "NODE14": {
-        "Nucleotide GTR": 0.2255487385418098,
-        "Standard MG94": 0.4710802947655804,
-        "nonsynonymous": 0.1062449844085347,
-        "synonymous": 0.3648353103570459
+        "Nucleotide GTR": 0.2256208325384952,
+        "Standard MG94": 0.4743638012359296,
+        "nonsynonymous": 0.1061553626292708,
+        "synonymous": 0.368208438606658
       },
       "NODE17": {
-        "Nucleotide GTR": 0.01260528214452182,
-        "Standard MG94": 0.05780098272586634,
-        "nonsynonymous": 0.01303613115798779,
-        "synonymous": 0.04476485156787856
+        "Nucleotide GTR": 0.0125356301088906,
+        "Standard MG94": 0.05848260237642786,
+        "nonsynonymous": 0.01308751183500494,
+        "synonymous": 0.04539509054142287
       },
       "NODE18": {
-        "Nucleotide GTR": 0.07182489233188558,
-        "Standard MG94": 0.1328032474621994,
-        "nonsynonymous": 0.02995174944230132,
-        "synonymous": 0.1028514980198978
+        "Nucleotide GTR": 0.07184359407202601,
+        "Standard MG94": 0.1328356244808102,
+        "nonsynonymous": 0.0297265808438716,
+        "synonymous": 0.1031090436369387
       },
       "NODE2": {
-        "Nucleotide GTR": 0.07910863786455967,
-        "Standard MG94": 0.1927501475308927,
-        "nonsynonymous": 0.04347185956770521,
-        "synonymous": 0.1492782879631876
+        "Nucleotide GTR": 0.07912833758967237,
+        "Standard MG94": 0.194168299839125,
+        "nonsynonymous": 0.04345189541619288,
+        "synonymous": 0.150716404422932
       },
       "NODE20": {
-        "Nucleotide GTR": 0.04362489132744538,
-        "Standard MG94": 0.1115824669845952,
-        "nonsynonymous": 0.02516572566666896,
-        "synonymous": 0.08641674131792616
+        "Nucleotide GTR": 0.04355119191392282,
+        "Standard MG94": 0.1122668539652045,
+        "nonsynonymous": 0.02512360463187257,
+        "synonymous": 0.08714324933333184
       },
       "NODE23": {
-        "Nucleotide GTR": 0.1338301561961153,
-        "Standard MG94": 0.3001370225057473,
-        "nonsynonymous": 0.06769133336900736,
-        "synonymous": 0.23244568913674
+        "Nucleotide GTR": 0.1338786940068139,
+        "Standard MG94": 0.302254593936468,
+        "nonsynonymous": 0.06763995469740856,
+        "synonymous": 0.2346146392390594
       },
       "NODE26": {
-        "Nucleotide GTR": 0.1301936323737629,
-        "Standard MG94": 0.1764335428695708,
-        "nonsynonymous": 0.03979189794098294,
-        "synonymous": 0.1366416449285882
+        "Nucleotide GTR": 0.1302136586167649,
+        "Standard MG94": 0.1773427241062072,
+        "nonsynonymous": 0.03968658893892692,
+        "synonymous": 0.1376561351672802
       },
       "NODE3": {
-        "Nucleotide GTR": 0.07134394170310562,
-        "Standard MG94": 0.1959722168944117,
-        "nonsynonymous": 0.04419854823011384,
-        "synonymous": 0.1517736686642979
+        "Nucleotide GTR": 0.07136412641241509,
+        "Standard MG94": 0.1973712546529649,
+        "nonsynonymous": 0.04416866770965727,
+        "synonymous": 0.1532025869433077
       },
       "NODE6": {
-        "Nucleotide GTR": 0.07683163807612786,
-        "Standard MG94": 0.04488590960887795,
-        "nonsynonymous": 0.01012333315476769,
-        "synonymous": 0.03476257645411025
+        "Nucleotide GTR": 0.07670388408854495,
+        "Standard MG94": 0.04481439163523921,
+        "nonsynonymous": 0.01002877534637789,
+        "synonymous": 0.03478561628886135
       },
       "NODE7": {
-        "Nucleotide GTR": 0.03313845953031976,
-        "Standard MG94": 0.08072159128041904,
-        "nonsynonymous": 0.01820552526249894,
-        "synonymous": 0.06251606601791999
+        "Nucleotide GTR": 0.0331887573684243,
+        "Standard MG94": 0.08116312207745864,
+        "nonsynonymous": 0.01816306521241318,
+        "synonymous": 0.06300005686504533
       },
       "SR_CI_AN01_1_XX_LKH062_16336_LEN291_COV6_OG5_149820": {
-        "Nucleotide GTR": 0.06830354671074214,
-        "Standard MG94": 0.07612010365973627,
-        "nonsynonymous": 0.01716772982518654,
+        "Nucleotide GTR": 0.06820834630750526,
+        "Standard MG94": 0.07626377891211959,
+        "nonsynonymous": 0.01706666715462142,
         "original name": "Sr_ci_An01_1_XX_LKH062_16336_Len291_Cov6_OG5_149820",
-        "synonymous": 0.05895237383454983
+        "synonymous": 0.05919711175749815
       },
       "SR_CI_AN01_2_XX_LKH062_8467_LEN399_COV65_OG5_149820": {
-        "Nucleotide GTR": 0.1063695408867387,
-        "Standard MG94": 0.1347045080260159,
-        "nonsynonymous": 0.0303805498001253,
+        "Nucleotide GTR": 0.1064641224848971,
+        "Standard MG94": 0.1351755423711838,
+        "nonsynonymous": 0.03025021867527469,
         "original name": "Sr_ci_An01_2_XX_LKH062_8467_Len399_Cov65_OG5_149820",
-        "synonymous": 0.1043239582258908
+        "synonymous": 0.104925323695909
       },
       "SR_CI_BACB_1_XX_LKH084_8558_LEN318_COV7_OG5_149820": {
-        "Nucleotide GTR": 0.1993118816353975,
-        "Standard MG94": 0.2553531872989085,
-        "nonsynonymous": 0.05759102154069654,
+        "Nucleotide GTR": 0.1994707243988431,
+        "Standard MG94": 0.2562630862480058,
+        "nonsynonymous": 0.05734775878402903,
         "original name": "Sr_ci_Bacb_1_XX_LKH084_8558_Len318_Cov7_OG5_149820",
-        "synonymous": 0.1977621657582121
+        "synonymous": 0.1989153274639767
       },
       "SR_CI_BACB_2_XX_LKH084_14821_LEN246_COV4_OG5_149820": {
-        "Nucleotide GTR": 0.2056939869992286,
-        "Standard MG94": 0.4043974615632377,
-        "nonsynonymous": 0.09120568717487475,
+        "Nucleotide GTR": 0.2057516183047013,
+        "Standard MG94": 0.4082843894882431,
+        "nonsynonymous": 0.09136780106127577,
         "original name": "Sr_ci_Bacb_2_XX_LKH084_14821_Len246_Cov4_OG5_149820",
-        "synonymous": 0.3131917743883637
+        "synonymous": 0.3169165884269676
       },
       "SR_CI_BR01_0_XX_LKH056_36916_LEN257_COV1_OG5_149820": {
-        "Nucleotide GTR": 0.1570396475531433,
-        "Standard MG94": 0.2411780554695433,
-        "nonsynonymous": 0.05439403648966765,
+        "Nucleotide GTR": 0.1571474651992942,
+        "Standard MG94": 0.2429179102408673,
+        "nonsynonymous": 0.0543613125275944,
         "original name": "Sr_ci_Br01_0_XX_LKH056_36916_Len257_Cov1_OG5_149820",
-        "synonymous": 0.1867840189798759
+        "synonymous": 0.1885565977132732
       },
       "SR_CI_CLCB_0_XX_LKH120_18354_LEN333_COV1_OG5_149820": {
-        "Nucleotide GTR": 0.3483008710872281,
-        "Standard MG94": 0.7290070560149885,
-        "nonsynonymous": 0.1644164363499149,
+        "Nucleotide GTR": 0.3483503291641121,
+        "Standard MG94": 0.7366838158515789,
+        "nonsynonymous": 0.1648585693324107,
         "original name": "Sr_ci_Clcb_0_XX_LKH120_18354_Len333_Cov1_OG5_149820",
-        "synonymous": 0.5645906196650735
+        "synonymous": 0.5718252465191674
       },
       "SR_CI_CMAG_0_XX_CONTIG_4215_LEN456_COV223_OG5_149820_TRANS1": {
-        "Nucleotide GTR": 0.1783498138662593,
-        "Standard MG94": 0.3079712009867227,
-        "nonsynonymous": 0.06945821298552589,
+        "Nucleotide GTR": 0.1784389951441127,
+        "Standard MG94": 0.3104504757746009,
+        "nonsynonymous": 0.06947406768479679,
         "original name": "Sr_ci_Cmag_0_XX_Contig_4215_Len456_Cov223_OG5_149820_Trans1",
-        "synonymous": 0.2385129880011965
+        "synonymous": 0.2409764080898043
       },
       "SR_CI_ECRA_0_XX_CONTIG_3964_LEN396_COV7_OG5_149820_TRANS1": {
-        "Nucleotide GTR": 0.3147799625029909,
-        "Standard MG94": 0.7134107675322405,
-        "nonsynonymous": 0.1608989310645258,
+        "Nucleotide GTR": 0.3148683107852535,
+        "Standard MG94": 0.7206286853601914,
+        "nonsynonymous": 0.1612656767151138,
         "original name": "Sr_ci_Ecra_0_XX_Contig_3964_Len396_Cov7_OG5_149820_Trans1",
-        "synonymous": 0.5525118364677141
+        "synonymous": 0.5593630086450774
       },
       "SR_CI_EHAR_0_XX_CONTIG_7756_LEN234_COV4_OG5_149820_TRANS1": {
-        "Nucleotide GTR": 0.2167038023982706,
-        "Standard MG94": 0.3920792210424315,
-        "nonsynonymous": 0.08842749567203328,
+        "Nucleotide GTR": 0.216696266458007,
+        "Standard MG94": 0.3950672911889402,
+        "nonsynonymous": 0.08841001663671892,
         "original name": "Sr_ci_Ehar_0_XX_Contig_7756_Len234_Cov4_OG5_149820_Trans1",
-        "synonymous": 0.3036517253703981
+        "synonymous": 0.3066572745522214
       },
       "SR_CI_GLCB_1_XX_LKH073_1585_LEN459_COV1011_OG5_149820": {
-        "Nucleotide GTR": 0.1073011262500668,
-        "Standard MG94": 0.2080272719428529,
-        "nonsynonymous": 0.04691738225882864,
+        "Nucleotide GTR": 0.1073042226656191,
+        "Standard MG94": 0.2097980130277566,
+        "nonsynonymous": 0.04694958614851238,
         "original name": "Sr_ci_Glcb_1_XX_LKH073_1585_Len459_Cov1011_OG5_149820",
-        "synonymous": 0.1611098896840243
+        "synonymous": 0.1628484268792445
       },
       "SR_CI_GLCB_2_XX_LKH073_1963_LEN459_COV46_OG5_149820": {
-        "Nucleotide GTR": 0.2183406732106599,
-        "Standard MG94": 0.2812218824159358,
-        "nonsynonymous": 0.06342531166048451,
+        "Nucleotide GTR": 0.2183999432003435,
+        "Standard MG94": 0.2827676682980446,
+        "nonsynonymous": 0.06327907882052525,
         "original name": "Sr_ci_Glcb_2_XX_LKH073_1963_Len459_Cov46_OG5_149820",
-        "synonymous": 0.217796570755451
+        "synonymous": 0.2194885894775193
       },
       "SR_CI_PSPE_0_XX_CONTIG_20521_LEN462_COV5_OG5_149820_TRANS1": {
-        "Nucleotide GTR": 0.3288843806114418,
-        "Standard MG94": 0.6696675311091602,
-        "nonsynonymous": 0.1510333104402079,
+        "Nucleotide GTR": 0.3288959210056505,
+        "Standard MG94": 0.6766394400789758,
+        "nonsynonymous": 0.1514215565009473,
         "original name": "Sr_ci_Pspe_0_XX_Contig_20521_Len462_Cov5_OG5_149820_Trans1",
-        "synonymous": 0.5186342206689523
+        "synonymous": 0.5252178835780271
       },
       "SR_CI_SASU_0_XX_CONTIG_62345_LEN321_COV3_OG5_149820_TRANS1": {
-        "Nucleotide GTR": 0.3586680370250636,
-        "Standard MG94": 0.8801873252786927,
-        "nonsynonymous": 0.1985128431180929,
+        "Nucleotide GTR": 0.3587147249262852,
+        "Standard MG94": 0.8905225903323813,
+        "nonsynonymous": 0.1992853338724183,
         "original name": "Sr_ci_Sasu_0_XX_Contig_62345_Len321_Cov3_OG5_149820_Trans1",
-        "synonymous": 0.6816744821606001
+        "synonymous": 0.6912372564599639
       },
       "SR_CI_SM01_0_XX_LKH066_4720_LEN459_COV10_OG5_149820": {
-        "Nucleotide GTR": 0.3055460884013655,
-        "Standard MG94": 0.448007133169405,
-        "nonsynonymous": 0.1010411842893615,
+        "Nucleotide GTR": 0.3056160320527749,
+        "Standard MG94": 0.4510175332807509,
+        "nonsynonymous": 0.1009308249761764,
         "original name": "Sr_ci_Sm01_0_XX_LKH066_4720_Len459_Cov10_OG5_149820",
-        "synonymous": 0.3469659488800434
+        "synonymous": 0.350086708304574
       },
       "SR_CI_SP01_0_XX_LKH091_3772_LEN294_COV38_OG5_149820": {
-        "Nucleotide GTR": 0.2574815988613966,
-        "Standard MG94": 0.5070198670079968,
-        "nonsynonymous": 0.1143506074519376,
+        "Nucleotide GTR": 0.2574878566975545,
+        "Standard MG94": 0.5100297598374047,
+        "nonsynonymous": 0.1141368586013405,
         "original name": "Sr_ci_Sp01_0_XX_LKH091_3772_Len294_Cov38_OG5_149820",
-        "synonymous": 0.3926692595560595
+        "synonymous": 0.3958929012360641
       },
       "SR_CI_TC02_0_XX_LKH095_25898_LEN363_COV2_OG5_149820": {
-        "Nucleotide GTR": 0.2504593779809879,
-        "Standard MG94": 0.526813243085642,
-        "nonsynonymous": 0.1188147019091431,
+        "Nucleotide GTR": 0.2506112895249608,
+        "Standard MG94": 0.5311405757613722,
+        "nonsynonymous": 0.1188611362843547,
         "original name": "Sr_ci_Tc02_0_XX_LKH095_25898_Len363_Cov2_OG5_149820",
-        "synonymous": 0.4079985411764997
+        "synonymous": 0.412279439477018
       }
     },
     "attributes": {
@@ -386,7 +386,7 @@
   },
   "fits": {
     "Nucleotide GTR": {
-      "AIC-c": 11013.55745723541,
+      "AIC-c": 11013.55763834545,
       "Equilibrium frequencies": [
         [
           0.3070452155625657
@@ -401,35 +401,35 @@
           0.2604276200490712
         ]
       ],
-      "Log Likelihood": -5469.586284051593,
+      "Log Likelihood": -5469.586374606617,
       "Rate Distributions": {
-        "Substitution rate from nucleotide A to nucleotide C": 0.9923414277736305,
+        "Substitution rate from nucleotide A to nucleotide C": 0.9922151015334933,
         "Substitution rate from nucleotide A to nucleotide G": 1,
-        "Substitution rate from nucleotide A to nucleotide T": 0.7436409449839242,
-        "Substitution rate from nucleotide C to nucleotide G": 0.6854839507185443,
-        "Substitution rate from nucleotide C to nucleotide T": 1.819762692252668,
-        "Substitution rate from nucleotide G to nucleotide T": 0.3387501689471731
+        "Substitution rate from nucleotide A to nucleotide T": 0.7436261667285378,
+        "Substitution rate from nucleotide C to nucleotide G": 0.6860490578294607,
+        "Substitution rate from nucleotide C to nucleotide T": 1.819028025531305,
+        "Substitution rate from nucleotide G to nucleotide T": 0.3389640307354965
       },
       "display order": 0,
       "estimated parameters": 37
     },
     "Standard MG94": {
-      "AIC-c": 10224.82927103005,
+      "AIC-c": 10224.81335921286,
       "Confidence Intervals": {
         "non-synonymous/synonymous rate ratio": {
-          "LB": 0.08247954701413943,
-          "UB": 0.09701767653437098
+          "LB": 0.08158883967440719,
+          "UB": 0.09597141415899657
         }
       },
-      "Log Likelihood": -5067.59066547757,
+      "Log Likelihood": -5067.582709568975,
       "Rate Distributions": {
-        "Substitution rate from nucleotide A to nucleotide C": 1.334202747553341,
+        "Substitution rate from nucleotide A to nucleotide C": 1.336267123924658,
         "Substitution rate from nucleotide A to nucleotide G": 1,
-        "Substitution rate from nucleotide A to nucleotide T": 0.6555824110931401,
-        "Substitution rate from nucleotide C to nucleotide G": 0.9613405871418516,
-        "Substitution rate from nucleotide C to nucleotide T": 0.9205662936510279,
-        "Substitution rate from nucleotide G to nucleotide T": 0.4379140659938386,
-        "non-synonymous/synonymous rate ratio": 0.08958165923686651
+        "Substitution rate from nucleotide A to nucleotide T": 0.6555768609325139,
+        "Substitution rate from nucleotide C to nucleotide G": 0.9603728064887433,
+        "Substitution rate from nucleotide C to nucleotide T": 0.9177848972896854,
+        "Substitution rate from nucleotide G to nucleotide T": 0.4377296120404687,
+        "non-synonymous/synonymous rate ratio": 0.08862330719326786
       },
       "display order": 1,
       "estimated parameters": 44
@@ -480,11 +480,11 @@
   "timers": {
     "Overall": {
       "order": 0,
-      "timer": 2
+      "timer": 3
     },
     "Standard MG94": {
       "order": null,
-      "timer": 2
+      "timer": 3
     }
   }
 }
