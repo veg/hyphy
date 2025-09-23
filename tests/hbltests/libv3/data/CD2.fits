@@ -1,0 +1,785 @@
+{
+ "Full-MG94":{
+   "EFV":{
+     "uCgepyTq.model_MGREV":      [
+[0.04879542078997189],
+      [0.03985234120577962],
+      [0.04952094783088219],
+      [0.04151116991375267],
+      [0.01810991780771344],
+      [0.01479078593846134],
+      [0.01837918969563738],
+      [0.01540644312661784],
+      [0.01894268587636094],
+      [0.01547092675249114],
+      [0.01922433998669077],
+      [0.01611489437545877],
+      [0.0282993507020152],
+      [0.02311272987957316],
+      [0.02872012674702341],
+      [0.0240747827648953],
+      [0.01667099172252497],
+      [0.0136155819461922],
+      [0.01691886857444401],
+      [0.01418232200523866],
+      [0.006187266857836889],
+      [0.005053282991677827],
+      [0.006279263798164766],
+      [0.005263622726872393],
+      [0.006471782686462733],
+      [0.005285653605503387],
+      [0.006568010022264061],
+      [0.005505665621759505],
+      [0.009668494167450303],
+      [0.007896481314625867],
+      [0.00981225261547275],
+      [0.00822516739680702],
+      [0.03328809519727715],
+      [0.02718715212237699],
+      [0.03378304765008977],
+      [0.0283188002781468],
+      [0.01235453364759019],
+      [0.01009023146826177],
+      [0.01253823015218115],
+      [0.01051023102470486],
+      [0.0129226456199351],
+      [0.0105542215681203],
+      [0.01311478924090558],
+      [0.01099353442146321],
+      [0.01930573535259715],
+      [0.01576743760058528],
+      [0.01959278755577941],
+      [0.01642374730163821],
+      [0.0196356309042113],
+      [0.02045295172546195],
+      [0.008922930272570621],
+      [0.007287562152777767],
+      [0.009055603115474714],
+      [0.00759090235675084],
+      [0.007622674057953422],
+      [0.009472016773282714],
+      [0.007939963084802886],
+      [0.01394336162947978],
+      [0.01138786378347622],
+      [0.01415068202429555],
+      [0.01186187647118696] 
+      ]
+    },
+   "LogL":-3467.000519342276,
+   "Trees":    [
+["((((PIG:0.192693516278624,COW:0.2480005397560575)Node3:0.1016866042258847,HORSE:0.211211895241506,CAT:0.2739219444219244)Node2:0.06427572077662409,((RHMONKEY:0.003715000115498241,BABOON:0.00177198649878954)Node9:0.02591647932599121,(HUMAN:0,CHIMP:0.00182711756739049)Node12:0.01786963419133016)Node8:0.109578151392027)Node1:0.2838895264592484,RAT:0.06698252600424494,MOUSE:0.1201293247448669)"] 
+    ],
+   "branch length":{
+     "0":{
+       "BABOON":{
+         "MLE":0.00177198649878954,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.004211136321195556,
+           "constraint":"uCgepyTq.tree_0.BABOON.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.004231531285189035
+          }
+        },
+       "CAT":{
+         "MLE":0.2739219444219244,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.6509771096538599,
+           "constraint":"uCgepyTq.tree_0.CAT.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.6541298583894316
+          }
+        },
+       "CHIMP":{
+         "MLE":0.00182711756739049,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.004342155629508789,
+           "constraint":"uCgepyTq.tree_0.CHIMP.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.004363185133415414
+          }
+        },
+       "COW":{
+         "MLE":0.2480005397560575,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.5893747392298144,
+           "constraint":"uCgepyTq.tree_0.COW.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.5922291413836362
+          }
+        },
+       "HORSE":{
+         "MLE":0.211211895241506,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.5019463094824047,
+           "constraint":"uCgepyTq.tree_0.HORSE.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.5043772868072249
+          }
+        },
+       "HUMAN":{
+         "MLE":0,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0,
+           "constraint":"uCgepyTq.tree_0.HUMAN.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0
+          }
+        },
+       "MOUSE":{
+         "MLE":0.1201293247448669,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.2854880457720062,
+           "constraint":"uCgepyTq.tree_0.MOUSE.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.2868706935824755
+          }
+        },
+       "Node1":{
+         "MLE":0.2838895264592484,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.6746651269048637,
+           "constraint":"uCgepyTq.tree_0.Node1.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.6779325991312137
+          }
+        },
+       "Node12":{
+         "MLE":0.01786963419133016,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.04246729060350826,
+           "constraint":"uCgepyTq.tree_0.Node12.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.04267296403621092
+          }
+        },
+       "Node2":{
+         "MLE":0.06427572077662409,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.1527516279149788,
+           "constraint":"uCgepyTq.tree_0.Node2.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.1534914196751246
+          }
+        },
+       "Node3":{
+         "MLE":0.1016866042258847,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.2416588121451148,
+           "constraint":"uCgepyTq.tree_0.Node3.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.2428291904934955
+          }
+        },
+       "Node8":{
+         "MLE":0.109578151392027,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.260413120332266,
+           "constraint":"uCgepyTq.tree_0.Node8.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.2616743277137212
+          }
+        },
+       "Node9":{
+         "MLE":0.02591647932599121,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.06159066532490432,
+           "constraint":"uCgepyTq.tree_0.Node9.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.06188895521766163
+          }
+        },
+       "PIG":{
+         "MLE":0.192693516278624,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.4579372731192464,
+           "constraint":"uCgepyTq.tree_0.PIG.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.4601551101789328
+          }
+        },
+       "RAT":{
+         "MLE":0.06698252600424494,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.1591843664354038,
+           "constraint":"uCgepyTq.tree_0.RAT.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.1599553126062589
+          }
+        },
+       "RHMONKEY":{
+         "MLE":0.003715000115498241,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.008828719592563023,
+           "constraint":"uCgepyTq.tree_0.RHMONKEY.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.008871477984708288
+          }
+        }
+      }
+    },
+   "global":{
+     "Substitution rate from nucleotide A to nucleotide C":{
+       "ID":"uCgepyTq.model_MGREV.theta_AC",
+       "MLE":0.5793524051134213
+      },
+     "Substitution rate from nucleotide A to nucleotide G":{
+       "ID":"uCgepyTq.model_MGREV.theta_AG",
+       "MLE":1,
+       "constraint":"1"
+      },
+     "Substitution rate from nucleotide A to nucleotide T":{
+       "ID":"uCgepyTq.model_MGREV.theta_AT",
+       "MLE":0.2661931839688729
+      },
+     "Substitution rate from nucleotide C to nucleotide G":{
+       "ID":"uCgepyTq.model_MGREV.theta_CG",
+       "MLE":0.4755667308174493
+      },
+     "Substitution rate from nucleotide C to nucleotide T":{
+       "ID":"uCgepyTq.model_MGREV.theta_CT",
+       "MLE":0.9808012089901182
+      },
+     "Substitution rate from nucleotide G to nucleotide T":{
+       "ID":"uCgepyTq.model_MGREV.theta_GT",
+       "MLE":0.3176482854490925
+      },
+     "non-synonymous/synonymous rate ratio for *test*":{
+       "ID":"uCgepyTq.model_MGREV.omega_0",
+       "MLE":0.9951802402915313
+      }
+    },
+   "parameters":31
+  },
+ "Full-MG94-LF":null,
+ "GTR":{
+   "EFV":{
+     "uvYsfOnd.model":      [
+[0.3592490842490842],
+      [0.181959706959707],
+      [0.240018315018315],
+      [0.2187728937728937] 
+      ]
+    },
+   "LogL":-3532.321229369888,
+   "Trees":    [
+["((((PIG:0.1871583994508561,COW:0.2480010948311115)Node3:0.09885615280357628,HORSE:0.2091247672480331,CAT:0.2660894763376647)Node2:0.06616396831474482,((RHMONKEY:0.003777980207345358,BABOON:0.001678834502396981)Node9:0.02566770357597321,(HUMAN:0,CHIMP:0.001817531464252161)Node12:0.01783635575407834)Node8:0.1062251520223854)Node1:0.2767085864510917,RAT:0.0667011460280124,MOUSE:0.1180719533529479)"] 
+    ],
+   "branch length":{
+     "0":{
+       "BABOON":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.003786037617312504
+          },
+         "MLE":0.001678834502396981
+        },
+       "CAT":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.6000738998078834
+          },
+         "MLE":0.2660894763376647
+        },
+       "CHIMP":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.004098821226561022
+          },
+         "MLE":0.001817531464252161
+        },
+       "COW":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.5592817355282405
+          },
+         "MLE":0.2480010948311115
+        },
+       "HORSE":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.4716094614343082
+          },
+         "MLE":0.2091247672480331
+        },
+       "HUMAN":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0
+          },
+         "MLE":0
+        },
+       "MOUSE":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.2662709494626074
+          },
+         "MLE":0.1180719533529479
+        },
+       "Node1":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.6240216744660857
+          },
+         "MLE":0.2767085864510917
+        },
+       "Node12":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.0402238063038931
+          },
+         "MLE":0.01783635575407834
+        },
+       "Node2":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.1492102244697988
+          },
+         "MLE":0.06616396831474482
+        },
+       "Node3":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.2229362767341025
+          },
+         "MLE":0.09885615280357628
+        },
+       "Node8":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.2395545367260936
+          },
+         "MLE":0.1062251520223854
+        },
+       "Node9":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.05788473560074721
+          },
+         "MLE":0.02566770357597321
+        },
+       "PIG":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.422071824057251
+          },
+         "MLE":0.1871583994508561
+        },
+       "RAT":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.1504216452660174
+          },
+         "MLE":0.0667011460280124
+        },
+       "RHMONKEY":{
+         "Evolutionary time parameter":{
+           "ID":"t",
+           "MLE":0.008519943545387871
+          },
+         "MLE":0.003777980207345358
+        }
+      }
+    },
+   "global":{
+     "Substitution rate from nucleotide A to nucleotide C":{
+       "ID":"uvYsfOnd.model.theta_AC",
+       "MLE":0.5513126015896764,
+       "fix-me":1
+      },
+     "Substitution rate from nucleotide A to nucleotide G":{
+       "ID":"uvYsfOnd.model.theta_AG",
+       "MLE":1,
+       "constraint":"1"
+      },
+     "Substitution rate from nucleotide A to nucleotide T":{
+       "ID":"uvYsfOnd.model.theta_AT",
+       "MLE":0.2653283564197529,
+       "fix-me":1
+      },
+     "Substitution rate from nucleotide C to nucleotide G":{
+       "ID":"uvYsfOnd.model.theta_CG",
+       "MLE":0.4928039133733598,
+       "fix-me":1
+      },
+     "Substitution rate from nucleotide C to nucleotide T":{
+       "ID":"uvYsfOnd.model.theta_CT",
+       "MLE":1.031310905067113,
+       "fix-me":1
+      },
+     "Substitution rate from nucleotide G to nucleotide T":{
+       "ID":"uvYsfOnd.model.theta_GT",
+       "MLE":0.3050658873438956,
+       "fix-me":1
+      }
+    },
+   "parameters":24
+  },
+ "MG94":{
+   "EFV":{
+     "uCgepyTq.model_MGREV":      [
+[0.04879542078997189],
+      [0.03985234120577962],
+      [0.04952094783088219],
+      [0.04151116991375267],
+      [0.01810991780771344],
+      [0.01479078593846134],
+      [0.01837918969563738],
+      [0.01540644312661784],
+      [0.01894268587636094],
+      [0.01547092675249114],
+      [0.01922433998669077],
+      [0.01611489437545877],
+      [0.0282993507020152],
+      [0.02311272987957316],
+      [0.02872012674702341],
+      [0.0240747827648953],
+      [0.01667099172252497],
+      [0.0136155819461922],
+      [0.01691886857444401],
+      [0.01418232200523866],
+      [0.006187266857836889],
+      [0.005053282991677827],
+      [0.006279263798164766],
+      [0.005263622726872393],
+      [0.006471782686462733],
+      [0.005285653605503387],
+      [0.006568010022264061],
+      [0.005505665621759505],
+      [0.009668494167450303],
+      [0.007896481314625867],
+      [0.00981225261547275],
+      [0.00822516739680702],
+      [0.03328809519727715],
+      [0.02718715212237699],
+      [0.03378304765008977],
+      [0.0283188002781468],
+      [0.01235453364759019],
+      [0.01009023146826177],
+      [0.01253823015218115],
+      [0.01051023102470486],
+      [0.0129226456199351],
+      [0.0105542215681203],
+      [0.01311478924090558],
+      [0.01099353442146321],
+      [0.01930573535259715],
+      [0.01576743760058528],
+      [0.01959278755577941],
+      [0.01642374730163821],
+      [0.0196356309042113],
+      [0.02045295172546195],
+      [0.008922930272570621],
+      [0.007287562152777767],
+      [0.009055603115474714],
+      [0.00759090235675084],
+      [0.007622674057953422],
+      [0.009472016773282714],
+      [0.007939963084802886],
+      [0.01394336162947978],
+      [0.01138786378347622],
+      [0.01415068202429555],
+      [0.01186187647118696] 
+      ]
+    },
+   "LogL":-3467.314644162836,
+   "Trees":    [
+["((((PIG:0.1905183365642835,COW:0.2524533026141371)Node3:0.1006308551822563,HORSE:0.2128790527563258,CAT:0.2708664134650533)Node2:0.0673517684528344,((RHMONKEY:0.00384580391148955,BABOON:0.001708973563045381)Node9:0.02612849972572881,(HUMAN:0,CHIMP:0.001850160464283587)Node12:0.01815656063850921)Node8:0.1081321454125124)Node1:0.2816761617880737,RAT:0.06789858977996401,MOUSE:0.1201916249214669)"] 
+    ],
+   "branch length":{
+     "0":{
+       "BABOON":{
+         "MLE":0.001708973563045381,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.004071756058967829,
+           "constraint":"uCgepyTq.tree_0.BABOON.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.004025619616746307,
+           "constraint":"busted.scaler_0*0.001678834502396981"
+          }
+        },
+       "CAT":{
+         "MLE":0.2708664134650533,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.645359287028322,
+           "constraint":"uCgepyTq.tree_0.CAT.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.6380468201155441,
+           "constraint":"busted.scaler_0*0.2660894763376647"
+          }
+        },
+       "CHIMP":{
+         "MLE":0.001850160464283587,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.004408144305687768,
+           "constraint":"uCgepyTq.tree_0.CHIMP.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.004358196299933451,
+           "constraint":"busted.scaler_0*0.001817531464252161"
+          }
+        },
+       "COW":{
+         "MLE":0.2524533026141371,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.6014886869834261,
+           "constraint":"uCgepyTq.tree_0.COW.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.5946733110984216,
+           "constraint":"busted.scaler_0*0.2480010948311115"
+          }
+        },
+       "HORSE":{
+         "MLE":0.2128790527563258,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.5072001063277333,
+           "constraint":"uCgepyTq.tree_0.HORSE.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.5014530998613707,
+           "constraint":"busted.scaler_0*0.2091247672480331"
+          }
+        },
+       "HUMAN":{
+         "MLE":0,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0,
+           "constraint":"uCgepyTq.tree_0.HUMAN.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0,
+           "constraint":"0"
+          }
+        },
+       "MOUSE":{
+         "MLE":0.1201916249214669,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.2863654462501337,
+           "constraint":"uCgepyTq.tree_0.MOUSE.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.2831206833827558,
+           "constraint":"busted.scaler_0*0.1180719533529479"
+          }
+        },
+       "Node1":{
+         "MLE":0.2816761617880737,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.6711143128414432,
+           "constraint":"uCgepyTq.tree_0.Node1.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.6635100196887992,
+           "constraint":"busted.scaler_0*0.2767085864510917"
+          }
+        },
+       "Node12":{
+         "MLE":0.01815656063850921,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.04325935016696545,
+           "constraint":"uCgepyTq.tree_0.Node12.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.04276918511763174,
+           "constraint":"busted.scaler_0*0.01783635575407834"
+          }
+        },
+       "Node2":{
+         "MLE":0.0673517684528344,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.1604705755607672,
+           "constraint":"uCgepyTq.tree_0.Node2.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.1586523081276512,
+           "constraint":"busted.scaler_0*0.06616396831474482"
+          }
+        },
+       "Node3":{
+         "MLE":0.1006308551822563,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.2397604639227452,
+           "constraint":"uCgepyTq.tree_0.Node3.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.2370437749486073,
+           "constraint":"busted.scaler_0*0.09885615280357628"
+          }
+        },
+       "Node8":{
+         "MLE":0.1081321454125124,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.2576328433472064,
+           "constraint":"uCgepyTq.tree_0.Node8.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.2547136451881526,
+           "constraint":"busted.scaler_0*0.1062251520223854"
+          }
+        },
+       "Node9":{
+         "MLE":0.02612849972572881,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.06225308534345684,
+           "constraint":"uCgepyTq.tree_0.Node9.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.06154770519949312,
+           "constraint":"busted.scaler_0*0.02566770357597321"
+          }
+        },
+       "PIG":{
+         "MLE":0.1905183365642835,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.4539240442477787,
+           "constraint":"uCgepyTq.tree_0.PIG.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.448780700654227,
+           "constraint":"busted.scaler_0*0.1871583994508561"
+          }
+        },
+       "RAT":{
+         "MLE":0.06789858977996401,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.1617734178633389,
+           "constraint":"uCgepyTq.tree_0.RAT.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.1599403881242926,
+           "constraint":"busted.scaler_0*0.0667011460280124"
+          }
+        },
+       "RHMONKEY":{
+         "MLE":0.00384580391148955,
+         "non-synonymous rate":{
+           "ID":"beta",
+           "MLE":0.009162912590821592,
+           "constraint":"uCgepyTq.tree_0.RHMONKEY.alpha*uCgepyTq.model_MGREV.omega_0"
+          },
+         "synonymous rate":{
+           "ID":"alpha",
+           "MLE":0.009059089036265511,
+           "constraint":"busted.scaler_0*0.003777980207345358"
+          }
+        }
+      }
+    },
+   "global":{
+     "Substitution rate from nucleotide A to nucleotide C":{
+       "ID":"uCgepyTq.model_MGREV.theta_AC",
+       "MLE":0.5513126015896764,
+       "constraint":"0.5513126015896764"
+      },
+     "Substitution rate from nucleotide A to nucleotide G":{
+       "ID":"uCgepyTq.model_MGREV.theta_AG",
+       "MLE":1,
+       "constraint":"1"
+      },
+     "Substitution rate from nucleotide A to nucleotide T":{
+       "ID":"uCgepyTq.model_MGREV.theta_AT",
+       "MLE":0.2653283564197529,
+       "constraint":"0.2653283564197529"
+      },
+     "Substitution rate from nucleotide C to nucleotide G":{
+       "ID":"uCgepyTq.model_MGREV.theta_CG",
+       "MLE":0.4928039133733598,
+       "constraint":"0.4928039133733598"
+      },
+     "Substitution rate from nucleotide C to nucleotide T":{
+       "ID":"uCgepyTq.model_MGREV.theta_CT",
+       "MLE":1.031310905067113,
+       "constraint":"1.031310905067113"
+      },
+     "Substitution rate from nucleotide G to nucleotide T":{
+       "ID":"uCgepyTq.model_MGREV.theta_GT",
+       "MLE":0.3050658873438956,
+       "constraint":"0.3050658873438956"
+      },
+     "non-synonymous/synonymous rate ratio for *test*":{
+       "ID":"uCgepyTq.model_MGREV.omega_0",
+       "MLE":1.011460705832612
+      }
+    },
+   "parameters":31
+  }
+}

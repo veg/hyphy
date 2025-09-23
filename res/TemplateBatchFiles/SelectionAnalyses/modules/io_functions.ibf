@@ -533,7 +533,7 @@ lfunction selection.io.handle_subset_of_sites () {
     KeywordArgument ("limit-to-sites",  "Only analyze sites whose 1-based indices match the following list (null to skip)", "null");
     site_filter ["site-filter"] = io.PromptUserForString ("Only analyze sites whose 1-based indices match the following list (null to skip)");
     if (site_filter ["site-filter"] == "null") { site_filter ["site-filter"] = None;}
-    KeywordArgument ("save-lf-for-sites",  "For sites whose 1-based indices match the following list, write out likelihood function snapshots (empty string to skip)", "null");
+    KeywordArgument ("save-lf-for-sites",  "For sites whose 1-based indices match the following list, write out likelihood function snapshots (null to skip)", "null");
     site_filter ["site-save-filter"] = io.PromptUserForString ("For sites whose 1-based indices match the following list, write out likelihood function snapshots (null string to skip)");
     if (site_filter ["site-save-filter"] == "null") { site_filter ["site-save-filter"] = None;}
     return site_filter;

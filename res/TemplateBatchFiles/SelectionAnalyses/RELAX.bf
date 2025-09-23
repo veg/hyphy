@@ -482,7 +482,8 @@ if (relax.model_set == "All") { // run all the models
         relax.distribution          = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
         relax.weight_multipliers    = parameters.helper.stick_breaking (utility.SwapKeysAndValues(utility.MatrixToDict(relax.distribution["weights"])),None);
         relax.constrain_parameters   = parameters.ConstrainMeanOfSet(relax.distribution["rates"],relax.weight_multipliers,1,"relax");
-
+        
+ 
         
         relax.i = 0;
         for (key, value; in; relax.constrain_parameters[terms.global]){
@@ -1435,19 +1436,7 @@ lfunction relax.set.k2 (tree_name, node_name, model_description, ignore) {
 lfunction relax.init.k (lf_id, components, data_filter, tree, model_map, initial_values, model_objects) {
 
     parameter_set = estimators.TraverseLocalParameters (lf_id, model_objects, "relax.set.k");
-    rc = utility.getGlobalValue ("relax.rate_classes");
-    /*if (rc > 2) {
-        parameters.SetConstraint (model.generic.GetGlobalParameter (utility.getGlobalValue("relax.ge.bsrel_model") , terms.AddCategory (utility.getGlobalValue("terms.parameters.omega_ratio"),rc-1)), utility.getGlobalValue("terms.parameters.one"), utility.getGlobalValue("terms.global"));
-    }*/
-    /*parameters.SetConstraint (model.generic.GetGlobalParameter (utility.getGlobalValue("relax.ge.bsrel_model") , terms.AddCategory (utility.getGlobalValue("terms.parameters.omega_ratio"),utility.getGlobalValue ("relax.rate_classes"))),
-                             "1/(" +
-                                Join ("*", utility.Map (
-                                    utility.Range (utility.getGlobalValue ("relax.rate_classes") - 1, 1, 1),
-                                    "_value_",
-                                    'model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,_value_))'
-                                    ))
-                             + ")",
-                            "global");*/
+
 
     return 0;
 }

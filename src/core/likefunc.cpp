@@ -1546,7 +1546,7 @@ void _LikelihoodFunction::MPI_LF_Compute(long, bool)
   {
     // ReportWarning (_String("In at step  ") & loopie);
     bool doSomething = false;
-    for (long i = 0; i < indexInd.lLength; i++) {
+    for (unsigned long i = 0; i < indexInd.lLength; i++) {
       _Variable *anInd = GetIthIndependentVar(i);
       // ReportWarning (*anInd->GetName() & " = " & variableStash.theData[i]);
       if (!CheckEqual(anInd->Value(), variableStash.theData[i]) ||
@@ -1571,7 +1571,7 @@ void _LikelihoodFunction::MPI_LF_Compute(long, bool)
           // printf ("[PWNED] %d\n", hy_mpi_node_rank);
         }
 
-        for (long k = 0; k < siteScalerBuffer.lLength; k++) {
+        for (unsigned long k = 0; k < siteScalerBuffer.lLength; k++) {
           siteResults->theData[siteScalerBuffer.lLength + k] =
               siteScalerBuffer.list_data[k];
           // printf ("%d %d => %g %g\n", hy_mpi_node_rank, k,
@@ -2415,7 +2415,7 @@ hyFloat _LikelihoodFunction::Compute(void)
         hy_mpi_node_rank == 0) {
       long totalSent = 0, blockPatternSize = PartitionLengths(0);
 
-      for (long blockID = 0; blockID < parallelOptimizerTasks.lLength;
+      for (unsigned long blockID = 0; blockID < parallelOptimizerTasks.lLength;
            blockID++) {
         bool sendToSlave = SendOffToMPI(blockID);
         if (sendToSlave) {
@@ -2530,8 +2530,8 @@ hyFloat _LikelihoodFunction::Compute(void)
         _keepTrackOfDepVars = new _AVLList(&dpv);
         useGlobalUpdateFlag = true;
 
-        for (long blockID = 0; blockID < parallelOptimizerTasks.lLength;
-             blockID++) {
+        for (unsigned long blockID = 0;
+             blockID < parallelOptimizerTasks.lLength; blockID++) {
           MPI_Request *req_record = new MPI_Request;
           bool sendToSlave = SendOffToMPI(blockID, req_record);
           // printf ("Send result (result size %d): %d\n",
@@ -2570,8 +2570,8 @@ hyFloat _LikelihoodFunction::Compute(void)
         }
         // printf ("Overall result = %15.12g\n", result);
 
-        for (long blockID = 0; blockID < parallelOptimizerTasks.lLength;
-             blockID++) {
+        for (unsigned long blockID = 0;
+             blockID < parallelOptimizerTasks.lLength; blockID++) {
           if (requests[blockID]) {
             // MPI_Wait((MPI_Request *)requests[blockID], MPI_STATUS_IGNORE);
             delete (MPI_Request *)requests[blockID];
@@ -3603,9 +3603,8 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
       return;
     }
 
-    for (long i = 0; i < indexCat.lLength; i++) {
-      _CategoryVariable *thisCV =
-          (_CategoryVariable *)LocateVar(indexCat.list_data[i]);
+    for (unsigned long i = 0; i < indexCat.lLength; i++) {
+      _CategoryVariable *thisCV = GetIthCategoryVar(i);
       if (thisCV->is_hidden_markov() || thisCV->is_constant_on_partition()) {
         ReportWarning(
             "[MPI] Cannot initialize REL MPI because it does not support "
@@ -3639,8 +3638,8 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
 
       _SimpleList varMap, map2;
 
-      for (long vi = 0; vi < indexCat.lLength; vi++) {
-        _Variable *catVar = LocateVar(indexCat.list_data[vi]);
+      for (unsigned long vi = 0; vi < indexCat.lLength; vi++) {
+        _Variable *catVar = GetIthCategoryVar(vi);
         _String *searchTerm = catVar->GetName();
         long f = slaveNodeMap.Find(searchTerm);
         if (f < 0) {
@@ -3656,8 +3655,9 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
         // printf ("%s->%d\n", searchTerm->sData, slaveNodeMap.GetXtra(f));
       }
 
-      for (long vi = 0; vi < indexInd.lLength; vi++) {
-        _Variable *indepVar = LocateVar(indexInd.list_data[vi]);
+      for (unsigned long vi = 0; vi < indexInd.lLength; vi++) {
+        _Variable *indepVar = GetIthIndependentVar(vi);
+        LocateVar(indexInd.list_data[vi]);
         _String *searchTerm = indepVar->GetName();
         long f = slaveNodeMap.Find(searchTerm);
         if (f < 0 && !indepVar->IsGlobal()) {
@@ -3679,7 +3679,7 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
 
       _SimpleList *mappedVariables = new _SimpleList(map2.lLength, 0, 0);
 
-      for (long vi = 0; vi < map2.lLength; vi++) {
+      for (unsigned long vi = 0; vi < map2.lLength; vi++) {
         mappedVariables->list_data[varMap.list_data[vi]] = map2.list_data[vi];
       }
       // printf ("%d->%s\n", varMap.list_data[vi], LocateVar(
@@ -3688,7 +3688,7 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
       parallelOptimizerTasks.AppendNewInstance(mappedVariables);
 
       if (transferrableVars > 0) {
-        if (transferrableVars != mappedVariables->lLength) {
+        if (transferrableVars != (long)mappedVariables->lLength) {
           HandleApplicationError(
               _String("[MPI] InitMPIOptimizer failed: inconsistent variable "
                       "counts between spawned instances."));
@@ -3720,13 +3720,13 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
         return;
       }
 
-      if (hyphyMPIOptimizerMode == _hyphyLFMPIModePartitions &&
-              theDataFilters.lLength > 1 ||
-          hyphyMPIOptimizerMode == _hyphyLFMPIModeAuto &&
-              theDataFilters.lLength == 1 ||
-          hyphyMPIOptimizerMode == _hyphyLFMPIModeSiteTemplate &&
-              theDataFilters.lLength > 1 &&
-              slaveNodes >= theDataFilters.lLength) {
+      if ((hyphyMPIOptimizerMode == _hyphyLFMPIModePartitions &&
+           theDataFilters.lLength > 1) ||
+          (hyphyMPIOptimizerMode == _hyphyLFMPIModeAuto &&
+           theDataFilters.lLength == 1) ||
+          (hyphyMPIOptimizerMode == _hyphyLFMPIModeSiteTemplate &&
+           theDataFilters.lLength > 1 &&
+           slaveNodes >= (long)theDataFilters.lLength)) {
 
         if (hyphyMPIOptimizerMode == _hyphyLFMPIModeSiteTemplate) {
           if (templateKind != _hyphyLFComputationalTemplateBySite) {
@@ -3746,12 +3746,12 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
         _List masterNodeMapL;
         _AVLListX masterNodeMap(&masterNodeMapL);
 
-        for (long k = 0; k < indexInd.lLength; k++) {
+        for (unsigned long k = 0; k < indexInd.lLength; k++) {
           masterNodeMap.Insert(
               LocateVar(indexInd.list_data[k])->GetName()->makeDynamic(),
               indexInd.list_data[k], false);
         }
-        for (long k = 0; k < indexDep.lLength; k++) {
+        for (unsigned long k = 0; k < indexDep.lLength; k++) {
           masterNodeMap.Insert(
               LocateVar(indexDep.list_data[k])->GetName()->makeDynamic(),
               indexDep.list_data[k], false);
@@ -3793,7 +3793,8 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
               toPart++;
             }
 
-            if (fromPart + toPart > optimalOrder->lLength || i == slaveNodes)
+            if (fromPart + toPart > (long)optimalOrder->lLength ||
+                i == slaveNodes)
             // ensure that all remaining sites are added to the final block
             {
               toPart = optimalOrder->lLength - fromPart;
@@ -3809,11 +3810,12 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
 
             // ReportWarning    (_String((_String*)map.toStr()));
 
-            for (long i2 = 0; i2 < dupMap->lLength; i2++)
+            for (unsigned long i2 = 0; i2 < dupMap->lLength; i2++) {
               if (map.list_data[dupMap->list_data[i2]])
                 for (long cp = 0; cp < unitLength; cp++) {
                   subset << orOrder->list_data[i2 * unitLength + cp];
                 }
+            }
 
             ReportWarning(_String((_String *)subset.toStr()));
             fromPart += toPart;
@@ -3830,21 +3832,17 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
         else {
           long perNode = (hyphyMPIOptimizerMode == _hyphyLFMPIModeAuto)
                              ? 1
-                             : theDataFilters.lLength / slaveNodes,
-               overFlow = (hyphyMPIOptimizerMode == _hyphyLFMPIModeAuto)
-                              ? 0
-                              : theDataFilters.lLength % slaveNodes;
+                             : theDataFilters.lLength / slaveNodes;
 
           if (perNode == 0L) { // more nodes than filters
             slaveNodes = theDataFilters.lLength;
             totalNodeCount = slaveNodes + 1;
             perNode = 1L;
-            overFlow = 0L;
           }
 
           _Matrix partition_weights(theDataFilters.lLength, 2, false, true);
 
-          if (theDataFilters.lLength > slaveNodes) {
+          if ((long)theDataFilters.lLength > slaveNodes) {
 
             for (unsigned long i = 0UL; i < theDataFilters.lLength; i++) {
               // fprintf (stderr, "\nComputing block %ld\n", i);
@@ -3880,14 +3878,15 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
                         (long)slaveNodes & " MPI computational nodes. ");
 
           for (long i = 1L; i < totalNodeCount; i++) {
-            hyFloat sum = 0.;
+            hyFloat loop_sum = 0.;
             _SimpleList my_part;
             do {
-              sum += (*sorted_by_weight)(current_index, 0);
+              loop_sum += (*sorted_by_weight)(current_index, 0);
               my_part << round((*sorted_by_weight)(current_index, 1));
               current_index++;
-            } while (sum < 1. && theDataFilters.lLength - current_index >=
-                                     (totalNodeCount - i));
+            } while (loop_sum < 1. &&
+                     (long)theDataFilters.lLength - current_index >=
+                         (totalNodeCount - i));
 
             ReportWarning(_String("InitMPIOptimizer sending partitions ") &
                           _String((_String *)my_part.toStr()) & " to node " &
@@ -3907,13 +3906,13 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
           DeleteObject(sorted_by_weight);
         }
 
-        for (long i = 1; i <= parallelOptimizerTasks.lLength; i++) {
+        for (unsigned long i = 1; i <= parallelOptimizerTasks.lLength; i++) {
           _String *mapString = MPIRecvString(-1, senderID);
           _List varNames = mapString->Tokenize(";");
           _SimpleList *indexedSlaveV =
               (_SimpleList *)parallelOptimizerTasks(senderID - 1);
 
-          for (long i2 = 0; i2 < varNames.lLength; i2++) {
+          for (unsigned long i2 = 0; i2 < varNames.lLength; i2++) {
             long vi2 = masterNodeMap.Find(varNames.GetItem(i2));
             if (vi2 < 0)
               HandleApplicationError(
@@ -3926,7 +3925,7 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
             (*indexedSlaveV) << masterNodeMap.GetXtra(vi2);
           }
 
-          if (indexedSlaveV->lLength > transferrableVars) {
+          if ((long)indexedSlaveV->lLength > transferrableVars) {
             transferrableVars = indexedSlaveV->lLength;
           }
 
@@ -3953,7 +3952,7 @@ void _LikelihoodFunction::CleanupMPIOptimizer(void) {
       parallelOptimizerTasks.lLength) {
     varTransferMatrix.theData[0] = -1.e101;
 
-    for (long i = 0; i < parallelOptimizerTasks.lLength; i++) {
+    for (unsigned long i = 0; i < parallelOptimizerTasks.lLength; i++) {
       ReportMPIError(
           MPI_Send(varTransferMatrix.theData,
                    ((_SimpleList *)parallelOptimizerTasks(i))->lLength,

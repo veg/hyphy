@@ -242,7 +242,9 @@ lfunction parameters.ConstrainMeanOfSetWithTerms (set, weights, terms, mean, nam
     utility.ForEach (unscaled, "_name_", 'parameters.DeclareGlobal (_name_, null)');
     global_scaler = namespace + ".scaler_variable";
     parameters.SetConstraint (global_scaler, Join ("+", constraint), "global");
+    parameters.SetRange(global_scaler, ^"terms.range_any");
     
+
     for (i,_name_; in; set) {
         scaler_variables[terms.MeanScaler(terms[i])] = _name_ + "_scaler_variable";
         parameters.SetValue (_name_ + "_scaler_variable", _name_);
@@ -280,7 +282,9 @@ lfunction parameters.ConstrainMeanOfSet (set, weights, mean, namespace) {
     utility.ForEach (unscaled, "_name_", 'parameters.DeclareGlobal (_name_, null)');
     global_scaler = namespace + ".scaler_variable";
     parameters.SetConstraint (global_scaler, Join ("+", constraint), "global");
-    
+
+    parameters.SetRange(global_scaler, ^"terms.range_any");
+     
     for (_name_; in; set) {
         scaler_variables[terms.MeanScaler(_name_)] = _name_ + "_scaler_variable";
         parameters.SetValue (_name_ + "_scaler_variable", _name_);

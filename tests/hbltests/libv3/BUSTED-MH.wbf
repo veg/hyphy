@@ -1,0 +1,27 @@
+GetString (version, HYPHY_VERSION, 0);
+
+if (+version >= 2.5.43) {
+    LoadFunctionLibrary ("SelectionAnalyses/BUSTED.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/adh.nex", "--branches" : "All", "--srv" : "No", "--multiple-hits" : "Double+Triple", "--starting-points" : "5"});
+} else {
+    return 0;
+
+}
+LoadFunctionLibrary ("shared.bf");
+
+
+LoadFunctionLibrary ("libv3/IOFunctions.bf");
+
+assert (check_value (
+    ((busted.json["fits"])["Unconstrained model"])["Log Likelihood"], -3435.55, 0.001), "Incorrect log-likelihood for the full model");
+
+assert (check_value (
+    ((busted.json["test results"])["p-value"]),0.18531, 0.01), "p-value for the test is incorrect");
+
+assert (check_value (
+    +(busted.json["Evidence Ratios"])["optimized null"],189.46, 0.01), "Incorrect sum of evidence ratios");
+    
+
+
+   
+
+

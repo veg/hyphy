@@ -1,4 +1,4 @@
-RequireVersion("2.5.1");
+RequireVersion("2.5.50");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -31,8 +31,8 @@ LoadFunctionLibrary("modules/io_functions.ibf");
 fel.analysis_description = {
     terms.io.info: "Contrast-FEL (Fixed Effects Likelihood) investigates whether or not selective pressures differ between two or more sets of
     branches at a site. Site-specific synonymous (alpha) and non-synonymous (beta, one per branch set) substitution rates are estimated
-    and then beta rates are tested for equality at each site. LRT and permutation tests ar used to assess significance at each site, and FDR is applied alignment wide to call sites with different selective profiles",
-    terms.io.version: "0.5",
+    and then beta rates are tested for equality at each site. LRT and permutation tests ar used to assess significance at each site, and FDR is applied alignment wide to call sites with different selective profiles. Version 0.6 adds detailed ancestral state reconstruction",
+    terms.io.version: "0.6",
     terms.io.reference: "Mol Biol Evol (2021), (38)3 1184–1198",
     terms.io.authors: "Sergei L Kosakovsky Pond and Steven Weaver",
     terms.io.contact: "spond@temple.edu",
@@ -59,6 +59,8 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 terms.fel.pairwise      = "pairwise";
 terms.fel.permutation   = "permutation";
 terms.fel.test_keys     = "test keys";
+terms.fel.branch_substitutions = "branch_substitutions";
+terms.fel.compressed_substitutions = "compressed_substitutions";
 fel.site_alpha          = "Site relative synonymous rate";
 fel.site_beta_reference = "Site relative non-synonymous rate (reference branches)";
 fel.site_tested_classes = {};
@@ -84,6 +86,7 @@ fel.json = {
     terms.json.input: {},
     terms.json.fits: {},
     terms.json.timers: {},
+    terms.substitutions: {}
 };
 
 fel.display_orders =   {terms.original_name: -1,
@@ -443,7 +446,7 @@ fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                "Models" : {{"fel.site.mg_rev"}},
                                "Headers" : {{"libv3/all-terms.bf","libv3/tasks/ancestral.bf", "libv3/convenience/math.bf"}},
                                "Functions" : {{"fel.apply_proportional_site_constraint","selection.io.sitelist_matches_pattern"}},
-                               "Variables" : {{"terms.fel.test_keys","fel.permutations","fel.ignorable","fel.alpha","fel.beta","fel.alpha.scaler","terms.fel.permutation","fel.final_partitioned_mg_results","fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler","terms.fel.pairwise","fel.branch_class_counter","fel.report.test_count", "fel.p_value","fel.site.permutations","fel.site_filter","fel.output_file_path"}}
+                               "Variables" : {{"terms.fel.test_keys","terms.fel.branch_substitutions","terms.fel.compressed_substitutions","fel.permutations","fel.ignorable","fel.alpha","fel.beta","fel.alpha.scaler","terms.fel.permutation","fel.final_partitioned_mg_results","fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler","terms.fel.pairwise","fel.branch_class_counter","fel.report.test_count", "fel.p_value","fel.site.permutations","fel.site_filter","fel.output_file_path"}}
                              });
 
 fel.pattern_count_all = utility.Array1D (fel.site_patterns);
@@ -780,6 +783,12 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
             `&counts_by_branch_set`[`&branch_sets`[_name_]] += ((`&counts`)["Counts"])[+`&branch_map`[_name_]];
         ');
         
+        branch_substitution_information = (ancestral.ComputeSubstitutionBySite (ancestors,0,None))[^"terms.substitutions"];
+        compressed_substitution_info = (ancestral.ComputeCompressedSubstitutions (ancestors))[0];
+        
+        
+        DeleteObject (ancestors);
+
         site_match = selection.io.sitelist_matches_pattern (pattern_info[^"terms.data.sites"], (^"fel.site_filter")["site-save-filter"], TRUE, 0);
     
         if (site_match) {
@@ -889,6 +898,8 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
                     utility.getGlobalValue("terms.Null"): Null,
                     utility.getGlobalValue("terms.fel.pairwise"): pairwise,
                     utility.getGlobalValue("terms.substitutions") : counts_by_branch_set,
+                    utility.getGlobalValue("terms.fel.branch_substitutions") : branch_substitution_information,
+                    utility.getGlobalValue("terms.fel.compressed_substitutions") : compressed_substitution_info,
                     utility.getGlobalValue("terms.p_value") : p_values,
                     utility.getGlobalValue("terms.fel.test_keys") : test_keys
                 };
@@ -917,6 +928,8 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
                 utility.getGlobalValue("terms.Null"): Null,
                 utility.getGlobalValue("terms.fel.pairwise"): pairwise,
                 utility.getGlobalValue("terms.substitutions") : counts_by_branch_set,
+                utility.getGlobalValue("terms.fel.branch_substitutions") : branch_substitution_information,
+                utility.getGlobalValue("terms.fel.compressed_substitutions") : compressed_substitution_info,
                 utility.getGlobalValue("terms.fel.test_keys") : test_keys,
                 utility.getGlobalValue("terms.p_value") : p_values
            };
@@ -1041,9 +1054,11 @@ lfunction fel.store_results (node, result, arguments) {
       }
       
     utility.EnsureKey (^"fel.site_results", partition_index);
+    utility.EnsureKey (((^"fel.json")[^"terms.substitutions"]), partition_index);
     utility.ForEach (pattern_info[utility.getGlobalValue("terms.data.sites")], "_fel_result_",
         '
             (fel.site_results[`&partition_index`])[_fel_result_] = `&result_row`;
+            (((^"fel.json")[^"terms.substitutions"])[`&partition_index`])[_fel_result_] = (^"`&result`")[utility.getGlobalValue("terms.fel.compressed_substitutions")];
             fel.report.echo (_fel_result_, `&partition_index`, `&result_row`);
         '
     );
