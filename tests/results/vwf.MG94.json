@@ -1,0 +1,1039 @@
+{
+  "analysis": {
+    "authors": "Sergei L Kosakovsky Pond",
+    "contact": "spond@temple.edu",
+    "info": "Fit one of the available codon models to the data, report fit results and model estimates. Model specific options will differ.",
+    "requirements": "in-frame codon alignment and a phylogenetic tree",
+    "version": "0.1"
+  },
+  "branch attributes": {
+    "0": {
+      "AILUROPODA": {
+        "Nucleotide GTR": 0.04365793425257225,
+        "original name": "AILUROPODA"
+      },
+      "AMBLYSOMUS": {
+        "Nucleotide GTR": 0.06368713275306297,
+        "original name": "AMBLYSOMUS"
+      },
+      "ANTROZOUS": {
+        "Nucleotide GTR": 0.02654314330693782,
+        "original name": "ANTROZOUS"
+      },
+      "ARTIBEUS": {
+        "Nucleotide GTR": 0.06279181263744732,
+        "original name": "ARTIBEUS"
+      },
+      "BOS": {
+        "Nucleotide GTR": 0.09191271716758934,
+        "original name": "BOS"
+      },
+      "CALLITHRIX": {
+        "Nucleotide GTR": 0.03934715196703466,
+        "original name": "CALLITHRIX"
+      },
+      "CANIS": {
+        "Nucleotide GTR": 0.04946028074899492,
+        "original name": "CANIS"
+      },
+      "CASTOR": {
+        "Nucleotide GTR": 0.06188428107568708,
+        "original name": "CASTOR"
+      },
+      "CAVIA": {
+        "Nucleotide GTR": 0.04216148144311253,
+        "original name": "CAVIA"
+      },
+      "CERATOTHERIUM": {
+        "Nucleotide GTR": 0.04175375526910514,
+        "original name": "CERATOTHERIUM"
+      },
+      "CHAETOPHRACTUS": {
+        "Nucleotide GTR": 0.009142282133394597,
+        "original name": "CHAETOPHRACTUS"
+      },
+      "CHOLOEPUSDI": {
+        "Nucleotide GTR": 0.06376863664553425,
+        "original name": "CHOLOEPUSDI"
+      },
+      "DASYPUS": {
+        "Nucleotide GTR": 0.04555367023573042,
+        "original name": "DASYPUS"
+      },
+      "DIPODOMYS": {
+        "Nucleotide GTR": 0.18367003008914,
+        "original name": "DIPODOMYS"
+      },
+      "ECHINOPS": {
+        "Nucleotide GTR": 0.1135276336783136,
+        "original name": "ECHINOPS"
+      },
+      "ELEPHANTULUS": {
+        "Nucleotide GTR": 0.03991922494171091,
+        "original name": "ELEPHANTULUS"
+      },
+      "EQUUS": {
+        "Nucleotide GTR": 0.04675991354830843,
+        "original name": "EQUUS"
+      },
+      "ERETHIZON": {
+        "Nucleotide GTR": 0.03279614936371667,
+        "original name": "ERETHIZON"
+      },
+      "ERINACEUS": {
+        "Nucleotide GTR": 0.1986646549963559,
+        "original name": "ERINACEUS"
+      },
+      "EUPHRACTUS": {
+        "Nucleotide GTR": 0.005076559311336872,
+        "original name": "EUPHRACTUS"
+      },
+      "FELIS": {
+        "Nucleotide GTR": 0.01180915010966737,
+        "original name": "FELIS"
+      },
+      "GALEMYS": {
+        "Nucleotide GTR": 0.0457253986826975,
+        "original name": "GALEMYS"
+      },
+      "GALEOPTERUS": {
+        "Nucleotide GTR": 0.07987595957022267,
+        "original name": "GALEOPTERUS"
+      },
+      "GORILLA": {
+        "Nucleotide GTR": 0.00844360976521031,
+        "original name": "GORILLA"
+      },
+      "HIPPOPOTAMUS": {
+        "Nucleotide GTR": 0.05796861323314274,
+        "original name": "HIPPOPOTAMUS"
+      },
+      "HOMO": {
+        "Nucleotide GTR": 0.005418984077398022,
+        "original name": "HOMO"
+      },
+      "HYDROCHOERUS": {
+        "Nucleotide GTR": 0.0255375471561128,
+        "original name": "HYDROCHOERUS"
+      },
+      "LAMA": {
+        "Nucleotide GTR": 0.1029865295982925,
+        "original name": "LAMA"
+      },
+      "LEMUR": {
+        "Nucleotide GTR": 0.02023045248876232,
+        "original name": "LEMUR"
+      },
+      "LOXODONTA": {
+        "Nucleotide GTR": 0.0632607894905528,
+        "original name": "LOXODONTA"
+      },
+      "MACACA": {
+        "Nucleotide GTR": 0.01847997886070604,
+        "original name": "MACACA"
+      },
+      "MACROSCELIDES": {
+        "Nucleotide GTR": 0.03098619441480301,
+        "original name": "MACROSCELIDES"
+      },
+      "MANIS": {
+        "Nucleotide GTR": 0.06722068096848241,
+        "original name": "MANIS"
+      },
+      "MEGADERMA": {
+        "Nucleotide GTR": 0.07038803434253883,
+        "original name": "MEGADERMA"
+      },
+      "MEGAPTERA": {
+        "Nucleotide GTR": 0.01567257010741645,
+        "original name": "MEGAPTERA"
+      },
+      "MICROCEBUS": {
+        "Nucleotide GTR": 0.04762903939234309,
+        "original name": "MICROCEBUS"
+      },
+      "MUS": {
+        "Nucleotide GTR": 0.03829825646282396,
+        "original name": "MUS"
+      },
+      "MYOTIS": {
+        "Nucleotide GTR": 0.01354803746119447,
+        "original name": "MYOTIS"
+      },
+      "MYRMECOPHAGA": {
+        "Nucleotide GTR": 0.02376432947424006,
+        "original name": "MYRMECOPHAGA"
+      },
+      "NYCTERIS": {
+        "Nucleotide GTR": 0.0635198171062729,
+        "original name": "NYCTERIS"
+      },
+      "Node101": {
+        "Nucleotide GTR": 0.07251213149044211
+      },
+      "Node103": {
+        "Nucleotide GTR": 0.02047223322567249
+      },
+      "Node106": {
+        "Nucleotide GTR": 0.06424109746579999
+      },
+      "Node109": {
+        "Nucleotide GTR": 0.01922002325058422
+      },
+      "Node11": {
+        "Nucleotide GTR": 0.03493302218646898
+      },
+      "Node111": {
+        "Nucleotide GTR": 0.02027313645955536
+      },
+      "Node113": {
+        "Nucleotide GTR": 0.009109711969515058
+      },
+      "Node114": {
+        "Nucleotide GTR": 0.0192651907196787
+      },
+      "Node116": {
+        "Nucleotide GTR": 0.009301994260606707
+      },
+      "Node118": {
+        "Nucleotide GTR": 0.0245677103965416
+      },
+      "Node13": {
+        "Nucleotide GTR": 0.01375765084319852
+      },
+      "Node14": {
+        "Nucleotide GTR": 0.02543362032189016
+      },
+      "Node17": {
+        "Nucleotide GTR": 0.008998628261004078
+      },
+      "Node18": {
+        "Nucleotide GTR": 0.01403775716970806
+      },
+      "Node19": {
+        "Nucleotide GTR": 0.01239779383597229
+      },
+      "Node20": {
+        "Nucleotide GTR": 0.03581766859061644
+      },
+      "Node23": {
+        "Nucleotide GTR": 0.01196254678290902
+      },
+      "Node24": {
+        "Nucleotide GTR": 0.001714904705481163
+      },
+      "Node26": {
+        "Nucleotide GTR": 0.008409747346262212
+      },
+      "Node28": {
+        "Nucleotide GTR": 0.02680179783979239
+      },
+      "Node3": {
+        "Nucleotide GTR": 0.05860152446826185
+      },
+      "Node31": {
+        "Nucleotide GTR": 0.01280618334727284
+      },
+      "Node34": {
+        "Nucleotide GTR": 0.006309293931292222
+      },
+      "Node35": {
+        "Nucleotide GTR": 0.01549133385439174
+      },
+      "Node37": {
+        "Nucleotide GTR": 0.02991626349403674
+      },
+      "Node40": {
+        "Nucleotide GTR": 0.004342470910464042
+      },
+      "Node42": {
+        "Nucleotide GTR": 0.01331538418388113
+      },
+      "Node43": {
+        "Nucleotide GTR": 0.005588191172260499
+      },
+      "Node44": {
+        "Nucleotide GTR": 0.028654562321326
+      },
+      "Node47": {
+        "Nucleotide GTR": 0.02454656567896589
+      },
+      "Node48": {
+        "Nucleotide GTR": 0.05131746083578107
+      },
+      "Node5": {
+        "Nucleotide GTR": 0.0140400149236224
+      },
+      "Node51": {
+        "Nucleotide GTR": 0.01086967792713432
+      },
+      "Node54": {
+        "Nucleotide GTR": 0.01943615654081907
+      },
+      "Node56": {
+        "Nucleotide GTR": 0.009764333124439896
+      },
+      "Node57": {
+        "Nucleotide GTR": 0.01130469565783252
+      },
+      "Node58": {
+        "Nucleotide GTR": 0.04320265648310758
+      },
+      "Node6": {
+        "Nucleotide GTR": 0.02007937081944115
+      },
+      "Node60": {
+        "Nucleotide GTR": 0.00411542679012778
+      },
+      "Node61": {
+        "Nucleotide GTR": 0.008155516627429932
+      },
+      "Node63": {
+        "Nucleotide GTR": 0.004117786354437324
+      },
+      "Node65": {
+        "Nucleotide GTR": 0.003040820834544026
+      },
+      "Node69": {
+        "Nucleotide GTR": 0.0290220955630466
+      },
+      "Node71": {
+        "Nucleotide GTR": 0.01379866909315707
+      },
+      "Node74": {
+        "Nucleotide GTR": 0.007986803617537164
+      },
+      "Node75": {
+        "Nucleotide GTR": 0.03413415694949193
+      },
+      "Node76": {
+        "Nucleotide GTR": 0.09633449431779623
+      },
+      "Node79": {
+        "Nucleotide GTR": 0.0145923376360901
+      },
+      "Node8": {
+        "Nucleotide GTR": 0.02376757130356855
+      },
+      "Node80": {
+        "Nucleotide GTR": 0.003133948791799136
+      },
+      "Node82": {
+        "Nucleotide GTR": 0.01466387964475507
+      },
+      "Node84": {
+        "Nucleotide GTR": 0.008041346913694304
+      },
+      "Node87": {
+        "Nucleotide GTR": 0.01708006449269129
+      },
+      "Node90": {
+        "Nucleotide GTR": 0.003581002688014266
+      },
+      "Node91": {
+        "Nucleotide GTR": 0.01246536609416237
+      },
+      "Node92": {
+        "Nucleotide GTR": 0.01448791639541401
+      },
+      "Node94": {
+        "Nucleotide GTR": 0.01531122575133671
+      },
+      "Node96": {
+        "Nucleotide GTR": 0.07702710447057343
+      },
+      "Node99": {
+        "Nucleotide GTR": 0.01313516482730504
+      },
+      "OCHOTONA": {
+        "Nucleotide GTR": 0.09482022672687623,
+        "original name": "OCHOTONA"
+      },
+      "ORYCTEROPUS": {
+        "Nucleotide GTR": 0.08320237406478723,
+        "original name": "ORYCTEROPUS"
+      },
+      "ORYCTOLAGUS": {
+        "Nucleotide GTR": 0.06280838159326721,
+        "original name": "ORYCTOLAGUS"
+      },
+      "OTOLEMUR": {
+        "Nucleotide GTR": 0.07091319739279334,
+        "original name": "OTOLEMUR"
+      },
+      "PAN": {
+        "Nucleotide GTR": 0.009167323745134346,
+        "original name": "PAN"
+      },
+      "PANTHERA": {
+        "Nucleotide GTR": 0.002211583041838854,
+        "original name": "PANTHERA"
+      },
+      "PEDETES": {
+        "Nucleotide GTR": 0.08968391113928564,
+        "original name": "PEDETES"
+      },
+      "PONGO": {
+        "Nucleotide GTR": 0.008994491955272407,
+        "original name": "PONGO"
+      },
+      "PROCAVIA": {
+        "Nucleotide GTR": 0.1030918348305084,
+        "original name": "PROCAVIA"
+      },
+      "PTEROPUS": {
+        "Nucleotide GTR": 0.02778832571807181,
+        "original name": "PTEROPUS"
+      },
+      "RATTUS": {
+        "Nucleotide GTR": 0.05077624700364397,
+        "original name": "RATTUS"
+      },
+      "ROUSETTUS": {
+        "Nucleotide GTR": 0.03474876264544259,
+        "original name": "ROUSETTUS"
+      },
+      "SOLENODON": {
+        "Nucleotide GTR": 0.09405810359176155,
+        "original name": "SOLENODON"
+      },
+      "SPERMOPHILUS": {
+        "Nucleotide GTR": 0.0804984427824309,
+        "original name": "SPERMOPHILUS"
+      },
+      "SUS": {
+        "Nucleotide GTR": 0.07440530396531821,
+        "original name": "SUS"
+      },
+      "TADARIDA": {
+        "Nucleotide GTR": 0.05957423456577001,
+        "original name": "TADARIDA"
+      },
+      "TALPA": {
+        "Nucleotide GTR": 0.04914224095794029,
+        "original name": "TALPA"
+      },
+      "TAMANDUA": {
+        "Nucleotide GTR": 0.02093624679820402,
+        "original name": "TAMANDUA"
+      },
+      "TARSIUS": {
+        "Nucleotide GTR": 0.1115324967965179,
+        "original name": "TARSIUS"
+      },
+      "TRICHECHUS": {
+        "Nucleotide GTR": 0.042185961564247,
+        "original name": "TRICHECHUS"
+      },
+      "TUPAIA": {
+        "Nucleotide GTR": 0.07196890431718228,
+        "original name": "TUPAIA"
+      },
+      "TURSIOPS": {
+        "Nucleotide GTR": 0.02420186050970773,
+        "original name": "TURSIOPS"
+      }
+    },
+    "attributes": {
+      "Nucleotide GTR": {
+        "attribute type": "branch length",
+        "display order": 0
+      },
+      "original name": {
+        "attribute type": "node label",
+        "display order": -1
+      }
+    }
+  },
+  "data partitions": {
+    "0": {
+      "coverage": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112,
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119,
+          120,
+          121,
+          122,
+          123,
+          124,
+          125,
+          126,
+          127,
+          128,
+          129,
+          130,
+          131,
+          132,
+          133,
+          134,
+          135,
+          136,
+          137,
+          138,
+          139,
+          140,
+          141,
+          142,
+          143,
+          144,
+          145,
+          146,
+          147,
+          148,
+          149,
+          150,
+          151,
+          152,
+          153,
+          154,
+          155,
+          156,
+          157,
+          158,
+          159,
+          160,
+          161,
+          162,
+          163,
+          164,
+          165,
+          166,
+          167,
+          168,
+          169,
+          170,
+          171,
+          172,
+          173,
+          174,
+          175,
+          176,
+          177,
+          178,
+          179,
+          180,
+          181,
+          182,
+          183,
+          184,
+          185,
+          186,
+          187,
+          188,
+          189,
+          190,
+          191,
+          192,
+          193,
+          194,
+          195,
+          196,
+          197,
+          198,
+          199,
+          200,
+          201,
+          202,
+          203,
+          204,
+          205,
+          206,
+          207,
+          208,
+          209,
+          210,
+          211,
+          212,
+          213,
+          214,
+          215,
+          216,
+          217,
+          218,
+          219,
+          220,
+          221,
+          222,
+          223,
+          224,
+          225,
+          226,
+          227,
+          228,
+          229,
+          230,
+          231,
+          232,
+          233,
+          234,
+          235,
+          236,
+          237,
+          238,
+          239,
+          240,
+          241,
+          242,
+          243,
+          244,
+          245,
+          246,
+          247,
+          248,
+          249,
+          250,
+          251,
+          252,
+          253,
+          254,
+          255,
+          256,
+          257,
+          258,
+          259,
+          260,
+          261,
+          262,
+          263,
+          264,
+          265,
+          266,
+          267,
+          268,
+          269,
+          270,
+          271,
+          272,
+          273,
+          274,
+          275,
+          276,
+          277,
+          278,
+          279,
+          280,
+          281,
+          282,
+          283,
+          284,
+          285,
+          286,
+          287,
+          288,
+          289,
+          290,
+          291,
+          292,
+          293,
+          294,
+          295,
+          296,
+          297,
+          298,
+          299,
+          300,
+          301,
+          302,
+          303,
+          304,
+          305,
+          306,
+          307,
+          308,
+          309,
+          310,
+          311,
+          312,
+          313,
+          314,
+          315,
+          316,
+          317,
+          318,
+          319,
+          320,
+          321,
+          322,
+          323,
+          324,
+          325,
+          326,
+          327,
+          328,
+          329,
+          330,
+          331,
+          332,
+          333,
+          334,
+          335,
+          336,
+          337,
+          338,
+          339,
+          340,
+          341,
+          342,
+          343,
+          344,
+          345,
+          346,
+          347,
+          348,
+          349,
+          350,
+          351,
+          352,
+          353,
+          354,
+          355,
+          356,
+          357,
+          358,
+          359,
+          360,
+          361,
+          362,
+          363,
+          364,
+          365,
+          366,
+          367,
+          368,
+          369,
+          370,
+          371,
+          372,
+          373,
+          374,
+          375,
+          376,
+          377,
+          378,
+          379,
+          380,
+          381,
+          382,
+          383,
+          384,
+          385,
+          386,
+          387,
+          388,
+          389,
+          390,
+          391
+        ]
+      ],
+      "name": "fitter.filter.default"
+    }
+  },
+  "fits": {
+    "Codon model": {
+      "AIC-c": 47089.19809255823,
+      "Log Likelihood": -23407.82807760282,
+      "Rate Distributions": {
+        "Substitution rate from nucleotide A to nucleotide C": 0.3421947206141964,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.2137400632847951,
+        "Substitution rate from nucleotide C to nucleotide G": 0.1854874498182628,
+        "Substitution rate from nucleotide C to nucleotide T": 0.871826527560673,
+        "Substitution rate from nucleotide G to nucleotide T": 0.2116351774544451,
+        "non-synonymous/synonymous rate ratio": 0.1669578530087545
+      },
+      "display order": 1,
+      "estimated parameters": 136
+    },
+    "Nucleotide GTR": {
+      "AIC-c": 50214.58114702818,
+      "Equilibrium frequencies": [
+        [
+          0.2061731332698804
+        ],
+        [
+          0.3041589683295075
+        ],
+        [
+          0.3105485881716216
+        ],
+        [
+          0.1791193102289905
+        ]
+      ],
+      "Log Likelihood": -24978.06015940071,
+      "Rate Distributions": {
+        "Substitution rate from nucleotide A to nucleotide C": 0.3176738423853776,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.2092269468192932,
+        "Substitution rate from nucleotide C to nucleotide G": 0.3781386738118532,
+        "Substitution rate from nucleotide C to nucleotide T": 1.248803088226808,
+        "Substitution rate from nucleotide G to nucleotide T": 0.1853642095906903
+      },
+      "display order": 0,
+      "estimated parameters": 129
+    }
+  },
+  "input": {
+    "file name": "/Users/sergei/Development/hyphy/tests/data/vwf.nex",
+    "number of sequences": 62,
+    "number of sites": 392,
+    "partition count": 1,
+    "trees": {
+      "0": "(TAMANDUA:0.0278563,MYRMECOPHAGA:0.0308118,(CHOLOEPUSDI:0.0890224,((DASYPUS:0.06479467999999999,(EUPHRACTUS:0.00640447,CHAETOPHRACTUS:0.01131405)Node8:0.02812047)Node6:0.0252939,(DIPODOMYS:0.35100567,((ERINACEUS:0.37148599,TUPAIA:0.10975167)Node14:0.03155719,((((PTEROPUS:0.03372476,ROUSETTUS:0.04721508)Node20:0.0520394,((TADARIDA:0.08030654,(MEGADERMA:0.09439348,(ANTROZOUS:0.03433523,MYOTIS:0.01719009)Node28:0.03694639)Node26:0.01162882)Node24:3.7e-07,(ARTIBEUS:0.09029576,NYCTERIS:0.08754512)Node31:0.01267574)Node23:0.013726)Node19:0.01741805,((SOLENODON:0.14335936,(TALPA:0.06246697,GALEMYS:0.0662104)Node37:0.04544942)Node35:0.01826491,(MANIS:0.09338858,(((EQUUS:0.06084268,CERATOTHERIUM:0.05477831)Node44:0.03499279,((PANTHERA:0.00279004,FELIS:0.01437106)Node48:0.06805928,(CANIS:0.06454232999999999,AILUROPODA:0.05789649)Node51:0.01209541)Node47:0.03461479)Node43:0.00582894,(GALEOPTERUS:0.11370235,(((CALLITHRIX:0.05064852,((PONGO:0.01087651,(GORILLA:0.01016933,(HOMO:0.0066828,PAN:0.01098058)Node65:0.00366482)Node63:0.00508128)Node61:0.009255569999999999,MACACA:0.02284506)Node60:0.00368409)Node58:0.05577355,(OTOLEMUR:0.09563217,(MICROCEBUS:0.06661526,LEMUR:0.02478441)Node71:0.01983757)Node69:0.03880614)Node57:0.01367575,(((MACROSCELIDES:0.0371001,ELEPHANTULUS:0.05273566)Node76:0.1410305,((ORYCTEROPUS:0.10890342,(TRICHECHUS:0.05212038,(LOXODONTA:0.08461692,PROCAVIA:0.14111635)Node84:0.006847)Node82:0.01797143)Node80:5e-07,(ECHINOPS:0.16483199,AMBLYSOMUS:0.08640657)Node87:0.01898843)Node79:0.01232158)Node75:0.05138462,(((PEDETES:0.12693438,(CASTOR:0.08902443,(RATTUS:0.06499463,MUS:0.04974045)Node96:0.11009398)Node94:0.01154837)Node92:0.01523784,(SPERMOPHILUS:0.11481713,(ERETHIZON:0.04085371,(HYDROCHOERUS:0.03114198,CAVIA:0.0527703)Node103:0.02569582)Node101:0.10455918)Node99:0.01230785)Node91:0.01585037,(OCHOTONA:0.13799628,ORYCTOLAGUS:0.09484869999999999)Node106:0.08491409)Node90:0.00452965)Node74:0.00968316)Node56:0.00800465)Node54:0.02695887)Node42:0.01412948)Node40:0.00393295)Node34:0.00591178)Node18:0.01036937,(TARSIUS:0.18344178,(LAMA:0.15400108,((HIPPOPOTAMUS:0.08101297,(BOS:0.13331105,(TURSIOPS:0.03255309,MEGAPTERA:0.01960976)Node118:0.03267384)Node116:0.01072252)Node114:0.02682004,SUS:0.10484927)Node113:0.008163760000000001)Node111:0.03072234)Node109:0.02860844)Node17:0.01009085)Node13:0.01222427)Node11:0.06295725000000001)Node5:0.0193035)Node3:0.09161097999999999)"
+    }
+  },
+  "test results": {},
+  "tested": {
+    "0": {
+      "AILUROPODA": "test",
+      "AMBLYSOMUS": "test",
+      "ANTROZOUS": "test",
+      "ARTIBEUS": "test",
+      "BOS": "test",
+      "CALLITHRIX": "test",
+      "CANIS": "test",
+      "CASTOR": "test",
+      "CAVIA": "test",
+      "CERATOTHERIUM": "test",
+      "CHAETOPHRACTUS": "test",
+      "CHOLOEPUSDI": "test",
+      "DASYPUS": "test",
+      "DIPODOMYS": "test",
+      "ECHINOPS": "test",
+      "ELEPHANTULUS": "test",
+      "EQUUS": "test",
+      "ERETHIZON": "test",
+      "ERINACEUS": "test",
+      "EUPHRACTUS": "test",
+      "FELIS": "test",
+      "GALEMYS": "test",
+      "GALEOPTERUS": "test",
+      "GORILLA": "test",
+      "HIPPOPOTAMUS": "test",
+      "HOMO": "test",
+      "HYDROCHOERUS": "test",
+      "LAMA": "test",
+      "LEMUR": "test",
+      "LOXODONTA": "test",
+      "MACACA": "test",
+      "MACROSCELIDES": "test",
+      "MANIS": "test",
+      "MEGADERMA": "test",
+      "MEGAPTERA": "test",
+      "MICROCEBUS": "test",
+      "MUS": "test",
+      "MYOTIS": "test",
+      "MYRMECOPHAGA": "test",
+      "NYCTERIS": "test",
+      "Node101": "test",
+      "Node103": "test",
+      "Node106": "test",
+      "Node109": "test",
+      "Node11": "test",
+      "Node111": "test",
+      "Node113": "test",
+      "Node114": "test",
+      "Node116": "test",
+      "Node118": "test",
+      "Node13": "test",
+      "Node14": "test",
+      "Node17": "test",
+      "Node18": "test",
+      "Node19": "test",
+      "Node20": "test",
+      "Node23": "test",
+      "Node24": "test",
+      "Node26": "test",
+      "Node28": "test",
+      "Node3": "test",
+      "Node31": "test",
+      "Node34": "test",
+      "Node35": "test",
+      "Node37": "test",
+      "Node40": "test",
+      "Node42": "test",
+      "Node43": "test",
+      "Node44": "test",
+      "Node47": "test",
+      "Node48": "test",
+      "Node5": "test",
+      "Node51": "test",
+      "Node54": "test",
+      "Node56": "test",
+      "Node57": "test",
+      "Node58": "test",
+      "Node6": "test",
+      "Node60": "test",
+      "Node61": "test",
+      "Node63": "test",
+      "Node65": "test",
+      "Node69": "test",
+      "Node71": "test",
+      "Node74": "test",
+      "Node75": "test",
+      "Node76": "test",
+      "Node79": "test",
+      "Node8": "test",
+      "Node80": "test",
+      "Node82": "test",
+      "Node84": "test",
+      "Node87": "test",
+      "Node90": "test",
+      "Node91": "test",
+      "Node92": "test",
+      "Node94": "test",
+      "Node96": "test",
+      "Node99": "test",
+      "OCHOTONA": "test",
+      "ORYCTEROPUS": "test",
+      "ORYCTOLAGUS": "test",
+      "OTOLEMUR": "test",
+      "PAN": "test",
+      "PANTHERA": "test",
+      "PEDETES": "test",
+      "PONGO": "test",
+      "PROCAVIA": "test",
+      "PTEROPUS": "test",
+      "RATTUS": "test",
+      "ROUSETTUS": "test",
+      "SOLENODON": "test",
+      "SPERMOPHILUS": "test",
+      "SUS": "test",
+      "TADARIDA": "test",
+      "TALPA": "test",
+      "TAMANDUA": "test",
+      "TARSIUS": "test",
+      "TRICHECHUS": "test",
+      "TUPAIA": "test",
+      "TURSIOPS": "test"
+    }
+  },
+  "timers": {
+    "MG_REV": {
+      "order": null,
+      "timer": 13
+    },
+    "Overall": {
+      "order": 0,
+      "timer": 14
+    }
+  }
+}

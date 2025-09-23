@@ -1,0 +1,582 @@
+{
+  "analysis": {
+    "authors": "Sergei L Kosakovsky Pond",
+    "contact": "spond@temple.edu",
+    "info": "Fit an MG94xREV model with several selectable options frequency estimator and \nreport the fit results including dN/dS ratios, and synonymous and non-synonymous branch lengths. v0.2 adds LRT test for dN/dS != 1",
+    "requirements": "in-frame codon alignment and a phylogenetic tree",
+    "version": "0.2"
+  },
+  "branch attributes": {
+    "0": {
+      "KT779906_1_1": {
+        "Nucleotide GTR": 0.003108479814829688,
+        "Standard MG94": 0,
+        "nonsynonymous": 1e-10,
+        "original name": "KT779906_1_1",
+        "synonymous": 1e-10
+      },
+      "KT779907_1_1": {
+        "Nucleotide GTR": 1e-06,
+        "Standard MG94": 0,
+        "nonsynonymous": 1e-10,
+        "original name": "KT779907_1_1",
+        "synonymous": 1e-10
+      },
+      "KT779908_1_1": {
+        "Nucleotide GTR": 1e-06,
+        "Standard MG94": 0,
+        "nonsynonymous": 1e-10,
+        "original name": "KT779908_1_1",
+        "synonymous": 1e-10
+      },
+      "KT779909_1_1": {
+        "Nucleotide GTR": 1e-06,
+        "Standard MG94": 0,
+        "nonsynonymous": 1e-10,
+        "original name": "KT779909_1_1",
+        "synonymous": 1e-10
+      },
+      "KT779910_1_4": {
+        "Nucleotide GTR": 0.001559185936656427,
+        "Standard MG94": 0.001900890502468388,
+        "nonsynonymous": 2.763148068037604e-05,
+        "original name": "KT779910_1_4",
+        "synonymous": 0.001873259021788011
+      },
+      "KT779911_1_1": {
+        "Nucleotide GTR": 0.003123446045896861,
+        "Standard MG94": 0.003782822715933127,
+        "nonsynonymous": 5.498738231206043e-05,
+        "original name": "KT779911_1_1",
+        "synonymous": 0.003727835333621065
+      },
+      "KT779912_1_1": {
+        "Nucleotide GTR": 1e-06,
+        "Standard MG94": 0,
+        "nonsynonymous": 1e-10,
+        "original name": "KT779912_1_1",
+        "synonymous": 1e-10
+      },
+      "KT779913_1_1": {
+        "Nucleotide GTR": 0.003121728711677397,
+        "Standard MG94": 0.003630036737876348,
+        "nonsynonymous": 5.276647437684467e-05,
+        "original name": "KT779913_1_1",
+        "synonymous": 0.003577270263499504
+      },
+      "KT779914_1_1": {
+        "Nucleotide GTR": 0.02210434185464705,
+        "Standard MG94": 0.02000410229171336,
+        "nonsynonymous": 0.000290781065655272,
+        "original name": "KT779914_1_1",
+        "synonymous": 0.01971332122605807
+      },
+      "KT779915_1_2": {
+        "Nucleotide GTR": 0.06923391759426381,
+        "Standard MG94": 0.2130643253726729,
+        "nonsynonymous": 0.003097118315109407,
+        "original name": "KT779915_1_2",
+        "synonymous": 0.2099672070575634
+      },
+      "KT779917_1_1": {
+        "Nucleotide GTR": 0.0802252306678619,
+        "Standard MG94": 0.304508268011698,
+        "nonsynonymous": 0.004426354023892511,
+        "original name": "KT779917_1_1",
+        "synonymous": 0.3000819139878054
+      },
+      "KT779918_1_1": {
+        "Nucleotide GTR": 1e-06,
+        "Standard MG94": 0,
+        "nonsynonymous": 1e-10,
+        "original name": "KT779918_1_1",
+        "synonymous": 1e-10
+      },
+      "KT779919_1_2": {
+        "Nucleotide GTR": 1e-06,
+        "Standard MG94": 0.003409177348413279,
+        "nonsynonymous": 4.955604645103629e-05,
+        "original name": "KT779919_1_2",
+        "synonymous": 0.003359621301962242
+      },
+      "KT779921_1_1": {
+        "Nucleotide GTR": 0.009231905998817069,
+        "Standard MG94": 0,
+        "nonsynonymous": 1e-10,
+        "original name": "KT779921_1_1",
+        "synonymous": 1e-10
+      },
+      "KT779922_1_1": {
+        "Nucleotide GTR": 0.004714007132845445,
+        "Standard MG94": 0.005174516227130665,
+        "nonsynonymous": 7.521713900647518e-05,
+        "original name": "KT779922_1_1",
+        "synonymous": 0.005099299088124187
+      },
+      "KT779923_1_1": {
+        "Nucleotide GTR": 0.03075810480856464,
+        "Standard MG94": 0.001869540508071785,
+        "nonsynonymous": 2.71757749133291e-05,
+        "original name": "KT779923_1_1",
+        "synonymous": 0.001842364733158455
+      },
+      "KT779924_1_1": {
+        "Nucleotide GTR": 0.012844430000611,
+        "Standard MG94": 0.02839494197191799,
+        "nonsynonymous": 0.0004127509130581813,
+        "original name": "KT779924_1_1",
+        "synonymous": 0.02798219105885982
+      },
+      "KT779925_1_1": {
+        "Nucleotide GTR": 1e-06,
+        "Standard MG94": 0,
+        "nonsynonymous": 1e-10,
+        "original name": "KT779925_1_1",
+        "synonymous": 1e-10
+      },
+      "KT779927_1_1": {
+        "Nucleotide GTR": 0.07613759235702838,
+        "Standard MG94": 0.2408457836553716,
+        "nonsynonymous": 0.003500951585260551,
+        "original name": "KT779927_1_1",
+        "synonymous": 0.237344832070111
+      },
+      "Node1": {
+        "Nucleotide GTR": 0.02368426534297778,
+        "Standard MG94": 0.08900071223177215,
+        "nonsynonymous": 0.00129372073634884,
+        "synonymous": 0.08770699149542331
+      },
+      "Node12": {
+        "Nucleotide GTR": 0.03851889438746973,
+        "Standard MG94": 0.1482254015956388,
+        "nonsynonymous": 0.002154615068680943,
+        "synonymous": 0.1460707865269579
+      },
+      "Node14": {
+        "Nucleotide GTR": 0.04249250830912705,
+        "Standard MG94": 0.1107686027104059,
+        "nonsynonymous": 0.001610140353592372,
+        "synonymous": 0.1091584623568135
+      },
+      "Node17": {
+        "Nucleotide GTR": 0.001559185856679748,
+        "Standard MG94": 0.001913132093678381,
+        "nonsynonymous": 2.780942532820125e-05,
+        "synonymous": 0.00188532266835018
+      },
+      "Node2": {
+        "Nucleotide GTR": 0.01062248705397244,
+        "Standard MG94": 0.03697663229112529,
+        "nonsynonymous": 0.0005374949790379047,
+        "synonymous": 0.03643913731208737
+      },
+      "Node21": {
+        "Nucleotide GTR": 0.01840420609167548,
+        "Standard MG94": 0.1066729832296688,
+        "nonsynonymous": 0.001550606135072574,
+        "synonymous": 0.1051223770945962
+      },
+      "Node22": {
+        "Nucleotide GTR": 0.01045944904623388,
+        "Standard MG94": 0.04200570965554976,
+        "nonsynonymous": 0.0006105980083048534,
+        "synonymous": 0.04139511164724496
+      },
+      "Node23": {
+        "Nucleotide GTR": 0.01361666381613167,
+        "Standard MG94": 0.03817477384967228,
+        "nonsynonymous": 0.0005549112506665737,
+        "synonymous": 0.0376198625990057
+      },
+      "Node25": {
+        "Nucleotide GTR": 0.05597329906248894,
+        "Standard MG94": 0.2162821529154542,
+        "nonsynonymous": 0.003143892887061705,
+        "synonymous": 0.2131382600283927
+      },
+      "Node28": {
+        "Nucleotide GTR": 0.08424959480754145,
+        "Standard MG94": 0.3116849938189737,
+        "nonsynonymous": 0.004530675424959318,
+        "synonymous": 0.3071543183940142
+      },
+      "Node3": {
+        "Nucleotide GTR": 0.05950405619590874,
+        "Standard MG94": 0.1130928407364554,
+        "nonsynonymous": 0.001643925644239036,
+        "synonymous": 0.1114489150922163
+      },
+      "Node30": {
+        "Nucleotide GTR": 0.006269653792152126,
+        "Standard MG94": 0.007596189198692889,
+        "nonsynonymous": 0.0001104187510093862,
+        "synonymous": 0.007485770447683498
+      },
+      "Node7": {
+        "Nucleotide GTR": 0.02766682745787791,
+        "Standard MG94": 0,
+        "nonsynonymous": 1e-10,
+        "synonymous": 1e-10
+      },
+      "Node8": {
+        "Nucleotide GTR": 0.01479985182442418,
+        "Standard MG94": 0.02450742397694407,
+        "nonsynonymous": 0.0003562416726609832,
+        "synonymous": 0.02415118230428307
+      }
+    },
+    "attributes": {
+      "Nucleotide GTR": {
+        "attribute type": "branch length",
+        "display order": 0
+      },
+      "Standard MG94": {
+        "attribute type": "branch length",
+        "display order": 1
+      },
+      "nonsynonymous": {
+        "attribute type": "branch length",
+        "display order": 3
+      },
+      "original name": {
+        "attribute type": "node label",
+        "display order": -1
+      },
+      "synonymous": {
+        "attribute type": "branch length",
+        "display order": 2
+      }
+    }
+  },
+  "data partitions": {
+    "0": {
+      "coverage": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112,
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119,
+          120,
+          121,
+          122,
+          123,
+          124,
+          125,
+          126,
+          127,
+          128,
+          129,
+          130,
+          131,
+          132,
+          133,
+          134,
+          135,
+          136,
+          137,
+          138,
+          139,
+          140,
+          141,
+          142,
+          143,
+          144,
+          145,
+          146,
+          147,
+          148,
+          149,
+          150,
+          151,
+          152,
+          153,
+          154,
+          155,
+          156,
+          157,
+          158,
+          159,
+          160,
+          161,
+          162,
+          163,
+          164,
+          165,
+          166,
+          167,
+          168,
+          169,
+          170,
+          171,
+          172,
+          173,
+          174,
+          175,
+          176,
+          177,
+          178,
+          179,
+          180,
+          181,
+          182,
+          183,
+          184,
+          185,
+          186,
+          187,
+          188,
+          189,
+          190,
+          191,
+          192,
+          193,
+          194,
+          195,
+          196,
+          197,
+          198,
+          199,
+          200,
+          201,
+          202,
+          203,
+          204,
+          205,
+          206,
+          207,
+          208,
+          209,
+          210,
+          211,
+          212,
+          213
+        ]
+      ],
+      "name": "fitter.filter.default"
+    }
+  },
+  "fits": {
+    "Nucleotide GTR": {
+      "AIC-c": 6083.512589760237,
+      "Equilibrium frequencies": [
+        [
+          0.2612662712143681
+        ],
+        [
+          0.1533407480639314
+        ],
+        [
+          0.1883547536661724
+        ],
+        [
+          0.3970382270555281
+        ]
+      ],
+      "Log Likelihood": -2998.600625964536,
+      "Rate Distributions": {
+        "Substitution rate from nucleotide A to nucleotide C": 0.3337650605505126,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.6158210342765914,
+        "Substitution rate from nucleotide C to nucleotide G": 0,
+        "Substitution rate from nucleotide C to nucleotide T": 1.023549320003215,
+        "Substitution rate from nucleotide G to nucleotide T": 0.05664243848253977
+      },
+      "display order": 0,
+      "estimated parameters": 43
+    },
+    "Standard MG94": {
+      "AIC-c": 4788.930731584728,
+      "Confidence Intervals": {
+        "non-synonymous/synonymous rate ratio": {
+          "LB": 0.002507046903268737,
+          "UB": 0.006057758668619128
+        }
+      },
+      "Log Likelihood": -2345.879854216561,
+      "Rate Distributions": {
+        "Substitution rate from nucleotide A to nucleotide C": 0.4616933629182212,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.04023345158436969,
+        "Substitution rate from nucleotide C to nucleotide G": 0,
+        "Substitution rate from nucleotide C to nucleotide T": 0.7271234055377288,
+        "Substitution rate from nucleotide G to nucleotide T": 0.3757173806650871,
+        "non-synonymous/synonymous rate ratio": 0.004022918902458208
+      },
+      "display order": 1,
+      "estimated parameters": 48
+    }
+  },
+  "input": {
+    "file name": "/Users/sergei/Development/hyphy/tests/hbltests/libv3/data/algae_coxI_aligned.fas",
+    "number of sequences": 19,
+    "number of sites": 214,
+    "partition count": 1,
+    "trees": {
+      "0": "((((KT779919_1_2,KT779906_1_1)Node3,KT779915_1_2)Node2,((KT779925_1_1,KT779922_1_1)Node8,KT779914_1_1)Node7)Node1,(KT779923_1_1,(KT779910_1_4,(KT779909_1_1,KT779908_1_1)Node17,KT779907_1_1)Node14)Node12,(((KT779927_1_1,(KT779924_1_1,KT779921_1_1)Node25)Node23,(KT779913_1_1,(KT779911_1_1,KT779912_1_1)Node30,KT779918_1_1)Node28)Node22,KT779917_1_1)Node21)"
+    }
+  },
+  "tested": {
+    "0": {
+      "KT779906_1_1": "test",
+      "KT779907_1_1": "test",
+      "KT779908_1_1": "test",
+      "KT779909_1_1": "test",
+      "KT779910_1_4": "test",
+      "KT779911_1_1": "test",
+      "KT779912_1_1": "test",
+      "KT779913_1_1": "test",
+      "KT779914_1_1": "test",
+      "KT779915_1_2": "test",
+      "KT779917_1_1": "test",
+      "KT779918_1_1": "test",
+      "KT779919_1_2": "test",
+      "KT779921_1_1": "test",
+      "KT779922_1_1": "test",
+      "KT779923_1_1": "test",
+      "KT779924_1_1": "test",
+      "KT779925_1_1": "test",
+      "KT779927_1_1": "test",
+      "Node1": "test",
+      "Node12": "test",
+      "Node14": "test",
+      "Node17": "test",
+      "Node2": "test",
+      "Node21": "test",
+      "Node22": "test",
+      "Node23": "test",
+      "Node25": "test",
+      "Node28": "test",
+      "Node3": "test",
+      "Node30": "test",
+      "Node7": "test",
+      "Node8": "test"
+    }
+  },
+  "timers": {
+    "Overall": {
+      "order": 0,
+      "timer": 2
+    },
+    "Standard MG94": {
+      "order": null,
+      "timer": 2
+    }
+  }
+}

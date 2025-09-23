@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: HyPhy
+Version: 0.2.0
+Summary: HyPhy package interface library for Python
+Home-page: http://www.hyphy.org/
+Author: Sergei L Kosakovsky Pond
+Author-email: spond@temple.edu
+Requires-Python: >=3.4

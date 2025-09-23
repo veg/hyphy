@@ -642,7 +642,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
 
 
         } else {
-        	if (Type((initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i]) != "Unknown") {
+        	if (initial_values[terms.branch_length] / estimators.ApplyExistingEstimates.i && Type((initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i]) != "Unknown") {
         		warning.log ("Incorrect type for the initial values object for partition " + estimators.ApplyExistingEstimates.i
         					+ ". " + (initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i]);
         	}

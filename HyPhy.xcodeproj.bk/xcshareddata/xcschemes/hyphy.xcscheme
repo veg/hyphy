@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Scheme
+   LastUpgradeVersion = "1500"
+   version = "1.7">
+   <BuildAction
+      parallelizeBuildables = "YES"
+      buildImplicitDependencies = "YES">
+      <BuildActionEntries>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "04EFC563492C429A815B9012"
+               BuildableName = "hyphy"
+               BlueprintName = "hyphy"
+               ReferencedContainer = "container:HyPhy.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+      </BuildActionEntries>
+   </BuildAction>
+   <TestAction
+      buildConfiguration = "Release"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      shouldUseLaunchSchemeArgsEnv = "YES"
+      shouldAutocreateTestPlan = "YES">
+   </TestAction>
+   <LaunchAction
+      buildConfiguration = "Release"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      enableAddressSanitizer = "YES"
+      enableASanStackUseAfterReturn = "YES"
+      enableUBSanitizer = "YES"
+      launchStyle = "0"
+      useCustomWorkingDirectory = "NO"
+      ignoresPersistentStateOnLaunch = "NO"
+      debugDocumentVersioning = "YES"
+      debugServiceExtension = "internal"
+      allowLocationSimulation = "YES"
+      viewDebuggingEnabled = "No">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "04EFC563492C429A815B9012"
+            BuildableName = "hyphy"
+            BlueprintName = "hyphy"
+            ReferencedContainer = "container:HyPhy.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
+      <CommandLineArguments>
+         <CommandLineArgument
+            argument = "LIBPATH=/Users/sergei/Development/hyphy/res"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "relax --filelist /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/01_data/08_H5N1gof/files.lst --test foreground --reference background  --multiple-files Yes --models Minimal --grid-size 250 --starting-points 10 --intermediate-fits /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/01_data/08_H5N1gof//ifits.bf -m  --srv No --rates 2 --output /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/01_data/08_H5N1gof/RELAX.2.noSRV.noMH.json --save-fit /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/01_data/08_H5N1gof/ifits.bf --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_HA_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_M_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_NA_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_NP_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_NS_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_PA_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_PB1_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_PB2_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/Users/sergei/Dropbox/Work/Collaborations/MSS/bacteria/lists/all-2.fit "
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "fel --alignment /Users/sergei/Development/hyphy/tests/data/bglobin.nex --intermediate-fits /Users/sergei/Development/hyphy/tests/data/bglobin.fit --resample 100"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/Users/sergei/Development/hyphy/tests/hbltests/libv3/BUSTED.wbf "
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/Users/sergei/Development/hyphy/tests/hbltests/SimpleOptimizations/SmallCodon.bf "
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "relax --help"
+            isEnabled = "NO">
+         </CommandLineArgument>
+      </CommandLineArguments>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "DIR=&quot;/Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/01_data/08_H5N1gof&quot;"
+            value = ""
+            isEnabled = "NO">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "TREES"
+            value = "&quot;--tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_HA_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_M_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_NA_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_NP_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_NS_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_PA_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_PB1_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk --tree /Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/03_treesAnnot/08_H5N1gof/01_seg_PB2_H5N1gofP0Fs.fasta_GTRFG4_justClade.nwk  &quot;"
+            isEnabled = "NO">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "DIR"
+            value = "&quot;/Users/sergei/Dropbox/Work/RELAX-joint/2024/00_relaxInput/01_data/08_H5N1gof&quot;"
+            isEnabled = "NO">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = ""
+            value = ""
+            isEnabled = "NO">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "SHARED_OPTIONS"
+            value = "&quot;--filelist ${DIR}/files.lst --test foreground --reference background  --multiple-files Yes --models Minimal --grid-size 250 --starting-points 10 --intermediate-fits ${DIR}/ifits.bf -m &quot;"
+            isEnabled = "NO">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
+      <AdditionalOptions>
+         <AdditionalOption
+            key = "MallocScribble"
+            value = ""
+            isEnabled = "YES">
+         </AdditionalOption>
+      </AdditionalOptions>
+   </LaunchAction>
+   <ProfileAction
+      buildConfiguration = "Release"
+      shouldUseLaunchSchemeArgsEnv = "YES"
+      savedToolIdentifier = ""
+      useCustomWorkingDirectory = "NO"
+      debugDocumentVersioning = "YES">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "04EFC563492C429A815B9012"
+            BuildableName = "hyphy"
+            BlueprintName = "hyphy"
+            ReferencedContainer = "container:HyPhy.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
+   </ProfileAction>
+   <AnalyzeAction
+      buildConfiguration = "Release">
+   </AnalyzeAction>
+   <ArchiveAction
+      buildConfiguration = "Release"
+      revealArchiveInOrganizer = "YES">
+   </ArchiveAction>
+</Scheme>

@@ -1,0 +1,386 @@
+{
+  "analysis": {
+    "authors": "Sergei L Kosakovsky Pond",
+    "contact": "spond@temple.edu",
+    "info": "Fit one of the available codon models to the data, report fit results and model estimates. Model specific options will differ.",
+    "requirements": "in-frame codon alignment and a phylogenetic tree",
+    "version": "0.1"
+  },
+  "branch attributes": {
+    "0": {
+      "BUSHBABY": {
+        "Nucleotide GTR": 0.04517741109583467,
+        "original name": "BUSHBABY"
+      },
+      "CHICKEN": {
+        "Nucleotide GTR": 0.0252392497338117,
+        "original name": "CHICKEN"
+      },
+      "COW": {
+        "Nucleotide GTR": 0.02091391249863708,
+        "original name": "COW"
+      },
+      "DUCK": {
+        "Nucleotide GTR": 0.04382101167082654,
+        "original name": "DUCK"
+      },
+      "ELEPHSEAL": {
+        "Nucleotide GTR": 0.06849895882807318,
+        "original name": "ELEPHSEAL"
+      },
+      "HAMSTER": {
+        "Nucleotide GTR": 0.09966630228886576,
+        "original name": "HAMSTER"
+      },
+      "HARE": {
+        "Nucleotide GTR": 0.005991642179992681,
+        "original name": "HARE"
+      },
+      "HUMAN": {
+        "Nucleotide GTR": 0.05521673249486238,
+        "original name": "HUMAN"
+      },
+      "MARSUPIAL": {
+        "Nucleotide GTR": 0.1947852175128089,
+        "original name": "MARSUPIAL"
+      },
+      "MOUSE": {
+        "Nucleotide GTR": 0.05851214811356534,
+        "original name": "MOUSE"
+      },
+      "Node1": {
+        "Nucleotide GTR": 0.03041704933216034
+      },
+      "Node10": {
+        "Nucleotide GTR": 0.01073107274515053
+      },
+      "Node12": {
+        "Nucleotide GTR": 0.05315164843429787
+      },
+      "Node15": {
+        "Nucleotide GTR": 0.01632236940649648
+      },
+      "Node18": {
+        "Nucleotide GTR": 0.0705210716988665
+      },
+      "Node2": {
+        "Nucleotide GTR": 0.01642256383609611
+      },
+      "Node20": {
+        "Nucleotide GTR": 0.03005228163820634
+      },
+      "Node23": {
+        "Nucleotide GTR": 0.07793990184860636
+      },
+      "Node25": {
+        "Nucleotide GTR": 0.03557347469648459
+      },
+      "Node26": {
+        "Nucleotide GTR": 0.144108102868288
+      },
+      "Node29": {
+        "Nucleotide GTR": 0.2889816043382282
+      },
+      "Node4": {
+        "Nucleotide GTR": 0.0129347194341995
+      },
+      "Node6": {
+        "Nucleotide GTR": 0.0446140782563549
+      },
+      "Node9": {
+        "Nucleotide GTR": 0.0198050944599297
+      },
+      "PIG": {
+        "Nucleotide GTR": 0.09709194876058766,
+        "original name": "PIG"
+      },
+      "RABBIT": {
+        "Nucleotide GTR": 0.02253578034755641,
+        "original name": "RABBIT"
+      },
+      "RAT": {
+        "Nucleotide GTR": 0.04116182183421808,
+        "original name": "RAT"
+      },
+      "SHEEP": {
+        "Nucleotide GTR": 0.03035949814160805,
+        "original name": "SHEEP"
+      },
+      "TARSIER": {
+        "Nucleotide GTR": 0.06589169757796312,
+        "original name": "TARSIER"
+      },
+      "XENLAEV": {
+        "Nucleotide GTR": 0.1227006738583091,
+        "original name": "XENLAEV"
+      },
+      "XENTROP": {
+        "Nucleotide GTR": 0.1925857604895258,
+        "original name": "XENTROP"
+      }
+    },
+    "attributes": {
+      "Nucleotide GTR": {
+        "attribute type": "branch length",
+        "display order": 0
+      },
+      "original name": {
+        "attribute type": "node label",
+        "display order": -1
+      }
+    }
+  },
+  "data partitions": {
+    "0": {
+      "coverage": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112,
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119,
+          120,
+          121,
+          122,
+          123,
+          124,
+          125,
+          126,
+          127,
+          128,
+          129,
+          130,
+          131,
+          132,
+          133,
+          134,
+          135,
+          136,
+          137,
+          138,
+          139,
+          140,
+          141,
+          142,
+          143
+        ]
+      ],
+      "name": "fitter.filter.default"
+    }
+  },
+  "fits": {
+    "Codon model": {
+      "AIC-c": 7625.668878723335,
+      "Log Likelihood": -3765.933981219227,
+      "Rate Distributions": {
+        "Substitution rate from nucleotide A to nucleotide C": 0.7173461950152669,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.3405697807387371,
+        "Substitution rate from nucleotide C to nucleotide G": 0.3273838339802763,
+        "Substitution rate from nucleotide C to nucleotide T": 0.7119408841942556,
+        "Substitution rate from nucleotide G to nucleotide T": 0.3629281593183014,
+        "non-synonymous/synonymous rate ratio": 0.2381010826567634
+      },
+      "display order": 1,
+      "estimated parameters": 46
+    },
+    "Nucleotide GTR": {
+      "AIC-c": 7930.005419814246,
+      "Equilibrium frequencies": [
+        [
+          0.2079248366013072
+        ],
+        [
+          0.2608932461873638
+        ],
+        [
+          0.292483660130719
+        ],
+        [
+          0.23869825708061
+        ]
+      ],
+      "Log Likelihood": -3925.789128307999,
+      "Rate Distributions": {
+        "Substitution rate from nucleotide A to nucleotide C": 0.7068279397334323,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.3618963934038339,
+        "Substitution rate from nucleotide C to nucleotide G": 0.5699950150017365,
+        "Substitution rate from nucleotide C to nucleotide T": 1.591553069966822,
+        "Substitution rate from nucleotide G to nucleotide T": 0.511975247618124
+      },
+      "display order": 0,
+      "estimated parameters": 39
+    }
+  },
+  "input": {
+    "file name": "/Users/sergei/Development/hyphy/tests/data/bglobin.nex",
+    "number of sequences": 17,
+    "number of sites": 144,
+    "partition count": 1,
+    "trees": {
+      "0": "(((ELEPHSEAL,(PIG,(COW,SHEEP)Node6)Node4)Node2,((BUSHBABY,(HARE,RABBIT)Node12)Node10,(HUMAN,TARSIER)Node15)Node9)Node1,(HAMSTER,(RAT,MOUSE)Node20)Node18,(MARSUPIAL,((DUCK,CHICKEN)Node26,(XENLAEV,XENTROP)Node29)Node25)Node23)"
+    }
+  },
+  "test results": {},
+  "tested": {
+    "0": {
+      "BUSHBABY": "test",
+      "CHICKEN": "test",
+      "COW": "test",
+      "DUCK": "test",
+      "ELEPHSEAL": "test",
+      "HAMSTER": "test",
+      "HARE": "test",
+      "HUMAN": "test",
+      "MARSUPIAL": "test",
+      "MOUSE": "test",
+      "Node1": "test",
+      "Node10": "test",
+      "Node12": "test",
+      "Node15": "test",
+      "Node18": "test",
+      "Node2": "test",
+      "Node20": "test",
+      "Node23": "test",
+      "Node25": "test",
+      "Node26": "test",
+      "Node29": "test",
+      "Node4": "test",
+      "Node6": "test",
+      "Node9": "test",
+      "PIG": "test",
+      "RABBIT": "test",
+      "RAT": "test",
+      "SHEEP": "test",
+      "TARSIER": "test",
+      "XENLAEV": "test",
+      "XENTROP": "test"
+    }
+  },
+  "timers": {
+    "MG_REV": {
+      "order": null,
+      "timer": 2
+    },
+    "Overall": {
+      "order": 0,
+      "timer": 2
+    }
+  }
+}

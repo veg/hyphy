@@ -1,0 +1,82 @@
+{
+  "buildCommand": {
+    "command": "prepareForIndexing",
+    "enableIndexBuildArena": false,
+    "targets": null
+  },
+  "configuredTargets": [
+    {
+      "guid": "19b8261bc10d48114fa4eaffea0609011b161ef544eee22412ac046d8c9c9bb2"
+    },
+    {
+      "guid": "19b8261bc10d48114fa4eaffea0609016981f575e09b52572d4ea06f6ee14ea0"
+    },
+    {
+      "guid": "19b8261bc10d48114fa4eaffea060901656f9225cdbf5b4e9857a2a82f12f04f"
+    },
+    {
+      "guid": "19b8261bc10d48114fa4eaffea060901806c43e801c905f12b504740e8ce7e33"
+    },
+    {
+      "guid": "19b8261bc10d48114fa4eaffea060901e694f9795a9d851d72e952061c68eecf"
+    },
+    {
+      "guid": "19b8261bc10d48114fa4eaffea060901298adaef5c106b2b7d161a5ca02c5488"
+    },
+    {
+      "guid": "19b8261bc10d48114fa4eaffea060901b7ef6e67de20b6d73e8ff6c4cb825aa1"
+    },
+    {
+      "guid": "19b8261bc10d48114fa4eaffea060901d45730b5309499ebc3a439c9dc92f8df"
+    }
+  ],
+  "containerPath": "/Users/sergei/Development/hyphy/HyPhy.xcodeproj",
+  "continueBuildingAfterErrors": true,
+  "dependencyScope": "workspace",
+  "enableIndexBuildArena": false,
+  "hideShellScriptEnvironment": false,
+  "parameters": {
+    "action": "build",
+    "activeArchitecture": "arm64",
+    "activeRunDestination": {
+      "disableOnlyActiveArch": false,
+      "platform": "macosx",
+      "sdk": "macosx26.0",
+      "sdkVariant": "macos",
+      "supportedArchitectures": [
+        "arm64e",
+        "arm64",
+        "x86_64"
+      ],
+      "targetArchitecture": "arm64"
+    },
+    "arenaInfo": {
+      "buildIntermediatesPath": "",
+      "buildProductsPath": "",
+      "derivedDataPath": "/Users/sergei/Library/Developer/Xcode/DerivedData",
+      "indexDataStoreFolderPath": "/Users/sergei/Library/Developer/Xcode/DerivedData/HyPhy-evnietvcvkbugphimbqaqxhzqpbp/Index.noindex/DataStore",
+      "indexEnableDataStore": true,
+      "indexPCHPath": "/Users/sergei/Library/Developer/Xcode/DerivedData/HyPhy-evnietvcvkbugphimbqaqxhzqpbp/Index.noindex/PrecompiledHeaders",
+      "pchPath": ""
+    },
+    "configurationName": "Debug",
+    "overrides": {
+      "synthesized": {
+        "table": {
+          "ENABLE_ADDRESS_SANITIZER": "YES",
+          "ENABLE_PREVIEWS": "NO",
+          "ENABLE_UNDEFINED_BEHAVIOR_SANITIZER": "YES",
+          "ENABLE_XOJIT_PREVIEWS": "NO",
+          "ONLY_ACTIVE_ARCH": "YES"
+        }
+      }
+    }
+  },
+  "qos": "default",
+  "schemeCommand": "launch",
+  "showNonLoggedProgress": true,
+  "useDryRun": true,
+  "useImplicitDependencies": true,
+  "useLegacyBuildLocations": false,
+  "useParallelTargets": true
+}

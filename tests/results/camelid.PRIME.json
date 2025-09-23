@@ -1,0 +1,1884 @@
+{
+  "analysis": {
+    "authors": "Sergei L Kosakovsky Pond",
+    "contact": "spond@temple.edu",
+    "info": "Fit one of the available codon models to the data, report fit results and model estimates. Model specific options will differ.",
+    "requirements": "in-frame codon alignment and a phylogenetic tree",
+    "version": "0.1"
+  },
+  "branch attributes": {
+    "0": {
+      "AF000603": {
+        "Nucleotide GTR": 0.01442578246517075,
+        "original name": "AF000603"
+      },
+      "AF000604": {
+        "Nucleotide GTR": 0.007260697548709811,
+        "original name": "AF000604"
+      },
+      "CVHHP03VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHHP03VCOD"
+      },
+      "CVHHP04VCOD": {
+        "Nucleotide GTR": 0.007064834882562916,
+        "original name": "CVHHP04VCOD"
+      },
+      "CVHHP05VCOD": {
+        "Nucleotide GTR": 0.03249331598128023,
+        "original name": "CVHHP05VCOD"
+      },
+      "CVHHP06VCOD": {
+        "Nucleotide GTR": 0.01064937094869265,
+        "original name": "CVHHP06VCOD"
+      },
+      "CVHHP07VCOD": {
+        "Nucleotide GTR": 0.003462383646907346,
+        "original name": "CVHHP07VCOD"
+      },
+      "CVHHP08VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHHP08VCOD"
+      },
+      "CVHHP09VCOD": {
+        "Nucleotide GTR": 0.03554979727600286,
+        "original name": "CVHHP09VCOD"
+      },
+      "CVHHP10VCOD": {
+        "Nucleotide GTR": 0.02116995477235668,
+        "original name": "CVHHP10VCOD"
+      },
+      "CVHHP11VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHHP11VCOD"
+      },
+      "CVHHP12VCOD": {
+        "Nucleotide GTR": 0.03202256017532955,
+        "original name": "CVHHP12VCOD"
+      },
+      "CVHHP15VCOD": {
+        "Nucleotide GTR": 0.009784465437773192,
+        "original name": "CVHHP15VCOD"
+      },
+      "CVHHP17VCOD": {
+        "Nucleotide GTR": 0.01056509444557599,
+        "original name": "CVHHP17VCOD"
+      },
+      "CVHHP19VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHHP19VCOD"
+      },
+      "CVHHP20VCOD": {
+        "Nucleotide GTR": 0.003511482211814294,
+        "original name": "CVHHP20VCOD"
+      },
+      "CVHHP21VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHHP21VCOD"
+      },
+      "CVHHP22VCOD": {
+        "Nucleotide GTR": 0.003513814251014832,
+        "original name": "CVHHP22VCOD"
+      },
+      "CVHHP23VCOD": {
+        "Nucleotide GTR": 0.01064120534411198,
+        "original name": "CVHHP23VCOD"
+      },
+      "CVHHP24VCOD": {
+        "Nucleotide GTR": 0.01058547072062332,
+        "original name": "CVHHP24VCOD"
+      },
+      "CVHHP25VCOD": {
+        "Nucleotide GTR": 0.00708131671016826,
+        "original name": "CVHHP25VCOD"
+      },
+      "CVHHP26VCOD": {
+        "Nucleotide GTR": 0.007030331496086648,
+        "original name": "CVHHP26VCOD"
+      },
+      "CVHHP27VCOD": {
+        "Nucleotide GTR": 0.02138214792206752,
+        "original name": "CVHHP27VCOD"
+      },
+      "CVHHP28VCOD": {
+        "Nucleotide GTR": 0.01461501207133425,
+        "original name": "CVHHP28VCOD"
+      },
+      "CVHHP29VCOD": {
+        "Nucleotide GTR": 0.01403092216408419,
+        "original name": "CVHHP29VCOD"
+      },
+      "CVHHP30VCOD": {
+        "Nucleotide GTR": 0.04024314151602669,
+        "original name": "CVHHP30VCOD"
+      },
+      "CVHHP31VCOD": {
+        "Nucleotide GTR": 0.02571704351359971,
+        "original name": "CVHHP31VCOD"
+      },
+      "CVHHP32VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHHP32VCOD"
+      },
+      "CVHHP33VCOD": {
+        "Nucleotide GTR": 0.04679050900451179,
+        "original name": "CVHHP33VCOD"
+      },
+      "CVHHP34VCOD": {
+        "Nucleotide GTR": 0.01230125505379596,
+        "original name": "CVHHP34VCOD"
+      },
+      "CVHHP35VCOD": {
+        "Nucleotide GTR": 0.0248698764280119,
+        "original name": "CVHHP35VCOD"
+      },
+      "CVHHP36VCOD": {
+        "Nucleotide GTR": 0.007040303614318642,
+        "original name": "CVHHP36VCOD"
+      },
+      "CVHHP37VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHHP37VCOD"
+      },
+      "CVHHP41VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHHP41VCOD"
+      },
+      "CVHHP42VCOD": {
+        "Nucleotide GTR": 0.02821270550816515,
+        "original name": "CVHHP42VCOD"
+      },
+      "CVHP02VCOD": {
+        "Nucleotide GTR": 0.003526288757032546,
+        "original name": "CVHP02VCOD"
+      },
+      "CVHP03VCOD": {
+        "Nucleotide GTR": 0.00352654075490978,
+        "original name": "CVHP03VCOD"
+      },
+      "CVHP04VCOD": {
+        "Nucleotide GTR": 0.003525834922880415,
+        "original name": "CVHP04VCOD"
+      },
+      "CVHP05VCOD": {
+        "Nucleotide GTR": 0.01417826244184724,
+        "original name": "CVHP05VCOD"
+      },
+      "CVHP06VCOD": {
+        "Nucleotide GTR": 0.007070250780641376,
+        "original name": "CVHP06VCOD"
+      },
+      "CVHP07VCOD": {
+        "Nucleotide GTR": 0.00709309268880648,
+        "original name": "CVHP07VCOD"
+      },
+      "CVHP08VCOD": {
+        "Nucleotide GTR": 0.01446214668096591,
+        "original name": "CVHP08VCOD"
+      },
+      "CVHP09VCOD": {
+        "Nucleotide GTR": 0.01065521141716927,
+        "original name": "CVHP09VCOD"
+      },
+      "CVHP10VCOD": {
+        "Nucleotide GTR": 0.007080799936812503,
+        "original name": "CVHP10VCOD"
+      },
+      "CVHP11VCOD": {
+        "Nucleotide GTR": 0.0213939967423032,
+        "original name": "CVHP11VCOD"
+      },
+      "CVHP12VCOD": {
+        "Nucleotide GTR": 0.02136906223939027,
+        "original name": "CVHP12VCOD"
+      },
+      "CVHP13VCOD": {
+        "Nucleotide GTR": 0.003525834960051634,
+        "original name": "CVHP13VCOD"
+      },
+      "CVHP14VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHP14VCOD"
+      },
+      "CVHP15VCOD": {
+        "Nucleotide GTR": 0.003527245033395077,
+        "original name": "CVHP15VCOD"
+      },
+      "CVHP16VCOD": {
+        "Nucleotide GTR": 0.003531882597505679,
+        "original name": "CVHP16VCOD"
+      },
+      "CVHP17VCOD": {
+        "Nucleotide GTR": 0.003531880295301679,
+        "original name": "CVHP17VCOD"
+      },
+      "CVHP18VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHP18VCOD"
+      },
+      "CVHP19VCOD": {
+        "Nucleotide GTR": 0.00353778721074833,
+        "original name": "CVHP19VCOD"
+      },
+      "CVHP21VCOD": {
+        "Nucleotide GTR": 0.003525734483981603,
+        "original name": "CVHP21VCOD"
+      },
+      "CVHP22VCOD": {
+        "Nucleotide GTR": 0.007068645881040573,
+        "original name": "CVHP22VCOD"
+      },
+      "CVHP24VCOD": {
+        "Nucleotide GTR": 0.0142656200706455,
+        "original name": "CVHP24VCOD"
+      },
+      "CVHP25VCOD": {
+        "Nucleotide GTR": 0.02188201101049672,
+        "original name": "CVHP25VCOD"
+      },
+      "CVHP28VCOD": {
+        "Nucleotide GTR": 0.02494338975545669,
+        "original name": "CVHP28VCOD"
+      },
+      "CVHP29VCOD": {
+        "Nucleotide GTR": 0.01422631540355858,
+        "original name": "CVHP29VCOD"
+      },
+      "CVHP30VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHP30VCOD"
+      },
+      "CVHP31VCOD": {
+        "Nucleotide GTR": 0.003490518421912215,
+        "original name": "CVHP31VCOD"
+      },
+      "CVHP32VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHP32VCOD"
+      },
+      "CVHP33VCOD": {
+        "Nucleotide GTR": 0.0034891374867816,
+        "original name": "CVHP33VCOD"
+      },
+      "CVHP34VCOD": {
+        "Nucleotide GTR": 0.01762577672115424,
+        "original name": "CVHP34VCOD"
+      },
+      "CVHP36VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHP36VCOD"
+      },
+      "CVHP37VCOD": {
+        "Nucleotide GTR": 0.003482462455754777,
+        "original name": "CVHP37VCOD"
+      },
+      "CVHP38VCOD": {
+        "Nucleotide GTR": 0.01049188352213628,
+        "original name": "CVHP38VCOD"
+      },
+      "CVHP40VCOD": {
+        "Nucleotide GTR": 0.00348184570344417,
+        "original name": "CVHP40VCOD"
+      },
+      "CVHP41VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHP41VCOD"
+      },
+      "CVHP42VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHP42VCOD"
+      },
+      "CVHP43VCOD": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "CVHP43VCOD"
+      },
+      "CVHP44VCOD": {
+        "Nucleotide GTR": 0.003482761099375544,
+        "original name": "CVHP44VCOD"
+      },
+      "CVHP45VCOD": {
+        "Nucleotide GTR": 0.00345774261728754,
+        "original name": "CVHP45VCOD"
+      },
+      "CVHP46VCOD": {
+        "Nucleotide GTR": 0.00337288164041637,
+        "original name": "CVHP46VCOD"
+      },
+      "CVHP47VCOD": {
+        "Nucleotide GTR": 0.0141471748060719,
+        "original name": "CVHP47VCOD"
+      },
+      "CVHP48VCOD": {
+        "Nucleotide GTR": 0.02141385859785051,
+        "original name": "CVHP48VCOD"
+      },
+      "CVHP49VCOD": {
+        "Nucleotide GTR": 0.0247433937757614,
+        "original name": "CVHP49VCOD"
+      },
+      "CVHP50VCOD": {
+        "Nucleotide GTR": 0.01761434497757066,
+        "original name": "CVHP50VCOD"
+      },
+      "CVHP51VCOD": {
+        "Nucleotide GTR": 0.02017925958846546,
+        "original name": "CVHP51VCOD"
+      },
+      "CVHP52VCOD": {
+        "Nucleotide GTR": 0.01413964698429328,
+        "original name": "CVHP52VCOD"
+      },
+      "LGL131929": {
+        "Nucleotide GTR": 0.0089428596008423,
+        "original name": "LGL131929"
+      },
+      "LGL131930": {
+        "Nucleotide GTR": 0.1191563671837775,
+        "original name": "LGL131930"
+      },
+      "LGL131931": {
+        "Nucleotide GTR": 0.007775868327884026,
+        "original name": "LGL131931"
+      },
+      "LGL132362": {
+        "Nucleotide GTR": 0.07614599024651643,
+        "original name": "LGL132362"
+      },
+      "LGL237276": {
+        "Nucleotide GTR": 0.05385149375173515,
+        "original name": "LGL237276"
+      },
+      "LGL237277": {
+        "Nucleotide GTR": 0.05847292617808549,
+        "original name": "LGL237277"
+      },
+      "LGL237278": {
+        "Nucleotide GTR": 0.09867950352038933,
+        "original name": "LGL237278"
+      },
+      "LGL237279": {
+        "Nucleotide GTR": 0.04027396986207282,
+        "original name": "LGL237279"
+      },
+      "LGL237280": {
+        "Nucleotide GTR": 0.0967299284793211,
+        "original name": "LGL237280"
+      },
+      "LGL237281": {
+        "Nucleotide GTR": 0.06584810955894708,
+        "original name": "LGL237281"
+      },
+      "LGL237282": {
+        "Nucleotide GTR": 0.08358592432833138,
+        "original name": "LGL237282"
+      },
+      "LGL237283": {
+        "Nucleotide GTR": 0.05614979026565542,
+        "original name": "LGL237283"
+      },
+      "LGL237284": {
+        "Nucleotide GTR": 0.05811173321186668,
+        "original name": "LGL237284"
+      },
+      "LGL237285": {
+        "Nucleotide GTR": 0.09069308240491608,
+        "original name": "LGL237285"
+      },
+      "LGL237286": {
+        "Nucleotide GTR": 0.1032966054915267,
+        "original name": "LGL237286"
+      },
+      "LGL237287": {
+        "Nucleotide GTR": 0.08121621879629483,
+        "original name": "LGL237287"
+      },
+      "LGL237288": {
+        "Nucleotide GTR": 0.04692661237370886,
+        "original name": "LGL237288"
+      },
+      "LGL237289": {
+        "Nucleotide GTR": 0.1183539294391209,
+        "original name": "LGL237289"
+      },
+      "LGL237291": {
+        "Nucleotide GTR": 0.1650959328441639,
+        "original name": "LGL237291"
+      },
+      "LGL237292": {
+        "Nucleotide GTR": 0.05818871662300187,
+        "original name": "LGL237292"
+      },
+      "LGL237293": {
+        "Nucleotide GTR": 0.1252139700854208,
+        "original name": "LGL237293"
+      },
+      "LGL237294": {
+        "Nucleotide GTR": 0.1305042663759601,
+        "original name": "LGL237294"
+      },
+      "LGL237295": {
+        "Nucleotide GTR": 0.1240808080967213,
+        "original name": "LGL237295"
+      },
+      "LGL237296": {
+        "Nucleotide GTR": 0.01096991469320593,
+        "original name": "LGL237296"
+      },
+      "LGL237297": {
+        "Nucleotide GTR": 0.0802965652965013,
+        "original name": "LGL237297"
+      },
+      "LGL237298": {
+        "Nucleotide GTR": 0.1454151089506133,
+        "original name": "LGL237298"
+      },
+      "LGL237299": {
+        "Nucleotide GTR": 0.09919887110260675,
+        "original name": "LGL237299"
+      },
+      "LGL237300": {
+        "Nucleotide GTR": 0.07245683062907761,
+        "original name": "LGL237300"
+      },
+      "LGL237301": {
+        "Nucleotide GTR": 0.1118580300915601,
+        "original name": "LGL237301"
+      },
+      "LGL237302": {
+        "Nucleotide GTR": 0.09285968912687118,
+        "original name": "LGL237302"
+      },
+      "LGL237303": {
+        "Nucleotide GTR": 0.1077238391321967,
+        "original name": "LGL237303"
+      },
+      "LGL237304": {
+        "Nucleotide GTR": 0.1139499524416003,
+        "original name": "LGL237304"
+      },
+      "LGL237305": {
+        "Nucleotide GTR": 0.1220635645364864,
+        "original name": "LGL237305"
+      },
+      "LGL237306": {
+        "Nucleotide GTR": 0.08436572309783828,
+        "original name": "LGL237306"
+      },
+      "LGL237307": {
+        "Nucleotide GTR": 0.06254821440640122,
+        "original name": "LGL237307"
+      },
+      "LGL237308": {
+        "Nucleotide GTR": 0.09891470253960509,
+        "original name": "LGL237308"
+      },
+      "LGL237309": {
+        "Nucleotide GTR": 0.05163152576837955,
+        "original name": "LGL237309"
+      },
+      "LGL237310": {
+        "Nucleotide GTR": 0.04334856206547397,
+        "original name": "LGL237310"
+      },
+      "LGL237311": {
+        "Nucleotide GTR": 0.05242872350237046,
+        "original name": "LGL237311"
+      },
+      "LGL237312": {
+        "Nucleotide GTR": 0.003854485998785862,
+        "original name": "LGL237312"
+      },
+      "LGL237313": {
+        "Nucleotide GTR": 0.04563622871783546,
+        "original name": "LGL237313"
+      },
+      "LGL237314": {
+        "Nucleotide GTR": 0.1227591457504653,
+        "original name": "LGL237314"
+      },
+      "LGL237315": {
+        "Nucleotide GTR": 0.1617495997502173,
+        "original name": "LGL237315"
+      },
+      "LGL237316": {
+        "Nucleotide GTR": 0.1257518687464275,
+        "original name": "LGL237316"
+      },
+      "LGL237317": {
+        "Nucleotide GTR": 0.1300471637140484,
+        "original name": "LGL237317"
+      },
+      "LGL237318": {
+        "Nucleotide GTR": 0.1412758973014951,
+        "original name": "LGL237318"
+      },
+      "LGL237319": {
+        "Nucleotide GTR": 0.0899231201501583,
+        "original name": "LGL237319"
+      },
+      "LGL237320": {
+        "Nucleotide GTR": 0.0428144714240206,
+        "original name": "LGL237320"
+      },
+      "LGL237321": {
+        "Nucleotide GTR": 0.04940695197000264,
+        "original name": "LGL237321"
+      },
+      "LGL237322": {
+        "Nucleotide GTR": 0.06631164214130639,
+        "original name": "LGL237322"
+      },
+      "LGL237323": {
+        "Nucleotide GTR": 0.08710032748083008,
+        "original name": "LGL237323"
+      },
+      "LGL237324": {
+        "Nucleotide GTR": 0.0937488752696119,
+        "original name": "LGL237324"
+      },
+      "LGL237325": {
+        "Nucleotide GTR": 0.0633961250703495,
+        "original name": "LGL237325"
+      },
+      "LGL237326": {
+        "Nucleotide GTR": 0.1044050312344278,
+        "original name": "LGL237326"
+      },
+      "LGL237327": {
+        "Nucleotide GTR": 0.2162266278137084,
+        "original name": "LGL237327"
+      },
+      "LGL237328": {
+        "Nucleotide GTR": 0.0395378487808959,
+        "original name": "LGL237328"
+      },
+      "LGL237329": {
+        "Nucleotide GTR": 0.09571072823200555,
+        "original name": "LGL237329"
+      },
+      "LGL237330": {
+        "Nucleotide GTR": 0.1117835278109322,
+        "original name": "LGL237330"
+      },
+      "LGL237331": {
+        "Nucleotide GTR": 0.06576106913682077,
+        "original name": "LGL237331"
+      },
+      "LGL237332": {
+        "Nucleotide GTR": 0.08373673863203744,
+        "original name": "LGL237332"
+      },
+      "LGL237333": {
+        "Nucleotide GTR": 0.1646880974063312,
+        "original name": "LGL237333"
+      },
+      "LGL237335": {
+        "Nucleotide GTR": 0.1030611974171358,
+        "original name": "LGL237335"
+      },
+      "LGL237336": {
+        "Nucleotide GTR": 0.05681768916131842,
+        "original name": "LGL237336"
+      },
+      "LGL237337": {
+        "Nucleotide GTR": 0.04472838126253872,
+        "original name": "LGL237337"
+      },
+      "LGL237338": {
+        "Nucleotide GTR": 0.06319964785234521,
+        "original name": "LGL237338"
+      },
+      "LGL237339": {
+        "Nucleotide GTR": 0.04587819560947758,
+        "original name": "LGL237339"
+      },
+      "LGL237340": {
+        "Nucleotide GTR": 0.07602962581758058,
+        "original name": "LGL237340"
+      },
+      "LGL237341": {
+        "Nucleotide GTR": 0.04531699888044163,
+        "original name": "LGL237341"
+      },
+      "LGL237342": {
+        "Nucleotide GTR": 0.06837000125342277,
+        "original name": "LGL237342"
+      },
+      "LGL237344": {
+        "Nucleotide GTR": 0.0792145243652992,
+        "original name": "LGL237344"
+      },
+      "LGL237345": {
+        "Nucleotide GTR": 0.07695961095557075,
+        "original name": "LGL237345"
+      },
+      "LGL237346": {
+        "Nucleotide GTR": 0.107003456155694,
+        "original name": "LGL237346"
+      },
+      "LGL237347": {
+        "Nucleotide GTR": 0.1073688138739057,
+        "original name": "LGL237347"
+      },
+      "LGL237349": {
+        "Nucleotide GTR": 0.07828639916275799,
+        "original name": "LGL237349"
+      },
+      "LGL237350": {
+        "Nucleotide GTR": 0.08751122076501076,
+        "original name": "LGL237350"
+      },
+      "LGL237351": {
+        "Nucleotide GTR": 0.03442402051068526,
+        "original name": "LGL237351"
+      },
+      "LGL237352": {
+        "Nucleotide GTR": 0.098829168851818,
+        "original name": "LGL237352"
+      },
+      "LGL237353": {
+        "Nucleotide GTR": 0.05684071028273166,
+        "original name": "LGL237353"
+      },
+      "LGL237354": {
+        "Nucleotide GTR": 0.1146739393167188,
+        "original name": "LGL237354"
+      },
+      "LGL237355": {
+        "Nucleotide GTR": 0.02298034820945377,
+        "original name": "LGL237355"
+      },
+      "LGL237356": {
+        "Nucleotide GTR": 0.07752839174203358,
+        "original name": "LGL237356"
+      },
+      "LGL237357": {
+        "Nucleotide GTR": 0.05348572859175621,
+        "original name": "LGL237357"
+      },
+      "LGL237358": {
+        "Nucleotide GTR": 0.09339327644875085,
+        "original name": "LGL237358"
+      },
+      "LGL237359": {
+        "Nucleotide GTR": 0.07193499481517306,
+        "original name": "LGL237359"
+      },
+      "LGL237360": {
+        "Nucleotide GTR": 0.05671943090205351,
+        "original name": "LGL237360"
+      },
+      "LGL237361": {
+        "Nucleotide GTR": 0.1069842389117362,
+        "original name": "LGL237361"
+      },
+      "LGL237362": {
+        "Nucleotide GTR": 0.1210730004045641,
+        "original name": "LGL237362"
+      },
+      "LGL237363": {
+        "Nucleotide GTR": 0.1470105602954763,
+        "original name": "LGL237363"
+      },
+      "LGL237365": {
+        "Nucleotide GTR": 0.04524587285325515,
+        "original name": "LGL237365"
+      },
+      "LGL237366": {
+        "Nucleotide GTR": 0.1485753705593378,
+        "original name": "LGL237366"
+      },
+      "LGL237367": {
+        "Nucleotide GTR": 0.1522453102181644,
+        "original name": "LGL237367"
+      },
+      "LGL237368": {
+        "Nucleotide GTR": 0.08890081977389347,
+        "original name": "LGL237368"
+      },
+      "LGL237369": {
+        "Nucleotide GTR": 0.1075000276956282,
+        "original name": "LGL237369"
+      },
+      "LGL237370": {
+        "Nucleotide GTR": 0.09428535801412448,
+        "original name": "LGL237370"
+      },
+      "LGL237371": {
+        "Nucleotide GTR": 0.09504146222653134,
+        "original name": "LGL237371"
+      },
+      "LGL237373": {
+        "Nucleotide GTR": 0.1000831302294069,
+        "original name": "LGL237373"
+      },
+      "LGL237374": {
+        "Nucleotide GTR": 0.1329621093144014,
+        "original name": "LGL237374"
+      },
+      "LGL237375": {
+        "Nucleotide GTR": 0.1013144483238195,
+        "original name": "LGL237375"
+      },
+      "LGL237376": {
+        "Nucleotide GTR": 0.1187845935651949,
+        "original name": "LGL237376"
+      },
+      "LGL237377": {
+        "Nucleotide GTR": 0.08570211831546715,
+        "original name": "LGL237377"
+      },
+      "LGL237378": {
+        "Nucleotide GTR": 0.0796317015798709,
+        "original name": "LGL237378"
+      },
+      "LGL237379": {
+        "Nucleotide GTR": 0.05858619376795387,
+        "original name": "LGL237379"
+      },
+      "LGL237380": {
+        "Nucleotide GTR": 0.1385658340685492,
+        "original name": "LGL237380"
+      },
+      "LGL237381": {
+        "Nucleotide GTR": 0.09415172001784065,
+        "original name": "LGL237381"
+      },
+      "LGL237382": {
+        "Nucleotide GTR": 0.1165615699188617,
+        "original name": "LGL237382"
+      },
+      "LGL237383": {
+        "Nucleotide GTR": 0.0832139432149659,
+        "original name": "LGL237383"
+      },
+      "LGL237384": {
+        "Nucleotide GTR": 0.0816734427110485,
+        "original name": "LGL237384"
+      },
+      "LGL237385": {
+        "Nucleotide GTR": 0.01832340982581246,
+        "original name": "LGL237385"
+      },
+      "LGL237386": {
+        "Nucleotide GTR": 0.02806570128012746,
+        "original name": "LGL237386"
+      },
+      "LGL237387": {
+        "Nucleotide GTR": 0.02958009802155669,
+        "original name": "LGL237387"
+      },
+      "LGL237388": {
+        "Nucleotide GTR": 0.05872221234509665,
+        "original name": "LGL237388"
+      },
+      "LGL237389": {
+        "Nucleotide GTR": 0.09459980987243108,
+        "original name": "LGL237389"
+      },
+      "LGL237390": {
+        "Nucleotide GTR": 0.1337385638576622,
+        "original name": "LGL237390"
+      },
+      "LGL237391": {
+        "Nucleotide GTR": 0.05671691547501889,
+        "original name": "LGL237391"
+      },
+      "LGL237392": {
+        "Nucleotide GTR": 0.06629423355650733,
+        "original name": "LGL237392"
+      },
+      "LGL237393": {
+        "Nucleotide GTR": 0.0371705204312168,
+        "original name": "LGL237393"
+      },
+      "LGL238045": {
+        "Nucleotide GTR": 0.08274829940147828,
+        "original name": "LGL238045"
+      },
+      "LGL238046": {
+        "Nucleotide GTR": 0.04374257910754557,
+        "original name": "LGL238046"
+      },
+      "LGL238047": {
+        "Nucleotide GTR": 0.09710880541643764,
+        "original name": "LGL238047"
+      },
+      "LGL238048": {
+        "Nucleotide GTR": 0.1497458554790621,
+        "original name": "LGL238048"
+      },
+      "LGL238049": {
+        "Nucleotide GTR": 0.0508469338613262,
+        "original name": "LGL238049"
+      },
+      "LGL238050": {
+        "Nucleotide GTR": 0.1260710709369238,
+        "original name": "LGL238050"
+      },
+      "LGL238051": {
+        "Nucleotide GTR": 0.064572975269206,
+        "original name": "LGL238051"
+      },
+      "LGL238052": {
+        "Nucleotide GTR": 0.1453454225095476,
+        "original name": "LGL238052"
+      },
+      "LGL238053": {
+        "Nucleotide GTR": 0.06698087455470364,
+        "original name": "LGL238053"
+      },
+      "LGL238054": {
+        "Nucleotide GTR": 0.08398156185345175,
+        "original name": "LGL238054"
+      },
+      "LGL238055": {
+        "Nucleotide GTR": 0.1063614690884648,
+        "original name": "LGL238055"
+      },
+      "LGL238056": {
+        "Nucleotide GTR": 0.07830231009334955,
+        "original name": "LGL238056"
+      },
+      "LGL238057": {
+        "Nucleotide GTR": 0.05579684893048893,
+        "original name": "LGL238057"
+      },
+      "LGL238058": {
+        "Nucleotide GTR": 0.07611984396202072,
+        "original name": "LGL238058"
+      },
+      "LGL238059": {
+        "Nucleotide GTR": 0.03123536028201808,
+        "original name": "LGL238059"
+      },
+      "LGL238060": {
+        "Nucleotide GTR": 0.1275193608906402,
+        "original name": "LGL238060"
+      },
+      "Node10": {
+        "Nucleotide GTR": 0.01782633714592634
+      },
+      "Node103": {
+        "Nucleotide GTR": 0.0106138261682182
+      },
+      "Node107": {
+        "Nucleotide GTR": 0.003530698217468715
+      },
+      "Node110": {
+        "Nucleotide GTR": 0.01308342504227463
+      },
+      "Node111": {
+        "Nucleotide GTR": 0.01415630746289848
+      },
+      "Node114": {
+        "Nucleotide GTR": 0.0105853277364279
+      },
+      "Node115": {
+        "Nucleotide GTR": 0.003500718727649848
+      },
+      "Node119": {
+        "Nucleotide GTR": 0.01173457889164185
+      },
+      "Node120": {
+        "Nucleotide GTR": 0.02822773793370669
+      },
+      "Node121": {
+        "Nucleotide GTR": 0.02447199661540431
+      },
+      "Node122": {
+        "Nucleotide GTR": 0.01292240671369104
+      },
+      "Node124": {
+        "Nucleotide GTR": 0.00703721958249044
+      },
+      "Node130": {
+        "Nucleotide GTR": 0.01848752340111667
+      },
+      "Node134": {
+        "Nucleotide GTR": 0.03206769243672459
+      },
+      "Node138": {
+        "Nucleotide GTR": 0.02091406609385244
+      },
+      "Node14": {
+        "Nucleotide GTR": 0.0427528408627138
+      },
+      "Node141": {
+        "Nucleotide GTR": 0.01165473180327906
+      },
+      "Node143": {
+        "Nucleotide GTR": 0.003102652801612572
+      },
+      "Node146": {
+        "Nucleotide GTR": 0.007057844204917969
+      },
+      "Node147": {
+        "Nucleotide GTR": 0.007079384202018036
+      },
+      "Node15": {
+        "Nucleotide GTR": 0.01238596640915979
+      },
+      "Node158": {
+        "Nucleotide GTR": 0.003511482214889031
+      },
+      "Node16": {
+        "Nucleotide GTR": 0.01469233169081676
+      },
+      "Node166": {
+        "Nucleotide GTR": 0.01177755765838168
+      },
+      "Node169": {
+        "Nucleotide GTR": 0.003339258018126887
+      },
+      "Node17": {
+        "Nucleotide GTR": 0.03197046639308115
+      },
+      "Node173": {
+        "Nucleotide GTR": 0.02255160616299738
+      },
+      "Node174": {
+        "Nucleotide GTR": 0.01526754113218909
+      },
+      "Node175": {
+        "Nucleotide GTR": 0.004320527883996049
+      },
+      "Node176": {
+        "Nucleotide GTR": 0.008459691580121288
+      },
+      "Node18": {
+        "Nucleotide GTR": 0.01599627991850432
+      },
+      "Node180": {
+        "Nucleotide GTR": 0.005278658574983025
+      },
+      "Node181": {
+        "Nucleotide GTR": 0.003627501154911688
+      },
+      "Node182": {
+        "Nucleotide GTR": 0.006007848623949159
+      },
+      "Node186": {
+        "Nucleotide GTR": 0.009107783515389484
+      },
+      "Node189": {
+        "Nucleotide GTR": 0.007393059831747483
+      },
+      "Node19": {
+        "Nucleotide GTR": 0.02510833726059917
+      },
+      "Node193": {
+        "Nucleotide GTR": 0.01136823812447253
+      },
+      "Node196": {
+        "Nucleotide GTR": 0.002312701295255327
+      },
+      "Node199": {
+        "Nucleotide GTR": 0.02169719054724519
+      },
+      "Node2": {
+        "Nucleotide GTR": 0.009415562985207394
+      },
+      "Node200": {
+        "Nucleotide GTR": 0.002241073167732382
+      },
+      "Node204": {
+        "Nucleotide GTR": 0.01897909983225946
+      },
+      "Node207": {
+        "Nucleotide GTR": 0.009507019838219766
+      },
+      "Node211": {
+        "Nucleotide GTR": 0.01341710579003256
+      },
+      "Node214": {
+        "Nucleotide GTR": 0.01035456487466128
+      },
+      "Node218": {
+        "Nucleotide GTR": 0.004637917054616725
+      },
+      "Node220": {
+        "Nucleotide GTR": 0.007510172687202824
+      },
+      "Node221": {
+        "Nucleotide GTR": 0.004267287180976141
+      },
+      "Node223": {
+        "Nucleotide GTR": 0.02074324414072608
+      },
+      "Node226": {
+        "Nucleotide GTR": 0.008261684246891466
+      },
+      "Node227": {
+        "Nucleotide GTR": 0.0132396741105908
+      },
+      "Node23": {
+        "Nucleotide GTR": 0.003485462362435561
+      },
+      "Node234": {
+        "Nucleotide GTR": 0.02747336474939891
+      },
+      "Node24": {
+        "Nucleotide GTR": 0.003355903723223378
+      },
+      "Node240": {
+        "Nucleotide GTR": 0.02455234507862944
+      },
+      "Node241": {
+        "Nucleotide GTR": 0.01469928695806464
+      },
+      "Node242": {
+        "Nucleotide GTR": 0.02270527088978792
+      },
+      "Node245": {
+        "Nucleotide GTR": 0.008668970965004451
+      },
+      "Node25": {
+        "Nucleotide GTR": 0.007093312409486404
+      },
+      "Node250": {
+        "Nucleotide GTR": 0.03486445916749327
+      },
+      "Node254": {
+        "Nucleotide GTR": 0.007690763248811282
+      },
+      "Node257": {
+        "Nucleotide GTR": 0.01795943372848675
+      },
+      "Node258": {
+        "Nucleotide GTR": 0.005238694118308873
+      },
+      "Node259": {
+        "Nucleotide GTR": 0.01710399622024444
+      },
+      "Node26": {
+        "Nucleotide GTR": 0.01795094856339174
+      },
+      "Node264": {
+        "Nucleotide GTR": 0.008107350226925294
+      },
+      "Node265": {
+        "Nucleotide GTR": 0.008151862964052731
+      },
+      "Node266": {
+        "Nucleotide GTR": 0.009572445315223938
+      },
+      "Node267": {
+        "Nucleotide GTR": 0.001941876836258182
+      },
+      "Node268": {
+        "Nucleotide GTR": 0.02067586958421055
+      },
+      "Node273": {
+        "Nucleotide GTR": 0.007283012591491119
+      },
+      "Node274": {
+        "Nucleotide GTR": 0.02350053681587798
+      },
+      "Node277": {
+        "Nucleotide GTR": 0.02613211084902576
+      },
+      "Node280": {
+        "Nucleotide GTR": 0.001729804962790947
+      },
+      "Node281": {
+        "Nucleotide GTR": 0.006818637552101581
+      },
+      "Node283": {
+        "Nucleotide GTR": 0.007957858836055993
+      },
+      "Node287": {
+        "Nucleotide GTR": 0.02520537374638308
+      },
+      "Node288": {
+        "Nucleotide GTR": 0.04355726016780187
+      },
+      "Node292": {
+        "Nucleotide GTR": 0.005582544726371791
+      },
+      "Node293": {
+        "Nucleotide GTR": 0.005213635604618089
+      },
+      "Node294": {
+        "Nucleotide GTR": 0.004421045379275432
+      },
+      "Node297": {
+        "Nucleotide GTR": 0.01187339638408885
+      },
+      "Node3": {
+        "Nucleotide GTR": 0.005679935444799278
+      },
+      "Node300": {
+        "Nucleotide GTR": 0.009909140149007171
+      },
+      "Node301": {
+        "Nucleotide GTR": 0.003006214531215879
+      },
+      "Node308": {
+        "Nucleotide GTR": 0.01593841237078118
+      },
+      "Node309": {
+        "Nucleotide GTR": 0.003642346282442887
+      },
+      "Node31": {
+        "Nucleotide GTR": 0.010619287450241
+      },
+      "Node311": {
+        "Nucleotide GTR": 0.01605673890445469
+      },
+      "Node315": {
+        "Nucleotide GTR": 0.04225543245593579
+      },
+      "Node318": {
+        "Nucleotide GTR": 0.01369707801146945
+      },
+      "Node319": {
+        "Nucleotide GTR": 0.004622242509296136
+      },
+      "Node325": {
+        "Nucleotide GTR": 0.03155002674341804
+      },
+      "Node330": {
+        "Nucleotide GTR": 0.01158267932109932
+      },
+      "Node331": {
+        "Nucleotide GTR": 0.01119059626058392
+      },
+      "Node335": {
+        "Nucleotide GTR": 0.01011218989424578
+      },
+      "Node338": {
+        "Nucleotide GTR": 0.009202998305984025
+      },
+      "Node339": {
+        "Nucleotide GTR": 0.0136643819169352
+      },
+      "Node341": {
+        "Nucleotide GTR": 0.02632624437771324
+      },
+      "Node344": {
+        "Nucleotide GTR": 0.001908356984743145
+      },
+      "Node347": {
+        "Nucleotide GTR": 0.001764923085694048
+      },
+      "Node348": {
+        "Nucleotide GTR": 0.0204495825568622
+      },
+      "Node351": {
+        "Nucleotide GTR": 0.01476252509541474
+      },
+      "Node352": {
+        "Nucleotide GTR": 0.008190427145230491
+      },
+      "Node356": {
+        "Nucleotide GTR": 0.002082130204009218
+      },
+      "Node357": {
+        "Nucleotide GTR": 0.003628702576384818
+      },
+      "Node359": {
+        "Nucleotide GTR": 0.01455261963080569
+      },
+      "Node363": {
+        "Nucleotide GTR": 0.01072806491400599
+      },
+      "Node365": {
+        "Nucleotide GTR": 0.02891836957850305
+      },
+      "Node369": {
+        "Nucleotide GTR": 0.00112257200777112
+      },
+      "Node370": {
+        "Nucleotide GTR": 0.004422847750353369
+      },
+      "Node371": {
+        "Nucleotide GTR": 0.01306699047684235
+      },
+      "Node374": {
+        "Nucleotide GTR": 0.03041385799617049
+      },
+      "Node377": {
+        "Nucleotide GTR": 0.01060156748988175
+      },
+      "Node378": {
+        "Nucleotide GTR": 0.006533448096844727
+      },
+      "Node383": {
+        "Nucleotide GTR": 0.01427135267584305
+      },
+      "Node387": {
+        "Nucleotide GTR": 0.02337705058424413
+      },
+      "Node390": {
+        "Nucleotide GTR": 0.01041965045525346
+      },
+      "Node391": {
+        "Nucleotide GTR": 0.01515668466235769
+      },
+      "Node395": {
+        "Nucleotide GTR": 0.03310535255390298
+      },
+      "Node398": {
+        "Nucleotide GTR": 0.004429951456878035
+      },
+      "Node399": {
+        "Nucleotide GTR": 0.009077477344017901
+      },
+      "Node4": {
+        "Nucleotide GTR": 0.004122287506387215
+      },
+      "Node400": {
+        "Nucleotide GTR": 0.02161834305854448
+      },
+      "Node404": {
+        "Nucleotide GTR": 0.01248382090482775
+      },
+      "Node405": {
+        "Nucleotide GTR": 0.04167918092588001
+      },
+      "Node408": {
+        "Nucleotide GTR": 0.03374555034734121
+      },
+      "Node412": {
+        "Nucleotide GTR": 0.01028416066598674
+      },
+      "Node414": {
+        "Nucleotide GTR": 0.02062082069925956
+      },
+      "Node417": {
+        "Nucleotide GTR": 0.01607940865316197
+      },
+      "Node418": {
+        "Nucleotide GTR": 0.01495068276778496
+      },
+      "Node42": {
+        "Nucleotide GTR": 0.0035359189503313
+      },
+      "Node6": {
+        "Nucleotide GTR": 0.02547935571829444
+      },
+      "Node65": {
+        "Nucleotide GTR": 0.01059623647109965
+      },
+      "Node66": {
+        "Nucleotide GTR": 0.0285501215980606
+      },
+      "Node69": {
+        "Nucleotide GTR": 0.0215357733520545
+      },
+      "Node7": {
+        "Nucleotide GTR": 0.005439226622318785
+      },
+      "Node78": {
+        "Nucleotide GTR": 0.008284613597740513
+      },
+      "Node79": {
+        "Nucleotide GTR": 0.00932006330480414
+      },
+      "Node8": {
+        "Nucleotide GTR": 0.008166916146720887
+      },
+      "Node83": {
+        "Nucleotide GTR": 0.008197839663914228
+      },
+      "Node88": {
+        "Nucleotide GTR": 0.003507347223180729
+      },
+      "Node89": {
+        "Nucleotide GTR": 0.006993618523609216
+      },
+      "Node9": {
+        "Nucleotide GTR": 0.04720022472839802
+      },
+      "Node93": {
+        "Nucleotide GTR": 0.01773489359521097
+      },
+      "Node94": {
+        "Nucleotide GTR": 0.007007343406419848
+      },
+      "Node95": {
+        "Nucleotide GTR": 0.007017496885936068
+      },
+      "Node98": {
+        "Nucleotide GTR": 0.003476179120497381
+      }
+    },
+    "attributes": {
+      "Nucleotide GTR": {
+        "attribute type": "branch length",
+        "display order": 0
+      },
+      "original name": {
+        "attribute type": "node label",
+        "display order": -1
+      }
+    }
+  },
+  "data partitions": {
+    "0": {
+      "coverage": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91,
+          92,
+          93,
+          94,
+          95
+        ]
+      ],
+      "name": "fitter.filter.default"
+    }
+  },
+  "fits": {
+    "Codon model": {
+      "AIC-c": 35606.42737265555,
+      "Log Likelihood": -17414.9256542797,
+      "Rate Distributions": {
+        "Importance factor for property Factor I bipolar": 0.2354999491629201,
+        "Importance factor for property Factor II secondary structure": -0.04288719007660955,
+        "Importance factor for property Factor III volume": -0.1804812682156352,
+        "Importance factor for property Factor IV composition": 0.2071122902272767,
+        "Importance factor for property Factor V charge": -0.008327137337627443,
+        "Substitution rate from nucleotide A to nucleotide C": 0.5135495573074594,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.6343536859017851,
+        "Substitution rate from nucleotide C to nucleotide G": 0.5243161959406655,
+        "Substitution rate from nucleotide C to nucleotide T": 0.9641099815012246,
+        "Substitution rate from nucleotide G to nucleotide T": 0.3497526781156702,
+        "log of non-synonymous/synonymous rate ratio": -0.1154231497798438
+      },
+      "display order": 1,
+      "estimated parameters": 381
+    },
+    "Nucleotide GTR": {
+      "AIC-c": 36136.72735320342,
+      "Equilibrium frequencies": [
+        [
+          0.2294803138998349
+        ],
+        [
+          0.2466235559597184
+        ],
+        [
+          0.3049745714189485
+        ],
+        [
+          0.2189215587214981
+        ]
+      ],
+      "Log Likelihood": -17636.32092266776,
+      "Rate Distributions": {
+        "Substitution rate from nucleotide A to nucleotide C": 0.4690342185705071,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.5301071874945299,
+        "Substitution rate from nucleotide C to nucleotide G": 0.5085430852108374,
+        "Substitution rate from nucleotide C to nucleotide T": 0.9023496212635118,
+        "Substitution rate from nucleotide G to nucleotide T": 0.3250229534378488
+      },
+      "display order": 0,
+      "estimated parameters": 429
+    }
+  },
+  "input": {
+    "file name": "/Users/sergei/Development/hyphy/tests/data/camelid.nex",
+    "number of sequences": 212,
+    "number of sites": 96,
+    "partition count": 1,
+    "trees": {
+      "0": "((((LGL237390,LGL237336)Node400,LGL237340)Node399,((LGL237294,LGL237358)Node405,(LGL238060,LGL237317)Node408)Node404)Node398,(((((LGL237339,(LGL237278,LGL237327)Node341)Node339,(LGL237324,LGL237368)Node344)Node338,(((((LGL132362,LGL237315)Node10,LGL131930)Node9,((((((AF000603,((CVHP30VCOD,CVHP52VCOD)Node66,(CVHP33VCOD,CVHP32VCOD,CVHP31VCOD,CVHP34VCOD)Node69)Node65,((((CVHP24VCOD,CVHP22VCOD)Node26,CVHP09VCOD,(CVHP21VCOD,CVHP19VCOD)Node31,CVHP17VCOD,CVHP18VCOD,CVHP16VCOD,CVHP10VCOD)Node25,(CVHP11VCOD,CVHP05VCOD,CVHP06VCOD,CVHP03VCOD,CVHP04VCOD,CVHP14VCOD,CVHP15VCOD,CVHP02VCOD,CVHP13VCOD,CVHP07VCOD,CVHP12VCOD)Node42)Node24,CVHP08VCOD)Node23,CVHP29VCOD)Node19,CVHP28VCOD,((CVHP45VCOD,CVHP47VCOD)Node79,(CVHP46VCOD,CVHP48VCOD)Node83,CVHP51VCOD)Node78,((CVHP43VCOD,CVHP44VCOD)Node89,CVHP49VCOD)Node88,(((CVHP40VCOD,CVHP41VCOD)Node95,(CVHP37VCOD,CVHP36VCOD,CVHP38VCOD)Node98)Node94,(CVHP42VCOD,CVHP50VCOD)Node103)Node93)Node18,(CVHP25VCOD,CVHHP42VCOD)Node107)Node17,((CVHHP08VCOD,CVHHP09VCOD)Node111,((CVHHP10VCOD,CVHHP11VCOD)Node115,CVHHP12VCOD)Node114)Node110)Node16,((((CVHHP35VCOD,(CVHHP41VCOD,CVHHP36VCOD)Node124,CVHHP37VCOD)Node122,CVHHP34VCOD)Node121,(CVHHP32VCOD,CVHHP33VCOD)Node130)Node120,(CVHHP06VCOD,CVHHP07VCOD)Node134,(CVHHP15VCOD,CVHHP31VCOD)Node138,(CVHHP30VCOD,(CVHHP17VCOD,CVHHP29VCOD,((CVHHP24VCOD,CVHHP25VCOD)Node147,CVHHP23VCOD)Node146,CVHHP20VCOD,(CVHHP21VCOD,CVHHP26VCOD)Node158,CVHHP27VCOD,CVHHP19VCOD,CVHHP22VCOD)Node143,CVHHP28VCOD)Node141)Node119)Node15,(AF000604,(CVHHP03VCOD,CVHHP04VCOD)Node169,CVHHP05VCOD)Node166)Node14)Node8,(((((LGL237356,LGL237367)Node234,(LGL237391,(LGL237383,((LGL238050,(LGL237319,LGL237377)Node223)Node221,((LGL237306,LGL237320)Node227,LGL237386)Node226)Node220,LGL238048)Node218,LGL237341,(LGL131929,LGL237300)Node211,(LGL237355,LGL237361)Node214)Node207,((LGL237325,LGL237332)Node204,LGL237360,((LGL238046,LGL237370)Node200,LGL237353)Node199)Node196,(((LGL238057,LGL238051)Node182,(LGL237297,LGL237381)Node186,(LGL237296,LGL237365)Node189)Node181,LGL238052)Node180,(LGL237302,LGL238049)Node193)Node176,LGL238055)Node175,LGL237380)Node174,LGL237350)Node173)Node7,(((LGL237366,LGL237304)Node242,((LGL238047,LGL237289)Node325,((LGL237369,LGL237328,LGL237378)Node319,LGL237373)Node318,(((((LGL237301,LGL237314)Node268,LGL237310)Node267,LGL237371)Node266,((LGL237376,LGL237392)Node274,(LGL237298,LGL237299)Node277)Node273)Node265,((((LGL131931,LGL237385)Node288,LGL237382)Node287,(LGL237387,LGL237393)Node283,LGL237388)Node281,(((LGL238056,LGL238054)Node294,(LGL237384,LGL238045)Node297)Node293,((LGL237326,LGL237359)Node301,LGL237389)Node300)Node292)Node280)Node264,(LGL237295,LGL237375)Node250,(LGL238059,LGL237318)Node254,(((LGL237322,LGL237357)Node259,LGL237293)Node258,LGL237354)Node257,(LGL238058,LGL237329)Node315,LGL237286,((LGL237308,(LGL237333,LGL237303)Node311)Node309,LGL238053)Node308)Node245)Node241,LGL237331)Node240)Node6,((LGL237346,LGL237287)Node331,LGL237288)Node330,(LGL237338,LGL237349)Node335)Node4,((LGL237280,LGL237309)Node348,((LGL237345,LGL237311)Node352,LGL237321)Node351)Node347)Node3,(((((LGL237337,LGL237292)Node371,(LGL237285,LGL237347)Node374)Node370,((LGL237284,LGL237379)Node378,LGL237330)Node377)Node369,(LGL237342,LGL237351)Node359,(LGL237312,(LGL237316,LGL237323)Node365)Node363,LGL237283)Node357,(LGL237313,LGL237281)Node383,(LGL237344,LGL237282)Node387,((LGL237291,LGL237305)Node391,LGL237276)Node390)Node356)Node2,(LGL237307,LGL237335)Node395,(LGL237279,(LGL237277,LGL237352)Node414)Node412,((LGL237362,LGL237363)Node418,LGL237374)Node417)"
+    }
+  },
+  "test results": {
+    "Importance factor for property Factor I bipolar": {
+      "LRT": 41.75884188911004,
+      "MLE": 0,
+      "p-value": 1.032542940038184e-10
+    },
+    "Importance factor for property Factor II secondary structure": {
+      "LRT": 2.214947545842733,
+      "MLE": 0,
+      "p-value": 0.1366797074885319
+    },
+    "Importance factor for property Factor III volume": {
+      "LRT": 23.83733544863935,
+      "MLE": 0,
+      "p-value": 1.048293070238238e-06
+    },
+    "Importance factor for property Factor IV composition": {
+      "LRT": 30.79179339770781,
+      "MLE": 0,
+      "p-value": 2.87250087049884e-08
+    },
+    "Importance factor for property Factor V charge": {
+      "LRT": 0.01986980996298371,
+      "MLE": 0,
+      "p-value": 0.8879012945295871
+    }
+  },
+  "tested": {
+    "0": {
+      "AF000603": "test",
+      "AF000604": "test",
+      "CVHHP03VCOD": "test",
+      "CVHHP04VCOD": "test",
+      "CVHHP05VCOD": "test",
+      "CVHHP06VCOD": "test",
+      "CVHHP07VCOD": "test",
+      "CVHHP08VCOD": "test",
+      "CVHHP09VCOD": "test",
+      "CVHHP10VCOD": "test",
+      "CVHHP11VCOD": "test",
+      "CVHHP12VCOD": "test",
+      "CVHHP15VCOD": "test",
+      "CVHHP17VCOD": "test",
+      "CVHHP19VCOD": "test",
+      "CVHHP20VCOD": "test",
+      "CVHHP21VCOD": "test",
+      "CVHHP22VCOD": "test",
+      "CVHHP23VCOD": "test",
+      "CVHHP24VCOD": "test",
+      "CVHHP25VCOD": "test",
+      "CVHHP26VCOD": "test",
+      "CVHHP27VCOD": "test",
+      "CVHHP28VCOD": "test",
+      "CVHHP29VCOD": "test",
+      "CVHHP30VCOD": "test",
+      "CVHHP31VCOD": "test",
+      "CVHHP32VCOD": "test",
+      "CVHHP33VCOD": "test",
+      "CVHHP34VCOD": "test",
+      "CVHHP35VCOD": "test",
+      "CVHHP36VCOD": "test",
+      "CVHHP37VCOD": "test",
+      "CVHHP41VCOD": "test",
+      "CVHHP42VCOD": "test",
+      "CVHP02VCOD": "test",
+      "CVHP03VCOD": "test",
+      "CVHP04VCOD": "test",
+      "CVHP05VCOD": "test",
+      "CVHP06VCOD": "test",
+      "CVHP07VCOD": "test",
+      "CVHP08VCOD": "test",
+      "CVHP09VCOD": "test",
+      "CVHP10VCOD": "test",
+      "CVHP11VCOD": "test",
+      "CVHP12VCOD": "test",
+      "CVHP13VCOD": "test",
+      "CVHP14VCOD": "test",
+      "CVHP15VCOD": "test",
+      "CVHP16VCOD": "test",
+      "CVHP17VCOD": "test",
+      "CVHP18VCOD": "test",
+      "CVHP19VCOD": "test",
+      "CVHP21VCOD": "test",
+      "CVHP22VCOD": "test",
+      "CVHP24VCOD": "test",
+      "CVHP25VCOD": "test",
+      "CVHP28VCOD": "test",
+      "CVHP29VCOD": "test",
+      "CVHP30VCOD": "test",
+      "CVHP31VCOD": "test",
+      "CVHP32VCOD": "test",
+      "CVHP33VCOD": "test",
+      "CVHP34VCOD": "test",
+      "CVHP36VCOD": "test",
+      "CVHP37VCOD": "test",
+      "CVHP38VCOD": "test",
+      "CVHP40VCOD": "test",
+      "CVHP41VCOD": "test",
+      "CVHP42VCOD": "test",
+      "CVHP43VCOD": "test",
+      "CVHP44VCOD": "test",
+      "CVHP45VCOD": "test",
+      "CVHP46VCOD": "test",
+      "CVHP47VCOD": "test",
+      "CVHP48VCOD": "test",
+      "CVHP49VCOD": "test",
+      "CVHP50VCOD": "test",
+      "CVHP51VCOD": "test",
+      "CVHP52VCOD": "test",
+      "LGL131929": "test",
+      "LGL131930": "test",
+      "LGL131931": "test",
+      "LGL132362": "test",
+      "LGL237276": "test",
+      "LGL237277": "test",
+      "LGL237278": "test",
+      "LGL237279": "test",
+      "LGL237280": "test",
+      "LGL237281": "test",
+      "LGL237282": "test",
+      "LGL237283": "test",
+      "LGL237284": "test",
+      "LGL237285": "test",
+      "LGL237286": "test",
+      "LGL237287": "test",
+      "LGL237288": "test",
+      "LGL237289": "test",
+      "LGL237291": "test",
+      "LGL237292": "test",
+      "LGL237293": "test",
+      "LGL237294": "test",
+      "LGL237295": "test",
+      "LGL237296": "test",
+      "LGL237297": "test",
+      "LGL237298": "test",
+      "LGL237299": "test",
+      "LGL237300": "test",
+      "LGL237301": "test",
+      "LGL237302": "test",
+      "LGL237303": "test",
+      "LGL237304": "test",
+      "LGL237305": "test",
+      "LGL237306": "test",
+      "LGL237307": "test",
+      "LGL237308": "test",
+      "LGL237309": "test",
+      "LGL237310": "test",
+      "LGL237311": "test",
+      "LGL237312": "test",
+      "LGL237313": "test",
+      "LGL237314": "test",
+      "LGL237315": "test",
+      "LGL237316": "test",
+      "LGL237317": "test",
+      "LGL237318": "test",
+      "LGL237319": "test",
+      "LGL237320": "test",
+      "LGL237321": "test",
+      "LGL237322": "test",
+      "LGL237323": "test",
+      "LGL237324": "test",
+      "LGL237325": "test",
+      "LGL237326": "test",
+      "LGL237327": "test",
+      "LGL237328": "test",
+      "LGL237329": "test",
+      "LGL237330": "test",
+      "LGL237331": "test",
+      "LGL237332": "test",
+      "LGL237333": "test",
+      "LGL237335": "test",
+      "LGL237336": "test",
+      "LGL237337": "test",
+      "LGL237338": "test",
+      "LGL237339": "test",
+      "LGL237340": "test",
+      "LGL237341": "test",
+      "LGL237342": "test",
+      "LGL237344": "test",
+      "LGL237345": "test",
+      "LGL237346": "test",
+      "LGL237347": "test",
+      "LGL237349": "test",
+      "LGL237350": "test",
+      "LGL237351": "test",
+      "LGL237352": "test",
+      "LGL237353": "test",
+      "LGL237354": "test",
+      "LGL237355": "test",
+      "LGL237356": "test",
+      "LGL237357": "test",
+      "LGL237358": "test",
+      "LGL237359": "test",
+      "LGL237360": "test",
+      "LGL237361": "test",
+      "LGL237362": "test",
+      "LGL237363": "test",
+      "LGL237365": "test",
+      "LGL237366": "test",
+      "LGL237367": "test",
+      "LGL237368": "test",
+      "LGL237369": "test",
+      "LGL237370": "test",
+      "LGL237371": "test",
+      "LGL237373": "test",
+      "LGL237374": "test",
+      "LGL237375": "test",
+      "LGL237376": "test",
+      "LGL237377": "test",
+      "LGL237378": "test",
+      "LGL237379": "test",
+      "LGL237380": "test",
+      "LGL237381": "test",
+      "LGL237382": "test",
+      "LGL237383": "test",
+      "LGL237384": "test",
+      "LGL237385": "test",
+      "LGL237386": "test",
+      "LGL237387": "test",
+      "LGL237388": "test",
+      "LGL237389": "test",
+      "LGL237390": "test",
+      "LGL237391": "test",
+      "LGL237392": "test",
+      "LGL237393": "test",
+      "LGL238045": "test",
+      "LGL238046": "test",
+      "LGL238047": "test",
+      "LGL238048": "test",
+      "LGL238049": "test",
+      "LGL238050": "test",
+      "LGL238051": "test",
+      "LGL238052": "test",
+      "LGL238053": "test",
+      "LGL238054": "test",
+      "LGL238055": "test",
+      "LGL238056": "test",
+      "LGL238057": "test",
+      "LGL238058": "test",
+      "LGL238059": "test",
+      "LGL238060": "test",
+      "Node10": "test",
+      "Node103": "test",
+      "Node107": "test",
+      "Node110": "test",
+      "Node111": "test",
+      "Node114": "test",
+      "Node115": "test",
+      "Node119": "test",
+      "Node120": "test",
+      "Node121": "test",
+      "Node122": "test",
+      "Node124": "test",
+      "Node130": "test",
+      "Node134": "test",
+      "Node138": "test",
+      "Node14": "test",
+      "Node141": "test",
+      "Node143": "test",
+      "Node146": "test",
+      "Node147": "test",
+      "Node15": "test",
+      "Node158": "test",
+      "Node16": "test",
+      "Node166": "test",
+      "Node169": "test",
+      "Node17": "test",
+      "Node173": "test",
+      "Node174": "test",
+      "Node175": "test",
+      "Node176": "test",
+      "Node18": "test",
+      "Node180": "test",
+      "Node181": "test",
+      "Node182": "test",
+      "Node186": "test",
+      "Node189": "test",
+      "Node19": "test",
+      "Node193": "test",
+      "Node196": "test",
+      "Node199": "test",
+      "Node2": "test",
+      "Node200": "test",
+      "Node204": "test",
+      "Node207": "test",
+      "Node211": "test",
+      "Node214": "test",
+      "Node218": "test",
+      "Node220": "test",
+      "Node221": "test",
+      "Node223": "test",
+      "Node226": "test",
+      "Node227": "test",
+      "Node23": "test",
+      "Node234": "test",
+      "Node24": "test",
+      "Node240": "test",
+      "Node241": "test",
+      "Node242": "test",
+      "Node245": "test",
+      "Node25": "test",
+      "Node250": "test",
+      "Node254": "test",
+      "Node257": "test",
+      "Node258": "test",
+      "Node259": "test",
+      "Node26": "test",
+      "Node264": "test",
+      "Node265": "test",
+      "Node266": "test",
+      "Node267": "test",
+      "Node268": "test",
+      "Node273": "test",
+      "Node274": "test",
+      "Node277": "test",
+      "Node280": "test",
+      "Node281": "test",
+      "Node283": "test",
+      "Node287": "test",
+      "Node288": "test",
+      "Node292": "test",
+      "Node293": "test",
+      "Node294": "test",
+      "Node297": "test",
+      "Node3": "test",
+      "Node300": "test",
+      "Node301": "test",
+      "Node308": "test",
+      "Node309": "test",
+      "Node31": "test",
+      "Node311": "test",
+      "Node315": "test",
+      "Node318": "test",
+      "Node319": "test",
+      "Node325": "test",
+      "Node330": "test",
+      "Node331": "test",
+      "Node335": "test",
+      "Node338": "test",
+      "Node339": "test",
+      "Node341": "test",
+      "Node344": "test",
+      "Node347": "test",
+      "Node348": "test",
+      "Node351": "test",
+      "Node352": "test",
+      "Node356": "test",
+      "Node357": "test",
+      "Node359": "test",
+      "Node363": "test",
+      "Node365": "test",
+      "Node369": "test",
+      "Node370": "test",
+      "Node371": "test",
+      "Node374": "test",
+      "Node377": "test",
+      "Node378": "test",
+      "Node383": "test",
+      "Node387": "test",
+      "Node390": "test",
+      "Node391": "test",
+      "Node395": "test",
+      "Node398": "test",
+      "Node399": "test",
+      "Node4": "test",
+      "Node400": "test",
+      "Node404": "test",
+      "Node405": "test",
+      "Node408": "test",
+      "Node412": "test",
+      "Node414": "test",
+      "Node417": "test",
+      "Node418": "test",
+      "Node42": "test",
+      "Node6": "test",
+      "Node65": "test",
+      "Node66": "test",
+      "Node69": "test",
+      "Node7": "test",
+      "Node78": "test",
+      "Node79": "test",
+      "Node8": "test",
+      "Node83": "test",
+      "Node88": "test",
+      "Node89": "test",
+      "Node9": "test",
+      "Node93": "test",
+      "Node94": "test",
+      "Node95": "test",
+      "Node98": "test"
+    }
+  },
+  "timers": {
+    "MG_REV_PROPERTIES": {
+      "order": null,
+      "timer": 446
+    },
+    "Overall": {
+      "order": 0,
+      "timer": 447
+    }
+  }
+}

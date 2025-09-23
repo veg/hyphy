@@ -1,0 +1,695 @@
+{
+  "analysis": {
+    "authors": "Sergei L Kosakovsky Pond",
+    "contact": "spond@temple.edu",
+    "info": "Fit one of the available codon models to the data, report fit results and model estimates. Model specific options will differ.",
+    "requirements": "in-frame codon alignment and a phylogenetic tree",
+    "version": "0.1"
+  },
+  "branch attributes": {
+    "0": {
+      "AM263192_PTEROPUS_DASYMALLUS_FORMOSUS_SW": {
+        "Nucleotide GTR": 0.005557946692009748,
+        "original name": "AM263192_PTEROPUS_DASYMALLUS_FORMOSUS_SW"
+      },
+      "AM263196_HAPLONYCTERIS_FISCHERI_SSW": {
+        "Nucleotide GTR": 0.02945691291962635,
+        "original name": "AM263196_HAPLONYCTERIS_FISCHERI_SSW"
+      },
+      "EU912352_ROUSETTUS_AMPLEXICAUDATUS_OPN1SW_PSEUDOGENE": {
+        "Nucleotide GTR": 0.01413167470287118,
+        "original name": "EU912352_ROUSETTUS_AMPLEXICAUDATUS_OPN1SW_PSEUDOGENE"
+      },
+      "EU912353_CYNOPTERUS_BRACHYOTIS_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.04122678995003881,
+        "original name": "EU912353_CYNOPTERUS_BRACHYOTIS_OPN1SW_GENE"
+      },
+      "EU912354_ACERODON_CELEBENSIS_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.002330814742030925,
+        "original name": "EU912354_ACERODON_CELEBENSIS_OPN1SW_GENE"
+      },
+      "EU912355_THOOPTERUS_NIGRESCENS_OPN1SW_PSEUDOGENE": {
+        "Nucleotide GTR": 0.02669842867199941,
+        "original name": "EU912355_THOOPTERUS_NIGRESCENS_OPN1SW_PSEUDOGENE"
+      },
+      "EU912356_HARPYIONYCTERIS_CELEBENSIS_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.0170097440163121,
+        "original name": "EU912356_HARPYIONYCTERIS_CELEBENSIS_OPN1SW_GENE"
+      },
+      "EU912357_NYCTIMENE_CEPHALOTES_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.02379181651553955,
+        "original name": "EU912357_NYCTIMENE_CEPHALOTES_OPN1SW_GENE"
+      },
+      "EU912358_CAROLLIA_PERSPICILLATA_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.02295840872703035,
+        "original name": "EU912358_CAROLLIA_PERSPICILLATA_OPN1SW_GENE"
+      },
+      "EU912359_CHAEREPHON_PLICATUS_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.04356726757652862,
+        "original name": "EU912359_CHAEREPHON_PLICATUS_OPN1SW_GENE"
+      },
+      "EU912360_PIPISTRELLUS_ABRAMUS_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.05872205806391046,
+        "original name": "EU912360_PIPISTRELLUS_ABRAMUS_OPN1SW_GENE"
+      },
+      "EU912361_PTEROPUS_GIGANTEUS_OPN1SW_GENE": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "EU912361_PTEROPUS_GIGANTEUS_OPN1SW_GENE"
+      },
+      "EU912362_PTEROPUS_PUMILUS_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.004671579553226402,
+        "original name": "EU912362_PTEROPUS_PUMILUS_OPN1SW_GENE"
+      },
+      "EU912363_PTEROPUS_RODRICENSIS_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.001169876306985122,
+        "original name": "EU912363_PTEROPUS_RODRICENSIS_OPN1SW_GENE"
+      },
+      "EU912364_RHINOLOPHUS_AFFINIS_OPN1SW_PSEUDOGENE": {
+        "Nucleotide GTR": 0.02945892247324393,
+        "original name": "EU912364_RHINOLOPHUS_AFFINIS_OPN1SW_PSEUDOGENE"
+      },
+      "EU912365_RHINOLOPHUS_REX_OPN1SW_PSEUDOGENE": {
+        "Nucleotide GTR": 0.02128678990419083,
+        "original name": "EU912365_RHINOLOPHUS_REX_OPN1SW_PSEUDOGENE"
+      },
+      "EU912366_TAPHOZOUS_MELANOPOGON_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.004275071125251718,
+        "original name": "EU912366_TAPHOZOUS_MELANOPOGON_OPN1SW_GENE"
+      },
+      "EU912367_ARTIBEUS_JAMAICENSIS_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.00602206381016961,
+        "original name": "EU912367_ARTIBEUS_JAMAICENSIS_OPN1SW_GENE"
+      },
+      "EU912368_HIPPOSIDEROS_ARMIGER_OPN1SW_PSEUDOGENE": {
+        "Nucleotide GTR": 0.006302356852714725,
+        "original name": "EU912368_HIPPOSIDEROS_ARMIGER_OPN1SW_PSEUDOGENE"
+      },
+      "EU912369_HIPPOSIDEROS_PRATTI_OPN1SW_PSEUDOGENE": {
+        "Nucleotide GTR": 0.00312452895599192,
+        "original name": "EU912369_HIPPOSIDEROS_PRATTI_OPN1SW_PSEUDOGENE"
+      },
+      "EU912370_HIPPOSIDEROS_POMONA_OPN1SW_PSEUDOGENE": {
+        "Nucleotide GTR": 0.03757581409623152,
+        "original name": "EU912370_HIPPOSIDEROS_POMONA_OPN1SW_PSEUDOGENE"
+      },
+      "EU912371_DOBSONIA_VIRIDIS_OPN1SW_PSEUDOGENE": {
+        "Nucleotide GTR": 0.02986871696825195,
+        "original name": "EU912371_DOBSONIA_VIRIDIS_OPN1SW_PSEUDOGENE"
+      },
+      "EU912372_ARTIBEUS_LITURATUS_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.003402834571446156,
+        "original name": "EU912372_ARTIBEUS_LITURATUS_OPN1SW_GENE"
+      },
+      "EU912373_EIDOLON_HELVUM_OPN1SW_PSEUDOGENE": {
+        "Nucleotide GTR": 0.03871307562674045,
+        "original name": "EU912373_EIDOLON_HELVUM_OPN1SW_PSEUDOGENE"
+      },
+      "EU912374_EMBALLONURA_RAFFRAYANA_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.03076345549491301,
+        "original name": "EU912374_EMBALLONURA_RAFFRAYANA_OPN1SW_GENE"
+      },
+      "EU912375_EONYCTERIS_SPELAEA_OPN1SW_PSEUDOGENE": {
+        "Nucleotide GTR": 0.03996849054623736,
+        "original name": "EU912375_EONYCTERIS_SPELAEA_OPN1SW_PSEUDOGENE"
+      },
+      "EU912376_MINIOPTERUS_SCHREIBERSII_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.04031521055613722,
+        "original name": "EU912376_MINIOPTERUS_SCHREIBERSII_OPN1SW_GENE"
+      },
+      "EU912377_MYOTIS_RICKETTI_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.01151158351562036,
+        "original name": "EU912377_MYOTIS_RICKETTI_OPN1SW_GENE"
+      },
+      "EU912378_MEGADERMA_SPASMA_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.04518033792173454,
+        "original name": "EU912378_MEGADERMA_SPASMA_OPN1SW_GENE"
+      },
+      "EU912379_MURINA_SP_HZ2008_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.02930438441035493,
+        "original name": "EU912379_MURINA_SP_HZ2008_OPN1SW_GENE"
+      },
+      "EU912381_ROUSETTUS_LESCHENAULTII_OPN1SW_PSEUDOGENE": {
+        "Nucleotide GTR": 0.01703935365284885,
+        "original name": "EU912381_ROUSETTUS_LESCHENAULTII_OPN1SW_PSEUDOGENE"
+      },
+      "EU912382_RHINOLOPHUS_PUSILLUS_OPN1SW_PSEUDOGENE": {
+        "Nucleotide GTR": 0.01904374106267485,
+        "original name": "EU912382_RHINOLOPHUS_PUSILLUS_OPN1SW_PSEUDOGENE"
+      },
+      "EU912383_TAPHOZOUS_AUSTRALIS_OPN1SW_GENE": {
+        "Nucleotide GTR": 0.001579567765404293,
+        "original name": "EU912383_TAPHOZOUS_AUSTRALIS_OPN1SW_GENE"
+      },
+      "Node17": {
+        "Nucleotide GTR": 0.00116755355318356
+      },
+      "Node18": {
+        "Nucleotide GTR": 0.001114843217017993
+      },
+      "Node19": {
+        "Nucleotide GTR": 0.002326557972735704
+      },
+      "Node2": {
+        "Nucleotide GTR": 0.02406751453473872
+      },
+      "Node20": {
+        "Nucleotide GTR": 0.004739691627083866
+      },
+      "Node25": {
+        "Nucleotide GTR": 0.006066358216549457
+      },
+      "Node26": {
+        "Nucleotide GTR": 0.006452731645227344
+      },
+      "Node3": {
+        "Nucleotide GTR": 0.001861216996056939
+      },
+      "Node31": {
+        "Nucleotide GTR": 0.008633137604149599
+      },
+      "Node32": {
+        "Nucleotide GTR": 0.01127208958897636
+      },
+      "Node33": {
+        "Nucleotide GTR": 0.06342396914486777
+      },
+      "Node34": {
+        "Nucleotide GTR": 0.009994221043105126
+      },
+      "Node38": {
+        "Nucleotide GTR": 0.07891037935233902
+      },
+      "Node39": {
+        "Nucleotide GTR": 0.006372005469192657
+      },
+      "Node4": {
+        "Nucleotide GTR": 0.001169493553565556
+      },
+      "Node44": {
+        "Nucleotide GTR": 0.01238273296233758
+      },
+      "Node45": {
+        "Nucleotide GTR": 0.001671494358918102
+      },
+      "Node46": {
+        "Nucleotide GTR": 0.008705746302525739
+      },
+      "Node47": {
+        "Nucleotide GTR": 0.02306563543167806
+      },
+      "Node48": {
+        "Nucleotide GTR": 0.02539029422320148
+      },
+      "Node53": {
+        "Nucleotide GTR": 0.01141163119277244
+      },
+      "Node54": {
+        "Nucleotide GTR": 0.008429929689568299
+      },
+      "Node58": {
+        "Nucleotide GTR": 0.001857487254462243
+      },
+      "Node59": {
+        "Nucleotide GTR": 0.00499773636774659
+      },
+      "Node6": {
+        "Nucleotide GTR": 0.00585017605682822
+      },
+      "Node60": {
+        "Nucleotide GTR": 0.02028655212195322
+      },
+      "Node8": {
+        "Nucleotide GTR": 0.004680526500865229
+      },
+      "Node9": {
+        "Nucleotide GTR": 0.001162495688850328
+      }
+    },
+    "attributes": {
+      "Nucleotide GTR": {
+        "attribute type": "branch length",
+        "display order": 0
+      },
+      "original name": {
+        "attribute type": "node label",
+        "display order": -1
+      }
+    }
+  },
+  "data partitions": {
+    "0": {
+      "coverage": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112,
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119,
+          120,
+          121,
+          122,
+          123,
+          124,
+          125,
+          126,
+          127,
+          128,
+          129,
+          130,
+          131,
+          132,
+          133,
+          134,
+          135,
+          136,
+          137,
+          138,
+          139,
+          140,
+          141,
+          142,
+          143,
+          144,
+          145,
+          146,
+          147,
+          148,
+          149,
+          150,
+          151,
+          152,
+          153,
+          154,
+          155,
+          156,
+          157,
+          158,
+          159,
+          160,
+          161,
+          162,
+          163,
+          164,
+          165,
+          166,
+          167,
+          168,
+          169,
+          170,
+          171,
+          172,
+          173,
+          174,
+          175,
+          176,
+          177,
+          178,
+          179,
+          180,
+          181,
+          182,
+          183,
+          184,
+          185,
+          186,
+          187,
+          188,
+          189,
+          190,
+          191,
+          192,
+          193,
+          194,
+          195,
+          196,
+          197,
+          198,
+          199,
+          200,
+          201,
+          202,
+          203,
+          204,
+          205,
+          206,
+          207,
+          208,
+          209,
+          210,
+          211,
+          212,
+          213,
+          214,
+          215,
+          216,
+          217,
+          218,
+          219,
+          220,
+          221,
+          222,
+          223,
+          224,
+          225,
+          226,
+          227,
+          228,
+          229,
+          230,
+          231,
+          232,
+          233,
+          234,
+          235,
+          236,
+          237,
+          238,
+          239,
+          240,
+          241,
+          242,
+          243,
+          244,
+          245,
+          246,
+          247,
+          248,
+          249,
+          250,
+          251,
+          252,
+          253,
+          254,
+          255,
+          256,
+          257,
+          258,
+          259,
+          260,
+          261,
+          262,
+          263,
+          264,
+          265,
+          266,
+          267,
+          268,
+          269,
+          270,
+          271,
+          272,
+          273,
+          274,
+          275,
+          276,
+          277,
+          278,
+          279,
+          280,
+          281,
+          282,
+          283,
+          284,
+          285
+        ]
+      ],
+      "name": "fitter.filter.default"
+    }
+  },
+  "fits": {
+    "Codon model": {
+      "AIC-c": 10242.19183449994,
+      "Log Likelihood": -5039.385998481265,
+      "Rate Distributions": {
+        "Importance factor for property Factor I bipolar": 0.04737280106881489,
+        "Importance factor for property Factor II secondary structure": 0.2403298617927621,
+        "Importance factor for property Factor III volume": 0.2033185903630546,
+        "Importance factor for property Factor IV composition": -0.1276434901895213,
+        "Importance factor for property Factor V charge": -0.05848756141282892,
+        "Substitution rate from nucleotide A to nucleotide C": 0.1879547233485853,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.0743804811622352,
+        "Substitution rate from nucleotide C to nucleotide G": 0.1003787167298108,
+        "Substitution rate from nucleotide C to nucleotide T": 0.5626488128672869,
+        "Substitution rate from nucleotide G to nucleotide T": 0.1645964349509262,
+        "log of non-synonymous/synonymous rate ratio": -1.151919682452055
+      },
+      "display order": 1,
+      "estimated parameters": 81
+    },
+    "Nucleotide GTR": {
+      "AIC-c": 10776.71194708897,
+      "Equilibrium frequencies": [
+        [
+          0.1554096067153738
+        ],
+        [
+          0.3107803513135395
+        ],
+        [
+          0.2611534276387377
+        ],
+        [
+          0.2726566143323488
+        ]
+      ],
+      "Log Likelihood": -5317.17496653365,
+      "Rate Distributions": {
+        "Substitution rate from nucleotide A to nucleotide C": 0.1848320720228494,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.06934006932557542,
+        "Substitution rate from nucleotide C to nucleotide G": 0.1296430709962538,
+        "Substitution rate from nucleotide C to nucleotide T": 0.7322848771152082,
+        "Substitution rate from nucleotide G to nucleotide T": 0.1362426678758983
+      },
+      "display order": 0,
+      "estimated parameters": 71
+    }
+  },
+  "input": {
+    "file name": "/Users/sergei/Development/hyphy/tests/data/Fig4E.nex",
+    "number of sequences": 33,
+    "number of sites": 286,
+    "partition count": 1,
+    "trees": {
+      "0": "((((EU912371_DOBSONIA_VIRIDIS_OPN1SW_PSEUDOGENE,(AM263192_PTEROPUS_DASYMALLUS_FORMOSUS_SW,((EU912362_PTEROPUS_PUMILUS_OPN1SW_GENE,EU912361_PTEROPUS_GIGANTEUS_OPN1SW_GENE)Node9,EU912363_PTEROPUS_RODRICENSIS_OPN1SW_GENE)Node8,EU912354_ACERODON_CELEBENSIS_OPN1SW_GENE)Node6,EU912357_NYCTIMENE_CEPHALOTES_OPN1SW_GENE)Node4,((((AM263196_HAPLONYCTERIS_FISCHERI_SSW,EU912355_THOOPTERUS_NIGRESCENS_OPN1SW_PSEUDOGENE)Node20,EU912353_CYNOPTERUS_BRACHYOTIS_OPN1SW_GENE)Node19,EU912373_EIDOLON_HELVUM_OPN1SW_PSEUDOGENE)Node18,((EU912381_ROUSETTUS_LESCHENAULTII_OPN1SW_PSEUDOGENE,EU912352_ROUSETTUS_AMPLEXICAUDATUS_OPN1SW_PSEUDOGENE)Node26,EU912375_EONYCTERIS_SPELAEA_OPN1SW_PSEUDOGENE)Node25)Node17)Node3,EU912356_HARPYIONYCTERIS_CELEBENSIS_OPN1SW_GENE)Node2,((((EU912382_RHINOLOPHUS_PUSILLUS_OPN1SW_PSEUDOGENE,EU912365_RHINOLOPHUS_REX_OPN1SW_PSEUDOGENE)Node34,EU912364_RHINOLOPHUS_AFFINIS_OPN1SW_PSEUDOGENE)Node33,((EU912369_HIPPOSIDEROS_PRATTI_OPN1SW_PSEUDOGENE,EU912368_HIPPOSIDEROS_ARMIGER_OPN1SW_PSEUDOGENE)Node39,EU912370_HIPPOSIDEROS_POMONA_OPN1SW_PSEUDOGENE)Node38)Node32,EU912378_MEGADERMA_SPASMA_OPN1SW_GENE)Node31,(((((EU912372_ARTIBEUS_LITURATUS_OPN1SW_GENE,EU912367_ARTIBEUS_JAMAICENSIS_OPN1SW_GENE)Node48,EU912358_CAROLLIA_PERSPICILLATA_OPN1SW_GENE)Node47,EU912376_MINIOPTERUS_SCHREIBERSII_OPN1SW_GENE)Node46,((EU912379_MURINA_SP_HZ2008_OPN1SW_GENE,EU912377_MYOTIS_RICKETTI_OPN1SW_GENE)Node54,EU912360_PIPISTRELLUS_ABRAMUS_OPN1SW_GENE)Node53)Node45,(((EU912383_TAPHOZOUS_AUSTRALIS_OPN1SW_GENE,EU912366_TAPHOZOUS_MELANOPOGON_OPN1SW_GENE)Node60,EU912374_EMBALLONURA_RAFFRAYANA_OPN1SW_GENE)Node59,EU912359_CHAEREPHON_PLICATUS_OPN1SW_GENE)Node58)Node44)"
+    }
+  },
+  "test results": {
+    "Importance factor for property Factor I bipolar": {
+      "LRT": 0.2688959664919821,
+      "MLE": 0,
+      "p-value": 0.6040733305213153
+    },
+    "Importance factor for property Factor II secondary structure": {
+      "LRT": 10.74064271099815,
+      "MLE": 0,
+      "p-value": 0.001048079274074909
+    },
+    "Importance factor for property Factor III volume": {
+      "LRT": 4.670486326638638,
+      "MLE": 0,
+      "p-value": 0.03068523712405513
+    },
+    "Importance factor for property Factor IV composition": {
+      "LRT": 2.224893994916783,
+      "MLE": 0,
+      "p-value": 0.1358019776860471
+    },
+    "Importance factor for property Factor V charge": {
+      "LRT": 0.323468936207064,
+      "MLE": 0,
+      "p-value": 0.5695303613398977
+    }
+  },
+  "tested": {
+    "0": {
+      "AM263192_PTEROPUS_DASYMALLUS_FORMOSUS_SW": "test",
+      "AM263196_HAPLONYCTERIS_FISCHERI_SSW": "test",
+      "EU912352_ROUSETTUS_AMPLEXICAUDATUS_OPN1SW_PSEUDOGENE": "test",
+      "EU912353_CYNOPTERUS_BRACHYOTIS_OPN1SW_GENE": "test",
+      "EU912354_ACERODON_CELEBENSIS_OPN1SW_GENE": "test",
+      "EU912355_THOOPTERUS_NIGRESCENS_OPN1SW_PSEUDOGENE": "test",
+      "EU912356_HARPYIONYCTERIS_CELEBENSIS_OPN1SW_GENE": "test",
+      "EU912357_NYCTIMENE_CEPHALOTES_OPN1SW_GENE": "test",
+      "EU912358_CAROLLIA_PERSPICILLATA_OPN1SW_GENE": "test",
+      "EU912359_CHAEREPHON_PLICATUS_OPN1SW_GENE": "test",
+      "EU912360_PIPISTRELLUS_ABRAMUS_OPN1SW_GENE": "test",
+      "EU912361_PTEROPUS_GIGANTEUS_OPN1SW_GENE": "test",
+      "EU912362_PTEROPUS_PUMILUS_OPN1SW_GENE": "test",
+      "EU912363_PTEROPUS_RODRICENSIS_OPN1SW_GENE": "test",
+      "EU912364_RHINOLOPHUS_AFFINIS_OPN1SW_PSEUDOGENE": "test",
+      "EU912365_RHINOLOPHUS_REX_OPN1SW_PSEUDOGENE": "test",
+      "EU912366_TAPHOZOUS_MELANOPOGON_OPN1SW_GENE": "test",
+      "EU912367_ARTIBEUS_JAMAICENSIS_OPN1SW_GENE": "test",
+      "EU912368_HIPPOSIDEROS_ARMIGER_OPN1SW_PSEUDOGENE": "test",
+      "EU912369_HIPPOSIDEROS_PRATTI_OPN1SW_PSEUDOGENE": "test",
+      "EU912370_HIPPOSIDEROS_POMONA_OPN1SW_PSEUDOGENE": "test",
+      "EU912371_DOBSONIA_VIRIDIS_OPN1SW_PSEUDOGENE": "test",
+      "EU912372_ARTIBEUS_LITURATUS_OPN1SW_GENE": "test",
+      "EU912373_EIDOLON_HELVUM_OPN1SW_PSEUDOGENE": "test",
+      "EU912374_EMBALLONURA_RAFFRAYANA_OPN1SW_GENE": "test",
+      "EU912375_EONYCTERIS_SPELAEA_OPN1SW_PSEUDOGENE": "test",
+      "EU912376_MINIOPTERUS_SCHREIBERSII_OPN1SW_GENE": "test",
+      "EU912377_MYOTIS_RICKETTI_OPN1SW_GENE": "test",
+      "EU912378_MEGADERMA_SPASMA_OPN1SW_GENE": "test",
+      "EU912379_MURINA_SP_HZ2008_OPN1SW_GENE": "test",
+      "EU912381_ROUSETTUS_LESCHENAULTII_OPN1SW_PSEUDOGENE": "test",
+      "EU912382_RHINOLOPHUS_PUSILLUS_OPN1SW_PSEUDOGENE": "test",
+      "EU912383_TAPHOZOUS_AUSTRALIS_OPN1SW_GENE": "test",
+      "Node17": "test",
+      "Node18": "test",
+      "Node19": "test",
+      "Node2": "test",
+      "Node20": "test",
+      "Node25": "test",
+      "Node26": "test",
+      "Node3": "test",
+      "Node31": "test",
+      "Node32": "test",
+      "Node33": "test",
+      "Node34": "test",
+      "Node38": "test",
+      "Node39": "test",
+      "Node4": "test",
+      "Node44": "test",
+      "Node45": "test",
+      "Node46": "test",
+      "Node47": "test",
+      "Node48": "test",
+      "Node53": "test",
+      "Node54": "test",
+      "Node58": "test",
+      "Node59": "test",
+      "Node6": "test",
+      "Node60": "test",
+      "Node8": "test",
+      "Node9": "test"
+    }
+  },
+  "timers": {
+    "MG_REV_PROPERTIES": {
+      "order": null,
+      "timer": 45
+    },
+    "Overall": {
+      "order": 0,
+      "timer": 46
+    }
+  }
+}

@@ -445,8 +445,10 @@ void _Variable::SetValue(
       range [%.16g, %.16g] =========>\n" , theName->get_str(), theValue,
       lowerBound, upperBound);
       }*/
-      if (theValue <= lowerBound + 1e-50) {
-        theValue = lowerBound;
+      if (theValue < lowerBound) {
+        if (theValue <= lowerBound + 1e-50) {
+          theValue = lowerBound;
+        }
       } else {
         theValue = upperBound;
       }

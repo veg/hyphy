@@ -38,9 +38,9 @@ fel.analysis_description = {
     for testing as well, in which case an additional (nuisance) parameter will be
     inferred -- the non-synonymous rate on branches NOT selected for testing.
     Multiple partitions within a NEXUS file are also supported
-    for recombination - aware analysis. Version 2.5 adds MH support.
+    for recombination - aware analysis. Version 2.5 adds MH support. Version 2.6 adds substitution mapping.
     ",
-    terms.io.version: "2.5",
+    terms.io.version: "2.6",
     terms.io.reference: "Not So Different After All: A Comparison of Methods for Detecting Amino Acid Sites Under Selection (2005). _Mol Biol Evol_ 22 (5): 1208-1222",
     terms.io.authors: "Sergei L Kosakovsky Pond and Simon DW Frost",
     terms.io.contact: "spond@temple.edu",
@@ -78,6 +78,7 @@ fel.json = {
     terms.json.input: {},
     terms.json.fits: {},
     terms.json.timers: {},
+    terms.substitutions: {}
 };
 
 fel.display_orders =   {terms.original_name: -1,
@@ -784,40 +785,46 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
  
     if (sim_mode) {
         return lrt - 2*results[1][0];
-    } else {
-        Null = estimators.ExtractMLEsOptions (lf, model_mapping, {^"terms.globals_only" : TRUE});
-        Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
-    }    
+    } 
+    
+    Null = estimators.ExtractMLEsOptions (lf, model_mapping, {^"terms.globals_only" : TRUE});
+    Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+   
+    tree_name = (lfInfo["Trees"])[0];
+    sum = (BranchLength (^tree_name, -1)*^"fel.selected_branches_index")[0];
 
+    ancestral_info = ancestral.build (lf,0,FALSE);
+    branch_substitution_information = (ancestral.ComputeSubstitutionBySite (ancestral_info,0,None))[^"terms.substitutions"];
+    compressed_substitution_info = (ancestral.ComputeCompressedSubstitutions (ancestral_info))[0];
+    DeleteObject (ancestral_info);
 
-    if (!sim_mode) {
-        tree_name = (lfInfo["Trees"])[0];
-        sum = (BranchLength (^tree_name, -1)*^"fel.selected_branches_index")[0];
-        if (^"fel.resample") {
-            
-            N = ^"fel.resample";
-            sims = {};
-            GetDataInfo (fi, ^((lfInfo["Datafilters"])[0]), "PARAMETERS");
-            //Export (lfe, ^lf);
-            for (i = 0; i < N; i+=1) {        
-                DataSet null_sim = SimulateDataSet (^lf);
-                DataSetFilter null_filter = CreateFilter (null_sim,3,,,fi["EXCLUSIONS"]);
-                sims + alignments.serialize_site_filter (&null_filter, 0);
-            }
-            null_LRT = {N,1};
-            for (i = 0; i < N; i+=1) {   
-               is = fel.handle_a_site (lf, sims[i], partition_index, pattern_info, model_mapping, TRUE);
-               null_LRT[i] = is;
-            }
-            return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.Null"): Null, utility.getGlobalValue("terms.simulated"): null_LRT, utility.getGlobalValue("terms.confidence_interval"): ci,  utility.getGlobalValue("terms.math.sum") : sum};
+    if (^"fel.resample") {
+        
+        N = ^"fel.resample";
+        sims = {};
+        GetDataInfo (fi, ^((lfInfo["Datafilters"])[0]), "PARAMETERS");
+        //Export (lfe, ^lf);
+        for (i = 0; i < N; i+=1) {        
+            DataSet null_sim = SimulateDataSet (^lf);
+            DataSetFilter null_filter = CreateFilter (null_sim,3,,,fi["EXCLUSIONS"]);
+            sims + alignments.serialize_site_filter (&null_filter, 0);
         }
+        null_LRT = {N,1};
+        for (i = 0; i < N; i+=1) {   
+           is = fel.handle_a_site (lf, sims[i], partition_index, pattern_info, model_mapping, TRUE);
+           null_LRT[i] = is;
+        }
+        return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.Null"): Null, utility.getGlobalValue("terms.simulated"): null_LRT, utility.getGlobalValue("terms.confidence_interval"): ci,  utility.getGlobalValue("terms.math.sum") : sum, utility.getGlobalValue("terms.branch_selection_attributes") : branch_substitution_information, utility.getGlobalValue("terms.substitutions") : compressed_substitution_info};
     }
        
     
    return {utility.getGlobalValue("terms.alternative") : alternative, 
             utility.getGlobalValue("terms.Null"): Null,
             utility.getGlobalValue("terms.math.sum") : sum,
-            utility.getGlobalValue("terms.confidence_interval"): ci};
+            utility.getGlobalValue("terms.confidence_interval"): ci,
+            utility.getGlobalValue("terms.branch_selection_attributes") : branch_substitution_information,
+            utility.getGlobalValue("terms.substitutions") : compressed_substitution_info
+            };
 }
 
 /* echo to screen calls */
@@ -1032,8 +1039,10 @@ lfunction fel.store_results (node, result, arguments) {
     N_col = utility.Array1D (result_row);
 
     has_lrt = FALSE;
+    compressed_subs = None;
 
     if (None != result) { // not a constant site
+        compressed_subs = result[utility.getGlobalValue("terms.substitutions")];
     
         lrt = math.DoLRT ((result[utility.getGlobalValue("terms.Null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
@@ -1092,9 +1101,11 @@ lfunction fel.store_results (node, result, arguments) {
     if (has_lrt) {
         utility.EnsureKey (^"fel.site_LRT", partition_index);
     }
+    utility.EnsureKey (((^"fel.json")[^"terms.substitutions"]), partition_index);
     
     for (_fel_result_; in; pattern_info[utility.getGlobalValue("terms.data.sites")]) {
         ((^"fel.site_results")[partition_index])[_fel_result_] = result_row;
+        (((^"fel.json")[^"terms.substitutions"])[partition_index])[_fel_result_] = compressed_subs;
         fel.report.echo (_fel_result_, partition_index, result_row);
         if (has_lrt) {
             ((^"fel.site_LRT")[partition_index])[_fel_result_] = result[^"terms.simulated"];

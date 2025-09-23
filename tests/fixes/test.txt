@@ -1,0 +1,15 @@
+x = 2;
+y = 3;
+
+C   = Polynomial (1);
+PP  = Polynomial ("x+y");
+PP2 = Polynomial ("x+z");
+
+PP3 = C + PP + PP2;
+
+fprintf (stdout, PP3, "\n", Type (PP3));
+
+x = 4; 
+z = 4;
+
+fprintf (stdout, "\n", PP3, "\n", Type (PP3), "\n", Eval (PP3), "\n", PP == PP);

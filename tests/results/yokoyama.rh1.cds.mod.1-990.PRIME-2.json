@@ -1,0 +1,761 @@
+{
+  "analysis": {
+    "authors": "Sergei L Kosakovsky Pond",
+    "contact": "spond@temple.edu",
+    "info": "Fit one of the available codon models to the data, report fit results and model estimates. Model specific options will differ.",
+    "requirements": "in-frame codon alignment and a phylogenetic tree",
+    "version": "0.1"
+  },
+  "branch attributes": {
+    "0": {
+      "BFNKILLIFISH": {
+        "Nucleotide GTR": 0.07528172812550603,
+        "original name": "BFNKILLIFISH"
+      },
+      "BLACKDRAGON": {
+        "Nucleotide GTR": 0.03213401471286902,
+        "original name": "BLACKDRAGON"
+      },
+      "BOVINE": {
+        "Nucleotide GTR": 0.04137268108577334,
+        "original name": "BOVINE"
+      },
+      "CAVEFISH": {
+        "Nucleotide GTR": 0.08263994478784446,
+        "original name": "CAVEFISH"
+      },
+      "CHAMELEON": {
+        "Nucleotide GTR": 0.1793430948640728,
+        "original name": "CHAMELEON"
+      },
+      "CHICKEN": {
+        "Nucleotide GTR": 0.04204215790592054,
+        "original name": "CHICKEN"
+      },
+      "CLAWEDFROG": {
+        "Nucleotide GTR": 0.1079919529643797,
+        "original name": "CLAWEDFROG"
+      },
+      "COELACANTH": {
+        "Nucleotide GTR": 0.1376210308954057,
+        "original name": "COELACANTH"
+      },
+      "CONGERA": {
+        "Nucleotide GTR": 0.04074201505555262,
+        "original name": "CONGERA"
+      },
+      "CONGERB": {
+        "Nucleotide GTR": 0.05494258640428542,
+        "original name": "CONGERB"
+      },
+      "DOLPHIN": {
+        "Nucleotide GTR": 0.04607453723716799,
+        "original name": "DOLPHIN"
+      },
+      "EELA": {
+        "Nucleotide GTR": 0.07843347234236966,
+        "original name": "EELA"
+      },
+      "EELB": {
+        "Nucleotide GTR": 0.0464210708715514,
+        "original name": "EELB"
+      },
+      "ELEPHANT": {
+        "Nucleotide GTR": 0.06042033132773797,
+        "original name": "ELEPHANT"
+      },
+      "GOLDFISH": {
+        "Nucleotide GTR": 0.09511911332430931,
+        "original name": "GOLDFISH"
+      },
+      "LAMPFISH": {
+        "Nucleotide GTR": 0.1437943043903724,
+        "original name": "LAMPFISH"
+      },
+      "LOOSEJAW": {
+        "Nucleotide GTR": 0.09256504530765265,
+        "original name": "LOOSEJAW"
+      },
+      "MBER": {
+        "Nucleotide GTR": 0.01239950814520051,
+        "original name": "MBER"
+      },
+      "MVIO": {
+        "Nucleotide GTR": 0.004246504883357852,
+        "original name": "MVIO"
+      },
+      "NARG": {
+        "Nucleotide GTR": 0.005872860730661155,
+        "original name": "NARG"
+      },
+      "NAUR": {
+        "Nucleotide GTR": 0.0251999603520445,
+        "original name": "NAUR"
+      },
+      "NSAM": {
+        "Nucleotide GTR": 0.002449562409659968,
+        "original name": "NSAM"
+      },
+      "Node1": {
+        "Nucleotide GTR": 0.02234367240797493
+      },
+      "Node11": {
+        "Nucleotide GTR": 0.04626124676188291
+      },
+      "Node14": {
+        "Nucleotide GTR": 0.03748799667326314
+      },
+      "Node15": {
+        "Nucleotide GTR": 0.05665643478878652
+      },
+      "Node16": {
+        "Nucleotide GTR": 0.036389092630893
+      },
+      "Node17": {
+        "Nucleotide GTR": 0.02777172340556715
+      },
+      "Node18": {
+        "Nucleotide GTR": 0.003950621834312947
+      },
+      "Node19": {
+        "Nucleotide GTR": 0.01561724023957143
+      },
+      "Node2": {
+        "Nucleotide GTR": 0.05163110759844079
+      },
+      "Node23": {
+        "Nucleotide GTR": 0.01610682360017054
+      },
+      "Node27": {
+        "Nucleotide GTR": 0.02752645951686434
+      },
+      "Node29": {
+        "Nucleotide GTR": 0.0166832644152906
+      },
+      "Node32": {
+        "Nucleotide GTR": 0.05235671114521095
+      },
+      "Node35": {
+        "Nucleotide GTR": 0.02253423149125475
+      },
+      "Node36": {
+        "Nucleotide GTR": 0.01615978337354647
+      },
+      "Node38": {
+        "Nucleotide GTR": 0.0632341233438859
+      },
+      "Node43": {
+        "Nucleotide GTR": 0.02465947886479126
+      },
+      "Node44": {
+        "Nucleotide GTR": 0.0497270687147755
+      },
+      "Node47": {
+        "Nucleotide GTR": 0.0574837834013129
+      },
+      "Node48": {
+        "Nucleotide GTR": 0.03237027528264081
+      },
+      "Node5": {
+        "Nucleotide GTR": 0.05282972444104215
+      },
+      "Node52": {
+        "Nucleotide GTR": 0.06966767949046172
+      },
+      "Node54": {
+        "Nucleotide GTR": 0.02528067894463873
+      },
+      "Node55": {
+        "Nucleotide GTR": 0.03418110520765367
+      },
+      "Node58": {
+        "Nucleotide GTR": 0.02516660693462221
+      },
+      "Node59": {
+        "Nucleotide GTR": 0.01499609259587652
+      },
+      "Node61": {
+        "Nucleotide GTR": 0.05382923358342574
+      },
+      "Node62": {
+        "Nucleotide GTR": 0.02119743288047181
+      },
+      "Node66": {
+        "Nucleotide GTR": 0.06159349754330173
+      },
+      "Node67": {
+        "Nucleotide GTR": 0.02021155340471796
+      },
+      "Node8": {
+        "Nucleotide GTR": 0.04449365634312188
+      },
+      "Node9": {
+        "Nucleotide GTR": 0.01773200444170529
+      },
+      "ONIL": {
+        "Nucleotide GTR": 0.009207033875003821,
+        "original name": "ONIL"
+      },
+      "PIGEON": {
+        "Nucleotide GTR": 0.03552936846765048,
+        "original name": "PIGEON"
+      },
+      "SALAMANDER": {
+        "Nucleotide GTR": 0.07611684482652369,
+        "original name": "SALAMANDER"
+      },
+      "SCABBARDA": {
+        "Nucleotide GTR": 0.05308359469816333,
+        "original name": "SCABBARDA"
+      },
+      "SCABBARDB": {
+        "Nucleotide GTR": 0.0586273185513583,
+        "original name": "SCABBARDB"
+      },
+      "SDIA": {
+        "Nucleotide GTR": 0.005421306757300131,
+        "original name": "SDIA"
+      },
+      "SMIC": {
+        "Nucleotide GTR": 0.009289596295567106,
+        "original name": "SMIC"
+      },
+      "SPUN": {
+        "Nucleotide GTR": 0.02122343676173389,
+        "original name": "SPUN"
+      },
+      "SSPI": {
+        "Nucleotide GTR": 0.007489761072659746,
+        "original name": "SSPI"
+      },
+      "STIE": {
+        "Nucleotide GTR": 0.005035212591890804,
+        "original name": "STIE"
+      },
+      "SXAN": {
+        "Nucleotide GTR": 0.01440106422564509,
+        "original name": "SXAN"
+      },
+      "THORNYHEAD": {
+        "Nucleotide GTR": 0.05993280003688893,
+        "original name": "THORNYHEAD"
+      },
+      "VIPERFISH": {
+        "Nucleotide GTR": 0.07907771677100713,
+        "original name": "VIPERFISH"
+      },
+      "XCAU": {
+        "Nucleotide GTR": 0.02315077111422899,
+        "original name": "XCAU"
+      },
+      "ZEBRAFINCH": {
+        "Nucleotide GTR": 0.02978639344458767,
+        "original name": "ZEBRAFINCH"
+      },
+      "ZEBRAFISH": {
+        "Nucleotide GTR": 0.07642713650076427,
+        "original name": "ZEBRAFISH"
+      }
+    },
+    "attributes": {
+      "Nucleotide GTR": {
+        "attribute type": "branch length",
+        "display order": 0
+      },
+      "original name": {
+        "attribute type": "node label",
+        "display order": -1
+      }
+    }
+  },
+  "data partitions": {
+    "0": {
+      "coverage": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112,
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119,
+          120,
+          121,
+          122,
+          123,
+          124,
+          125,
+          126,
+          127,
+          128,
+          129,
+          130,
+          131,
+          132,
+          133,
+          134,
+          135,
+          136,
+          137,
+          138,
+          139,
+          140,
+          141,
+          142,
+          143,
+          144,
+          145,
+          146,
+          147,
+          148,
+          149,
+          150,
+          151,
+          152,
+          153,
+          154,
+          155,
+          156,
+          157,
+          158,
+          159,
+          160,
+          161,
+          162,
+          163,
+          164,
+          165,
+          166,
+          167,
+          168,
+          169,
+          170,
+          171,
+          172,
+          173,
+          174,
+          175,
+          176,
+          177,
+          178,
+          179,
+          180,
+          181,
+          182,
+          183,
+          184,
+          185,
+          186,
+          187,
+          188,
+          189,
+          190,
+          191,
+          192,
+          193,
+          194,
+          195,
+          196,
+          197,
+          198,
+          199,
+          200,
+          201,
+          202,
+          203,
+          204,
+          205,
+          206,
+          207,
+          208,
+          209,
+          210,
+          211,
+          212,
+          213,
+          214,
+          215,
+          216,
+          217,
+          218,
+          219,
+          220,
+          221,
+          222,
+          223,
+          224,
+          225,
+          226,
+          227,
+          228,
+          229,
+          230,
+          231,
+          232,
+          233,
+          234,
+          235,
+          236,
+          237,
+          238,
+          239,
+          240,
+          241,
+          242,
+          243,
+          244,
+          245,
+          246,
+          247,
+          248,
+          249,
+          250,
+          251,
+          252,
+          253,
+          254,
+          255,
+          256,
+          257,
+          258,
+          259,
+          260,
+          261,
+          262,
+          263,
+          264,
+          265,
+          266,
+          267,
+          268,
+          269,
+          270,
+          271,
+          272,
+          273,
+          274,
+          275,
+          276,
+          277,
+          278,
+          279,
+          280,
+          281,
+          282,
+          283,
+          284,
+          285,
+          286,
+          287,
+          288,
+          289,
+          290,
+          291,
+          292,
+          293,
+          294,
+          295,
+          296,
+          297,
+          298,
+          299,
+          300,
+          301,
+          302,
+          303,
+          304,
+          305,
+          306,
+          307,
+          308,
+          309,
+          310,
+          311,
+          312,
+          313,
+          314,
+          315,
+          316,
+          317,
+          318,
+          319,
+          320,
+          321,
+          322,
+          323,
+          324,
+          325,
+          326,
+          327,
+          328,
+          329
+        ]
+      ],
+      "name": "fitter.filter.default"
+    }
+  },
+  "fits": {
+    "Codon model": {
+      "AIC-c": 26035.1166605541,
+      "Log Likelihood": -12919.7943052007,
+      "Rate Distributions": {
+        "Importance factor for property Factor I bipolar component 1": 1.477453605664175,
+        "Importance factor for property Factor I bipolar component 2": 9.999999999999966,
+        "Importance factor for property Factor II secondary structure component 1": -0.2561700547415066,
+        "Importance factor for property Factor II secondary structure component 2": 3.259761426185994,
+        "Importance factor for property Factor III volume component 1": -0.3373241741603712,
+        "Importance factor for property Factor III volume component 2": 2.275110564460137,
+        "Importance factor for property Factor IV composition component 1": 0.01526576809380555,
+        "Importance factor for property Factor IV composition component 2": -0.7680820907577076,
+        "Importance factor for property Factor V charge component 1": 0.5685295258540697,
+        "Importance factor for property Factor V charge component 2": -2.380402837808343,
+        "Mixture auxiliary weight for category 1": 0.07214962842501221,
+        "Substitution rate from nucleotide A to nucleotide C": 0.4635873272728805,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.6673714443726588,
+        "Substitution rate from nucleotide C to nucleotide G": 0.2572110301719252,
+        "Substitution rate from nucleotide C to nucleotide T": 0.6122852566761698,
+        "Substitution rate from nucleotide G to nucleotide T": 0.4254606055967308,
+        "log of non-synonymous/synonymous rate ratio for category 1": 1.65178342569974,
+        "log of non-synonymous/synonymous rate ratio for category 2": -1.252834534934014
+      },
+      "display order": 1,
+      "estimated parameters": 97
+    },
+    "Nucleotide GTR": {
+      "AIC-c": 29876.99280015715,
+      "Equilibrium frequencies": [
+        [
+          0.1949220633135144
+        ],
+        [
+          0.3027344796186191
+        ],
+        [
+          0.2406663452782688
+        ],
+        [
+          0.2616771117895977
+        ]
+      ],
+      "Log Likelihood": -14860.3322595389,
+      "Rate Distributions": {
+        "Substitution rate from nucleotide A to nucleotide C": 0.5154941202679731,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.3296753449433567,
+        "Substitution rate from nucleotide C to nucleotide G": 0.5516548463037126,
+        "Substitution rate from nucleotide C to nucleotide T": 1.049696864504073,
+        "Substitution rate from nucleotide G to nucleotide T": 0.37839720715499
+      },
+      "display order": 0,
+      "estimated parameters": 78
+    }
+  },
+  "input": {
+    "file name": "/Users/sergei/Development/hyphy/tests/data/yokoyama.rh1.cds.mod.1-990.nex",
+    "number of sequences": 38,
+    "number of sites": 330,
+    "partition count": 1,
+    "trees": {
+      "0": "(((EELA:0.150276,CONGERA:0.213019)Node2:0.230956,(EELB:0.263487,CONGERB:0.202633)Node5:0.246917)Node1:0.09478499999999999,((CAVEFISH:0.451027,(GOLDFISH:0.340495,ZEBRAFISH:0.390163)Node11:0.220565)Node9:0.067778,((((((NSAM:0.008113,NARG:0.014065)Node19:0.052991,SPUN:0.061003,(SMIC:0.027806,SDIA:0.015298,SXAN:0.046873)Node23:0.046977)Node18:0.009821999999999999,(NAUR:0.081298,(SSPI:0.023876,STIE:0.013652)Node29:0.058179)Node27:0.091775)Node17:0.07334599999999999,(MVIO:0.012271,MBER:0.039798)Node32:0.178835)Node16:0.147992,((BFNKILLIFISH:0.317455,(ONIL:0.029217,XCAU:0.084388)Node38:0.201166)Node36:0.055908,THORNYHEAD:0.252481)Node35:0.061905)Node15:0.157214,LAMPFISH:0.7171959999999999,((SCABBARDA:0.189684,SCABBARDB:0.362015)Node44:0.282263,((VIPERFISH:0.318217,BLACKDRAGON:0.109912)Node48:0.123642,LOOSEJAW:0.3971)Node47:0.287152)Node43:0.140663)Node14:0.206729)Node8:0.222485,(COELACANTH:0.558103,((CLAWEDFROG:0.441842,SALAMANDER:0.299607)Node55:0.135307,((CHAMELEON:0.771665,((PIGEON:0.150909,CHICKEN:0.172733)Node62:0.082163,ZEBRAFINCH:0.099172)Node61:0.272338)Node59:0.014055,((BOVINE:0.167569,DOLPHIN:0.15745)Node67:0.104783,ELEPHANT:0.166557)Node66:0.367205)Node58:0.050892)Node54:0.114731)Node52:0.295021)"
+    }
+  },
+  "test results": {},
+  "tested": {
+    "0": {
+      "BFNKILLIFISH": "test",
+      "BLACKDRAGON": "test",
+      "BOVINE": "test",
+      "CAVEFISH": "test",
+      "CHAMELEON": "test",
+      "CHICKEN": "test",
+      "CLAWEDFROG": "test",
+      "COELACANTH": "test",
+      "CONGERA": "test",
+      "CONGERB": "test",
+      "DOLPHIN": "test",
+      "EELA": "test",
+      "EELB": "test",
+      "ELEPHANT": "test",
+      "GOLDFISH": "test",
+      "LAMPFISH": "test",
+      "LOOSEJAW": "test",
+      "MBER": "test",
+      "MVIO": "test",
+      "NARG": "test",
+      "NAUR": "test",
+      "NSAM": "test",
+      "Node1": "test",
+      "Node11": "test",
+      "Node14": "test",
+      "Node15": "test",
+      "Node16": "test",
+      "Node17": "test",
+      "Node18": "test",
+      "Node19": "test",
+      "Node2": "test",
+      "Node23": "test",
+      "Node27": "test",
+      "Node29": "test",
+      "Node32": "test",
+      "Node35": "test",
+      "Node36": "test",
+      "Node38": "test",
+      "Node43": "test",
+      "Node44": "test",
+      "Node47": "test",
+      "Node48": "test",
+      "Node5": "test",
+      "Node52": "test",
+      "Node54": "test",
+      "Node55": "test",
+      "Node58": "test",
+      "Node59": "test",
+      "Node61": "test",
+      "Node62": "test",
+      "Node66": "test",
+      "Node67": "test",
+      "Node8": "test",
+      "Node9": "test",
+      "ONIL": "test",
+      "PIGEON": "test",
+      "SALAMANDER": "test",
+      "SCABBARDA": "test",
+      "SCABBARDB": "test",
+      "SDIA": "test",
+      "SMIC": "test",
+      "SPUN": "test",
+      "SSPI": "test",
+      "STIE": "test",
+      "SXAN": "test",
+      "THORNYHEAD": "test",
+      "VIPERFISH": "test",
+      "XCAU": "test",
+      "ZEBRAFINCH": "test",
+      "ZEBRAFISH": "test"
+    }
+  },
+  "timers": {
+    "MG_REV_PROPERTIES_BSREL": {
+      "order": null,
+      "timer": 99
+    },
+    "Overall": {
+      "order": 0,
+      "timer": 100
+    }
+  }
+}

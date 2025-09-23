@@ -1,0 +1,73 @@
+#--cores 56 -s Snakefile --config data=random/ results=results-random/ testset=FOREGROUND list=Foreground tree=MaterTree.phy --rerun-incomplete -k 
+
+dataDirectory = config["data"]
+resultDirectory = config["results"]
+
+FILES = glob_wildcards(dataDirectory + "{file}.nex").file
+
+print (dataDirectory, FILES)
+
+rule all:
+    input:
+        expand(resultDirectory + "{file}.{type}", file = FILES, type = [
+            'MEME.2.json','MEME.3.json','MEME.4.json',
+            'MEME.2.2H.json','MEME.3.2H.json','MEME.4.2H.json',
+            'MEME.2.23H.json','MEME.3.23H.json','MEME.4.23H.json',
+        ])
+    
+    
+
+rule run_meme2:
+    input: msa=dataDirectory + "{file}.nex",
+    output: resultDirectory + "{file}.MEME.2.json"
+    threads : 8
+    shell: 'hyphy meme --alignment {input.msa}  --output {output} --rates 2 --impute-states Yes'
+
+rule run_meme3:
+    input: msa=dataDirectory + "{file}.nex",
+    output: resultDirectory + "{file}.MEME.3.json"
+    threads : 8
+    shell: 'hyphy meme --alignment {input.msa}  --output {output} --rates 3 --impute-states Yes'
+
+rule run_meme4:
+    input: msa=dataDirectory + "{file}.nex",
+    output: resultDirectory + "{file}.MEME.4.json"
+    threads : 8
+    shell: 'hyphy meme --alignment {input.msa}  --output {output} --rates 4 --impute-states Yes'
+
+rule run_meme2_2H:
+    input: msa=dataDirectory + "{file}.nex",
+    output: resultDirectory + "{file}.MEME.2.2H.json"
+    threads : 8
+    shell: 'hyphy meme --alignment {input.msa}  --output {output} --rates 2 --impute-states Yes --multiple-hits Double'
+
+rule run_meme3_2H:
+    input: msa=dataDirectory + "{file}.nex",
+    output: resultDirectory + "{file}.MEME.3.2H.json"
+    threads : 8
+    shell: 'hyphy meme --alignment {input.msa}  --output {output} --rates 3 --impute-states Yes --multiple-hits Double'
+
+rule run_meme4_2H:
+    input: msa=dataDirectory + "{file}.nex",
+    output: resultDirectory + "{file}.MEME.4.2H.json"
+    threads : 8
+    shell: 'hyphy meme --alignment {input.msa}  --output {output} --rates 4 --impute-states Yes --multiple-hits Double'
+
+rule run_meme2_23H:
+    input: msa=dataDirectory + "{file}.nex",
+    output: resultDirectory + "{file}.MEME.2.23H.json"
+    threads : 8
+    shell: 'hyphy meme --alignment {input.msa}  --output {output} --rates 2 --impute-states Yes --multiple-hits Double+Triple'
+
+rule run_meme3_23H:
+    input: msa=dataDirectory + "{file}.nex",
+    output: resultDirectory + "{file}.MEME.3.23H.json"
+    threads : 8
+    shell: 'hyphy meme --alignment {input.msa}  --output {output} --rates 3 --impute-states Yes --multiple-hits Double+Triple'
+
+rule run_meme4_23H:
+    input: msa=dataDirectory + "{file}.nex",
+    output: resultDirectory + "{file}.MEME.4.23H.json"
+    threads : 8
+    shell: 'hyphy meme --alignment {input.msa}  --output {output} --rates 4 --impute-states Yes --multiple-hits Double+Triple'
+

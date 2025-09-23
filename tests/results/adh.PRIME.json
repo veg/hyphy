@@ -1,0 +1,581 @@
+{
+  "analysis": {
+    "authors": "Sergei L Kosakovsky Pond",
+    "contact": "spond@temple.edu",
+    "info": "Fit one of the available codon models to the data, report fit results and model estimates. Model specific options will differ.",
+    "requirements": "in-frame codon alignment and a phylogenetic tree",
+    "version": "0.1"
+  },
+  "branch attributes": {
+    "0": {
+      "ADI": {
+        "Nucleotide GTR": 0.03414211828640714,
+        "original name": "ADI"
+      },
+      "AFF": {
+        "Nucleotide GTR": 0.02041913320405151,
+        "original name": "AFF"
+      },
+      "AMB": {
+        "Nucleotide GTR": 0.04370507326100783,
+        "original name": "AMB"
+      },
+      "CRA": {
+        "Nucleotide GTR": 0.1400441186337319,
+        "original name": "CRA"
+      },
+      "DIF": {
+        "Nucleotide GTR": 0.005284165879276386,
+        "original name": "DIF"
+      },
+      "ERE": {
+        "Nucleotide GTR": 0.01492763610664961,
+        "original name": "ERE"
+      },
+      "HET": {
+        "Nucleotide GTR": 0.0008412842423654007,
+        "original name": "HET"
+      },
+      "LEB": {
+        "Nucleotide GTR": 0.1251898136490734,
+        "original name": "LEB"
+      },
+      "MA": {
+        "Nucleotide GTR": 0.01159714308620964,
+        "original name": "MA"
+      },
+      "MEL": {
+        "Nucleotide GTR": 0.0114867849382915,
+        "original name": "MEL"
+      },
+      "MET": {
+        "Nucleotide GTR": 0.09651894725216074,
+        "original name": "MET"
+      },
+      "MIM": {
+        "Nucleotide GTR": 0.02423316247675309,
+        "original name": "MIM"
+      },
+      "MIR": {
+        "Nucleotide GTR": 0.006180420567016772,
+        "original name": "MIR"
+      },
+      "NIG": {
+        "Nucleotide GTR": 0.03492166111480108,
+        "original name": "NIG"
+      },
+      "Node1": {
+        "Nucleotide GTR": 0.06129610399663344
+      },
+      "Node11": {
+        "Nucleotide GTR": 0.0443116389389229
+      },
+      "Node12": {
+        "Nucleotide GTR": 0.02466568024167816
+      },
+      "Node13": {
+        "Nucleotide GTR": 0.00734103904955128
+      },
+      "Node14": {
+        "Nucleotide GTR": 0.002616992687610275
+      },
+      "Node19": {
+        "Nucleotide GTR": 0.01738369398476164
+      },
+      "Node2": {
+        "Nucleotide GTR": 0.06541136976082836
+      },
+      "Node22": {
+        "Nucleotide GTR": 0.07762766572322193
+      },
+      "Node24": {
+        "Nucleotide GTR": 0.03281704002172854
+      },
+      "Node26": {
+        "Nucleotide GTR": 0.05245951229813354
+      },
+      "Node28": {
+        "Nucleotide GTR": 0.02305943626018848
+      },
+      "Node3": {
+        "Nucleotide GTR": 0.01500297275479596
+      },
+      "Node30": {
+        "Nucleotide GTR": 0.008313234049402334
+      },
+      "Node32": {
+        "Nucleotide GTR": 0.009037196143378097
+      },
+      "Node34": {
+        "Nucleotide GTR": 0.005736058884991393
+      },
+      "Node35": {
+        "Nucleotide GTR": 0.01142045565388925
+      },
+      "Node36": {
+        "Nucleotide GTR": 0.006448495413601638
+      },
+      "Node39": {
+        "Nucleotide GTR": 0.003291847979733324
+      },
+      "Node5": {
+        "Nucleotide GTR": 0.01246262906784266
+      },
+      "Node7": {
+        "Nucleotide GTR": 0.003078517375433637
+      },
+      "PER": {
+        "Nucleotide GTR": 0.001314178516633161,
+        "original name": "PER"
+      },
+      "PIC": {
+        "Nucleotide GTR": 0.03250624953960735,
+        "original name": "PIC"
+      },
+      "PLA": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "PLA"
+      },
+      "PS": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "PS"
+      },
+      "PSE": {
+        "Nucleotide GTR": 0.00788521020857595,
+        "original name": "PSE"
+      },
+      "SIL": {
+        "Nucleotide GTR": 0.00179304955177171,
+        "original name": "SIL"
+      },
+      "SIM": {
+        "Nucleotide GTR": 0.001599504445101441,
+        "original name": "SIM"
+      },
+      "SUB": {
+        "Nucleotide GTR": 0.06168693686050813,
+        "original name": "SUB"
+      },
+      "YAK": {
+        "Nucleotide GTR": 0.02400067015845851,
+        "original name": "YAK"
+      }
+    },
+    "attributes": {
+      "Nucleotide GTR": {
+        "attribute type": "branch length",
+        "display order": 0
+      },
+      "original name": {
+        "attribute type": "node label",
+        "display order": -1
+      }
+    }
+  },
+  "data partitions": {
+    "0": {
+      "coverage": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112,
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119,
+          120,
+          121,
+          122,
+          123,
+          124,
+          125,
+          126,
+          127,
+          128,
+          129,
+          130,
+          131,
+          132,
+          133,
+          134,
+          135,
+          136,
+          137,
+          138,
+          139,
+          140,
+          141,
+          142,
+          143,
+          144,
+          145,
+          146,
+          147,
+          148,
+          149,
+          150,
+          151,
+          152,
+          153,
+          154,
+          155,
+          156,
+          157,
+          158,
+          159,
+          160,
+          161,
+          162,
+          163,
+          164,
+          165,
+          166,
+          167,
+          168,
+          169,
+          170,
+          171,
+          172,
+          173,
+          174,
+          175,
+          176,
+          177,
+          178,
+          179,
+          180,
+          181,
+          182,
+          183,
+          184,
+          185,
+          186,
+          187,
+          188,
+          189,
+          190,
+          191,
+          192,
+          193,
+          194,
+          195,
+          196,
+          197,
+          198,
+          199,
+          200,
+          201,
+          202,
+          203,
+          204,
+          205,
+          206,
+          207,
+          208,
+          209,
+          210,
+          211,
+          212,
+          213,
+          214,
+          215,
+          216,
+          217,
+          218,
+          219,
+          220,
+          221,
+          222,
+          223,
+          224,
+          225,
+          226,
+          227,
+          228,
+          229,
+          230,
+          231,
+          232,
+          233,
+          234,
+          235,
+          236,
+          237,
+          238,
+          239,
+          240,
+          241,
+          242,
+          243,
+          244,
+          245,
+          246,
+          247,
+          248,
+          249,
+          250,
+          251,
+          252,
+          253
+        ]
+      ],
+      "name": "fitter.filter.default"
+    }
+  },
+  "fits": {
+    "Codon model": {
+      "AIC-c": 9443.984774262773,
+      "Log Likelihood": -4658.294567816745,
+      "Rate Distributions": {
+        "Importance factor for property Factor I bipolar": 0.4749019466811313,
+        "Importance factor for property Factor II secondary structure": 0.06348152979389179,
+        "Importance factor for property Factor III volume": -0.3664293842673723,
+        "Importance factor for property Factor IV composition": 0.3270317829433231,
+        "Importance factor for property Factor V charge": 0.191897197513632,
+        "Substitution rate from nucleotide A to nucleotide C": 1.069625724513593,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.863256133676126,
+        "Substitution rate from nucleotide C to nucleotide G": 0.4012985916057971,
+        "Substitution rate from nucleotide C to nucleotide T": 0.8661712001098351,
+        "Substitution rate from nucleotide G to nucleotide T": 0.3722427817917355,
+        "log of non-synonymous/synonymous rate ratio": -1.901264608747835
+      },
+      "display order": 1,
+      "estimated parameters": 63
+    },
+    "Nucleotide GTR": {
+      "AIC-c": 10376.30037427146,
+      "Equilibrium frequencies": [
+        [
+          0.2332534520141504
+        ],
+        [
+          0.286146296930275
+        ],
+        [
+          0.2535090722355358
+        ],
+        [
+          0.2270911788200388
+        ]
+      ],
+      "Log Likelihood": -5136.998418794192,
+      "Rate Distributions": {
+        "Substitution rate from nucleotide A to nucleotide C": 0.772640754201579,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.5098773721665316,
+        "Substitution rate from nucleotide C to nucleotide G": 0.7930250288910125,
+        "Substitution rate from nucleotide C to nucleotide T": 2.293147939047202,
+        "Substitution rate from nucleotide G to nucleotide T": 0.4762107120873796
+      },
+      "display order": 0,
+      "estimated parameters": 51
+    }
+  },
+  "input": {
+    "file name": "/Users/sergei/Development/hyphy/tests/data/adh.nex",
+    "number of sequences": 23,
+    "number of sites": 254,
+    "partition count": 1,
+    "trees": {
+      "0": "((((YAK,(MEL,(SIM,MA)Node7)Node5)Node3,ERE)Node2,((((PSE,PS)Node14,PER)Node13,MIR)Node12,(SUB,AMB)Node19)Node11)Node1,(MET,(CRA,(NIG,(MIM,(ADI,(PIC,(((SIL,HET)Node36,(PLA,DIF)Node39)Node35,AFF)Node34)Node32)Node30)Node28)Node26)Node24)Node22,LEB)"
+    }
+  },
+  "test results": {
+    "Importance factor for property Factor I bipolar": {
+      "LRT": 15.48865009707333,
+      "MLE": 0,
+      "p-value": 8.300215115764065e-05
+    },
+    "Importance factor for property Factor II secondary structure": {
+      "LRT": 0.3613068948525324,
+      "MLE": 0,
+      "p-value": 0.5477813140092631
+    },
+    "Importance factor for property Factor III volume": {
+      "LRT": 7.312530129149309,
+      "MLE": 0,
+      "p-value": 0.006847544733269317
+    },
+    "Importance factor for property Factor IV composition": {
+      "LRT": 7.027305283412716,
+      "MLE": 0,
+      "p-value": 0.008027606057382286
+    },
+    "Importance factor for property Factor V charge": {
+      "LRT": 1.527725057152566,
+      "MLE": 0,
+      "p-value": 0.2164541945047249
+    }
+  },
+  "tested": {
+    "0": {
+      "ADI": "test",
+      "AFF": "test",
+      "AMB": "test",
+      "CRA": "test",
+      "DIF": "test",
+      "ERE": "test",
+      "HET": "test",
+      "LEB": "test",
+      "MA": "test",
+      "MEL": "test",
+      "MET": "test",
+      "MIM": "test",
+      "MIR": "test",
+      "NIG": "test",
+      "Node1": "test",
+      "Node11": "test",
+      "Node12": "test",
+      "Node13": "test",
+      "Node14": "test",
+      "Node19": "test",
+      "Node2": "test",
+      "Node22": "test",
+      "Node24": "test",
+      "Node26": "test",
+      "Node28": "test",
+      "Node3": "test",
+      "Node30": "test",
+      "Node32": "test",
+      "Node34": "test",
+      "Node35": "test",
+      "Node36": "test",
+      "Node39": "test",
+      "Node5": "test",
+      "Node7": "test",
+      "PER": "test",
+      "PIC": "test",
+      "PLA": "test",
+      "PS": "test",
+      "PSE": "test",
+      "SIL": "test",
+      "SIM": "test",
+      "SUB": "test",
+      "YAK": "test"
+    }
+  },
+  "timers": {
+    "MG_REV_PROPERTIES": {
+      "order": null,
+      "timer": 46
+    },
+    "Overall": {
+      "order": 0,
+      "timer": 46
+    }
+  }
+}

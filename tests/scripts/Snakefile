@@ -1,0 +1,67 @@
+
+# Snakemake workflow for HyPhy analyses
+
+# --- Configuration ---
+# Input and output directories are expected to be provided via the command line, e.g.:
+# snakemake --config input_dir="path/to/nex" output_dir="path/to/results"
+
+
+
+INPUT_DIR = config["input_dir"]
+OUTPUT_DIR = config["output_dir"]
+MPI_PROCESSES = config.get("mpi_processes", 4)
+
+# --- Get all .nex files ---
+
+
+SAMPLES, = glob_wildcards(INPUT_DIR+ "/{sample}.nex")
+
+# --- Rule all: Define all target files ---
+rule all:
+    input:
+        expand(OUTPUT_DIR + "/busted/{sample}.nex.BUSTED.json", sample=SAMPLES),
+        expand(OUTPUT_DIR + "/fel/{sample}.nex.FEL.json", sample=SAMPLES),
+        expand(OUTPUT_DIR + "/meme/{sample}.nex.MEME.json", sample=SAMPLES),
+        expand(OUTPUT_DIR + "/prime/{sample}.nex.PRIME.json", sample=SAMPLES)
+
+# --- Analysis Rules ---
+
+rule busted:
+    input:
+        nex=INPUT_DIR + "/{sample}.nex"
+    output:
+        json=OUTPUT_DIR + "/busted/{sample}.nex.BUSTED.json"
+    threads:
+        MPI_PROCESSES
+    shell:
+        "hyphy BUSTED --alignment {input.nex} --starting-points 5 --error-sink Yes --output {output.json} "
+
+rule fel:
+    input:
+        nex=INPUT_DIR + "/{sample}.nex"
+    output:
+        json=OUTPUT_DIR + "/fel/{sample}.nex.FEL.json"
+    threads:
+        MPI_PROCESSES
+    shell:
+        "mpirun -np {MPI_PROCESSES} HYPHYMPI FEL --alignment {input.nex} --output {output.json} "
+
+rule meme:
+    input:
+        nex=INPUT_DIR + "/{sample}.nex"
+    output:
+        json=OUTPUT_DIR + "/meme/{sample}.nex.MEME.json"
+    threads:
+        MPI_PROCESSES
+    shell:
+        "mpirun -np {MPI_PROCESSES} HYPHYMPI MEME --alignment {input.nex} --output {output.json} "
+
+rule prime:
+    input:
+        nex=INPUT_DIR + "/{sample}.nex"
+    output:
+        json=OUTPUT_DIR + "/prime/{sample}.nex.PRIME.json"
+    threads:
+        MPI_PROCESSES
+    shell:
+        "mpirun -np {MPI_PROCESSES} HYPHYMPI PRIME --alignment {input.nex} --output {output.json} "

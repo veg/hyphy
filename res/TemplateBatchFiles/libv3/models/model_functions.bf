@@ -448,7 +448,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
                             'parameters.IsIndependent (parameter + "." + _name_)');
 
                      if (None == models.generic.SetBranchLength.bl) {
-                        messages.log ("models.generic.SetBranchLength: no independent model parameters");
+                        messages.log ("models.generic.SetBranchLength: no independent model parameters `models.generic.SetBranchLength.bl.p` <- `value`");
                         return 0;
                      }
                      models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;

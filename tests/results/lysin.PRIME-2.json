@@ -1,0 +1,460 @@
+{
+  "analysis": {
+    "authors": "Sergei L Kosakovsky Pond",
+    "contact": "spond@temple.edu",
+    "info": "Fit one of the available codon models to the data, report fit results and model estimates. Model specific options will differ.",
+    "requirements": "in-frame codon alignment and a phylogenetic tree",
+    "version": "0.1"
+  },
+  "branch attributes": {
+    "0": {
+      "AUSTRALIS": {
+        "Nucleotide GTR": 0.09954958435072395,
+        "original name": "AUSTRALIS"
+      },
+      "COCCINEA": {
+        "Nucleotide GTR": 0.02168130174567389,
+        "original name": "COCCINEA"
+      },
+      "CONICOPORA": {
+        "Nucleotide GTR": 0.001209110539653938,
+        "original name": "CONICOPORA"
+      },
+      "CORRUGATA": {
+        "Nucleotide GTR": 0.03818436647591635,
+        "original name": "CORRUGATA"
+      },
+      "CRACHERODII": {
+        "Nucleotide GTR": 0.09421922904709208,
+        "original name": "CRACHERODII"
+      },
+      "CYCLOBATES": {
+        "Nucleotide GTR": 0.1327983210440121,
+        "original name": "CYCLOBATES"
+      },
+      "DISCUS_HANNAI": {
+        "Nucleotide GTR": 0.005035084844859991,
+        "original name": "DISCUS_HANNAI"
+      },
+      "DIVERSICOLOR": {
+        "Nucleotide GTR": 0.1232630318264669,
+        "original name": "DIVERSICOLOR"
+      },
+      "FULGENS": {
+        "Nucleotide GTR": 0.1151532047661647,
+        "original name": "FULGENS"
+      },
+      "GIGANTEA": {
+        "Nucleotide GTR": 1e-06,
+        "original name": "GIGANTEA"
+      },
+      "IRIS": {
+        "Nucleotide GTR": 0.2198937225388558,
+        "original name": "IRIS"
+      },
+      "KAMTSCHATKANA": {
+        "Nucleotide GTR": 0.0599471369369124,
+        "original name": "KAMTSCHATKANA"
+      },
+      "LAEVIGATA": {
+        "Nucleotide GTR": 0.03516504060807066,
+        "original name": "LAEVIGATA"
+      },
+      "MIDAE": {
+        "Nucleotide GTR": 0.1464912582665941,
+        "original name": "MIDAE"
+      },
+      "NODE1": {
+        "Nucleotide GTR": 0.1811820349986887
+      },
+      "NODE12": {
+        "Nucleotide GTR": 0.03337258124296896
+      },
+      "NODE14": {
+        "Nucleotide GTR": 0.04433731150102488
+      },
+      "NODE17": {
+        "Nucleotide GTR": 0.01786842157499631
+      },
+      "NODE21": {
+        "Nucleotide GTR": 0.04858122050020491
+      },
+      "NODE22": {
+        "Nucleotide GTR": 0.07791869804923721
+      },
+      "NODE24": {
+        "Nucleotide GTR": 0.1149940083647489
+      },
+      "NODE27": {
+        "Nucleotide GTR": 0.02011606256652969
+      },
+      "NODE29": {
+        "Nucleotide GTR": 0.01256461616323322
+      },
+      "NODE3": {
+        "Nucleotide GTR": 0.05827567038587902
+      },
+      "NODE30": {
+        "Nucleotide GTR": 0.03400973934646744
+      },
+      "NODE32": {
+        "Nucleotide GTR": 0.02409243585522333
+      },
+      "NODE33": {
+        "Nucleotide GTR": 0.008292188362258271
+      },
+      "NODE35": {
+        "Nucleotide GTR": 0.04361621154344563
+      },
+      "NODE38": {
+        "Nucleotide GTR": 0.0506798827686936
+      },
+      "NODE4": {
+        "Nucleotide GTR": 0.02102407956527344
+      },
+      "NODE40": {
+        "Nucleotide GTR": 0.03357422201393689
+      },
+      "NODE43": {
+        "Nucleotide GTR": 0.04216056306450102
+      },
+      "NODE44": {
+        "Nucleotide GTR": 0.05064178993136942
+      },
+      "NODE5": {
+        "Nucleotide GTR": 0.0524238354190225
+      },
+      "NODE7": {
+        "Nucleotide GTR": 0.007482973081252557
+      },
+      "NODE9": {
+        "Nucleotide GTR": 0.008528759569159571
+      },
+      "OVINA": {
+        "Nucleotide GTR": 0.057592460965872,
+        "original name": "OVINA"
+      },
+      "PUSTULATA": {
+        "Nucleotide GTR": 0.07559073940210309,
+        "original name": "PUSTULATA"
+      },
+      "ROEI": {
+        "Nucleotide GTR": 0.03060088060988343,
+        "original name": "ROEI"
+      },
+      "RUBRA": {
+        "Nucleotide GTR": 0.003881322000974363,
+        "original name": "RUBRA"
+      },
+      "RUFESCENS": {
+        "Nucleotide GTR": 0.03064154164048664,
+        "original name": "RUFESCENS"
+      },
+      "SCALARIS": {
+        "Nucleotide GTR": 0.04807544561658642,
+        "original name": "SCALARIS"
+      },
+      "SIEBOLDII": {
+        "Nucleotide GTR": 0.007754526182716538,
+        "original name": "SIEBOLDII"
+      },
+      "SORENSENI": {
+        "Nucleotide GTR": 0.009556121092605566,
+        "original name": "SORENSENI"
+      },
+      "TUBERCULATA": {
+        "Nucleotide GTR": 0.008757101651083175,
+        "original name": "TUBERCULATA"
+      },
+      "VARIA": {
+        "Nucleotide GTR": 0.1155404828528787,
+        "original name": "VARIA"
+      },
+      "WALALLENSIS": {
+        "Nucleotide GTR": 0.04222597800151047,
+        "original name": "WALALLENSIS"
+      }
+    },
+    "attributes": {
+      "Nucleotide GTR": {
+        "attribute type": "branch length",
+        "display order": 0
+      },
+      "original name": {
+        "attribute type": "node label",
+        "display order": -1
+      }
+    }
+  },
+  "data partitions": {
+    "0": {
+      "coverage": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90,
+          91,
+          92,
+          93,
+          94,
+          95,
+          96,
+          97,
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108,
+          109,
+          110,
+          111,
+          112,
+          113,
+          114,
+          115,
+          116,
+          117,
+          118,
+          119,
+          120,
+          121,
+          122,
+          123,
+          124,
+          125,
+          126,
+          127,
+          128,
+          129,
+          130,
+          131,
+          132,
+          133
+        ]
+      ],
+      "name": "fitter.filter.default"
+    }
+  },
+  "fits": {
+    "Codon model": {
+      "AIC-c": 8902.995046913018,
+      "Log Likelihood": -4375.80286696796,
+      "Rate Distributions": {
+        "Importance factor for property Factor I bipolar component 1": 9.999999999999966,
+        "Importance factor for property Factor I bipolar component 2": 0.4423822039177138,
+        "Importance factor for property Factor II secondary structure component 1": -4.238009346691532,
+        "Importance factor for property Factor II secondary structure component 2": -0.1336386653875117,
+        "Importance factor for property Factor III volume component 1": -2.252441907492642,
+        "Importance factor for property Factor III volume component 2": -0.2019654971459685,
+        "Importance factor for property Factor IV composition component 1": 9.47343948897119,
+        "Importance factor for property Factor IV composition component 2": 0.1528060328572478,
+        "Importance factor for property Factor V charge component 1": -0.9618402367526196,
+        "Importance factor for property Factor V charge component 2": 0.3325392783672588,
+        "Mixture auxiliary weight for category 1": 0.7922824869430268,
+        "Substitution rate from nucleotide A to nucleotide C": 0.8535116936235823,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.4382273716832729,
+        "Substitution rate from nucleotide C to nucleotide G": 0.4904177854085701,
+        "Substitution rate from nucleotide C to nucleotide T": 0.646677665762444,
+        "Substitution rate from nucleotide G to nucleotide T": 0.2317311056625733,
+        "log of non-synonymous/synonymous rate ratio for category 1": -9.999999999999989,
+        "log of non-synonymous/synonymous rate ratio for category 2": 2.612739104619331
+      },
+      "display order": 1,
+      "estimated parameters": 74
+    },
+    "Nucleotide GTR": {
+      "AIC-c": 9296.377242939125,
+      "Equilibrium frequencies": [
+        [
+          0.2858156028368795
+        ],
+        [
+          0.2127659574468085
+        ],
+        [
+          0.2488348530901722
+        ],
+        [
+          0.2525835866261398
+        ]
+      ],
+      "Log Likelihood": -4592.880436558616,
+      "Rate Distributions": {
+        "Substitution rate from nucleotide A to nucleotide C": 0.8508281812144161,
+        "Substitution rate from nucleotide A to nucleotide G": 1,
+        "Substitution rate from nucleotide A to nucleotide T": 0.4529366305564963,
+        "Substitution rate from nucleotide C to nucleotide G": 0.6605662948601633,
+        "Substitution rate from nucleotide C to nucleotide T": 0.695437406463163,
+        "Substitution rate from nucleotide G to nucleotide T": 0.2644564229173024
+      },
+      "display order": 0,
+      "estimated parameters": 55
+    }
+  },
+  "input": {
+    "file name": "/Users/sergei/Development/hyphy/tests/data/lysin.nex",
+    "number of sequences": 25,
+    "number of sites": 134,
+    "partition count": 1,
+    "trees": {
+      "0": "((FULGENS,(((KAMTSCHATKANA,(RUFESCENS,(SORENSENI,WALALLENSIS)NODE9)NODE7)NODE5,(SIEBOLDII,(DISCUS_HANNAI,GIGANTEA)NODE14)NODE12)NODE4,(CORRUGATA,CRACHERODII)NODE17)NODE3)NODE1,IRIS,((PUSTULATA,(COCCINEA,TUBERCULATA)NODE24)NODE22,(AUSTRALIS,((MIDAE,((ROEI,(SCALARIS,LAEVIGATA)NODE35)NODE33,(CYCLOBATES,(RUBRA,CONICOPORA)NODE40)NODE38)NODE32)NODE30,((OVINA,VARIA)NODE44,DIVERSICOLOR)NODE43)NODE29)NODE27)NODE21)"
+    }
+  },
+  "test results": {},
+  "tested": {
+    "0": {
+      "AUSTRALIS": "test",
+      "COCCINEA": "test",
+      "CONICOPORA": "test",
+      "CORRUGATA": "test",
+      "CRACHERODII": "test",
+      "CYCLOBATES": "test",
+      "DISCUS_HANNAI": "test",
+      "DIVERSICOLOR": "test",
+      "FULGENS": "test",
+      "GIGANTEA": "test",
+      "IRIS": "test",
+      "KAMTSCHATKANA": "test",
+      "LAEVIGATA": "test",
+      "MIDAE": "test",
+      "NODE1": "test",
+      "NODE12": "test",
+      "NODE14": "test",
+      "NODE17": "test",
+      "NODE21": "test",
+      "NODE22": "test",
+      "NODE24": "test",
+      "NODE27": "test",
+      "NODE29": "test",
+      "NODE3": "test",
+      "NODE30": "test",
+      "NODE32": "test",
+      "NODE33": "test",
+      "NODE35": "test",
+      "NODE38": "test",
+      "NODE4": "test",
+      "NODE40": "test",
+      "NODE43": "test",
+      "NODE44": "test",
+      "NODE5": "test",
+      "NODE7": "test",
+      "NODE9": "test",
+      "OVINA": "test",
+      "PUSTULATA": "test",
+      "ROEI": "test",
+      "RUBRA": "test",
+      "RUFESCENS": "test",
+      "SCALARIS": "test",
+      "SIEBOLDII": "test",
+      "SORENSENI": "test",
+      "TUBERCULATA": "test",
+      "VARIA": "test",
+      "WALALLENSIS": "test"
+    }
+  },
+  "timers": {
+    "MG_REV_PROPERTIES_BSREL": {
+      "order": null,
+      "timer": 36
+    },
+    "Overall": {
+      "order": 0,
+      "timer": 36
+    }
+  }
+}

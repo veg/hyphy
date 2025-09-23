@@ -1,0 +1,874 @@
+{
+  "analysis": {
+    "authors": "Sergei L Kosakovsky Pond",
+    "citation": "TBD",
+    "contact": "spond@temple.edu",
+    "info": "\nThe error filter analysis reads a BUSTED-E JSON result file,\nidentifies sites which may be due to alignment or other error, \nand masks them according to a user-selected strategy, saving the resulting MSA to a new file. \nA machine readable report on the errors filtered (if any)  is also created. \n    ",
+    "requirements": "A BUSTED-E .json results file (possibly .gz compressed)",
+    "settings": {},
+    "version": "0.1"
+  },
+  "filter": {
+    "Acinonyx_jubatus_XM_027071728": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Ailuropoda_melanoleuca_XM_034666811": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Aotus_nancymaae_XM_012456414": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 642,
+      "4": 712
+    },
+    "Artibeus_jamaicensis_XM_037167711": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 605,
+      "4": 649
+    },
+    "Arvicanthis_niloticus_XM_034500210": {
+      "0": 1,
+      "1": 3,
+      "2": 387,
+      "3": 605
+    },
+    "Balaenoptera_acutorostrata_scammoni_XM_007177314": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 603,
+      "4": 712
+    },
+    "Balaenoptera_musculus_XM_036863525": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 603,
+      "4": 712
+    },
+    "Bison_bison_bison_XM_010848067": {
+      "0": 1,
+      "1": 3,
+      "2": 20,
+      "3": 317,
+      "4": 340,
+      "5": 603,
+      "6": 712
+    },
+    "Bos_mutus_XM_005895245": {
+      "0": 1,
+      "1": 3,
+      "2": 20,
+      "3": 317,
+      "4": 603,
+      "5": 712
+    },
+    "Bos_taurus_NM_001192878": {
+      "0": 1,
+      "1": 3,
+      "2": 20,
+      "3": 317,
+      "4": 603,
+      "5": 712
+    },
+    "Bubalus_bubalis_XM_006053464": {
+      "0": 1,
+      "1": 3,
+      "2": 20,
+      "3": 317,
+      "4": 603,
+      "5": 712
+    },
+    "Callithrix_jacchus_XM_035255045": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 642,
+      "4": 673,
+      "5": 712
+    },
+    "Callorhinus_ursinus_XM_025873242": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Camelus_bactrianus_XM_010946670": {
+      "0": 1,
+      "1": 3,
+      "2": 39,
+      "3": 603,
+      "4": 712
+    },
+    "Camelus_dromedarius_XM_031454730": {
+      "0": 1,
+      "1": 3,
+      "2": 264,
+      "3": 603,
+      "4": 712
+    },
+    "Camelus_ferus_XM_032484164": {
+      "0": 1,
+      "1": 3,
+      "2": 39,
+      "3": 603,
+      "4": 712
+    },
+    "Capra_hircus_XM_005679110": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 603,
+      "4": 712
+    },
+    "Carlito_syrichta_XM_008062817": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 642,
+      "4": 712
+    },
+    "Cavia_porcellus_XM_003469805": {
+      "0": 1,
+      "1": 3,
+      "2": 605
+    },
+    "Cebus_imitator_XM_017523061": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 642,
+      "4": 673,
+      "5": 712
+    },
+    "Ceratotherium_simum_simum_XM_004439312": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Cercocebus_atys_XM_012054667": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 608,
+      "4": 642,
+      "5": 712,
+      "6": 740
+    },
+    "Chinchilla_lanigera_XM_005377231": {
+      "0": 1,
+      "1": 3,
+      "2": 605
+    },
+    "Chlorocebus_sabaeus_XM_007982475": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 642,
+      "4": 712,
+      "5": 740
+    },
+    "Colobus_angolensis_palliatus_XM_011927744": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 642,
+      "4": 712
+    },
+    "Condylura_cristata_XM_004676910": {
+      "0": 1,
+      "1": 3
+    },
+    "Cricetulus_griseus_XM_035451799": {
+      "0": 1,
+      "1": 3,
+      "2": 387,
+      "3": 605
+    },
+    "Dasypus_novemcinctus_XM_004478986": {
+      "0": 1,
+      "1": 3
+    },
+    "Delphinapterus_leucas_XM_022554419": {
+      "0": 1,
+      "1": 3,
+      "2": 90,
+      "3": 317,
+      "4": 516,
+      "5": 603,
+      "6": 712
+    },
+    "Desmodus_rotundus_XM_024557443": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 605
+    },
+    "Echinops_telfairi_XM_004702604": {
+      "0": 1,
+      "1": 3,
+      "2": 604
+    },
+    "Elephantulus_edwardii_XM_006882607": {
+      "0": 1,
+      "1": 3,
+      "2": 604
+    },
+    "Enhydra_lutris_kenyoni_XM_022515398": {
+      "0": 1,
+      "1": 3,
+      "2": 33,
+      "3": 603
+    },
+    "Eptesicus_fuscus_XM_008149811": {
+      "0": 1,
+      "1": 3,
+      "2": 37,
+      "3": 317,
+      "4": 605
+    },
+    "Equus_asinus_XM_014831937": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Equus_caballus_XM_005609048": {
+      "0": 1,
+      "1": 3,
+      "2": 23,
+      "3": 603
+    },
+    "Equus_przewalskii_XM_008509992": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Eumetopias_jubatus_XM_028118889": {
+      "0": 1,
+      "1": 3,
+      "2": 54,
+      "3": 603
+    },
+    "Felis_catus_NM_001137656": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Fukomys_damarensis_XM_019209486": {
+      "0": 1,
+      "1": 3,
+      "2": 605
+    },
+    "Galeopterus_variegatus_XM_008592255": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 642,
+      "4": 712
+    },
+    "Globicephala_melas_XM_030834328": {
+      "0": 1,
+      "1": 3,
+      "2": 90,
+      "3": 317,
+      "4": 516,
+      "5": 603,
+      "6": 712
+    },
+    "Gorilla_gorilla_gorilla_XM_031013031": {
+      "0": 1,
+      "1": 3,
+      "2": 132,
+      "3": 603,
+      "4": 642,
+      "5": 712
+    },
+    "Grammomys_surdaster_XM_028789159": {
+      "0": 1,
+      "1": 3,
+      "2": 387,
+      "3": 605
+    },
+    "Halichoerus_grypus_XM_036067467": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Heterocephalus_glaber_XM_004839711": {
+      "0": 1,
+      "1": 3,
+      "2": 605
+    },
+    "Homo_sapiens_NM_198999": {
+      "0": 1,
+      "1": 3,
+      "2": 132,
+      "3": 520,
+      "4": 603,
+      "5": 642,
+      "6": 712
+    },
+    "Hylobates_moloch_XM_032761290": {
+      "0": 1,
+      "1": 3,
+      "2": 44,
+      "3": 244,
+      "4": 603,
+      "5": 611,
+      "6": 642,
+      "7": 712
+    },
+    "Ictidomys_tridecemlineatus_XM_005319464": {
+      "0": 1,
+      "1": 3,
+      "2": 605
+    },
+    "Lagenorhynchus_obliquidens_XM_027123823": {
+      "0": 1,
+      "1": 3,
+      "2": 90,
+      "3": 317,
+      "4": 516,
+      "5": 603,
+      "6": 712
+    },
+    "Lipotes_vexillifer_XM_007467055": {
+      "0": 1,
+      "1": 3,
+      "2": 90,
+      "3": 317,
+      "4": 516,
+      "5": 603,
+      "6": 712
+    },
+    "Lontra_canadensis_XM_032873312": {
+      "0": 1,
+      "1": 3,
+      "2": 33,
+      "3": 603
+    },
+    "Lynx_canadensis_XM_032592384": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Macaca_fascicularis_XM_015447881": {
+      "0": 1,
+      "1": 3,
+      "2": 602,
+      "3": 603,
+      "4": 617,
+      "5": 642,
+      "6": 712,
+      "7": 740
+    },
+    "Macaca_mulatta_XM_015134577": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 617,
+      "4": 642,
+      "5": 712,
+      "6": 740
+    },
+    "Macaca_nemestrina_XM_011730522": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 617,
+      "4": 642,
+      "5": 712,
+      "6": 740
+    },
+    "Mandrillus_leucophaeus_XM_011985183": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 608,
+      "4": 642,
+      "5": 712,
+      "6": 740
+    },
+    "Manis_pentadactyla_XM_036892450": {
+      "0": 1,
+      "1": 3
+    },
+    "Marmota_flaviventris_XM_027926348": {
+      "0": 1,
+      "1": 3,
+      "2": 605,
+      "3": 684
+    },
+    "Marmota_marmota_marmota_XM_015488376": {
+      "0": 1,
+      "1": 3,
+      "2": 605
+    },
+    "Mastomys_coucha_XM_031379897": {
+      "0": 1,
+      "1": 3,
+      "2": 387,
+      "3": 605,
+      "4": 704
+    },
+    "Mesocricetus_auratus_XM_005080860": {
+      "0": 1,
+      "1": 3,
+      "2": 387,
+      "3": 605
+    },
+    "Microcebus_murinus_XM_012747064": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 642,
+      "4": 712
+    },
+    "Microtus_ochrogaster_XM_005358364": {
+      "0": 1,
+      "1": 3,
+      "2": 387,
+      "3": 605
+    },
+    "Miniopterus_natalensis_XM_016219592": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 605
+    },
+    "Mirounga_leonina_XM_035020404": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Molossus_molossus_XM_036246251": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 605
+    },
+    "Monodelphis_domestica_XM_007504068": {
+      "0": 1,
+      "1": 3
+    },
+    "Monodon_monoceros_XM_029233634": {
+      "0": 1,
+      "1": 3,
+      "2": 90,
+      "3": 317,
+      "4": 516,
+      "5": 603,
+      "6": 712
+    },
+    "Mus_caroli_XM_021161868": {
+      "0": 1,
+      "1": 3,
+      "2": 387,
+      "3": 605,
+      "4": 704
+    },
+    "Mus_musculus_NM_030727": {
+      "0": 1,
+      "1": 3,
+      "2": 387,
+      "3": 605,
+      "4": 704
+    },
+    "Mus_pahari_XM_021190796": {
+      "0": 1,
+      "1": 3,
+      "2": 387,
+      "3": 605,
+      "4": 704
+    },
+    "Mustela_erminea_XM_032304171": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Mustela_putorius_furo_XM_004739580": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Myotis_brandtii_XM_005862896": {
+      "0": 1,
+      "1": 3,
+      "2": 19,
+      "3": 317,
+      "4": 594,
+      "5": 605
+    },
+    "Myotis_lucifugus_XM_006107698": {
+      "0": 1,
+      "1": 3,
+      "2": 19,
+      "3": 317,
+      "4": 594,
+      "5": 605
+    },
+    "Myotis_myotis_XM_036327600": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 594,
+      "4": 605,
+      "5": 753
+    },
+    "Nannospalax_galili_XM_008830757": {
+      "0": 1,
+      "1": 3,
+      "2": 605
+    },
+    "Nomascus_leucogenys_XM_030826603": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 642,
+      "4": 712
+    },
+    "Ochotona_princeps_XM_004591354": {
+      "0": 1,
+      "1": 3
+    },
+    "Octodon_degus_XM_004639243": {
+      "0": 1,
+      "1": 3,
+      "2": 605
+    },
+    "Odobenus_rosmarus_divergens_XM_004402472": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Odocoileus_virginianus_texanus_XM_020886079": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 603,
+      "4": 712
+    },
+    "Onychomys_torridus_XM_036181828": {
+      "0": 1,
+      "1": 3,
+      "2": 387,
+      "3": 605
+    },
+    "Orcinus_orca_XM_033439554": {
+      "0": 1,
+      "1": 3,
+      "2": 90,
+      "3": 317,
+      "4": 516,
+      "5": 603,
+      "6": 712
+    },
+    "Orycteropus_afer_afer_XM_007944558": {
+      "0": 1,
+      "1": 3,
+      "2": 604
+    },
+    "Oryctolagus_cuniculus_NM_001142261": {
+      "0": 1,
+      "1": 3
+    },
+    "Ovis_aries_XM_015095256": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 603,
+      "4": 712
+    },
+    "Pan_paniscus_XM_034964701": {
+      "0": 1,
+      "1": 3,
+      "2": 132,
+      "3": 569,
+      "4": 603,
+      "5": 642,
+      "6": 712
+    },
+    "Panthera_pardus_XM_019451248": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Panthera_tigris_altaica_XM_007083931": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Papio_anubis_XM_021936137": {
+      "0": 1,
+      "1": 3,
+      "10": 28,
+      "11": 30,
+      "12": 34,
+      "13": 36,
+      "14": 40,
+      "15": 41,
+      "16": 42,
+      "17": 49,
+      "18": 50,
+      "19": 52,
+      "2": 7,
+      "20": 55,
+      "21": 603,
+      "22": 642,
+      "23": 712,
+      "24": 740,
+      "3": 8,
+      "4": 11,
+      "5": 12,
+      "6": 17,
+      "7": 21,
+      "8": 24,
+      "9": 26
+    },
+    "Peromyscus_leucopus_XM_028890919": {
+      "0": 1,
+      "1": 3,
+      "2": 387,
+      "3": 605
+    },
+    "Peromyscus_maniculatus_bairdii_XM_006987804": {
+      "0": 1,
+      "1": 3,
+      "2": 99,
+      "3": 103,
+      "4": 387,
+      "5": 605
+    },
+    "Phascolarctos_cinereus_XM_020984534": {
+      "0": 1,
+      "1": 3,
+      "2": 750
+    },
+    "Phoca_vitulina_XM_032401286": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Phocoena_sinus_XM_032644084": {
+      "0": 1,
+      "1": 3,
+      "2": 90,
+      "3": 276,
+      "4": 303,
+      "5": 317,
+      "6": 516,
+      "7": 603,
+      "8": 712
+    },
+    "Phyllostomus_discolor_XM_028525311": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 605
+    },
+    "Physeter_catodon_XM_024115967": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 603,
+      "4": 712
+    },
+    "Piliocolobus_tephrosceles_XM_023192554": {
+      "0": 1,
+      "1": 3,
+      "2": 33,
+      "3": 603,
+      "4": 642,
+      "5": 712
+    },
+    "Pipistrellus_kuhlii_XM_036429658": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 605
+    },
+    "Pongo_abelii_XM_024250169": {
+      "0": 1,
+      "1": 3,
+      "2": 132,
+      "3": 600,
+      "4": 603,
+      "5": 642,
+      "6": 712
+    },
+    "Pteropus_alecto_XM_006925388": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 605
+    },
+    "Pteropus_vampyrus_XM_011365195": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 605
+    },
+    "Puma_concolor_XM_025929688": {
+      "0": 1,
+      "1": 3,
+      "2": 21,
+      "3": 603
+    },
+    "Rattus_norvegicus_NM_030840": {
+      "0": 1,
+      "1": 3,
+      "2": 387,
+      "3": 605
+    },
+    "Rattus_rattus_XM_032905319": {
+      "0": 1,
+      "1": 3,
+      "2": 387,
+      "3": 605
+    },
+    "Rhinolophus_ferrumequinum_XM_033088899": {
+      "0": 1,
+      "1": 3,
+      "2": 177,
+      "3": 317,
+      "4": 516,
+      "5": 605
+    },
+    "Rhinopithecus_roxellana_XM_010377624": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 642,
+      "4": 712
+    },
+    "Rousettus_aegyptiacus_XM_016145916": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 605
+    },
+    "Sapajus_apella_XM_032276357": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 642,
+      "4": 673,
+      "5": 712
+    },
+    "Sarcophilus_harrisii_XM_003771480": {
+      "0": 1,
+      "1": 3
+    },
+    "Sorex_araneus_XM_004602123": {
+      "0": 1,
+      "1": 3
+    },
+    "Sturnira_hondurensis_XM_037057083": {
+      "0": 1,
+      "1": 3,
+      "2": 317,
+      "3": 605,
+      "4": 649
+    },
+    "Sus_scrofa_NM_001135963": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Talpa_occidentalis_XM_037511212": {
+      "0": 1,
+      "1": 3
+    },
+    "Theropithecus_gelada_XM_025379635": {
+      "0": 1,
+      "1": 3,
+      "2": 355,
+      "3": 603,
+      "4": 642,
+      "5": 712,
+      "6": 740
+    },
+    "Trachypithecus_francoisi_XM_033193819": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 642,
+      "4": 712
+    },
+    "Trichechus_manatus_latirostris_XM_004390719": {
+      "0": 1,
+      "1": 3,
+      "2": 604
+    },
+    "Trichosurus_vulpecula_XM_036759982": {
+      "0": 1,
+      "1": 3
+    },
+    "Tupaia_chinensis_XM_027773396": {
+      "0": 1,
+      "1": 3,
+      "2": 603,
+      "3": 651
+    },
+    "Tursiops_truncatus_XM_004320267": {
+      "0": 1,
+      "1": 3,
+      "2": 90,
+      "3": 317,
+      "4": 516,
+      "5": 603,
+      "6": 712
+    },
+    "Urocitellus_parryii_XM_026384960": {
+      "0": 1,
+      "1": 3,
+      "2": 605
+    },
+    "Ursus_arctos_horribilis_XM_026503996": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Ursus_maritimus_XM_008686142": {
+      "0": 1,
+      "1": 3,
+      "2": 322,
+      "3": 603
+    },
+    "Vombatus_ursinus_XM_027838887": {
+      "0": 1,
+      "1": 3
+    },
+    "Vulpes_vulpes_XM_026006083": {
+      "0": 1,
+      "1": 3,
+      "2": 603
+    },
+    "Zalophus_californianus_XM_027573712": {
+      "0": 1,
+      "1": 3,
+      "2": 54,
+      "3": 603
+    }
+  },
+  "input": {
+    "file name": "/Users/sergei/Dropbox/BustedShare/Pollock/prestin/alignment.fa",
+    "number of sequences": 128,
+    "number of sites": 758,
+    "partition count": 1,
+    "trees": {
+      "0": "(Dasypus_novemcinctus_XM_004478986,(((Echinops_telfairi_XM_004702604,Elephantulus_edwardii_XM_006882607)Node5,(Orycteropus_afer_afer_XM_007944558,Trichechus_manatus_latirostris_XM_004390719)Node8)Node4,((((((((Aotus_nancymaae_XM_012456414,(Callithrix_jacchus_XM_035255045,(Cebus_imitator_XM_017523061,Sapajus_apella_XM_032276357)Node22)Node20)Node18,(((((Macaca_fascicularis_XM_015447881,Macaca_mulatta_XM_015134577,Macaca_nemestrina_XM_011730522)Node36,(Cercocebus_atys_XM_012054667,Mandrillus_leucophaeus_XM_011985183)Node30,(Papio_anubis_XM_021936137,Theropithecus_gelada_XM_025379635)Node33)Node28,Chlorocebus_sabaeus_XM_007982475)Node27,(Piliocolobus_tephrosceles_XM_023192554,Colobus_angolensis_palliatus_XM_011927744,(Rhinopithecus_roxellana_XM_010377624,Trachypithecus_francoisi_XM_033193819)Node45)Node42)Node26,(((Gorilla_gorilla_gorilla_XM_031013031,(Homo_sapiens_NM_198999,Pan_paniscus_XM_034964701)Node53)Node51,Pongo_abelii_XM_024250169)Node50,(Hylobates_moloch_XM_032761290,Nomascus_leucogenys_XM_030826603)Node57)Node49)Node25)Node17,Carlito_syrichta_XM_008062817)Node16,Microcebus_murinus_XM_012747064)Node15,Galeopterus_variegatus_XM_008592255)Node14,Tupaia_chinensis_XM_027773396)Node13,(((((((Arvicanthis_niloticus_XM_034500210,Grammomys_surdaster_XM_028789159)Node70,((Mastomys_coucha_XM_031379897,((Mus_caroli_XM_021161868,Mus_musculus_NM_030727)Node77,Mus_pahari_XM_021190796)Node76)Node74,(Rattus_norvegicus_NM_030840,Rattus_rattus_XM_032905319)Node81)Node73)Node69,(((Cricetulus_griseus_XM_035451799,Mesocricetus_auratus_XM_005080860)Node86,Microtus_ochrogaster_XM_005358364)Node85,(Onychomys_torridus_XM_036181828,(Peromyscus_leucopus_XM_028890919,Peromyscus_maniculatus_bairdii_XM_006987804)Node92)Node90)Node84)Node68,Nannospalax_galili_XM_008830757)Node67,((Cavia_porcellus_XM_003469805,(Chinchilla_lanigera_XM_005377231,Octodon_degus_XM_004639243)Node99)Node97,(Fukomys_damarensis_XM_019209486,Heterocephalus_glaber_XM_004839711)Node102)Node96)Node66,(Ictidomys_tridecemlineatus_XM_005319464,(Marmota_flaviventris_XM_027926348,Marmota_marmota_marmota_XM_015488376)Node108,Urocitellus_parryii_XM_026384960)Node105)Node65,(Ochotona_princeps_XM_004591354,Oryctolagus_cuniculus_NM_001142261)Node112)Node64)Node12,(Manis_pentadactyla_XM_036892450,(((Condylura_cristata_XM_004676910,Talpa_occidentalis_XM_037511212)Node119,Sorex_araneus_XM_004602123)Node118,(((((((Artibeus_jamaicensis_XM_037167711,Sturnira_hondurensis_XM_037057083)Node129,Phyllostomus_discolor_XM_028525311)Node128,Desmodus_rotundus_XM_024557443)Node127,((((Eptesicus_fuscus_XM_008149811,Pipistrellus_kuhlii_XM_036429658)Node137,((Myotis_brandtii_XM_005862896,Myotis_lucifugus_XM_006107698)Node141,Myotis_myotis_XM_036327600)Node140)Node136,Miniopterus_natalensis_XM_016219592)Node135,Molossus_molossus_XM_036246251)Node134)Node126,Rhinolophus_ferrumequinum_XM_033088899)Node125,((Pteropus_alecto_XM_006925388,Pteropus_vampyrus_XM_011365195)Node149,Rousettus_aegyptiacus_XM_016145916)Node148)Node124,(((Ceratotherium_simum_simum_XM_004439312,(Equus_asinus_XM_014831937,(Equus_caballus_XM_005609048,Equus_przewalskii_XM_008509992)Node159)Node157)Node155,(((((Balaenoptera_acutorostrata_scammoni_XM_007177314,Balaenoptera_musculus_XM_036863525)Node166,((((Phocoena_sinus_XM_032644084,(Globicephala_melas_XM_030834328,((Lagenorhynchus_obliquidens_XM_027123823,Orcinus_orca_XM_033439554)Node180,Tursiops_truncatus_XM_004320267)Node179)Node177)Node175,Delphinapterus_leucas_XM_022554419,Monodon_monoceros_XM_029233634)Node171,Lipotes_vexillifer_XM_007467055)Node170,Physeter_catodon_XM_024115967)Node169)Node165,(((((Bison_bison_bison_XM_010848067,Bos_mutus_XM_005895245)Node190,Bos_taurus_NM_001192878)Node189,Bubalus_bubalis_XM_006053464)Node188,(Capra_hircus_XM_005679110,Ovis_aries_XM_015095256)Node195)Node187,Odocoileus_virginianus_texanus_XM_020886079)Node186)Node164,((Camelus_bactrianus_XM_010946670,Camelus_ferus_XM_032484164)Node200,Camelus_dromedarius_XM_031454730)Node199)Node163,Sus_scrofa_NM_001135963)Node162)Node154,((((Ailuropoda_melanoleuca_XM_034666811,(Ursus_arctos_horribilis_XM_026503996,Ursus_maritimus_XM_008686142)Node210)Node208,((((Callorhinus_ursinus_XM_025873242,(Eumetopias_jubatus_XM_028118889,Zalophus_californianus_XM_027573712)Node218)Node216,Odobenus_rosmarus_divergens_XM_004402472)Node215,((Halichoerus_grypus_XM_036067467,Phoca_vitulina_XM_032401286)Node223,Mirounga_leonina_XM_035020404)Node222)Node214,((Enhydra_lutris_kenyoni_XM_022515398,Lontra_canadensis_XM_032873312)Node228,(Mustela_erminea_XM_032304171,Mustela_putorius_furo_XM_004739580)Node231)Node227)Node213)Node207,Vulpes_vulpes_XM_026006083)Node206,(Puma_concolor_XM_025929688,(Acinonyx_jubatus_XM_027071728,Felis_catus_NM_001137656,(Lynx_canadensis_XM_032592384,(Panthera_pardus_XM_019451248,Panthera_tigris_altaica_XM_007083931)Node243)Node241)Node237)Node235)Node205)Node153)Node123)Node117)Node115)Node11)Node3,(Monodelphis_domestica_XM_007504068,(((Phascolarctos_cinereus_XM_020984534,Vombatus_ursinus_XM_027838887)Node250,Trichosurus_vulpecula_XM_036759982)Node249,Sarcophilus_harrisii_XM_003771480)Node248)Node246)"
+    }
+  },
+  "settings": {
+    "BF": 100,
+    "BF ratio": 20,
+    "site threshold": 0.4
+  }
+}
