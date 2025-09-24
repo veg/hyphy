@@ -59,7 +59,7 @@ jobs:
     - name: Run tests
       run: |
         if [ "${{ matrix.arch }}" == "aarch64" ]; then
-          docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/ws:rw --workdir=/ws arm64v8/ubuntu:20.04 bash -c "apt-get update && apt-get install -y software-properties-common && add-apt-repository -y ppa:ubuntu-toolchain-r/test && apt-get update && apt-get install -y cmake make gcc-13 g++-13 && cmake -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13 . ${{ matrix.cmake_flags }} && make -j$(nproc) && make -j$(nproc) test"
+          docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/ws:rw --workdir=/ws arm64v8/ubuntu:20.04 bash -c "apt-get update && apt-get install -y software-properties-common && add-apt-repository -y ppa:ubuntu-toolchain-r/test && apt-get update && apt-get install -y cmake make gcc-13 g++-13 && cmake -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13 . ${{ matrix.cmake_flags }} && make -j$(nproc) && ctest --stop-on-failure --output-on-failure"
         else
-          make -j$(nproc) test
+          ctest --stop-on-failure --output-on-failure
         fi
