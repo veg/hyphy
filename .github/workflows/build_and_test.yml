@@ -32,7 +32,7 @@ jobs:
     - name: Build binary
       run: |
         if [ "${{ matrix.arch }}" == "aarch64" ]; then
-          docker run --rm -v ${{ github.workspace }}:/ws:rw --workdir=/ws arm64v8/ubuntu:20.04 bash -c "apt-get update && apt-get install -y cmake make g++ && cmake . ${{ matrix.cmake_flags }} && make"
+          docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/ws:rw --workdir=/ws arm64v8/ubuntu:20.04 bash -c "apt-get update && apt-get install -y cmake make g++ && cmake . ${{ matrix.cmake_flags }} && make"
         else
           cmake . ${{ matrix.cmake_flags }}
           make
