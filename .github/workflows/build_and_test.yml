@@ -17,9 +17,16 @@ jobs:
           - name: "x86-64 no-AVX2"
             os: ubuntu-latest
             cmake_flags: "-DNOAVX=ON"
+          - name: "x86-64 no-SSE-AVX"
+            os: ubuntu-latest
+            cmake_flags: "-DNOAVX=ON -DNOSSE4=ON"
           - name: "ARM64"
             os: ubuntu-latest
             cmake_flags: ""
+            arch: "aarch64"
+          - name: "ARM64 no-NEON"
+            os: ubuntu-latest
+            cmake_flags: "-DNONEON=ON"
             arch: "aarch64"
 
     steps:
