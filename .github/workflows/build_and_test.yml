@@ -25,23 +25,34 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Install GCC 13
+      if: matrix.arch != 'aarch64'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y software-properties-common
+        sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+        sudo apt-get update
+        sudo apt-get install -y gcc-13 g++-13
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100
+
     - name: Set up QEMU
       if: matrix.arch == 'aarch64'
-      uses: docker/setup-qemu-action@v2
+      uses: docker/setup-qemu-action@v3
 
     - name: Build binary
       run: |
         if [ "${{ matrix.arch }}" == "aarch64" ]; then
-          docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/ws:rw --workdir=/ws arm64v8/ubuntu:20.04 bash -c "apt-get update && apt-get install -y cmake make g++ && cmake . ${{ matrix.cmake_flags }} && make"
+          docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/ws:rw --workdir=/ws arm64v8/ubuntu:20.04 bash -c "apt-get update && apt-get install -y software-properties-common && add-apt-repository -y ppa:ubuntu-toolchain-r/test && apt-get update && apt-get install -y cmake make gcc-13 g++-13 && cmake -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13 . ${{ matrix.cmake_flags }} && make -j$(nproc)"
         else
           cmake . ${{ matrix.cmake_flags }}
-          make
+          make -j$(nproc)
         fi
 
     - name: Run tests
       run: |
         if [ "${{ matrix.arch }}" == "aarch64" ]; then
-          docker run --rm -v ${{ github.workspace }}:/ws:rw --workdir=/ws arm64v8/ubuntu:20.04 bash -c "apt-get update && apt-get install -y cmake make g++ && cmake . ${{ matrix.cmake_flags }} && make && make test"
+          docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/ws:rw --workdir=/ws arm64v8/ubuntu:20.04 bash -c "apt-get update && apt-get install -y software-properties-common && add-apt-repository -y ppa:ubuntu-toolchain-r/test && apt-get update && apt-get install -y cmake make gcc-13 g++-13 && cmake -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13 . ${{ matrix.cmake_flags }} && make -j$(nproc) && make -j$(nproc) test"
         else
-          make test
+          make -j$(nproc) test
         fi
