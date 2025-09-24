@@ -21,11 +21,11 @@ jobs:
             os: ubuntu-latest
             cmake_flags: "-DNOAVX=ON -DNOSSE4=ON"
           - name: "ARM64"
-            os: ubuntu-latest
+            os: macos-latest-xlarge
             cmake_flags: ""
             arch: "aarch64"
           - name: "ARM64 no-NEON"
-            os: ubuntu-latest
+            os: macos-latest-xlarge
             cmake_flags: "-DNONEON=ON"
             arch: "aarch64"
 
