@@ -1,4 +1,4 @@
-RequireVersion ("2.5.21");
+RequireVersion ("2.5.82");
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 
@@ -31,6 +31,7 @@ LoadFunctionLibrary("libv3/models/rate_variation.bf");
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
 utility.SetEnvVariable ("USE_MEMORY_SAVING_DATA_STRUCTURES", 1e8);
+utility.SetEnvVariable ("ENFORCE_CONSTRAINT_VIOLATIONS", TRUE);
 
 //relax.OPTIMIZATION_LOGS = 1;
 
@@ -482,7 +483,6 @@ if (relax.model_set == "All") { // run all the models
         relax.distribution          = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
         relax.weight_multipliers    = parameters.helper.stick_breaking (utility.SwapKeysAndValues(utility.MatrixToDict(relax.distribution["weights"])),None);
         relax.constrain_parameters   = parameters.ConstrainMeanOfSet(relax.distribution["rates"],relax.weight_multipliers,1,"relax");
-        
  
         
         relax.i = 0;
@@ -1071,6 +1071,9 @@ function relax.FitMainTestPair (prompt) {
         relax.save_fit_path = io.PromptUserForFilePath ("Save RELAX model fit to this file ['/dev/null' to skip]");
     } 
     
+    
+    relax.stashLF = estimators.TakeLFStateSnapshot (relax.alternative_model.fit[terms.likelihood_function]);
+
     io.SpoolLFToPath(relax.alternative_model.fit[terms.likelihood_function], relax.save_fit_path);
 
 	if (relax.numbers_of_tested_groups == 2 && relax.analysis_run_mode != relax.kGroupMode) {
@@ -1148,7 +1151,7 @@ function relax.FitMainTestPair (prompt) {
                     {estimators.GetGlobalMLE (relax.alternative_model.fit.take2,terms.relax.k), relax.alternative_model.fit.take2 [terms.fit.log_likelihood]}
                 });
 
-			if (relax.alternative_model.fit.take2 [terms.fit.log_likelihood] > relax.alternative_model.fit.take2[terms.fit.log_likelihood]) {
+			if (relax.alternative_model.fit.take2 [terms.fit.log_likelihood] > relax.alternative_model.fit [terms.fit.log_likelihood]) {
 			    relax.stash_fitted_K = relax.fitted.K;
 
 				io.ReportProgressMessageMD("RELAX", "alt-2", "\n### Potential for highly unreliable K inference due to multiple local maxima in the likelihood function, treat results with caution ");
@@ -1171,6 +1174,8 @@ function relax.FitMainTestPair (prompt) {
 
 				relax.alternative_model.fit = relax.alternative_model.fit.take2;
                 io.SpoolLFToPath(relax.alternative_model.fit.take2[terms.likelihood_function], relax.save_fit_path);
+                relax.stashLF = estimators.TakeLFStateSnapshot (relax.alternative_model.fit[terms.likelihood_function]);
+
 			} else {
 			    estimators.RestoreLFStateFromSnapshot(relax.alternative_model.fit[terms.likelihood_function], relax.take1_snapshot);
 			}

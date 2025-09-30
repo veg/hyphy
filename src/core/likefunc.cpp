@@ -2030,6 +2030,9 @@ bool _LikelihoodFunction::SendOffToMPI(long index, void *request) {
 //_______________________________________________________________________________________
 
 bool _LikelihoodFunction::PreCompute(void) {
+
+  bool validated_contstraints = true;
+
   if (compiled_constraints) {
     // populate all the independent variables
     for (unsigned long i = 0; i < compiled_constraints->varIndex.lLength; i++) {
@@ -2082,6 +2085,9 @@ bool _LikelihoodFunction::PreCompute(void) {
       if (!cornholio->IsValueInBounds(tp)) {
         ReportWarning(_String("Failing bound checks on ") &
                       *cornholio->GetName() & " = " & _String(tp, "%25.16g"));
+        ReportWarning(_String(
+            cornholio->GetFormulaString(kFormulaStringConversionReportRanges)));
+        validated_contstraints = false;
         // break;
       }
     }
@@ -2098,6 +2104,12 @@ bool _LikelihoodFunction::PreCompute(void) {
         }
     }
     */
+
+    if (!CheckEqual(hy_env::EnvVariableGetNumber(
+                        hy_env::enforce_constraint_violations, 0.),
+                    0.0)) {
+      return validated_contstraints;
+    }
 
     return (i == arrayToCheck->lLength);
   }
@@ -7903,14 +7915,20 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
       if (maxSoFar < initialValue &&
           !CheckEqual(maxSoFar, initialValue,
                       kMachineEpsilon * errorTolerance)) {
-        _TerminateAndDump(_String(" _LikelihoodFunction::GradientLocateTheBump:"
-                                  " in the Brent loop iteration ") &
-                          long(outcome) & ". " & _String(maxSoFar, "%18.16g") &
-                          " / " & _String(initialValue, "%18.16g") &
-                          ".\n Optimization direction: \n" &
-                          _String((_String *)gradient.toStr()));
+        _String errorStr =
+            _String(" _LikelihoodFunction::GradientLocateTheBump:"
+                    " in the Brent loop iteration ") &
+            long(outcome) & ". " & _String(maxSoFar, "%18.16g") & " / " &
+            _String(initialValue, "%18.16g") &
+            ".\n Optimization direction: \n" &
+            _String((_String *)gradient.toStr());
 
-        return 0.;
+        if (hy_env::EnvVariableTrue(hy_env::tolerate_numerical_errors)) {
+          ReportWarningConsole(errorStr);
+        } else {
+          _TerminateAndDump(errorStr);
+          return 0.;
+        }
       }
     }
   }

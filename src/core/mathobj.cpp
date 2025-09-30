@@ -396,7 +396,7 @@ HBLObjectRef _MathObject::ExecuteSingleOp(long opCode, _List *arguments,
     default:
       WarnNotDefined(this, opCode, context);
     }
-  } catch (const _String err) {
+  } catch (const _String &err) {
     if (context) {
       context->ReportError(err);
     } else {

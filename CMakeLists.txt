@@ -113,6 +113,7 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     list(APPEND COMMON_COMPILE_FLAGS "-Wno-overloaded-virtual")
+    list(APPEND COMMON_COMPILE_FLAGS "-Wno-maybe-uninitialized")
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -255,7 +256,7 @@ install(TARGETS hyphy RUNTIME DESTINATION bin)
 # Other Executables
 #------------------------------------------------------------------------------
 if(MPI_FOUND)
-    add_executable(HYPHYMPI EXCLUDE_FROM_ALL ${SRC_COMMON} ${SRC_UNIXMAIN})
+    add_executable(HYPHYMPI ${SRC_COMMON} ${SRC_UNIXMAIN})
     target_compile_options(HYPHYMPI PRIVATE ${COMMON_COMPILE_FLAGS} ${HYPHY_SIMD_FLAGS})
     target_compile_definitions(HYPHYMPI PRIVATE
         __AFYP_REWRITE_BGM__
@@ -285,7 +286,7 @@ if(MPI_FOUND)
         target_include_directories(HYPHYMPI PRIVATE ${ZLIB_INCLUDE_DIRS})
         target_compile_definitions(HYPHYMPI PRIVATE __ZLIB__)
     endif()
-    install(TARGETS HYPHYMPI RUNTIME DESTINATION bin OPTIONAL)
+    install(TARGETS HYPHYMPI RUNTIME DESTINATION bin)
 endif()
 
 add_executable(HYPHYDEBUG EXCLUDE_FROM_ALL ${SRC_COMMON} ${SRC_UNIXMAIN})

@@ -5670,7 +5670,7 @@ void _Matrix::CopyMatrixToDenseAndMultiply(_Matrix const &source, hyFloat C,
     } else {
       throw(_String("The target argument must be a dense numeric matrix"));
     }
-  } catch (_String const err) {
+  } catch (_String const &err) {
     HandleApplicationError(_String("Internal error in ") &
                            _String(__PRETTY_FUNCTION__).Enquote() & ": " & err);
   }

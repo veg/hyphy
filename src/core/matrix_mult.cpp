@@ -1323,57 +1323,37 @@ void _hy_matrix_multiply_4x4x1(double *C, double *A, double *B, int stride,
                                bool add) {
   int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
 
-  __m128d A11, A12, A21, A22;
-  __m128d C11, C12, C21, C22;
-  __m128d B1, B2;
+  __m128d b_vec = _mm_setzero_pd();
+  b_vec = _mm_loadl_pd(b_vec, B);
+  b_vec = _mm_loadh_pd(b_vec, B + S1);
 
-  // 00*00 + 01*10 + 02*20 + 03*30
+  __m128d r0 = _mm_mul_pd(_mm_loadu_pd(A), b_vec);
+  __m128d r1 = _mm_mul_pd(_mm_loadu_pd(A + S1), b_vec);
+  __m128d r2 = _mm_mul_pd(_mm_loadu_pd(A + S2), b_vec);
+  __m128d r3 = _mm_mul_pd(_mm_loadu_pd(A + S3), b_vec);
 
-  B1 = _mm_loadh_pd(_mm_load_sd(B), B + S1);
-  B2 = _mm_loadh_pd(_mm_load_sd(B + S2), B + S3);
+  b_vec = _mm_loadl_pd(b_vec, B + S2);
+  b_vec = _mm_loadh_pd(b_vec, B + S3);
 
-  A11 = _mm_loadu_pd(A);
-  A12 = _mm_loadu_pd(A + 2);
-  A21 = _mm_loadu_pd(A + S1);
-  A22 = _mm_loadu_pd(A + S1 + 2);
+  r0 = _mm_add_pd(r0, _mm_mul_pd(_mm_loadu_pd(A + 2), b_vec));
+  r1 = _mm_add_pd(r1, _mm_mul_pd(_mm_loadu_pd(A + S1 + 2), b_vec));
+  r2 = _mm_add_pd(r2, _mm_mul_pd(_mm_loadu_pd(A + S2 + 2), b_vec));
+  r3 = _mm_add_pd(r3, _mm_mul_pd(_mm_loadu_pd(A + S3 + 2), b_vec));
 
-  C11 = _mm_mul_pd(A11, B1); // 00*00, 01*10
-  C12 = _mm_mul_pd(A12, B2); // 02*20, 03*30
-  C21 = _mm_mul_pd(A21, B1);
-  C22 = _mm_mul_pd(A22, B2);
-
-  C11 = _mm_add_pd(C11, C12); // 00*00+02*20,01*10+03*30
-  C21 = _mm_add_pd(C21, C22);
-  C11 = _mm_hadd_pd(C11, C21);
+  r0 = _mm_hadd_pd(r0, r1);
+  r2 = _mm_hadd_pd(r2, r3);
 
   if (add) {
-    C[0] += _mm_cvtsd_f64(C11);
-    C[S1] += _mm_cvtsd_f64(_mm_unpackhi_pd(C11, C11));
+    __m128d c_vec = _mm_loadu_pd(C);
+    c_vec = _mm_add_pd(c_vec, _mm_unpacklo_pd(r0, r2));
+    _mm_storeu_pd(C, c_vec);
+    c_vec = _mm_loadu_pd(C + S2);
+    c_vec = _mm_add_pd(c_vec, _mm_unpackhi_pd(r0, r2));
+    _mm_storeu_pd(C + S2, c_vec);
+
   } else {
-    _mm_storel_pd(C, C11);
-    _mm_storeh_pd(C + S1, C11);
-  }
-
-  A11 = _mm_loadu_pd(A + S2);
-  A12 = _mm_loadu_pd(A + S2 + 2);
-  A21 = _mm_loadu_pd(A + S3);
-  A22 = _mm_loadu_pd(A + S3 + 2);
-
-  C11 = _mm_mul_pd(A11, B1);
-  C12 = _mm_mul_pd(A12, B2);
-  C21 = _mm_mul_pd(A21, B1);
-  C22 = _mm_mul_pd(A22, B2);
-
-  C11 = _mm_add_pd(C11, C12); // 00*00+02*20,01*10+03*30
-  C21 = _mm_add_pd(C21, C22);
-  C11 = _mm_hadd_pd(C11, C21);
-
-  if (add) {
-    C[S2] += _mm_cvtsd_f64(C11);
-    C[S3] += _mm_cvtsd_f64(_mm_unpackhi_pd(C11, C11));
-  } else {
-    _mm_storel_pd(C + S2, C11);
-    _mm_storeh_pd(C + S3, C11);
+    _mm_storeu_pd(C, _mm_unpacklo_pd(r0, r2));
+    _mm_storeu_pd(C + S2, _mm_unpackhi_pd(r0, r2));
   }
 }
 
@@ -1866,252 +1846,83 @@ void _hy_matrix_multiply_4x3x4(double *C, double *A, double *B, int stride) {
 
 void _hy_matrix_multiply_4x4x3(double *C, double *A, double *B, int stride,
                                bool add) {
-  // 00*00 + 01*10 + 02*20 + 03*30
-  // 00*01 + 01*11 + 02*21 + 03*31
-  // 02 = 00*02 + 01*12 + 02*22 + 03*32
-  // 12 = 10*02 + 11*12 + 12*22 + 13*23
-  // 22 = 20*02 + 21*12 + 22*22 + 23*23
-  // 32 = 30*02 + 31*12 + 32*22 + 33*32
 
-  int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
+  for (int i = 0; i < 4; i++) { // over rows of A/C
+    __m128d acc = _mm_setzero_pd();
+    if (add) {
+      acc = _mm_loadu_pd(C + i * stride);
+    }
 
-  __m128d A1, A2, A3, A4;
-  __m128d B1, B_LC1; // current row in B (first two elements)
-  __m128d C11, C21, C31, C41, C_LC1, C_LC2;
-
-  A1 = _mm_loaddup_pd(A);      // A[0][0] x2
-  A2 = _mm_loaddup_pd(A + S1); // A[1][0] x2
-  A3 = _mm_loaddup_pd(A + S2); // A[2][0] x2
-  A4 = _mm_loaddup_pd(A + S3); // A[3][0] x2
-
-  B1 = _mm_loadu_pd(B); // 00,01
-
-  B_LC1 = _mm_loaddup_pd(B + 2); // 02, 02
-
-  auto handle_block_mult = [&]() -> void {
-    C11 = _mm_mul_pd(A1, B1); // 00*00, 00*01
-    C21 = _mm_mul_pd(A2, B1); // 10*00, 10*01
-    C31 = _mm_mul_pd(A3, B1); // 20*00, 20*01
-    C41 = _mm_mul_pd(A4, B1); // 20*00, 20*01
-    C_LC1 = _mm_mul_pd(B_LC1, _mm_blend_pd(A1, A2, 2));
-    C_LC2 = _mm_mul_pd(B_LC1, _mm_blend_pd(A3, A4, 2));
-  };
-
-  auto handle_block_madd = [&]() -> void {
-    C11 = _mm_add_pd(C11, _mm_mul_pd(A1, B1)); // 00*00, 00*01
-    C21 = _mm_add_pd(C21, _mm_mul_pd(A2, B1)); // 10*00, 10*01
-    C31 = _mm_add_pd(C31, _mm_mul_pd(A3, B1)); // 20*00, 20*01
-    C41 = _mm_add_pd(C41, _mm_mul_pd(A4, B1)); // 20*00, 20*01
-    C_LC1 = _mm_add_pd(C_LC1, _mm_mul_pd(B_LC1, _mm_blend_pd(A1, A2, 2)));
-    C_LC2 = _mm_add_pd(C_LC2, _mm_mul_pd(B_LC1, _mm_blend_pd(A3, A4, 2)));
-  };
-
-  if (add) {
-    C11 = _mm_loadu_pd(C);
-    C21 = _mm_loadu_pd(C + S1);
-    C31 = _mm_loadu_pd(C + S2);
-    C41 = _mm_loadu_pd(C + S3);
-    C_LC1 = _mm_loadh_pd(_mm_load_sd(C + 2), C + S1 + 2);
-    C_LC2 = _mm_loadh_pd(_mm_load_sd(C + S2 + 2), C + S3 + 2);
-    handle_block_madd();
-  } else {
-    handle_block_mult();
+    for (int k = 0; k < 4; k++) { // over columns of A / rows of B
+      __m128d a_val = _mm_load1_pd(A + i * stride + k);
+      __m128d b_row = _mm_loadu_pd(B + k * stride);
+      acc = _mm_fmadd_pd(a_val, b_row, acc);
+    }
+    _mm_storeu_pd(C + i * stride, acc);
   }
 
-  A1 = _mm_loaddup_pd(A + 1);         // A[0][1] x2
-  A2 = _mm_loaddup_pd(A + S1 + 1);    // A[1][1] x2
-  A3 = _mm_loaddup_pd(A + S2 + 1);    // A[2][1] x2
-  A4 = _mm_loaddup_pd(A + S3 + 1);    // A[3][1] x2
-  B1 = _mm_loadu_pd(B + S1);          // 10,11
-  B_LC1 = _mm_loaddup_pd(B + S1 + 2); // 02, 02
-
-  handle_block_madd();
-
-  A1 = _mm_loaddup_pd(A + 2);         // A[0][2] x2
-  A2 = _mm_loaddup_pd(A + S1 + 2);    // A[1][3] x2
-  A3 = _mm_loaddup_pd(A + S2 + 2);    // A[2][2] x2
-  A4 = _mm_loaddup_pd(A + S3 + 2);    // A[3][2] x2
-  B1 = _mm_loadu_pd(B + S2);          // 10,11
-  B_LC1 = _mm_loaddup_pd(B + S2 + 2); // 02, 02
-
-  handle_block_madd();
-
-  A1 = _mm_loaddup_pd(A + 3);         // A[0][3] x2
-  A2 = _mm_loaddup_pd(A + S1 + 3);    // A[1][3] x2
-  A3 = _mm_loaddup_pd(A + S2 + 3);    // A[2][3] x2
-  A4 = _mm_loaddup_pd(A + S3 + 3);    // A[3][3] x2
-  B1 = _mm_loadu_pd(B + S3);          // 10,11
-  B_LC1 = _mm_loaddup_pd(B + S3 + 2); // 02, 02
-
-  handle_block_madd();
-
-  _mm_storeu_pd(C, C11);
-  _mm_storeu_pd(C + S1, C21);
-  _mm_storeu_pd(C + S2, C31);
-  _mm_storeu_pd(C + S3, C41);
-  _mm_storel_pd(C + 2, C_LC1);
-  _mm_storeh_pd(C + S1 + 2, C_LC1);
-  _mm_storel_pd(C + S2 + 2, C_LC2);
-  _mm_storeh_pd(C + S3 + 2, C_LC2);
+  // Process last column of C
+  for (int i = 0; i < 4; i++) { // over rows of A/C
+    double acc = 0.0;
+    if (add) {
+      acc = C[i * stride + 2];
+    }
+    for (int k = 0; k < 4; k++) { // over columns of A / rows of B
+      acc += A[i * stride + k] * B[k * stride + 2];
+    }
+    C[i * stride + 2] = acc;
+  }
 }
 
 void _hy_matrix_multiply_4x3x3(double *C, double *A, double *B, int stride,
                                bool add) {
-  // 00*00 + 01*10 + 02*20
-  // 00*01 + 01*11 + 02*21
-  // 02 = 00*02 + 01*12 + 02*22
-  // 12 = 10*02 + 11*12 + 12*22
-  // 22 = 20*02 + 21*12 + 22*22
-  // 32 = 30*02 + 31*12 + 32*22
 
-  int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
+  for (int i = 0; i < 4; i++) { // iterate over rows of A
+    __m128d a_i0 = _mm_load1_pd(A + i * stride + 0);
+    __m128d a_i1 = _mm_load1_pd(A + i * stride + 1);
+    __m128d a_i2 = _mm_load1_pd(A + i * stride + 2);
 
-  __m128d A1, A2, A3, A4;
-  __m128d B1, B_LC1; // current row in B (first two elements)
-  __m128d C11, C21, C31, C41, C_LC1, C_LC2;
+    __m128d b_r0 = _mm_loadu_pd(B);
+    __m128d b_r1 = _mm_loadu_pd(B + stride);
+    __m128d b_r2 = _mm_loadu_pd(B + 2 * stride);
 
-  A1 = _mm_loaddup_pd(A);      // A[0][0] x2
-  A2 = _mm_loaddup_pd(A + S1); // A[1][0] x2
-  A3 = _mm_loaddup_pd(A + S2); // A[2][0] x2
-  A4 = _mm_loaddup_pd(A + S3); // A[3][0] x2
+    __m128d c_r = _mm_mul_pd(a_i0, b_r0);
+    c_r = _mm_fmadd_pd(a_i1, b_r1, c_r);
+    c_r = _mm_fmadd_pd(a_i2, b_r2, c_r);
 
-  B1 = _mm_loadu_pd(B); // 00,01
+    double c_2 = A[i * stride + 0] * B[2] + A[i * stride + 1] * B[stride + 2] +
+                 A[i * stride + 2] * B[2 * stride + 2];
 
-  B_LC1 = _mm_loaddup_pd(B + 2); // 02, 02
-
-  auto handle_block_mult = [&]() -> void {
-    C11 = _mm_mul_pd(A1, B1); // 00*00, 00*01
-    C21 = _mm_mul_pd(A2, B1); // 10*00, 10*01
-    C31 = _mm_mul_pd(A3, B1); // 20*00, 20*01
-    C41 = _mm_mul_pd(A4, B1); // 20*00, 20*01
-    C_LC1 = _mm_mul_pd(B_LC1, _mm_blend_pd(A1, A2, 2));
-    C_LC2 = _mm_mul_pd(B_LC1, _mm_blend_pd(A3, A4, 2));
-  };
-
-  auto handle_block_madd = [&]() -> void {
-    C11 = _mm_add_pd(C11, _mm_mul_pd(A1, B1)); // 00*00, 00*01
-    C21 = _mm_add_pd(C21, _mm_mul_pd(A2, B1)); // 10*00, 10*01
-    C31 = _mm_add_pd(C31, _mm_mul_pd(A3, B1)); // 20*00, 20*01
-    C41 = _mm_add_pd(C41, _mm_mul_pd(A4, B1)); // 20*00, 20*01
-    C_LC1 = _mm_add_pd(C_LC1, _mm_mul_pd(B_LC1, _mm_blend_pd(A1, A2, 2)));
-    C_LC2 = _mm_add_pd(C_LC2, _mm_mul_pd(B_LC1, _mm_blend_pd(A3, A4, 2)));
-  };
-
-  if (add) {
-    C11 = _mm_loadu_pd(C);
-    C21 = _mm_loadu_pd(C + S1);
-    C31 = _mm_loadu_pd(C + S2);
-    C41 = _mm_loadu_pd(C + S3);
-    C_LC1 = _mm_loadh_pd(_mm_load_sd(C + 2), C + S1 + 2);
-    C_LC2 = _mm_loadh_pd(_mm_load_sd(C + S2 + 2), C + S3 + 2);
-    handle_block_madd();
-  } else {
-    handle_block_mult();
+    if (add) {
+      _mm_storeu_pd(C + i * stride,
+                    _mm_add_pd(_mm_loadu_pd(C + i * stride), c_r));
+      C[i * stride + 2] += c_2;
+    } else {
+      _mm_storeu_pd(C + i * stride, c_r);
+      C[i * stride + 2] = c_2;
+    }
   }
-
-  A1 = _mm_loaddup_pd(A + 1);         // A[0][1] x2
-  A2 = _mm_loaddup_pd(A + S1 + 1);    // A[1][1] x2
-  A3 = _mm_loaddup_pd(A + S2 + 1);    // A[2][1] x2
-  A4 = _mm_loaddup_pd(A + S3 + 1);    // A[3][1] x2
-  B1 = _mm_loadu_pd(B + S1);          // 10,11
-  B_LC1 = _mm_loaddup_pd(B + S1 + 2); // 02, 02
-
-  handle_block_madd();
-
-  A1 = _mm_loaddup_pd(A + 2);         // A[0][2] x2
-  A2 = _mm_loaddup_pd(A + S1 + 2);    // A[1][3] x2
-  A3 = _mm_loaddup_pd(A + S2 + 2);    // A[2][2] x2
-  A4 = _mm_loaddup_pd(A + S3 + 2);    // A[3][2] x2
-  B1 = _mm_loadu_pd(B + S2);          // 10,11
-  B_LC1 = _mm_loaddup_pd(B + S2 + 2); // 02, 02
-
-  handle_block_madd();
-
-  _mm_storeu_pd(C, C11);
-  _mm_storeu_pd(C + S1, C21);
-  _mm_storeu_pd(C + S2, C31);
-  _mm_storeu_pd(C + S3, C41);
-  _mm_storel_pd(C + 2, C_LC1);
-  _mm_storeh_pd(C + S1 + 2, C_LC1);
-  _mm_storel_pd(C + S2 + 2, C_LC2);
-  _mm_storeh_pd(C + S3 + 2, C_LC2);
 }
 
 void _hy_matrix_multiply_3x3x4(double *C, double *A, double *B, int stride,
                                bool add) {
-  //      00*00 + 01*10 + 02*20
-  //      00*01 + 01*11 + 02*21
-  // 02 = 00*02 + 01*12 + 02*22
-  // 03 = 00*03 + 01*13 + 02*23
+  for (int i = 0; i < 3; i++) { // over rows of A
+    __m128d c_r01 = _mm_setzero_pd();
+    __m128d c_r23 = _mm_setzero_pd();
 
-  // 13 = 10*03 + 11*13 + 12*23
-  // 23 = 20*03 + 21*13 + 22*23
+    if (add) {
+      c_r01 = _mm_loadu_pd(C + i * stride);
+      c_r23 = _mm_loadu_pd(C + i * stride + 2);
+    }
 
-  int S1 = stride, S2 = stride << 1;
-
-  __m128d A1, A2, A3;
-  __m128d B1, B2; // current row in B
-  __m128d C11, C12, C21, C22, C31, C32;
-
-  A1 = _mm_loaddup_pd(A);      // A[0][0] x2
-  A2 = _mm_loaddup_pd(A + S1); // A[1][0] x2
-  A3 = _mm_loaddup_pd(A + S2); // A[2][0] x2
-
-  B1 = _mm_loadu_pd(B);     // 00,01
-  B2 = _mm_loadu_pd(B + 2); // 02,03
-
-  auto handle_block_mult = [&]() -> void {
-    C11 = _mm_mul_pd(A1, B1); // 00*00, 00*01
-    C12 = _mm_mul_pd(A1, B2); // 00*02, 00*03
-    C21 = _mm_mul_pd(A2, B1); // 10*00, 10*01
-    C22 = _mm_mul_pd(A2, B2); // 10*02, 10*03
-    C31 = _mm_mul_pd(A3, B1); // 20*00, 20*01
-    C32 = _mm_mul_pd(A3, B2); // 20*02, 20*03
-  };
-
-  auto handle_block_madd = [&]() -> void {
-    C11 = _mm_add_pd(C11, _mm_mul_pd(A1, B1)); // 00*00, 00*01
-    C12 = _mm_add_pd(C12, _mm_mul_pd(A1, B2)); // 00*02, 00*03
-    C21 = _mm_add_pd(C21, _mm_mul_pd(A2, B1)); // 10*00, 10*01
-    C22 = _mm_add_pd(C22, _mm_mul_pd(A2, B2)); // 10*02, 10*03
-    C31 = _mm_add_pd(C31, _mm_mul_pd(A3, B1)); // 20*00, 20*01
-    C32 = _mm_add_pd(C32, _mm_mul_pd(A3, B2)); // 20*02, 20*03
-  };
-
-  if (add) {
-    C11 = _mm_loadu_pd(C);
-    C12 = _mm_loadu_pd(C + 2);
-    C21 = _mm_loadu_pd(C + S1);
-    C22 = _mm_loadu_pd(C + S1 + 2);
-    C31 = _mm_loadu_pd(C + S2);
-    C32 = _mm_loadu_pd(C + S2 + 2);
-    handle_block_madd();
-  } else {
-    handle_block_mult();
+    for (int k = 0; k < 3; k++) { // over columns of A
+      __m128d a_val = _mm_load1_pd(A + i * stride + k);
+      c_r01 = _mm_fmadd_pd(a_val, _mm_loadu_pd(B + k * stride), c_r01);
+      c_r23 = _mm_fmadd_pd(a_val, _mm_loadu_pd(B + k * stride + 2), c_r23);
+    }
+    _mm_storeu_pd(C + i * stride, c_r01);
+    _mm_storeu_pd(C + i * stride + 2, c_r23);
   }
-
-  A1 = _mm_loaddup_pd(A + 1);      // A[0][1] x2
-  A2 = _mm_loaddup_pd(A + S1 + 1); // A[1][1] x2
-  A3 = _mm_loaddup_pd(A + S2 + 1); // A[2][1] x2
-  B1 = _mm_loadu_pd(B + S1);       // 10,11
-  B2 = _mm_loadu_pd(B + S1 + 2);   // 12,13
-
-  handle_block_madd();
-
-  A1 = _mm_loaddup_pd(A + 2);      // A[0][1] x2
-  A2 = _mm_loaddup_pd(A + S1 + 2); // A[1][1] x2
-  A3 = _mm_loaddup_pd(A + S2 + 2); // A[2][1] x2
-  B1 = _mm_loadu_pd(B + S2);       // 10,11
-  B2 = _mm_loadu_pd(B + S2 + 2);   // 12,13
-
-  handle_block_madd();
-
-  _mm_storeu_pd(C, C11);
-  _mm_storeu_pd(C + 2, C12);
-  _mm_storeu_pd(C + S1, C21);
-  _mm_storeu_pd(C + S1 + 2, C22);
-  _mm_storeu_pd(C + S2, C31);
-  _mm_storeu_pd(C + S2 + 2, C32);
 }
 
 void _hy_matrix_multiply_3x4x4(double *C, double *A, double *B, int stride,
@@ -2283,62 +2094,59 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
     c_r3 = _mm256_setzero_pd();
   }
 
+  // Load k-th row of B
+  b_k = _mm256_loadu_pd(B);
 
-    
-    // Load k-th row of B
-    b_k = _mm256_loadu_pd(B );
+  // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
+  __m256d bcast_a0 = _mm256_permute4x64_pd(a_r0, 0x00);
+  __m256d bcast_a1 = _mm256_permute4x64_pd(a_r1, 0x00);
+  __m256d bcast_a2 = _mm256_permute4x64_pd(a_r2, 0x00);
+  __m256d bcast_a3 = _mm256_permute4x64_pd(a_r3, 0x00);
 
-    // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
-    __m256d bcast_a0 = _mm256_permute4x64_pd(a_r0, 0x00);
-    __m256d bcast_a1 = _mm256_permute4x64_pd(a_r1, 0x00);
-    __m256d bcast_a2 = _mm256_permute4x64_pd(a_r2, 0x00);
-    __m256d bcast_a3 = _mm256_permute4x64_pd(a_r3, 0x00);
+  // Fused multiply-add
+  c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
+  c_r1 = _hy_matrix_handle_axv_mfma(c_r1, bcast_a1, b_k);
+  c_r2 = _hy_matrix_handle_axv_mfma(c_r2, bcast_a2, b_k);
+  c_r3 = _hy_matrix_handle_axv_mfma(c_r3, bcast_a3, b_k);
 
-    // Fused multiply-add
-    c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
-    c_r1 = _hy_matrix_handle_axv_mfma(c_r1, bcast_a1, b_k);
-    c_r2 = _hy_matrix_handle_axv_mfma(c_r2, bcast_a2, b_k);
-    c_r3 = _hy_matrix_handle_axv_mfma(c_r3, bcast_a3, b_k);
+  b_k = _mm256_loadu_pd(B + stride);
+  // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
+  bcast_a0 = _mm256_permute4x64_pd(a_r0, 0x55);
+  bcast_a1 = _mm256_permute4x64_pd(a_r1, 0x55);
+  bcast_a2 = _mm256_permute4x64_pd(a_r2, 0x55);
+  bcast_a3 = _mm256_permute4x64_pd(a_r3, 0x55);
 
-   b_k = _mm256_loadu_pd(B + stride);
-    // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
-     bcast_a0 = _mm256_permute4x64_pd(a_r0, 0x55);
-     bcast_a1 = _mm256_permute4x64_pd(a_r1, 0x55);
-     bcast_a2 = _mm256_permute4x64_pd(a_r2, 0x55);
-     bcast_a3 = _mm256_permute4x64_pd(a_r3, 0x55);
+  // Fused multiply-add
+  c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
+  c_r1 = _hy_matrix_handle_axv_mfma(c_r1, bcast_a1, b_k);
+  c_r2 = _hy_matrix_handle_axv_mfma(c_r2, bcast_a2, b_k);
+  c_r3 = _hy_matrix_handle_axv_mfma(c_r3, bcast_a3, b_k);
 
-    // Fused multiply-add
-    c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
-    c_r1 = _hy_matrix_handle_axv_mfma(c_r1, bcast_a1, b_k);
-    c_r2 = _hy_matrix_handle_axv_mfma(c_r2, bcast_a2, b_k);
-    c_r3 = _hy_matrix_handle_axv_mfma(c_r3, bcast_a3, b_k);
+  // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
+  b_k = _mm256_loadu_pd(B + 2 * stride);
+  bcast_a0 = _mm256_permute4x64_pd(a_r0, 0xAA);
+  bcast_a1 = _mm256_permute4x64_pd(a_r1, 0xAA);
+  bcast_a2 = _mm256_permute4x64_pd(a_r2, 0xAA);
+  bcast_a3 = _mm256_permute4x64_pd(a_r3, 0xAA);
 
-    // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
-    b_k = _mm256_loadu_pd(B + 2*stride);
-      bcast_a0 = _mm256_permute4x64_pd(a_r0, 0xAA);
-     bcast_a1 = _mm256_permute4x64_pd(a_r1, 0xAA);
-     bcast_a2 = _mm256_permute4x64_pd(a_r2, 0xAA);
-     bcast_a3 = _mm256_permute4x64_pd(a_r3, 0xAA);
+  // Fused multiply-add
+  c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
+  c_r1 = _hy_matrix_handle_axv_mfma(c_r1, bcast_a1, b_k);
+  c_r2 = _hy_matrix_handle_axv_mfma(c_r2, bcast_a2, b_k);
+  c_r3 = _hy_matrix_handle_axv_mfma(c_r3, bcast_a3, b_k);
 
-    // Fused multiply-add
-    c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
-    c_r1 = _hy_matrix_handle_axv_mfma(c_r1, bcast_a1, b_k);
-    c_r2 = _hy_matrix_handle_axv_mfma(c_r2, bcast_a2, b_k);
-    c_r3 = _hy_matrix_handle_axv_mfma(c_r3, bcast_a3, b_k);
+  // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
+  b_k = _mm256_loadu_pd(B + 3 * stride);
+  bcast_a0 = _mm256_permute4x64_pd(a_r0, 0xFF);
+  bcast_a1 = _mm256_permute4x64_pd(a_r1, 0xFF);
+  bcast_a2 = _mm256_permute4x64_pd(a_r2, 0xFF);
+  bcast_a3 = _mm256_permute4x64_pd(a_r3, 0xFF);
 
-    // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
-     b_k = _mm256_loadu_pd(B + 3*stride);
-     bcast_a0 = _mm256_permute4x64_pd(a_r0, 0xFF);
-     bcast_a1 = _mm256_permute4x64_pd(a_r1, 0xFF);
-     bcast_a2 = _mm256_permute4x64_pd(a_r2, 0xFF);
-     bcast_a3 = _mm256_permute4x64_pd(a_r3, 0xFF);
-
-    // Fused multiply-add
-    c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
-    c_r1 = _hy_matrix_handle_axv_mfma(c_r1, bcast_a1, b_k);
-    c_r2 = _hy_matrix_handle_axv_mfma(c_r2, bcast_a2, b_k);
-    c_r3 = _hy_matrix_handle_axv_mfma(c_r3, bcast_a3, b_k);
-
+  // Fused multiply-add
+  c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
+  c_r1 = _hy_matrix_handle_axv_mfma(c_r1, bcast_a1, b_k);
+  c_r2 = _hy_matrix_handle_axv_mfma(c_r2, bcast_a2, b_k);
+  c_r3 = _hy_matrix_handle_axv_mfma(c_r3, bcast_a3, b_k);
 
   // Store the results
   _mm256_storeu_pd(C, c_r0);
