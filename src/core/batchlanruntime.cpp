@@ -3120,7 +3120,7 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &current_program) {
       _SimpleList _modelCache;
       _AVLListXL modelCache(&_modelCache);
 
-      for (long i = 0; i < node_names.countitems(); i++) {
+      for (unsigned long i = 0; i < node_names.countitems(); i++) {
         const _String object_name = *(_String *)node_names.GetItem(i);
         _CalcNode *tree_node = nil;
 

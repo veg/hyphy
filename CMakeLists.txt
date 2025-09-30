@@ -84,11 +84,16 @@ if(USE_GCC_ANALYZER)
 endif()
 
 if(TARGET_NATIVE)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
         if(COMPILER_SUPPORTS_MARCH_NATIVE)
             list(APPEND COMMON_COMPILE_FLAGS "-march=native")
         endif()
+        check_cxx_compiler_flag("-mtune=native" COMPILER_SUPPORTS_MTUNE_NATIVE)
+        if(COMPILER_SUPPORTS_MTUNE_NATIVE)
+            list(APPEND COMMON_COMPILE_FLAGS "-mtune=native")
+        endif()
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         check_cxx_compiler_flag("-mtune=native" COMPILER_SUPPORTS_MTUNE_NATIVE)
         if(COMPILER_SUPPORTS_MTUNE_NATIVE)
             list(APPEND COMMON_COMPILE_FLAGS "-mtune=native")
@@ -99,49 +104,30 @@ endif()
 if(NOT NONEON)
     set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
     set(CMAKE_REQUIRED_FLAGS "")
-    check_cxx_source_compiles("
-#include <arm_neon.h>
-int main() {
-  float32x4_t vec = vdupq_n_f32(0.0f);
-  (void)vec;
-  return 0;
-}
-" HYPHY_HAVE_NEON)
+    check_cxx_source_compiles("#include <arm_neon.h>\nint main() {\n  float32x4_t vec = vdupq_n_f32(0.0f);\n  (void)vec;\n  return 0;\n}\n" HYPHY_HAVE_NEON)
     if(HYPHY_HAVE_NEON)
         add_compile_definitions(_SLKP_USE_ARM_NEON)
     endif()
     set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
 endif()
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    list(APPEND COMMON_COMPILE_FLAGS "-Wno-overloaded-virtual")
+    list(APPEND COMMON_COMPILE_FLAGS "-Wno-maybe-uninitialized")
+endif()
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(NOT HYPHY_HAVE_NEON AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-        if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-            list(APPEND COMMON_COMPILE_FLAGS "-Wno-overloaded-virtual")
-        endif()
     endif()
     if(NOT NOAVX)
         set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
         set(CMAKE_REQUIRED_FLAGS "-mavx2")
-        check_cxx_source_compiles("
-#include <immintrin.h>
-int main() {
-  __m256d vec = _mm256_setzero_pd();
-  (void)vec;
-  return 0;
-}
-" HYPHY_HAVE_AVX2)
+        check_cxx_source_compiles("#include <immintrin.h>\nint main() {\n  __m256d vec = _mm256_setzero_pd();\n  (void)vec;\n  return 0;\n}\n" HYPHY_HAVE_AVX2)
         if(HYPHY_HAVE_AVX2)
             list(APPEND HYPHY_SIMD_FLAGS "-mavx2")
             add_compile_definitions(_SLKP_USE_AVX_INTRINSICS)
             set(CMAKE_REQUIRED_FLAGS "-mfma")
-            check_cxx_source_compiles("
-#include <immintrin.h>
-int main() {
-  __m256d vec = _mm256_setzero_pd();
-  (void)vec;
-  return 0;
-}
-" HYPHY_HAVE_FMA)
+            check_cxx_source_compiles("#include <immintrin.h>\nint main() {\n  __m256d vec = _mm256_setzero_pd();\n  (void)vec;\n  return 0;\n}\n" HYPHY_HAVE_FMA)
             if(HYPHY_HAVE_FMA)
                 list(APPEND HYPHY_SIMD_FLAGS "-mfma")
                 add_compile_definitions(_SLKP_USE_FMA3_INTRINSICS)
@@ -151,14 +137,7 @@ int main() {
     elseif(NOT NOSSE4)
         set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
         set(CMAKE_REQUIRED_FLAGS "-msse4.1")
-        check_cxx_source_compiles("
-#include <smmintrin.h>
-int main() {
-  __m128i vec = _mm_setzero_si128();
-  (void)vec;
-  return 0;
-}
-" HYPHY_HAVE_SSE41)
+        check_cxx_source_compiles("#include <smmintrin.h>\nint main() {\n  __m128i vec = _mm_setzero_si128();\n  (void)vec;\n  return 0;\n}\n" HYPHY_HAVE_SSE41)
         if(HYPHY_HAVE_SSE41)
             list(APPEND HYPHY_SIMD_FLAGS "-msse4.1")
             add_compile_definitions(_SLKP_USE_SSE_INTRINSICS)
@@ -277,7 +256,7 @@ install(TARGETS hyphy RUNTIME DESTINATION bin)
 # Other Executables
 #------------------------------------------------------------------------------
 if(MPI_FOUND)
-    add_executable(HYPHYMPI EXCLUDE_FROM_ALL ${SRC_COMMON} ${SRC_UNIXMAIN})
+    add_executable(HYPHYMPI ${SRC_COMMON} ${SRC_UNIXMAIN})
     target_compile_options(HYPHYMPI PRIVATE ${COMMON_COMPILE_FLAGS} ${HYPHY_SIMD_FLAGS})
     target_compile_definitions(HYPHYMPI PRIVATE
         __AFYP_REWRITE_BGM__
@@ -307,7 +286,7 @@ if(MPI_FOUND)
         target_include_directories(HYPHYMPI PRIVATE ${ZLIB_INCLUDE_DIRS})
         target_compile_definitions(HYPHYMPI PRIVATE __ZLIB__)
     endif()
-    install(TARGETS HYPHYMPI RUNTIME DESTINATION bin OPTIONAL)
+    install(TARGETS HYPHYMPI RUNTIME DESTINATION bin)
 endif()
 
 add_executable(HYPHYDEBUG EXCLUDE_FROM_ALL ${SRC_COMMON} ${SRC_UNIXMAIN})

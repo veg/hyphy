@@ -351,9 +351,11 @@ _String const accept_branch_lengths("ACCEPT_BRANCH_LENGTHS"),
     use_traversal_heuristic("USE_TRAVERSAL_HEURISTIC"),
     // TODO (20170413): don't remember what this does; , see @
     // _DataSetFilter::MatchStartNEnd #DEPRECATE
-    verbosity_level_string("VERBOSITY_LEVEL")
+    verbosity_level_string("VERBOSITY_LEVEL"),
     // controls verbosity level during optimization and other long-running
-    // operations
+    // operations,
+    enforce_constraint_violations("ENFORCE_CONSTRAINT_VIOLATIONS")
+
     ;
 
 /** default values get set up in hy_global:: */

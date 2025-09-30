@@ -22900,7 +22900,7 @@
       "0": "(((((Pig:0.147969,Cow:0.21343)Node4:0.08509899999999999,Horse:0.165787,Cat:0.264806)Node3:0.058611,((RhMonkey:0.002015,Baboon:0.003108)Node10:0.022733,(Human:0.004349,Chimp:0.000799)Node13:0.011873)Node9:0.101856)Node2:0.340802,Rat:0.050958)Node1:0.1,Mouse:0.09795)"
     }
   },
-  "runtime": "2.5.80",
+  "runtime": "2.5.81",
   "settings": {
     "bayes factor": 100,
     "burn-in": 1000000,
@@ -23693,11 +23693,11 @@
   "timers": {
     "Baseline Fit": {
       "order": 1,
-      "timer": 0
+      "timer": 1
     },
     "Overall": {
       "order": 0,
-      "timer": 10
+      "timer": 11
     },
     "Residue A analysis": {
       "order": 21,
@@ -23749,11 +23749,11 @@
     },
     "Residue P analysis": {
       "order": 21,
-      "timer": 0
+      "timer": 1
     },
     "Residue Q analysis": {
       "order": 21,
-      "timer": 1
+      "timer": 0
     },
     "Residue R analysis": {
       "order": 21,

@@ -66,7 +66,7 @@ function runTest () {
   cov2 = {{1,0}{0,1}};
   a2 = {"PDF":"Dirichlet","ARG0":cov2};
   b = Random(mean2,a2);
-  assert(+b == 1, "Dirichet deviate did not sum up to 1");
+  assert(Abs ((+b) - 1) < 1e-10, "Dirichet deviate did not sum up to 1 (`+b`)");
    
 
   //---------------------------------------------------------------------------------------------------------

@@ -49,8 +49,10 @@ namespace hy_env {
  * @brief Check if the value of the environment variable is "true".
  *
  * @param name The name of the environment variable (in HBL).
- * @param default_true The default value to return if the variable is not defined.
- * @return true if the variable is defined and true-like (not zero), false otherwise.
+ * @param default_true The default value to return if the variable is not
+ * defined.
+ * @return true if the variable is defined and true-like (not zero), false
+ * otherwise.
  */
 bool EnvVariableTrue(_String const &name, bool default_true = false);
 
@@ -58,25 +60,30 @@ bool EnvVariableTrue(_String const &name, bool default_true = false);
  * @brief Look up the default numeric value for a given environment variable.
  *
  * @param name The name of the environment variable (in HBL).
- * @return The default value if available and of the correct type, otherwise HY_INVALID_RETURN_VALUE.
+ * @return The default value if available and of the correct type, otherwise
+ * HY_INVALID_RETURN_VALUE.
  */
 hyFloat EnvVariableGetDefaultNumber(_String const &name);
 
 /**
- * @brief Look up the default value for a given environment variable, checking that it is of a particular type.
+ * @brief Look up the default value for a given environment variable, checking
+ * that it is of a particular type.
  *
  * @param name The name of the environment variable (in HBL).
  * @param type The expected type of the variable.
- * @return The default value if available and of the correct type, otherwise nil.
+ * @return The default value if available and of the correct type, otherwise
+ * nil.
  */
 HBLObjectRef EnvVariableGetDefault(_String const &name, unsigned long type);
 
 /**
- * @brief Look up the value for a given environment variable, checking that it is of a particular type.
+ * @brief Look up the value for a given environment variable, checking that it
+ * is of a particular type.
  *
  * @param name The name of the environment variable (in HBL).
  * @param type The expected type of the variable.
- * @return The current value if set and of the correct type, otherwise the default value if available and of the correct type, otherwise nil.
+ * @return The current value if set and of the correct type, otherwise the
+ * default value if available and of the correct type, otherwise nil.
  */
 HBLObjectRef EnvVariableGet(_String const &name, unsigned long type);
 
@@ -84,8 +91,11 @@ HBLObjectRef EnvVariableGet(_String const &name, unsigned long type);
  * @brief Look up the numeric value for a given environment variable.
  *
  * @param name The name of the environment variable (in HBL).
- * @param default_value The default value to return if the variable is not defined.
- * @return The current value if set and of the correct type, otherwise the default value if available and of the correct type, otherwise HY_INVALID_RETURN_VALUE.
+ * @param default_value The default value to return if the variable is not
+ * defined.
+ * @return The current value if set and of the correct type, otherwise the
+ * default value if available and of the correct type, otherwise
+ * HY_INVALID_RETURN_VALUE.
  */
 hyFloat EnvVariableGetNumber(_String const &name,
                              hyFloat default_value = HY_INVALID_RETURN_VALUE);
@@ -100,7 +110,8 @@ hyFloat EnvVariableGetNumber(_String const &name,
 void EnvVariableSet(_String const &name, HBLObjectRef value, bool copy);
 
 /**
- * @brief Set the value for an environment variable (in a given namespace if provided).
+ * @brief Set the value for an environment variable (in a given namespace if
+ * provided).
  *
  * @param name The name of the environment variable (in HBL).
  * @param value The value to set the variable to.
@@ -139,8 +150,9 @@ extern const _String accept_rooted_trees, accept_branch_lengths,
     soft_fileio_exceptions, last_fileio_exception, last_raw_file_prompt,
     include_model_spec, lf_convergence_criterion, try_numeric_sequence_match,
     short_mpi_return, kSCFGCorpus, verbosity_level_string,
-    tolerate_numerical_errors, tolerate_constraint_violation, number_threads,
-    gzip_compression_level, tree_parser_namespace, global_kwargs;
+    enforce_constraint_violations, tolerate_numerical_errors,
+    tolerate_constraint_violation, number_threads, gzip_compression_level,
+    tree_parser_namespace, global_kwargs;
 
 ;
 
