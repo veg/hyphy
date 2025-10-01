@@ -2701,8 +2701,6 @@ void _hy_matrix_multiply_2x4x4(double *C, double *A, double *B, int stride,
 
   A1 = _mm256_broadcast_sd(A);      // A[0][0] x4
   A2 = _mm256_broadcast_sd(A + S1); // A[1][0] x4
-  A3 = _mm256_broadcast_sd(A + S2); // A[2][0] x4
-  A4 = _mm256_broadcast_sd(A + S3); // A[3][0] x4
 
   B1 = _mm256_loadu_pd(B); // 00,01
 
@@ -2726,24 +2724,18 @@ void _hy_matrix_multiply_2x4x4(double *C, double *A, double *B, int stride,
 
   A1 = _mm256_broadcast_sd(A + 1);      // A[0][1] x2
   A2 = _mm256_broadcast_sd(A + S1 + 1); // A[1][1] x2
-  A3 = _mm256_broadcast_sd(A + S2 + 1); // A[2][1] x2
-  A4 = _mm256_broadcast_sd(A + S3 + 1); // A[3][1] x2
   B1 = _mm256_loadu_pd(B + S1);         // 00,01
 
   handle_block_madd();
 
   A1 = _mm256_broadcast_sd(A + 2);      // A[0][1] x2
   A2 = _mm256_broadcast_sd(A + S1 + 2); // A[1][1] x2
-  A3 = _mm256_broadcast_sd(A + S2 + 2); // A[2][1] x2
-  A4 = _mm256_broadcast_sd(A + S3 + 2); // A[3][1] x2
   B1 = _mm256_loadu_pd(B + S2);         // 00,01
 
   handle_block_madd();
 
   A1 = _mm256_broadcast_sd(A + 3);      // A[0][1] x2
   A2 = _mm256_broadcast_sd(A + S1 + 3); // A[1][1] x2
-  A3 = _mm256_broadcast_sd(A + S2 + 3); // A[2][1] x2
-  A4 = _mm256_broadcast_sd(A + S3 + 3); // A[3][1] x2
   B1 = _mm256_loadu_pd(B + S3);         // 00,01
 
   handle_block_madd();
