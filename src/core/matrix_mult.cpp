@@ -2695,7 +2695,7 @@ void _hy_matrix_multiply_2x4x4(double *C, double *A, double *B, int stride,
                                bool add) {
   int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
 
-  __m256d A1, A2, A3, A4;
+  __m256d A1, A2;
   __m256d B1; // current row in B
   __m256d C1, C2;
 
@@ -2753,7 +2753,7 @@ void _hy_matrix_multiply_2x4x4(double *C, double *A, double *B, int stride,
 }
 
 void _hy_matrix_multiply_2x2x4(double *C, double *A, double *B, int stride) {
-  int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
+  int S1 = stride, S2 = stride << 1;
 
   __m256d A1, A2;
   __m256d B1;
@@ -3018,7 +3018,7 @@ void _hy_matrix_multiply_4x3x3(double *C, double *A, double *B, int stride,
 
 void _hy_matrix_multiply_3x3x4(double *C, double *A, double *B, int stride,
                                bool add) {
-  int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
+  int S1 = stride, S2 = stride << 1;
 
   __m256d A1, A2, A3;
   __m256d B1; // current row in B
