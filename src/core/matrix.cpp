@@ -4840,9 +4840,8 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
                     storageIndex +
                     secondArg.compressedIndex[secondIndex + secondArg.hDim + 3];
 
-            __m256i LOAD_IDX = _mm256_set_epi64x(a3, a2, a1, a0);
-
 #if defined _SLKP_USE_FMA3_INTRINSICS
+            __m256i LOAD_IDX = _mm256_set_epi64x(a3, a2, a1, a0);
             __m256d R1 = _mm256_i64gather_pd(storage.theData, LOAD_IDX, 8);
 #else
             __m256d R1 =

@@ -2381,9 +2381,9 @@ void _hy_matrix_multiply_4x4x1(double *C, double *A, double *B, int stride,
 
   __m256d A1, A2, A3, A4;
   __m256d B1;
-  __m256i LOAD_IDX = _mm256_set_epi64x(S3, S2, S1, 0);
 
 #if defined _SLKP_USE_FMA3_INTRINSICS
+  __m256i LOAD_IDX = _mm256_set_epi64x(S3, S2, S1, 0);
   B1 = _mm256_i64gather_pd(B, LOAD_IDX, 8);
 #else
   B1 = _mm256_set_pd(B[S3], B[S2], B[S1], B[0]);
@@ -2476,9 +2476,8 @@ void _hy_matrix_multiply_4x1x1(double *C, double *A, double *B, int stride) {
 
   __m256d C1, B1 = _mm256_broadcast_sd(B);
 
-  __m256i LOAD_IDX = _mm256_set_epi64x(S3, S2, S1, 0);
-
 #if defined _SLKP_USE_FMA3_INTRINSICS
+  __m256i LOAD_IDX = _mm256_set_epi64x(S3, S2, S1, 0);
   C1 = _hy_matrix_handle_axv_mfma(_mm256_i64gather_pd(C, LOAD_IDX, 8),
                                   _mm256_i64gather_pd(A, LOAD_IDX, 8), B1);
 #else
