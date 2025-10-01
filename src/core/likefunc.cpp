@@ -10924,7 +10924,7 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer &rec, char opt,
         }
         horPart = (_String *)remappedOO.ListToPartitionString();
       } else if (exportPart) {
-        horPart = new _String(_String("0-") & (long)exportPart->lLength - 1);
+        horPart = new _String(_String("0-") & ((long)exportPart->lLength - 1));
       }
       // else
       // horPart = (_String*)theDF->theOriginalOrder.ListToPartitionString();
