@@ -2293,10 +2293,14 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
   __m256d bcast_a2 = _mm256_permute4x64_pd(a_r2, 0x00);
   __m256d bcast_a3 = _mm256_permute4x64_pd(a_r3, 0x00);
 #else
-  __m256d bcast_a0 = _mm256_broadcastsd_pd(_mm256_castpd256_pd128(a_r0));
-  __m256d bcast_a1 = _mm256_broadcastsd_pd(_mm256_castpd256_pd128(a_r1));
-  __m256d bcast_a2 = _mm256_broadcastsd_pd(_mm256_castpd256_pd128(a_r2));
-  __m256d bcast_a3 = _mm256_broadcastsd_pd(_mm256_castpd256_pd128(a_r3));
+  double val_a0 = _mm_cvtsd_f64(_mm256_castpd256_pd128(a_r0));
+  __m256d bcast_a0 = _mm256_set1_pd(val_a0);
+  double val_a1 = _mm_cvtsd_f64(_mm256_castpd256_pd128(a_r1));
+  __m256d bcast_a1 = _mm256_set1_pd(val_a1);
+  double val_a2 = _mm_cvtsd_f64(_mm256_castpd256_pd128(a_r2));
+  __m256d bcast_a2 = _mm256_set1_pd(val_a2);
+  double val_a3 = _mm_cvtsd_f64(_mm256_castpd256_pd128(a_r3));
+  __m256d bcast_a3 = _mm256_set1_pd(val_a3);
 #endif
 
   // Fused multiply-add
@@ -2341,10 +2345,10 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
   bcast_a2 = _mm256_permute4x64_pd(a_r2, 0xAA);
   bcast_a3 = _mm256_permute4x64_pd(a_r3, 0xAA);
 #else
-  bcast_a0 = _mm256_broadcastsd_pd(_mm256_extractf128_pd(a_r0, 1));
-  bcast_a1 = _mm256_broadcastsd_pd(_mm256_extractf128_pd(a_r1, 1));
-  bcast_a2 = _mm256_broadcastsd_pd(_mm256_extractf128_pd(a_r2, 1));
-  bcast_a3 = _mm256_broadcastsd_pd(_mm256_extractf128_pd(a_r3, 1));
+  bcast_a0 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r0, a_r0, 1), 0x00);
+  bcast_a1 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r1, a_r1, 1), 0x00);
+  bcast_a2 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r2, a_r2, 1), 0x00);
+  bcast_a3 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r3, a_r3, 1), 0x00);
 #endif
 
   // Fused multiply-add
