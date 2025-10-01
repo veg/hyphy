@@ -2317,18 +2317,10 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
   bcast_a2 = _mm256_permute4x64_pd(a_r2, 0x55);
   bcast_a3 = _mm256_permute4x64_pd(a_r3, 0x55);
 #else
-  __m128d lower_lane_a0 = _mm256_castpd256_pd128(a_r0);
-  bcast_a0 = _mm256_set1_pd(
-      _mm_cvtsd_f64(_mm_shuffle_pd(lower_lane_a0, lower_lane_a0, 0x01)));
-  __m128d lower_lane_a1 = _mm256_castpd256_pd128(a_r1);
-  bcast_a1 = _mm256_set1_pd(
-      _mm_cvtsd_f64(_mm_shuffle_pd(lower_lane_a1, lower_lane_a1, 0x01)));
-  __m128d lower_lane_a2 = _mm256_castpd256_pd128(a_r2);
-  bcast_a2 = _mm256_set1_pd(
-      _mm_cvtsd_f64(_mm_shuffle_pd(lower_lane_a2, lower_lane_a2, 0x01)));
-  __m128d lower_lane_a3 = _mm256_castpd256_pd128(a_r3);
-  bcast_a3 = _mm256_set1_pd(
-      _mm_cvtsd_f64(_mm_shuffle_pd(lower_lane_a3, lower_lane_a3, 0x01)));
+  bcast_a0 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r0, a_r0, 0x00), 0x0F);
+  bcast_a1 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r1, a_r1, 0x00), 0x0F);
+  bcast_a2 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r2, a_r2, 0x00), 0x0F);
+  bcast_a3 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r3, a_r3, 0x00), 0x0F);
 #endif
 
   // Fused multiply-add
@@ -2345,10 +2337,14 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
   bcast_a2 = _mm256_permute4x64_pd(a_r2, 0xAA);
   bcast_a3 = _mm256_permute4x64_pd(a_r3, 0xAA);
 #else
-  bcast_a0 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r0, a_r0, 1), 0x00);
-  bcast_a1 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r1, a_r1, 1), 0x00);
-  bcast_a2 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r2, a_r2, 1), 0x00);
-  bcast_a3 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r3, a_r3, 1), 0x00);
+  bcast_a0 = _mm256_shuffle_pd(a_r0, a_r0, 0x00);
+  bcast_a0 = _mm256_permute2f128_pd(bcast_a0, bcast_a0, 0x11);
+  bcast_a1 = _mm256_shuffle_pd(a_r1, a_r1, 0x00);
+  bcast_a1 = _mm256_permute2f128_pd(bcast_a1, bcast_a1, 0x11);
+  bcast_a2 = _mm256_shuffle_pd(a_r2, a_r2, 0x00);
+  bcast_a2 = _mm256_permute2f128_pd(bcast_a2, bcast_a2, 0x11);
+  bcast_a3 = _mm256_shuffle_pd(a_r3, a_r3, 0x00);
+  bcast_a3 = _mm256_permute2f128_pd(bcast_a3, bcast_a3, 0x11);
 #endif
 
   // Fused multiply-add
@@ -2365,18 +2361,14 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
   bcast_a2 = _mm256_permute4x64_pd(a_r2, 0xFF);
   bcast_a3 = _mm256_permute4x64_pd(a_r3, 0xFF);
 #else
-  __m128d upper_lane_a0 = _mm256_extractf128_pd(a_r0, 1);
-  bcast_a0 = _mm256_set1_pd(
-      _mm_cvtsd_f64(_mm_shuffle_pd(upper_lane_a0, upper_lane_a0, 0x01)));
-  __m128d upper_lane_a1 = _mm256_extractf128_pd(a_r1, 1);
-  bcast_a1 = _mm256_set1_pd(
-      _mm_cvtsd_f64(_mm_shuffle_pd(upper_lane_a1, upper_lane_a1, 0x01)));
-  __m128d upper_lane_a2 = _mm256_extractf128_pd(a_r2, 1);
-  bcast_a2 = _mm256_set1_pd(
-      _mm_cvtsd_f64(_mm_shuffle_pd(upper_lane_a2, upper_lane_a2, 0x01)));
-  __m128d upper_lane_a3 = _mm256_extractf128_pd(a_r3, 1);
-  bcast_a3 = _mm256_set1_pd(
-      _mm_cvtsd_f64(_mm_shuffle_pd(upper_lane_a3, upper_lane_a3, 0x01)));
+  bcast_a0 = _mm256_unpackhi_pd(a_r0, a_r0);
+  bcast_a0 = _mm256_permute2f128_pd(bcast_a0, bcast_a0, 0x11);
+  bcast_a1 = _mm256_unpackhi_pd(a_r1, a_r1);
+  bcast_a1 = _mm256_permute2f128_pd(bcast_a1, bcast_a1, 0x11);
+  bcast_a2 = _mm256_unpackhi_pd(a_r2, a_r2);
+  bcast_a2 = _mm256_permute2f128_pd(bcast_a2, bcast_a2, 0x11);
+  bcast_a3 = _mm256_unpackhi_pd(a_r3, a_r3);
+  bcast_a3 = _mm256_permute2f128_pd(bcast_a3, bcast_a3, 0x11);
 #endif
 
   // Fused multiply-add
