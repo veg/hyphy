@@ -3618,10 +3618,19 @@ void _Matrix::AddMatrix(_Matrix &storage, _Matrix &secondArg, bool subtract)
                    s6 = secondArg.theIndex[i + 6],
                    s7 = secondArg.theIndex[i + 7];
 
+#if defined _SLKP_USE_FMA3_INTRINSICS
               __m256d R1 = _mm256_i64gather_pd(
                   storage.theData, _mm256_set_epi64x(s3, s2, s1, s0), 8);
               __m256d R2 = _mm256_i64gather_pd(
                   storage.theData, _mm256_set_epi64x(s7, s6, s5, s4), 8);
+#else
+              __m256d R1 =
+                  _mm256_set_pd(storage.theData[s3], storage.theData[s2],
+                                storage.theData[s1], storage.theData[s0]);
+              __m256d R2 =
+                  _mm256_set_pd(storage.theData[s7], storage.theData[s6],
+                                storage.theData[s5], storage.theData[s4]);
+#endif
 
               R1 = _mm256_add_pd(R1, S1);
               R2 = _mm256_add_pd(R2, S2);
@@ -4833,8 +4842,14 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
 
             __m256i LOAD_IDX = _mm256_set_epi64x(a3, a2, a1, a0);
 
-            __m256d R1 = _mm256_i64gather_pd(storage.theData, LOAD_IDX, 8),
-                    C1 = _mm256_loadu_pd(secondArg.theData + secondIndex);
+#if defined _SLKP_USE_FMA3_INTRINSICS
+            __m256d R1 = _mm256_i64gather_pd(storage.theData, LOAD_IDX, 8);
+#else
+            __m256d R1 =
+                _mm256_set_pd(storage.theData[a3], storage.theData[a2],
+                              storage.theData[a1], storage.theData[a0]);
+#endif
+            __m256d C1 = _mm256_loadu_pd(secondArg.theData + secondIndex);
 
             R1 = _hy_matrix_handle_axv_mfma(R1, C1, c_value);
 
