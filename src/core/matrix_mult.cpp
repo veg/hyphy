@@ -2745,7 +2745,7 @@ void _hy_matrix_multiply_2x4x4(double *C, double *A, double *B, int stride,
 }
 
 void _hy_matrix_multiply_2x2x4(double *C, double *A, double *B, int stride) {
-  int S1 = stride, S2 = stride << 1;
+  int S1 = stride;
 
   __m256d A1, A2;
   __m256d B1;
