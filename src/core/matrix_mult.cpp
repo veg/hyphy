@@ -2356,11 +2356,6 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
   bcast_a1 = _mm256_permute4x64_pd(a_r1, 0xFF);
   bcast_a2 = _mm256_permute4x64_pd(a_r2, 0xFF);
   bcast_a3 = _mm256_permute4x64_pd(a_r3, 0xFF);
-#if defined _SLKP_USE_FMA3_INTRINSICS
-  bcast_a0 = _mm256_permute4x64_pd(a_r0, 0xFF);
-  bcast_a1 = _mm256_permute4x64_pd(a_r1, 0xFF);
-  bcast_a2 = _mm256_permute4x64_pd(a_r2, 0xFF);
-  bcast_a3 = _mm256_permute4x64_pd(a_r3, 0xFF);
 #else
   bcast_a0 = _mm256_broadcastsd_pd(_mm_shuffle_pd(
       _mm256_extractf128_pd(a_r0, 1), _mm256_extractf128_pd(a_r0, 1), 0x03));
