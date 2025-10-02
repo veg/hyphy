@@ -3972,40 +3972,40 @@ void _Matrix::Multiply(_Matrix &storage, hyFloat c)
         }
     } else {
 #ifdef _SLKP_USE_AVX_INTRINSICS
-#define CELL_OP(k)                                                             \
+#define CELL_OPM(k)                                                            \
   _mm256_storeu_pd(destination + k,                                            \
                    _mm256_mul_pd(value_op, _mm256_loadu_pd(source + k)))
       long lDimM4 = lDim >> 4 << 4, k = 0;
 
       __m256d value_op = _mm256_set1_pd(c);
       for (k = 0L; k < lDimM4; k += 16) {
-        CELL_OP(k);
-        CELL_OP(k + 4);
-        CELL_OP(k + 8);
-        CELL_OP(k + 12);
+        CELL_OPM(k);
+        CELL_OPM(k + 4);
+        CELL_OPM(k + 8);
+        CELL_OPM(k + 12);
       }
       for (; k < lDim; k++) {
         destination[k] = source[k] * c;
       }
 #elif defined _SLKP_USE_ARM_NEON
-#define CELL_OP(k)                                                             \
+#define CELL_OPM(k)                                                            \
   vst1q_f64(destination + k, vmulq_f64(value_op, vld1q_f64(source + k)))
       long lDimM16 = lDim >> 4 << 4, lDimM2 = lDim >> 1 << 1, k = 0;
 
       float64x2_t value_op = vdupq_n_f64(c);
       for (k = 0L; k < lDimM16; k += 16) {
-        CELL_OP(k);
-        CELL_OP(k + 2);
-        CELL_OP(k + 4);
-        CELL_OP(k + 6);
-        CELL_OP(k + 8);
-        CELL_OP(k + 10);
-        CELL_OP(k + 12);
-        CELL_OP(k + 14);
+        CELL_OPM(k);
+        CELL_OPM(k + 2);
+        CELL_OPM(k + 4);
+        CELL_OPM(k + 6);
+        CELL_OPM(k + 8);
+        CELL_OPM(k + 10);
+        CELL_OPM(k + 12);
+        CELL_OPM(k + 14);
       }
 
       for (; k < lDimM2; k += 2) {
-        CELL_OP(k);
+        CELL_OPM(k);
       }
 
       for (; k < lDim; k++) {
@@ -4479,27 +4479,27 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
                    _mm256_fmadd_pd(value_op, _mm256_loadu_pd(secArg + x),      \
                                    _mm256_loadu_pd(res + x)))
 #else
-#define CELL_OP(x)                                                             \
+#define CELL_OP_2(x)                                                           \
   _mm256_storeu_pd(                                                            \
       res + x,                                                                 \
       _mm256_add_pd(_mm256_loadu_pd(res + x),                                  \
                     _mm256_mul_pd(value_op, _mm256_loadu_pd(secArg + x))))
 #endif
-                CELL_OP(0);
-                CELL_OP(4);
-                CELL_OP(8);
-                CELL_OP(12);
-                CELL_OP(16);
-                CELL_OP(20);
-                CELL_OP(24);
-                CELL_OP(28);
-                CELL_OP(32);
-                CELL_OP(36);
-                CELL_OP(40);
-                CELL_OP(44);
-                CELL_OP(48);
-                CELL_OP(52);
-                CELL_OP(56);
+                CELL_OP_2(0);
+                CELL_OP_2(4);
+                CELL_OP_2(8);
+                CELL_OP_2(12);
+                CELL_OP_2(16);
+                CELL_OP_2(20);
+                CELL_OP_2(24);
+                CELL_OP_2(28);
+                CELL_OP_2(32);
+                CELL_OP_2(36);
+                CELL_OP_2(40);
+                CELL_OP_2(44);
+                CELL_OP_2(48);
+                CELL_OP_2(52);
+                CELL_OP_2(56);
 #elif _SLKP_USE_ARM_NEON
                 float64x2_t value_op = vdupq_n_f64(value);
                 // #define                 CELL_OP(x) vst1q_f64 (res+x,
