@@ -4562,10 +4562,11 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
                                       _mm256_loadu_pd(res + idx)));
 #else
                   _mm256_storeu_pd(
-                      res + i, _mm256_add_pd(
-                                   _mm256_loadu_pd(res + idx),
-                                   _mm256_mul_pd(value_op, _mm256_loadu_pd(
-                                                               secArg + idx))));
+                      res + idx,
+                      _mm256_add_pd(
+                          _mm256_loadu_pd(res + idx),
+                          _mm256_mul_pd(value_op,
+                                        _mm256_loadu_pd(secArg + idx))));
 #endif
 #elif defined _SLKP_USE_ARM_NEON
                   vst1q_f64(res + idx, vfmaq_f64(vld1q_f64(res + idx), value_op,
