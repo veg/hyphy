@@ -2434,30 +2434,43 @@ void _hy_matrix_multiply_4x4x1(double *C, double *A, double *B, int stride,
   A3 = _mm256_mul_pd(_mm256_loadu_pd(A + S2), B1);
   A4 = _mm256_mul_pd(_mm256_loadu_pd(A + S3), B1);
 
-  A1 = _mm256_hadd_pd(A1,
-                      A2); // A1[0]+A1[1], A2[0]+A2[1], A1[2]+A1[3], A2[2]+A2[3]
+  A1 = _mm256_hadd_pd(A1, A2);
+  // A1[0]+A1[1], A2[0]+A2[1], A1[2]+A1[3], A2[2]+A2[3]
   A3 = _mm256_hadd_pd(A3, A4);
+  // A3[0]+A3[1], A4[0]+A4[1], A3[2]+A3[3], A4[2]+A4[3]
 
 #if defined _SLKP_USE_FMA3_INTRINSICS
-  A2 = _mm256_permute4x64_pd(
-      A1, 0 + 4 * 2 + 16 * 1 +
-              64 * 3); // A1[0]+A1[1], A1[2]+A1[3], A2[0]+A2[1], A2[2]+A2[3]
+  A2 = _mm256_permute4x64_pd(A1, 0 + 4 * 2 + 16 * 1 + 64 * 3);
+  // A1[0]+A1[1], A1[2]+A1[3], A2[0]+A2[1], A2[2]+A2[3]
   A4 = _mm256_permute4x64_pd(A3, 0 + 4 * 2 + 16 * 1 + 64 * 3);
+  // A3[0]+A3[1], A3[2]+A3[3], A4[0]+A4[1], A4[2]+A4[3]
 
-  A1 = _mm256_permute4x64_pd(
-      _mm256_hadd_pd(A2, A4),
-      0 + 4 * 2 + 16 * 1 +
-          64 * 3); // A1[0]+A1[1] + A1[2]+A1[3], A2[0]+A2[1] +  A2[2]+A2[3] , x2
-#else
-  A2 = _mm256_permute2f128_pd(A1, A1, 0x01);
-  A4 = _mm256_permute2f128_pd(A3, A3, 0x01);
-
-  __m256d temp_hadd = _mm256_hadd_pd(A2, A4);
-  A1 = _mm256_permute2f128_pd(temp_hadd, temp_hadd, 0x01);
-#endif
-
+  A1 = _mm256_permute4x64_pd(_mm256_hadd_pd(A2, A4),
+                             0 + 4 * 2 + 16 * 1 + 64 * 3);
   __m128d C11 = _mm256_extractf128_pd(A1, 0);
   __m128d C21 = _mm256_extractf128_pd(A1, 1);
+#else
+  A2 = _mm256_unpacklo_pd(A1, A3);
+  // A1[0]+A1[1], A3[0]+A3[1], A1[2]+A1[3], A3[2]+A3[3]
+  A2 = _mm256_hadd_pd(A2, _mm256_permute2f128_pd(A2, A2, 1));
+  //+
+  // A1[2]+A1[3], A3[2]+A3[3], A1[2]+A1[3], A3[2]+A3[3]
+  A4 = _mm256_unpackhi_pd(A1, A3);
+  // AA2[0]+A2[1], A4[0]+A4[1], A2[2]+A2[3], A4[2]+A4[3]
+  A4 = _mm256_hadd_pd(A4, _mm256_permute2f128_pd(A4, A4, 1));
+  //+
+  // A2[2]+A2[3], A4[2]+A4[3], A2[2]+A2[3], A4[2]+A4[3]
+
+  // need to pick A2[0], A4[0], A2[1], A4[0] QUADWORDS
+
+  //_mm256_unpacklo_pd (A2, A4);
+  // A2[0], A4[0], A2[3], A4[0]
+  //_mm256_unpacklo_hi (A2, A4);
+
+  __m128d C11 = _mm256_extractf128_pd(_mm256_unpacklo_pd(A2, A4), 0);
+  __m128d C21 = _mm256_extractf128_pd(_mm256_unpackhi_pd(A2, A4), 1);
+
+#endif
 
   if (add) {
     C[0] += _mm_cvtsd_f64(C11);
