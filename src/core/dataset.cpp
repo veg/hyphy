@@ -1390,8 +1390,8 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
         if (aNumber < 0) {
           _String warnMsg(
               "A negative number was found in partition specification: ");
-          ReportWarning(warnMsg & input.Cut(0, anchor - 1) & '?' &
-                        input.Cut(anchor, -1));
+          HandleAlignmentValidationError(warnMsg & input.Cut(0, anchor - 1) &
+                                         '?' & input.Cut(anchor, -1));
           target.Clear();
           return;
         }
@@ -1400,7 +1400,7 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
         char current_char = input.char_at(count);
 
         if (current_char == '<' || current_char == '>') {
-          ReportWarning(
+          HandleAlignmentValidationError(
               _String("A comb partition cannot be combined with other types. "
                       "The entire partition is reset to first..last") &
               input.Cut(0, anchor - 1) & '?' & input.Cut(anchor, -1));
@@ -1431,8 +1431,9 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
             } else {
               // linked locations
               if (links.countitems() != (numbers.countitems() - 2) / 2) {
-                ReportWarning("A part of the partition specification has not "
-                              "been understood and is being skipped.");
+                HandleAlignmentValidationError(
+                    "A part of the partition specification has not "
+                    "been understood and is being skipped.");
                 target.Clear();
                 return;
               } else {
@@ -1879,7 +1880,7 @@ void processCommand(_String *s, FileState *fs) {
       }
     }
   } catch (const _String &warning) {
-    ReportWarning(warning);
+    HandleAlignmentValidationError(warning);
   }
 }
 //_________________________________________________________
@@ -1936,7 +1937,8 @@ void ProcessTree(FileState *fState, hyFile *f, _StringBuffer &CurrentLine) {
   }
 
   if (start_index == kNotFound || end_index == kNotFound) {
-    ReportWarning(tree_string->Enquote() & " has mimatched '(' and ')'");
+    HandleAlignmentValidationError(tree_string->Enquote() &
+                                   " has mimatched '(' and ')'");
     DeleteObject(tree_string);
   } else {
     *tree_string << CurrentLine.Cut(start_index, end_index);

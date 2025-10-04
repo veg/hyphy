@@ -483,7 +483,6 @@ namespace fade {
 
 for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 
-
     fade.bias.residue = fade.alphabet[fade.residue];
     selection.io.startTimer (fade.json [terms.json.timers], "Residue `fade.bias.residue` analysis", 2 + fade.residue);
 
@@ -635,20 +634,20 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
                 grid_samples = (((cache[utility.getGlobalValue("terms.fade.cache.mcmc")])[bias.residue])[chain_id])["weights"];
                 grid_samples_T = Transpose (grid_samples);
                 P_ks = grid_samples *
-                       ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"];
+                       ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])[^"terms.fade.cache.conditionals"];
 
                 denominators[chain_id] = P_ks;
 
 
                 posterior_mean_rates[chain_id]      =            (grid_samples $ rates *
-                                                                 ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"]) / P_ks;
+                                                                 ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])[^"terms.fade.cache.conditionals"]) / P_ks;
 
                 posterior_mean_biases[chain_id]     =            (grid_samples $ biases *
-                                                                 ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"]) / P_ks;
+                                                                 ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])[^"terms.fade.cache.conditionals"]) / P_ks;
 
 
                 biased_ks[chain_id]  = grid_samples *
-                               (bias_present_stencil $ ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"]) / P_ks;
+                               (bias_present_stencil $ ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])[^"terms.fade.cache.conditionals"]) / P_ks;
 
                 if (run_settings["method"] == ^"terms.fade.methods.MH") {
                     logL_samples = (((cache[utility.getGlobalValue("terms.fade.cache.mcmc")])[bias.residue])[chain_id])["likelihoods"];
@@ -680,16 +679,16 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
              posterior_mean_over_grid_T               = Transpose (posterior_mean_over_grid);
              cache[terms.fade.cache.posterior]       = posterior_mean_over_grid;
  
-             P_ks = posterior_mean_over_grid_T * ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"];
+             P_ks = posterior_mean_over_grid_T * ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])[^"terms.fade.cache.conditionals"];
 
 
              posterior_mean_rates     =             (posterior_mean_over_grid_T $ rates *
-                                                              ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"]) / P_ks;
+                                                              ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])[^"terms.fade.cache.conditionals"]) / P_ks;
              posterior_mean_biases     =            (posterior_mean_over_grid_T $ biases *
-                                                              ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"]) / P_ks;
+                                                              ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])[^"terms.fade.cache.conditionals"]) / P_ks;
 
              biased_ks  = posterior_mean_over_grid_T *
-                               (bias_present_stencil $ ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"]) / P_ks;
+                               (bias_present_stencil $ ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])[^"terms.fade.cache.conditionals"]) / P_ks;
 
        }
 
@@ -721,7 +720,7 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 
             for (s = 0; s < sites_in_partition; s += 1) {
 
-                pp = posterior_mean_over_grid $ (((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"])[-1][i];
+                pp = posterior_mean_over_grid $ (((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])[^"terms.fade.cache.conditionals"])[-1][i];
                 partition_posteriors [s] = Transpose (pp * (1/(+pp)));
 
                 if (run_settings["method"] != utility.getGlobalValue ("terms.fade.methods.VB0")) {

@@ -48,6 +48,7 @@
 #include "hbl_env.h"
 #include "hy_string_buffer.h"
 #include "list.h"
+#include "topology.h"
 
 using namespace hy_global;
 using namespace hyphy_global_objects;
@@ -128,8 +129,9 @@ bool SkipUntilNexusBlockEnd(FileState &fState, hyFile *file,
           ReadNextLine(file, &CurrentLine, &fState, false);
         }
       } else {
-        ReportWarning("Found END w/o a trailing semicolon. Assuming end of "
-                      "block and skipping the rest of the line.");
+        HandleAlignmentValidationError(
+            "Found END w/o a trailing semicolon. Assuming end of "
+            "block and skipping the rest of the line.");
         ReadNextLine(file, &CurrentLine, &fState, false);
       }
       return true;
@@ -304,8 +306,9 @@ void ProcessNexusTaxa(FileState &fState, long pos, hyFile *f,
     if (CurrentLine.BeginsWith(key1, false)) {
       if (result.GetNames().lLength) { // check the number of dimensions
         // some data already present
-        ReportWarning("Only one taxa definition per NEXUS file is recognized, "
-                      "the others will be ignored.");
+        HandleAlignmentValidationError(
+            "Only one taxa definition per NEXUS file is recognized, "
+            "the others will be ignored.");
         SkipUntilNexusBlockEnd(fState, f, CurrentLine, pos);
         break;
       } else {
@@ -318,8 +321,9 @@ void ProcessNexusTaxa(FileState &fState, long pos, hyFile *f,
       }
     } else if (CurrentLine.BeginsWith(key3, false)) {
       if (speciesExpected == -1) {
-        ReportWarning("TAXLABELS must be preceded by a valid NTAX statement. "
-                      "Skipping the entire TAXA block.");
+        HandleAlignmentValidationError(
+            "TAXLABELS must be preceded by a valid NTAX statement. "
+            "Skipping the entire TAXA block.");
         SkipUntilNexusBlockEnd(fState, f, CurrentLine, pos);
         break;
       } else {
@@ -342,11 +346,11 @@ void ProcessNexusTaxa(FileState &fState, long pos, hyFile *f,
 
         } while (1);
         if ((long)result.GetNames().lLength != speciesExpected) {
-          ReportWarning(_String("TAXALABELS provided ") &
-                        _String((long)result.GetNames().lLength) &
-                        " species, whereas the NTAX statement promised:" &
-                        _String(speciesExpected) &
-                        ". HYPHY will use TAXALABELS count.");
+          HandleAlignmentValidationError(
+              _String("TAXALABELS provided ") &
+              _String((long)result.GetNames().lLength) &
+              " species, whereas the NTAX statement promised:" &
+              _String(speciesExpected) & ". HYPHY will use TAXALABELS count.");
         }
         done = true;
       }
@@ -397,13 +401,15 @@ void ProcessNexusAssumptions(FileState &fState, long pos, hyFile *f,
       _StringBuffer buffer(128UL);
       if (!ReadNextNexusStatement(fState, f, CurrentLine, key1.length(), buffer,
                                   false, false, false, false, true)) {
-        ReportWarning("CHARSET construct not followed by ';'.");
+        HandleAlignmentValidationError(
+            "CHARSET construct not followed by ';'.");
         break;
       } else {
         pos = buffer.Find('=', 1, kStringEnd);
         if (pos == -1) {
-          ReportWarning(buffer.Enquote() & " is not of the form Charset ID = "
-                                           "specification of the partition.");
+          HandleAlignmentValidationError(buffer.Enquote() &
+                                         " is not of the form Charset ID = "
+                                         "specification of the partition.");
         } else {
           long pos2 =
               buffer.FirstNonSpaceIndex(0, pos - 1, kStringDirectionBackward);
@@ -491,7 +497,7 @@ void ProcessNexusAssumptions(FileState &fState, long pos, hyFile *f,
                         numberThree.Clear();
 
                       } else {
-                        ReportWarning(
+                        HandleAlignmentValidationError(
                             _String("Invalid from-to\\step specification: ") &
                             error_conext(buffer, k));
                         okFlag = false;
@@ -533,7 +539,7 @@ void ProcessNexusAssumptions(FileState &fState, long pos, hyFile *f,
 
                   } else if (ch == '-') {
                     if (spoolInto2nd || spoolInto3rd) {
-                      ReportWarning(
+                      HandleAlignmentValidationError(
                           _String("Misplaced '-' in CHARSET specification: ") &
                           error_conext(buffer, k));
                       okFlag = false;
@@ -542,7 +548,7 @@ void ProcessNexusAssumptions(FileState &fState, long pos, hyFile *f,
                     spoolInto2nd = true;
                   } else if (ch == '\\') {
                     if ((!spoolInto2nd) || spoolInto3rd) {
-                      ReportWarning(
+                      HandleAlignmentValidationError(
                           _String("Misplaced '\\' in CHARSET specification: ") &
                           buffer.Enquote());
                       okFlag = false;
@@ -560,13 +566,14 @@ void ProcessNexusAssumptions(FileState &fState, long pos, hyFile *f,
               }
             }
             if (j < 0) {
-              ReportWarning(
+              HandleAlignmentValidationError(
                   _String("Could not find a charset identifier in: ") &
                   buffer.Enquote());
             }
           } else {
-            ReportWarning(buffer.Enquote() &
-                          " is not of the form CharSetID = char set string");
+            HandleAlignmentValidationError(
+                buffer.Enquote() &
+                " is not of the form CharSetID = char set string");
           }
         }
       }
@@ -619,9 +626,10 @@ void ProcessNexusTrees(FileState &fState, long pos, hyFile *f,
                        keyEnd = "END";
 
   bool done = false, readResult, good;
-  _List translationsFrom, translationsTo;
+  // List translationsFrom, translationsTo;
+  _AssociativeList translate_definitions;
   _List treeIdents, treeStrings;
-  long treeSelected = 0, insertPos = 0;
+  long treeSelected = 0;
 
   while (!done) {
 
@@ -637,28 +645,47 @@ void ProcessNexusTrees(FileState &fState, long pos, hyFile *f,
 
     if (CurrentLine.BeginsWith(key1, false)) {
       // set up translations between nodes and data labels
+      /**
+         example
+       translate
+        1 Ephedra,
+        2 Gnetum,
+        3 Welwitschia,
+        4 Ginkgo,
+        5 Pinus
+       ;
+      */
       long offset = key1.length();
+
+      _Trie searchForNames(result.GetNames());
+
       do {
         _StringBuffer buffer(128UL);
         readResult =
             ReadNextNexusStatement(fState, f, CurrentLine, offset, buffer, true,
                                    true, true, false, false);
-        if (buffer.nonempty()) {
-          if (translationsTo.lLength < translationsFrom.lLength) {
-            good = (result.GetNames().FindObject(&buffer) >= 0);
-            if (good) {
-              translationsTo.InsertElement(&buffer, insertPos);
-            } else {
-              ReportWarning(buffer.Enquote() &
-                            " is not a valid taxon name for TRANSLATE");
-              translationsFrom.Delete(insertPos);
-            }
 
+        bool read_source = true;
+
+        _String translate_from;
+
+        if (buffer.nonempty()) {
+          if (!read_source) {
+            good = (searchForNames.FindKey(buffer) != kNotFound);
+            if (good && translate_from.nonempty()) {
+              translate_definitions.MStore(translate_from, buffer);
+            } else {
+              HandleAlignmentValidationError(
+                  buffer.Enquote() &
+                  " is not a valid taxon name for TRANSLATE");
+            }
+            translate_from = kEmptyString;
           } else {
             if (!readResult) {
-              insertPos = translationsFrom.BinaryInsert(&buffer);
+              translate_from = buffer;
             }
           }
+          read_source = !read_source;
         }
         if (readResult) {
           break;
@@ -676,7 +703,7 @@ void ProcessNexusTrees(FileState &fState, long pos, hyFile *f,
       _StringBuffer buffer(128UL);
       if (!ReadNextNexusStatement(fState, f, CurrentLine, key2.length(), buffer,
                                   false, false, false, false, false, true)) {
-        ReportWarning("TREE construct not followed by ';'.");
+        HandleAlignmentValidationError("TREE construct not followed by ';'.");
         break;
       } else {
         // here goes the tree string in the form: treeID = treeString
@@ -684,8 +711,8 @@ void ProcessNexusTrees(FileState &fState, long pos, hyFile *f,
         // next crudely parse the tree string, extracting species names and
         pos = buffer.Find('=', 1, kStringEnd);
         if (pos == kNotFound) {
-          ReportWarning(buffer.Enquote() &
-                        " is not of the form TreeID = TreeString");
+          HandleAlignmentValidationError(
+              buffer.Enquote() & " is not of the form TreeID = TreeString");
         } else {
           long pos2 =
               buffer.FirstNonSpaceIndex(0, pos - 1, kStringDirectionBackward);
@@ -726,12 +753,13 @@ void ProcessNexusTrees(FileState &fState, long pos, hyFile *f,
               }
             }
             if (j == kNotFound) {
-              ReportWarning(_String("Could not find a tree identifier in:") &
-                            buffer.Enquote());
+              HandleAlignmentValidationError(
+                  _String("Could not find a tree identifier in:") &
+                  buffer.Enquote());
             }
           } else {
-            ReportWarning(buffer.Enquote() &
-                          " is not of the form TreeID = TreeString");
+            HandleAlignmentValidationError(
+                buffer.Enquote() & " is not of the form TreeID = TreeString");
           }
         }
       }
@@ -761,88 +789,26 @@ void ProcessNexusTrees(FileState &fState, long pos, hyFile *f,
 
   for (unsigned long id = 0L; id < treeStrings.lLength; id++) {
     _String const *file_tree_string = (_String const *)treeStrings(id);
-    long treeLevel = 0L, lastNode, i = 0L;
 
-    _StringBuffer revisedTreeString(128L);
-
-    // TODO SLKP 20170621: looks like this is a generic Newick parser; why
-    // duplicate it here?
-    for (i = 0; i < (long)file_tree_string->length(); ++i) {
-      char cc = file_tree_string->char_at(i);
-
-      switch (cc) {
-      case '(': { // creating a new internal node one level down
-        treeLevel++;
-        revisedTreeString << '(';
-        break;
-      }
-
-      case ',':
-      case ')': { // creating a new node on the same level and finishes updating
-                  // the list of parameters
-        if (cc == ')') { // also create a new node on the same level
-          treeLevel--;
-        }
-        revisedTreeString << cc;
-        break;
-      }
-
-      case ':': { // tree branch definition
-        lastNode = i + 1;
-        revisedTreeString << ':';
-        char c = file_tree_string->char_at(lastNode);
-
-        while (isdigit(c) || c == '.' || c == '-' || c == 'e' || c == 'E') {
-          if (lastNode < (long)file_tree_string->length()) {
-            lastNode++;
-            revisedTreeString << c;
-            c = file_tree_string->char_at(lastNode);
-          } else {
-            break;
-          }
-        }
-        i = lastNode - 1;
-        break;
-      }
-
-      default: { // node name
-        lastNode = i;
-        char c = file_tree_string->char_at(lastNode);
-        if (isspace(c)) {
-          break;
-        }
-        if (!(isalnum(c) || (c == '_'))) {
-          ReportWarning(_String("Node names should begin with a letter, a "
-                                "number, or an underscore: ") &
-                        error_conext(*file_tree_string, i));
-          i = file_tree_string->length() + 2;
-          break;
-        }
-        while (isalnum(c) || (c == '_')) {
-          if (lastNode < (long)file_tree_string->length()) {
-            lastNode++;
-            c = file_tree_string->char_at(lastNode);
-          } else {
-            break;
-          }
-        }
-        _String node_name(*file_tree_string, i, lastNode - 1);
-        i = lastNode - 1;
-        lastNode = translationsFrom.BinaryFindObject(&node_name);
-        if (lastNode >= 0) {
-          revisedTreeString << (_String *)translationsTo.list_data[lastNode];
-        } else {
-          revisedTreeString << node_name;
-        }
-        break;
-      }
-      }
-    }
-    if (treeLevel) {
-      ReportWarning(_String("Unbalanced '(,)' in the tree string:") &
-                    revisedTreeString.Enquote());
-    } else if (i == (long)file_tree_string->length()) {
-      *((_String *)treeStrings.list_data[id]) = revisedTreeString;
+    _String unique_id = _HYGenerateANameSpace();
+    _TreeTopology parse_tree(unique_id, *file_tree_string, true,
+                             &translate_definitions);
+    /*
+   translationsFrom.Each ([&translationsTo, &node_mapping] (BaseRef entry,
+   unsigned long index) -> void { node_mapping <<_associative_list_key_value{
+           ((_String*)entry)->get_str(),
+           translationsTo.GetItem (index)
+       };
+   } );*/
+    if (parse_tree.nonempty()) {
+      // ObjectToConsole((_String *)treeStrings.list_data[id]); NLToConsole();
+      _String validated_tree((_String *)parse_tree.getTreeString(
+          fGetNodeStringForTreeName | fGetNodeStringForTreeModel |
+              fGetNodeStringForTreeModel,
+          fGetNodeStringForTreeModel | fGetNodeStringForTreeModel |
+              fGetNodeStringForTreeName));
+      // ObjectToConsole(&validated_tree); NLToConsole();
+      *((_String *)treeStrings.list_data[id]) = validated_tree;
     }
   }
 
@@ -968,13 +934,14 @@ bool ProcessNexusData(FileState &fState, long pos, hyFile *f,
           }
           if (!(count =
                     ReadNextNexusEquate(fState, f, CurrentLine, 0, buffer))) {
-            ReportWarning("NTAX is not followed by '= number-of-taxa'");
+            HandleAlignmentValidationError(
+                "NTAX is not followed by '= number-of-taxa'");
             done = true;
           } else {
             done = done || (count > 1);
             spExp = buffer.to_long();
             if (spExp <= 0L) {
-              ReportWarning("NTAX must be a positive number");
+              HandleAlignmentValidationError("NTAX must be a positive number");
               done = true;
               spExp = result.GetNames().lLength ? result.GetNames().lLength : 1;
             }
@@ -982,7 +949,8 @@ bool ProcessNexusData(FileState &fState, long pos, hyFile *f,
         } else if (buffer.BeginsWith(key12, false)) {
           if (!(count =
                     ReadNextNexusEquate(fState, f, CurrentLine, 0, buffer))) {
-            ReportWarning("NCHAR is not followed by '= number-of-charaters'");
+            HandleAlignmentValidationError(
+                "NCHAR is not followed by '= number-of-charaters'");
             done = true;
           } else {
             done = done || (count > 1);
@@ -1008,8 +976,9 @@ bool ProcessNexusData(FileState &fState, long pos, hyFile *f,
         if (buffer.BeginsWith(key21)) { // datatype
           if (!(count =
                     ReadNextNexusEquate(fState, f, CurrentLine, 0, buffer))) {
-            ReportWarning("DATATYPE is not followed by '= "
-                          "DNA|RNA|NUCLEOTIDE|PROTEIN|BINARY|CODON'");
+            HandleAlignmentValidationError(
+                "DATATYPE is not followed by '= "
+                "DNA|RNA|NUCLEOTIDE|PROTEIN|BINARY|CODON'");
             done = true;
           } else {
             done = done || (count > 1);
@@ -1058,7 +1027,7 @@ bool ProcessNexusData(FileState &fState, long pos, hyFile *f,
                 break;
               }
             } else {
-              ReportWarning(
+              HandleAlignmentValidationError(
                   buffer.Enquote() &
                   " is not a recognized data type "
                   "(DNA|RNA|CODON|NUCLEOTIDE|PROTEIN|BINARY are allowed).");
@@ -1079,9 +1048,10 @@ bool ProcessNexusData(FileState &fState, long pos, hyFile *f,
           count = ReadNextNexusEquate(fState, f, CurrentLine, 0, buffer, true,
                                       false);
           if (buffer.empty()) {
-            ReportWarning(buffer.Enquote() &
-                          _String("is not of the form SYMBOLS = \"sym1 sym2 "
-                                  "...\". The entire block is ignored."));
+            HandleAlignmentValidationError(
+                buffer.Enquote() &
+                _String("is not of the form SYMBOLS = \"sym1 sym2 "
+                        "...\". The entire block is ignored."));
             done = true;
             break;
           }
@@ -1102,7 +1072,8 @@ bool ProcessNexusData(FileState &fState, long pos, hyFile *f,
           buffer.Trim(key25.length(), kStringEnd);
           if (!(count = ReadNextNexusEquate(fState, f, CurrentLine, 0, buffer,
                                             true, false))) {
-            ReportWarning(buffer.Enquote() & " is not followed by '=char'");
+            HandleAlignmentValidationError(buffer.Enquote() &
+                                           " is not followed by '=char'");
             done = true;
           }
           done = done || (count > 1);
@@ -1123,7 +1094,7 @@ bool ProcessNexusData(FileState &fState, long pos, hyFile *f,
               continue;
             }
             if (!meaningDefined) {
-              ReportWarning(
+              HandleAlignmentValidationError(
                   "EQUATE can only be used to define single-character tokens. "
                   "Ignoring the EQUATE command.");
               translations.Clear();
@@ -1157,13 +1128,15 @@ bool ProcessNexusData(FileState &fState, long pos, hyFile *f,
           }
           if (!(count = ReadNextNexusEquate(fState, f, CurrentLine, 0, buffer,
                                             true))) {
-            ReportWarning(buffer.Enquote() & " is not followed by '=char'");
+            HandleAlignmentValidationError(buffer.Enquote() &
+                                           " is not followed by '=char'");
             done = true;
           } else {
             done = done || (count > 1);
             if (buffer.length() != 1) {
-              ReportWarning(buffer.Enquote() & " is not a valid " & built_in &
-                            " character.");
+              HandleAlignmentValidationError(buffer.Enquote() &
+                                             " is not a valid " & built_in &
+                                             " character.");
             }
           }
           switch (charSwitcher) {
@@ -1281,7 +1254,7 @@ bool ProcessNexusData(FileState &fState, long pos, hyFile *f,
         if (labels) {
           if ((long)result.GetNames().lLength < spExp) {
             if (spExp > 0 && buffer.empty()) {
-              ReportWarning(
+              HandleAlignmentValidationError(
                   _String(
                       "Could not find NTAX taxon names in the matrix. Read: ") &
                   _String((long)result.GetNames().lLength) & " sequences.");
@@ -1321,14 +1294,28 @@ bool ProcessNexusData(FileState &fState, long pos, hyFile *f,
         }
 
         if (source->empty()) {
-          ReportWarning(
+          HandleAlignmentValidationError(
               _String(
                   "Could not find NTAX data strings in the matrix. Read: ") &
               _String((long)result.GetNames().lLength) & " sequences.");
           break;
         }
         loopIterations++;
+        long expected_sites_before_sequence = fState.totalSitesRead;
         ISelector(fState, *source, result);
+        if (fState.curSpecies > 0) {
+          if (expected_sites_before_sequence < fState.totalSitesRead) {
+            HandleAlignmentValidationError(
+                _String("Sequence ") & (long)(fState.curSpecies + 1) & " " &
+                result.GetSequenceName(fState.curSpecies)->Enquote('(', ')') &
+                " is longer " &
+                _String((long)fState.totalSitesRead).Enquote('(', ')') &
+                " than the expected length based on prior sequences " &
+                _String(expected_sites_before_sequence).Enquote('(', ')') &
+                " for a non-interleaved alignment. Please double check the "
+                "validity of this MSA");
+          }
+        }
 
         if (done)
           if (loopIterations >= fState.totalSpeciesExpected) {
@@ -1343,17 +1330,20 @@ bool ProcessNexusData(FileState &fState, long pos, hyFile *f,
       }
 
       if ((long)result.GetNames().lLength != spExp) {
-        ReportWarning(_String("Expected ") & spExp & " taxa, but found " &
-                      (long)result.GetNames().lLength);
+        HandleAlignmentValidationError(_String("Expected ") & spExp &
+                                       " taxa, but found " &
+                                       (long)result.GetNames().lLength);
       }
       if ((long)result.lLength != sitesExp &&
           result.InternalStorageMode() == 0) {
-        ReportWarning(_String("Expected ") & sitesExp & " sites, but found " &
-                      (long)result.lLength);
+        HandleAlignmentValidationError(_String("Expected ") & sitesExp &
+                                       " sites, but found " &
+                                       (long)result.lLength);
       }
       if (spExp && loopIterations % spExp) {
-        ReportWarning(_String("There is an inconsistency between NTAX and the "
-                              "number of data strings in the matrix"));
+        HandleAlignmentValidationError(
+            _String("There is an inconsistency between NTAX and the "
+                    "number of data strings in the matrix"));
       }
       done = true;
     } else {
@@ -1427,8 +1417,9 @@ void ReadNexusFile(FileState &fState, hyFile *file, _DataSet &result) {
             // SkipUntilNexusBlockEnd (fState,file,CurrentLine,f);
 
             else {
-              ReportWarning("Only one data set per NEXUS file is read by "
-                            "ReadDataSet - the 1st valid one.");
+              HandleAlignmentValidationError(
+                  "Only one data set per NEXUS file is read by "
+                  "ReadDataSet - the 1st valid one.");
             }
           } else if (blockName.EqualIgnoringCase(taxa)) {
             if (!dataRead) {
@@ -1444,8 +1435,9 @@ void ReadNexusFile(FileState &fState, hyFile *file, _DataSet &result) {
               dataRead =
                   ProcessNexusData(fState, g + 1, file, CurrentLine, result);
             } else {
-              ReportWarning("Only one data set per NEXUS file is read by "
-                            "ReadDataSet - the 1st valid one.");
+              HandleAlignmentValidationError(
+                  "Only one data set per NEXUS file is read by "
+                  "ReadDataSet - the 1st valid one.");
             }
           } else if (blockName.EqualIgnoringCase(assumptions) ||
                      blockName.EqualIgnoringCase(sets)) {
@@ -1464,8 +1456,9 @@ void ReadNexusFile(FileState &fState, hyFile *file, _DataSet &result) {
           break;
         }
       } else {
-        ReportWarning(_String("NEXUS BEGIN must be followed by the name of the "
-                              "block. Skipping until next BEGIN statement."));
+        HandleAlignmentValidationError(
+            _String("NEXUS BEGIN must be followed by the name of the "
+                    "block. Skipping until next BEGIN statement."));
         break;
       }
     }

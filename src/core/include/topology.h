@@ -7,10 +7,10 @@ Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
   Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
-  
+
 Module Developers:
-	Lance Hepler (nlhepler@gmail.com)
-	Martin Smith (martin.audacis@gmail.com)
+        Lance Hepler (nlhepler@gmail.com)
+        Martin Smith (martin.audacis@gmail.com)
 
 Significant contributions from:
   Spencer V Muse (muse@stat.ncsu.edu)
@@ -37,398 +37,418 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __TOPOLOGY__
-#define     __TOPOLOGY__
+#ifndef __TOPOLOGY__
+#define __TOPOLOGY__
 
-#include "calcnode.h"
 #include "associative_list.h"
+#include "calcnode.h"
 #include "fstring.h"
 
-#define UNROOTED                        0
-#define ROOTED_LEFT                     1
-#define ROOTED_RIGHT                    2
+#define UNROOTED 0
+#define ROOTED_LEFT 1
+#define ROOTED_RIGHT 2
 
-#define HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS  0.000000001
+#define HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS 0.000000001
 
-
-#define fGetNodeStringForTreeName   0x01
-#define fGetNodeStringForTreeModel  0x02
+#define fGetNodeStringForTreeName 0x01
+#define fGetNodeStringForTreeModel 0x02
+#define fGetNodeStringForTreeLength 0x04
 
 class _TheTree;
 
 struct _TreeTopologyParseSettings {
-    
-    _TreeTopologyParseSettings (void) {
-        inode_prefix = "Node";
-        auto_convert_lengths = false;
-        accept_user_lengths = true;
-        ingore_user_inode_names = false;
-        auto_rename_nodes = true;
-        parser_namespace = kEmptyString;
-        parser_cache = nil;
+
+  _TreeTopologyParseSettings(void) {
+    inode_prefix = "Node";
+    auto_convert_lengths = false;
+    accept_user_lengths = true;
+    ingore_user_inode_names = false;
+    auto_rename_nodes = true;
+    parser_namespace = kEmptyString;
+    parser_cache = nil;
+  }
+
+  ~_TreeTopologyParseSettings() {
+    if (parser_cache) {
+      parser_cache->ClearFormulasInList();
+      DeleteObject(parser_cache->dataList);
+      DeleteObject(parser_cache);
     }
-  
-    ~_TreeTopologyParseSettings () {
-      if (parser_cache) {
-        parser_cache->ClearFormulasInList();
-        DeleteObject (parser_cache->dataList);
-        DeleteObject (parser_cache);
-      }
-    }
-  
-    void AllocateCache (void) {
-      DeleteObject (parser_cache);
-      parser_cache = new _AVLListX (new _SimpleList);
-    }
-  
-    _String inode_prefix,
-            parser_namespace;
-    
-    bool    auto_convert_lengths,
-            accept_user_lengths,
-            ingore_user_inode_names,
-            auto_rename_nodes;
-  
-    _AVLListX * parser_cache;
+  }
+
+  void AllocateCache(void) {
+    DeleteObject(parser_cache);
+    parser_cache = new _AVLListX(new _SimpleList);
+  }
+
+  _String inode_prefix, parser_namespace;
+
+  bool auto_convert_lengths, accept_user_lengths, ingore_user_inode_names,
+      auto_rename_nodes;
+
+  _AVLListX *parser_cache;
 };
 
-enum   hyTopologyBranchLengthMode {
-    kTopologyBranchLengthLocalParameter = 0L,
-    kTopologyBranchLengthNone         = -1L,
-    kTopologyBranchLengthExpectedSubs = -3L,
-    kTopologyBranchLengthUserLengths  = -2L
+enum hyTopologyBranchLengthMode {
+  kTopologyBranchLengthLocalParameter = 0L,
+  kTopologyBranchLengthNone = -1L,
+  kTopologyBranchLengthExpectedSubs = -3L,
+  kTopologyBranchLengthUserLengths = -2L
 };
 
 //_______________________________________________________________________________________________
 
-class _TreeTopology: public _CalcNode {
+class _TreeTopology : public _CalcNode {
 
 protected:
-    
-    
-    template <class CallBack> node<long>* ConditionalTraverser (CallBack && cb, bool do_root) {
-        node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
-        while (node<long>* iterator = ni.Next()) {
-            if (!do_root && iterator->is_root() ) {
-                return nil;
-            }
-            if (cb (iterator, ni)) {
-                return iterator;
-            }
-        }
+  template <class CallBack>
+  node<long> *ConditionalTraverser(CallBack &&cb, bool do_root) {
+    node_iterator<long> ni(theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+    while (node<long> *iterator = ni.Next()) {
+      if (!do_root && iterator->is_root()) {
         return nil;
+      }
+      if (cb(iterator, ni)) {
+        return iterator;
+      }
     }
+    return nil;
+  }
 
-    virtual void                PreTreeConstructor                 (bool);
-    virtual _AssociativeList*  MainTreeConstructor                 (_String const&, _TreeTopologyParseSettings & settings, bool = true, _AssociativeList* mapping = nil);
-    virtual void            PostTreeConstructor                    (bool, _AssociativeList* );
-    node<long>*     prepTree4Comparison                            (_List&, _SimpleList&, node<long>* = nil) const;
-    void            destroyCompTree                                (node<long>*) const;
-    _List*          SplitTreeIntoClustersInt                       (node<long>*, _List*, _AVLListX&, long, long) const;
-    char            internalTreeCompare                            (node<long>*, node<long>*, _SimpleList*, char, long, node<long>*, _TreeTopology const*, bool = false) const;
-    
-    /**
-        Compare two nodes on the same (subset) of leaves and report if they create the same subpartition
-     
-        @param n1 the first node to compare
-        @param n2 the second node to compare
-        @param subTreeMap ?
-        @param reindexer ?
-        @param cangoup ?
-        @param totalSize ?
-        @param n22 ?
-        @param tree2 ?
-        @param isPattern ?
-     
-        @return whether or not the nodes are equal
-    */
-    bool            internalNodeCompare                 (node<long>* n1, node<long>*, _SimpleList& subTreeMap, _SimpleList* reindexer, bool cangoup, long totalSize, node<long>* n22, _TreeTopology const* tree2, bool isPattern = false) const;
-    virtual HBLObjectRef       FlatRepresentation                  (HBLObjectRef cache);
-    void            FindCOTHelper                       (node<long>*, long, _Matrix&, _Matrix&, _Matrix&, _List&, _AVLListX&, hyFloat);
-    void            FindCOTHelper2                      (node<long>*, _Matrix&, _Matrix&, _AVLListX&, node<long>*, hyFloat);
-    static          const   _TreeTopologyParseSettings  CollectParseSettings (void);
-    void            AddANode                            (HBLObjectRef);
-    /*
+  virtual void PreTreeConstructor(bool);
+  virtual _AssociativeList *
+  MainTreeConstructor(_String const &, _TreeTopologyParseSettings &settings,
+                      bool = true, _AssociativeList *mapping = nil);
+  virtual void PostTreeConstructor(bool, _AssociativeList *);
+  node<long> *prepTree4Comparison(_List &, _SimpleList &,
+                                  node<long> * = nil) const;
+  void destroyCompTree(node<long> *) const;
+  _List *SplitTreeIntoClustersInt(node<long> *, _List *, _AVLListX &, long,
+                                  long) const;
+  char internalTreeCompare(node<long> *, node<long> *, _SimpleList *, char,
+                           long, node<long> *, _TreeTopology const *,
+                           bool = false) const;
 
-     20091006: SLKP
+  /**
+      Compare two nodes on the same (subset) of leaves and report if they create
+     the same subpartition
 
-     given an AVL with at least three key -> string pairs
-        "NAME" -> string (not a currently used node name)
-        "WHERE" -> string (an existing node)
-        "PARENT" -> string (not a currently used node name)
+      @param n1 the first node to compare
+      @param n2 the second node to compare
+      @param subTreeMap ?
+      @param reindexer ?
+      @param cangoup ?
+      @param totalSize ?
+      @param n22 ?
+      @param tree2 ?
+      @param isPattern ?
+
+      @return whether or not the nodes are equal
+  */
+  bool internalNodeCompare(node<long> *n1, node<long> *,
+                           _SimpleList &subTreeMap, _SimpleList *reindexer,
+                           bool cangoup, long totalSize, node<long> *n22,
+                           _TreeTopology const *tree2,
+                           bool isPattern = false) const;
+  virtual HBLObjectRef FlatRepresentation(HBLObjectRef cache);
+  void FindCOTHelper(node<long> *, long, _Matrix &, _Matrix &, _Matrix &,
+                     _List &, _AVLListX &, hyFloat);
+  void FindCOTHelper2(node<long> *, _Matrix &, _Matrix &, _AVLListX &,
+                      node<long> *, hyFloat);
+  static const _TreeTopologyParseSettings CollectParseSettings(void);
+  void AddANode(HBLObjectRef);
+  /*
+
+   20091006: SLKP
+
+   given an AVL with at least three key -> string pairs
+      "NAME" -> string (not a currently used node name)
+      "WHERE" -> string (an existing node)
+      "PARENT" -> string (not a currently used node name)
 
 
 
-     */
+   */
 
-    _List            RemoveANode                          (HBLObjectRef);
-    
-    /*
-     
-        Delete a node from the tree by name
-     
-     */
-    
-  
-    virtual void _RemoveNodeList (_SimpleList const& list);
+  _List RemoveANode(HBLObjectRef);
+
+  /*
+
+      Delete a node from the tree by name
+
+   */
+
+  virtual void _RemoveNodeList(_SimpleList const &list);
 
 public:
-    // class constants
-    
-    static const _String kCompareEqualWithReroot,
-                         kCompareEqualWithoutReroot,
-                         kCompareUnequalToplogies,
-                         kCompareUnequalLabelSets,
-                         kMeta;
+  // class constants
 
-    node<long>      *theRoot;
-  
-    _List           flatTree,
-                    flatCLeaves;
+  static const _String kCompareEqualWithReroot, kCompareEqualWithoutReroot,
+      kCompareUnequalToplogies, kCompareUnequalLabelSets, kMeta;
 
-    char            rooted;
+  node<long> *theRoot;
 
-    /**
-     * @brief Write the topology to a file
-     *
-     * @param file The file to write to
-     * @param u The format to use
-     */
-    virtual void            toFileStr                           (hyFile*, unsigned long);
-    /**
-     * @brief Convert the topology to a string
-     *
-     * @param u The format to use
-     * @return BaseRef The string representation of the topology
-     */
-    virtual BaseRef         toStr                               (unsigned long = 0UL);
-    /**
-     * @brief Reroot the tree using an internal traverser
-     *
-     * @param iterator The iterator
-     * @param l The long value
-     * @param b The boolean value
-     * @param sb The string buffer
-     * @param settings The parse settings
-     * @param branch_length_mode The branch length mode
-     * @param variable_ref The variable reference
-     * @param b2 The second boolean value
-     */
-    void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_StringBuffer&, _TreeTopologyParseSettings const& settings,  hyTopologyBranchLengthMode branch_length_mode, long variable_ref  = -1L, bool = false) const;
+  _List flatTree, flatCLeaves;
 
-    /**
-     * @brief Construct a new _TreeTopology object
-     */
-    _TreeTopology                       (void);
-    /**
-     * @brief Construct a new _TreeTopology object
-     *
-     * @param s1 The first string
-     * @param s2 The second string
-     * @param b The boolean value
-     * @param mapping The mapping
-     */
-    _TreeTopology                       (_String const&, _String const&, bool = true, _AssociativeList* mapping = nil);
-    /**
-     * @brief Construct a new _TreeTopology object
-     *
-     * @param s The string
-     */
-    _TreeTopology                       (_String const*);
-    /**
-     * @brief Construct a new _TreeTopology object
-     *
-     * @param t The tree
-     */
-    _TreeTopology                       (_TheTree const*);
-    /**
-     * @brief Construct a new _TreeTopology object
-     *
-     * @param t The topology to copy
-     */
-    _TreeTopology                       (const _TreeTopology& );
-    /**
-     * @brief The assignment operator
-     *
-     * @param t The topology to assign from
-     * @return const _TreeTopology&
-     */
-    _TreeTopology const&                operator = (const _TreeTopology& );
+  char rooted;
 
-    /**
-     * @brief Destroy the _TreeTopology object
-     */
-    virtual                 ~_TreeTopology                      (void);
+  /**
+   * @brief Write the topology to a file
+   *
+   * @param file The file to write to
+   * @param u The format to use
+   */
+  virtual void toFileStr(hyFile *, unsigned long);
+  /**
+   * @brief Convert the topology to a string
+   *
+   * @param u The format to use
+   * @return BaseRef The string representation of the topology
+   */
+  BaseRef getTreeString(int leaf_flag, int inode_flag);
+  virtual BaseRef toStr(unsigned long = 0UL);
+  /**
+   * @brief Reroot the tree using an internal traverser
+   *
+   * @param iterator The iterator
+   * @param l The long value
+   * @param b The boolean value
+   * @param sb The string buffer
+   * @param settings The parse settings
+   * @param branch_length_mode The branch length mode
+   * @param variable_ref The variable reference
+   * @param b2 The second boolean value
+   */
+  void
+  RerootTreeInternalTraverser(node<long> *iterator, long, bool, _StringBuffer &,
+                              _TreeTopologyParseSettings const &settings,
+                              hyTopologyBranchLengthMode branch_length_mode,
+                              long variable_ref = -1L, bool = false) const;
 
-    /**
-     * @brief Compare this topology with another
-     *
-     * @param t The topology to compare with
-     * @param cache The cache
-     * @return _FString* The result of the comparison
-     */
-    virtual  _FString*      Compare                             (HBLObjectRefConst, HBLObjectRef cache) const;
-    /**
-     * @brief Create a dynamic copy of the object
-     *
-     * @return BaseRef The dynamic copy
-     */
-    virtual  BaseRef        makeDynamic                         (void) const;
-    node<long>* CopyTreeStructure                   (node<long>*, bool) const;
-    virtual  _String           FinalizeNode                        (node<long>*, long, _String, _String const&, _String&, _TreeTopologyParseSettings const & settings);
+  /**
+   * @brief Construct a new _TreeTopology object
+   */
+  _TreeTopology(void);
+  /**
+   * @brief Construct a new _TreeTopology object
+   *
+   * @param s1 The first string
+   * @param s2 The second string
+   * @param b The boolean value
+   * @param mapping The mapping
+   */
+  _TreeTopology(_String const &, _String const &, bool = true,
+                _AssociativeList *mapping = nil);
+  /**
+   * @brief Construct a new _TreeTopology object
+   *
+   * @param s The string
+   */
+  _TreeTopology(_String const *);
+  /**
+   * @brief Construct a new _TreeTopology object
+   *
+   * @param t The tree
+   */
+  _TreeTopology(_TheTree const *);
+  /**
+   * @brief Construct a new _TreeTopology object
+   *
+   * @param t The topology to copy
+   */
+  _TreeTopology(const _TreeTopology &);
+  /**
+   * @brief The assignment operator
+   *
+   * @param t The topology to assign from
+   * @return const _TreeTopology&
+   */
+  _TreeTopology const &operator=(const _TreeTopology &);
 
+  /**
+   * @brief Destroy the _TreeTopology object
+   */
+  virtual ~_TreeTopology(void);
 
-    virtual HBLObjectRef       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext,HBLObjectRef cache = nil);
-    virtual void            EdgeCount                           (long&, long&) const;
-    // SLKP 20100827: a utility function to count edges in a tree
-    //              : note that the root node WILL be counted as an internal node
-    //              : writes [leaf count, internal node count] into the arguments
+  /**
+   * @brief Compare this topology with another
+   *
+   * @param t The topology to compare with
+   * @param cache The cache
+   * @return _FString* The result of the comparison
+   */
+  virtual _FString *Compare(HBLObjectRefConst, HBLObjectRef cache) const;
+  /**
+   * @brief Create a dynamic copy of the object
+   *
+   * @return BaseRef The dynamic copy
+   */
+  virtual BaseRef makeDynamic(void) const;
+  node<long> *CopyTreeStructure(node<long> *, bool) const;
+  virtual _String FinalizeNode(node<long> *, long, _String, _String const &,
+                               _String &,
+                               _TreeTopologyParseSettings const &settings);
 
-    virtual HBLObjectRef       TipCount                            (HBLObjectRef cache);
-    virtual HBLObjectRef       BranchCount                         (HBLObjectRef cache);
-    virtual HBLObjectRef       AVLRepresentation                   (HBLObjectRef, HBLObjectRef cache);
-    virtual unsigned long      ObjectClass                         (void) const {
-        return TOPOLOGY;
-    }
-    virtual bool IsDegenerate(void) const { return theRoot && theRoot->get_num_nodes() == 1L && theRoot->go_down(1)->get_num_nodes() == 0L; }
-  
- 
-    virtual _AssociativeList*           FindCOT                             (HBLObjectRef,HBLObjectRef cache);
+  virtual HBLObjectRef
+  ExecuteSingleOp(long, _List * = nil,
+                  _hyExecutionContext *context = _hyDefaultExecutionContext,
+                  HBLObjectRef cache = nil);
+  virtual void EdgeCount(long &, long &) const;
+  // SLKP 20100827: a utility function to count edges in a tree
+  //              : note that the root node WILL be counted as an internal node
+  //              : writes [leaf count, internal node count] into the arguments
 
-    virtual HBLObjectRef                MaximumParsimony                    (HBLObjectRef,HBLObjectRef cache);
+  virtual HBLObjectRef TipCount(HBLObjectRef cache);
+  virtual HBLObjectRef BranchCount(HBLObjectRef cache);
+  virtual HBLObjectRef AVLRepresentation(HBLObjectRef, HBLObjectRef cache);
+  virtual unsigned long ObjectClass(void) const { return TOPOLOGY; }
+  virtual bool IsDegenerate(void) const {
+    return theRoot && theRoot->get_num_nodes() == 1L &&
+           theRoot->go_down(1)->get_num_nodes() == 0L;
+  }
+  virtual bool nonempty(void) const {
+    return theRoot && theRoot->get_num_nodes() > 0;
+  }
 
-    node<long>      *FindNodeByName                     (_String const*) const;
-    /*
+  virtual _AssociativeList *FindCOT(HBLObjectRef, HBLObjectRef cache);
 
-     20091006: SLKP
+  virtual HBLObjectRef MaximumParsimony(HBLObjectRef, HBLObjectRef cache);
 
-     return the node with the name supplied by the argument
-     or nil if no such node exists
+  node<long> *FindNodeByName(_String const *) const;
+  /*
 
-     */
+   20091006: SLKP
 
-    
-    _List*          MapNodesToModels                    (void);
+   return the node with the name supplied by the argument
+   or nil if no such node exists
 
-    virtual _String const GetNodeName                         (node<long> *, bool = false) const;
-    virtual _String const *GetNodeModel                        (node<long> *) const;
-    virtual _String const GetBranchLengthString                (node<long> *, bool get_expression = false) const;
-    // SLKP 20100901:
-    //               added a boolean flag to ask to return branch length expression (if true) (returns "" for topologies)
-    //               just the numeric value (if false)
+   */
 
+  _List *MapNodesToModels(void);
 
-    virtual hyFloat         GetBranchLength                     (node<long> *) const;
-    virtual _String const   GetBranchValue                      (node<long> *) const;
-    virtual _String const   GetBranchVarValue                   (node<long> *, long) const;
-    virtual _String const   GetNodeStringForTree                (node<long> *, int flags) const;
-    virtual void            PasteBranchLength                   (node<long> * node, _StringBuffer & result , hyTopologyBranchLengthMode const mode, long variable_reference , hyFloat factor = 1.) const;
+  virtual _String const GetNodeName(node<long> *, bool = false) const;
+  virtual _String const *GetNodeModel(node<long> *) const;
+  virtual _String const
+  GetBranchLengthString(node<long> *, bool get_expression = false) const;
+  // SLKP 20100901:
+  //               added a boolean flag to ask to return branch length
+  //               expression (if true) (returns "" for topologies) just the
+  //               numeric value (if false)
 
-    node<long>&     GetRoot                             (void) const {
-      return  *theRoot;
-    }
-    void            SetRoot                             (node<long>* r) {
-        theRoot = r;
-    }
-  
-    /*node<long>&     GetCurrentNode                      (void) {
-        return *currentNode;
-    }*/
-  
-    const _List     RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
-    void            SubTreeString                       (node<long>* root, _StringBuffer & result, _TreeTopologyParseSettings const& settings, bool all_names = false, hyTopologyBranchLengthMode mode = kTopologyBranchLengthNone, long branch_length_variable = -1, _AVLListXL * substitutions  = nil) const;
+  virtual hyFloat GetBranchLength(node<long> *) const;
+  virtual _String const GetBranchValue(node<long> *) const;
+  virtual _String const GetBranchVarValue(node<long> *, long) const;
+  virtual _String const GetNodeStringForTree(node<long> *, int flags) const;
+  virtual void PasteBranchLength(node<long> *node, _StringBuffer &result,
+                                 hyTopologyBranchLengthMode const mode,
+                                 long variable_reference,
+                                 hyFloat factor = 1.) const;
 
-    virtual HBLObjectRef       RandomizeTips            (HBLObjectRef, HBLObjectRef cache);
-    /**
-        Shuffle the order of tips in the tree by permuting the order of children of
-        each node with certain probability
-     
-        The argument controls the rate at which this shuffling occurs
-        if it's a number (between 0 and 1), then each internal node will be shuffled
-        with this probability
-     
-        Returns a Topology object representing the reshuffled tree
-     */
+  node<long> &GetRoot(void) const { return *theRoot; }
+  void SetRoot(node<long> *r) { theRoot = r; }
 
-    _String                     CompareTrees                        (_TreeTopology*) const;
-    const _String               MatchTreePattern                    (_TreeTopology const*) const;
-    virtual HBLObjectRef        TipName                             (HBLObjectRef,HBLObjectRef cache);
-    //HBLObjectRef                TreeBranchName                      (HBLObjectRef node_ref, bool get_subtree = false, HBLObjectRef mapping_mode = nil);
-    HBLObjectRef                TreeBranchName                      (HBLObjectRef node_ref, bool get_subtree, HBLObjectRef mapping_mode, HBLObjectRef cache);
-    virtual HBLObjectRef        BranchLength                        (HBLObjectRef,HBLObjectRef cache);
-    virtual HBLObjectRef        RerootTree                          (HBLObjectRef, HBLObjectRef cache);
-    _List*                      SplitTreeIntoClusters               (unsigned long, unsigned long) const;
-    _String  const              DetermineBranchLengthMappingMode    (_String const*, hyTopologyBranchLengthMode&) const;
-    _AssociativeList*           SplitsIdentity                      (HBLObjectRef, HBLObjectRef cache) const;
-    
-    /* 20090609: SLKP
-        given a tree agrument (p), the function returns an AVL with a 2x1 matrix (key "CLUSTERS")
-        and a string (key "CONSENSUS");
-        The first cell contains the number of splits in *this
-        The second cell contains the number of splits in the argument that are present in *this
+  /*node<long>&     GetCurrentNode                      (void) {
+      return *currentNode;
+  }*/
 
-        This entry will contain -1 if the argument is invalid (nil or not a tree)
-        and if the set of leaves differs between two trees
+  const _List RetrieveNodeNames(bool doTips, bool doInternals,
+                                int travseralType) const;
+  void SubTreeString(
+      node<long> *root, _StringBuffer &result,
+      _TreeTopologyParseSettings const &settings, bool all_names = false,
+      hyTopologyBranchLengthMode mode = kTopologyBranchLengthNone,
+      long branch_length_variable = -1, _AVLListXL *substitutions = nil) const;
 
-        The string will be empty (incomparable trees or another exception) or the Newick String
-        with the consensus string
+  virtual HBLObjectRef RandomizeTips(HBLObjectRef, HBLObjectRef cache);
+  /**
+      Shuffle the order of tips in the tree by permuting the order of children
+     of each node with certain probability
 
-    */
-    bool            ConvertToPSW                        (_AVLListX&,_List*, _SimpleList&,bool = false) const;
-    /* 20090612: SLKP
-       20100510: Modified the function to also return internal node names in the second AVL
+      The argument controls the rate at which this shuffling occurs
+      if it's a number (between 0 and 1), then each internal node will be
+     shuffled with this probability
 
-        covert the topology into the post-order with weights representation
-        The first argument maps node names to their internal indices in the traversal order
-        (note that leaves are numbered 1..leaves-1 and internal indices as leaves-1...leaves+inodes-1)
-        The second argument stores doubles for each node; the index in the array itself (mod 2),
-        corresponds to the appropriate step in the post-order traversal;
+      Returns a Topology object representing the reshuffled tree
+   */
 
-        <node index, number of nodes in the subtree below>
+  _String CompareTrees(_TreeTopology *) const;
+  const _String MatchTreePattern(_TreeTopology const *) const;
+  virtual HBLObjectRef TipName(HBLObjectRef, HBLObjectRef cache);
+  // HBLObjectRef                TreeBranchName (HBLObjectRef node_ref, bool
+  // get_subtree = false, HBLObjectRef mapping_mode = nil);
+  HBLObjectRef TreeBranchName(HBLObjectRef node_ref, bool get_subtree,
+                              HBLObjectRef mapping_mode, HBLObjectRef cache);
+  virtual HBLObjectRef BranchLength(HBLObjectRef, HBLObjectRef cache);
+  virtual HBLObjectRef RerootTree(HBLObjectRef, HBLObjectRef cache);
+  _List *SplitTreeIntoClusters(unsigned long, unsigned long) const;
+  _String const
+  DetermineBranchLengthMappingMode(_String const *,
+                                   hyTopologyBranchLengthMode &) const;
+  _AssociativeList *SplitsIdentity(HBLObjectRef, HBLObjectRef cache) const;
 
-        (((A,B)N1,C)N2,(D,E)N3)N0 will result in
+  /* 20090609: SLKP
+      given a tree agrument (p), the function returns an AVL with a 2x1 matrix
+     (key "CLUSTERS") and a string (key "CONSENSUS"); The first cell contains
+     the number of splits in *this The second cell contains the number of splits
+     in the argument that are present in *this
 
-        A->0; B->1; N1->5; C->2; N2->6; D->3; E->4; N3->7; N0->8
-        <0,0>,<1,0>,<5,2>,<2,0>,<6,4>,<3,0>,<4,0>,<7,2>,<8,8>, <5,4>
+      This entry will contain -1 if the argument is invalid (nil or not a tree)
+      and if the set of leaves differs between two trees
 
-        The last two entries store the number of leaves and internal nodes
+      The string will be empty (incomparable trees or another exception) or the
+     Newick String with the consensus string
 
+  */
+  bool ConvertToPSW(_AVLListX &, _List *, _SimpleList &, bool = false) const;
+  /* 20090612: SLKP
+     20100510: Modified the function to also return internal node names in the
+     second AVL
 
-        if the bool argument is TRUE, then each LEAF in the tree must be found in the reference
-        dictionary supplied by the FIRST argument; false will be returned if this is not the case.
-    */
+      covert the topology into the post-order with weights representation
+      The first argument maps node names to their internal indices in the
+     traversal order (note that leaves are numbered 1..leaves-1 and internal
+     indices as leaves-1...leaves+inodes-1) The second argument stores doubles
+     for each node; the index in the array itself (mod 2), corresponds to the
+     appropriate step in the post-order traversal;
 
-    _String*        ConvertFromPSW                      (_AVLListX&,_SimpleList&) const;
-    /* 20090612: SLKP
-            given a PSW tree traversal order and a labeling legend,
-            return the Newick string for the tree
-    */
+      <node index, number of nodes in the subtree below>
 
-    void            ComputeClusterTable                 (_SimpleList&, _SimpleList&) const;
-    /* given the PSW traversal representation (arg 2)
-       compute the cluster table (as defined in William HE Day "Optimal Algorithms for Comparing Trees With Labels",
-       Page 16) and store in arg 1
-            the list a is a flat representation for an Nx3 (N = number of leaves) table
-            clusters spanning L<->R leaves will be stored in either row L or row R
-            i-th entry
-            <L = leftmost cluster leaf (in traversal order),
-             R = rightmost cluster leaf (in traversal order),
-             F = a binary toggle (set to 0 by this procedure)
-     */
-    
-    
-    /**
-        return the default prefix for generating internal node names (e.g. 'Node')
-    */
+      (((A,B)N1,C)N2,(D,E)N3)N0 will result in
 
-    const _String     CompareSubTrees                 (_TreeTopology const*, node<long>*) const;
-    const _String     FindMaxCommonSubTree            (_TreeTopology const*, long&, _List*) const;
+      A->0; B->1; N1->5; C->2; N2->6; D->3; E->4; N3->7; N0->8
+      <0,0>,<1,0>,<5,2>,<2,0>,<6,4>,<3,0>,<4,0>,<7,2>,<8,8>, <5,4>
+
+      The last two entries store the number of leaves and internal nodes
 
 
+      if the bool argument is TRUE, then each LEAF in the tree must be found in
+     the reference dictionary supplied by the FIRST argument; false will be
+     returned if this is not the case.
+  */
 
+  _String *ConvertFromPSW(_AVLListX &, _SimpleList &) const;
+  /* 20090612: SLKP
+          given a PSW tree traversal order and a labeling legend,
+          return the Newick string for the tree
+  */
 
+  void ComputeClusterTable(_SimpleList &, _SimpleList &) const;
+  /* given the PSW traversal representation (arg 2)
+     compute the cluster table (as defined in William HE Day "Optimal Algorithms
+     for Comparing Trees With Labels", Page 16) and store in arg 1 the list a is
+     a flat representation for an Nx3 (N = number of leaves) table clusters
+     spanning L<->R leaves will be stored in either row L or row R i-th entry <L
+     = leftmost cluster leaf (in traversal order), R = rightmost cluster leaf
+     (in traversal order), F = a binary toggle (set to 0 by this procedure)
+   */
+
+  /**
+      return the default prefix for generating internal node names (e.g. 'Node')
+  */
+
+  const _String CompareSubTrees(_TreeTopology const *, node<long> *) const;
+  const _String FindMaxCommonSubTree(_TreeTopology const *, long &,
+                                     _List *) const;
 };
-
-
 
 #endif

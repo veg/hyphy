@@ -8400,8 +8400,10 @@ HBLObjectRef _Matrix::MultElements(HBLObjectRef mp, bool elementWiseDivide,
         by_row = true;
       } else {
         HandleApplicationError(
-            "Element-wise multiplication/division requires matrixes of the "
-            "same dimension, or (NxM) $ (1xM) or (Nx1) $ (NxM) matrices ");
+            _String("Element-wise multiplication/division requires matrixes of "
+                    "the same dimension, or (NxM) $ (1xM) or (Nx1) $ (NxM) "
+                    "matrices. Had ") &
+            get_dimension_string() & " and " & m->get_dimension_string());
         return new _Matrix(1, 1);
       }
     }
