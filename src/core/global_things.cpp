@@ -395,6 +395,7 @@ bool GlobalStartup(void) {
     // printf ("%s\n\n",term_env);
   }
   has_terminal_stderr = isatty(STDERR_FILENO);
+
 #endif
 
 #if not defined(__HYPHY_MPI_MESSAGE_LOGGING__) && defined(__HYPHYMPI__)

@@ -735,6 +735,7 @@ EM_JS(void, _jsSendStatusUpdate, (const char *status_update), {
 void SetStatusLineUser(_String const s) {
 #ifndef _USE_EMSCRIPTEN_
   if (has_terminal_stderr) { // only print to terminal devices
+
     setvbuf(stderr, NULL, _IONBF, 0);
     BufferToConsole("\33[2K\r", stderr);
     StringToConsole(s, stderr);
