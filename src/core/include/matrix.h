@@ -471,6 +471,10 @@ public:
     return hDim == rows && vDim == columns;
   }
 
+  _String const get_dimension_string(void) const {
+    return _String((long)GetHDim()) & "x" & _String((long)GetVDim());
+  }
+
   unsigned long GetVDim(void) const { return vDim; }
   unsigned long GetSize(void) const { return lDim; }
   long GetMySize(void) {

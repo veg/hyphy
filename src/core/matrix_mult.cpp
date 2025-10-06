@@ -2287,10 +2287,21 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
   b_k = _mm256_loadu_pd(B);
 
   // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
+#if defined _SLKP_USE_FMA3_INTRINSICS
   __m256d bcast_a0 = _mm256_permute4x64_pd(a_r0, 0x00);
   __m256d bcast_a1 = _mm256_permute4x64_pd(a_r1, 0x00);
   __m256d bcast_a2 = _mm256_permute4x64_pd(a_r2, 0x00);
   __m256d bcast_a3 = _mm256_permute4x64_pd(a_r3, 0x00);
+#else
+  double val_a0 = _mm_cvtsd_f64(_mm256_castpd256_pd128(a_r0));
+  __m256d bcast_a0 = _mm256_set1_pd(val_a0);
+  double val_a1 = _mm_cvtsd_f64(_mm256_castpd256_pd128(a_r1));
+  __m256d bcast_a1 = _mm256_set1_pd(val_a1);
+  double val_a2 = _mm_cvtsd_f64(_mm256_castpd256_pd128(a_r2));
+  __m256d bcast_a2 = _mm256_set1_pd(val_a2);
+  double val_a3 = _mm_cvtsd_f64(_mm256_castpd256_pd128(a_r3));
+  __m256d bcast_a3 = _mm256_set1_pd(val_a3);
+#endif
 
   // Fused multiply-add
   c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
@@ -2300,10 +2311,17 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
 
   b_k = _mm256_loadu_pd(B + stride);
   // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
+#if defined _SLKP_USE_FMA3_INTRINSICS
   bcast_a0 = _mm256_permute4x64_pd(a_r0, 0x55);
   bcast_a1 = _mm256_permute4x64_pd(a_r1, 0x55);
   bcast_a2 = _mm256_permute4x64_pd(a_r2, 0x55);
   bcast_a3 = _mm256_permute4x64_pd(a_r3, 0x55);
+#else
+  bcast_a0 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r0, a_r0, 0x00), 0x0F);
+  bcast_a1 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r1, a_r1, 0x00), 0x0F);
+  bcast_a2 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r2, a_r2, 0x00), 0x0F);
+  bcast_a3 = _mm256_permute_pd(_mm256_permute2f128_pd(a_r3, a_r3, 0x00), 0x0F);
+#endif
 
   // Fused multiply-add
   c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
@@ -2313,10 +2331,21 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
 
   // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
   b_k = _mm256_loadu_pd(B + 2 * stride);
+#if defined _SLKP_USE_FMA3_INTRINSICS
   bcast_a0 = _mm256_permute4x64_pd(a_r0, 0xAA);
   bcast_a1 = _mm256_permute4x64_pd(a_r1, 0xAA);
   bcast_a2 = _mm256_permute4x64_pd(a_r2, 0xAA);
   bcast_a3 = _mm256_permute4x64_pd(a_r3, 0xAA);
+#else
+  bcast_a0 = _mm256_shuffle_pd(a_r0, a_r0, 0x00);
+  bcast_a0 = _mm256_permute2f128_pd(bcast_a0, bcast_a0, 0x11);
+  bcast_a1 = _mm256_shuffle_pd(a_r1, a_r1, 0x00);
+  bcast_a1 = _mm256_permute2f128_pd(bcast_a1, bcast_a1, 0x11);
+  bcast_a2 = _mm256_shuffle_pd(a_r2, a_r2, 0x00);
+  bcast_a2 = _mm256_permute2f128_pd(bcast_a2, bcast_a2, 0x11);
+  bcast_a3 = _mm256_shuffle_pd(a_r3, a_r3, 0x00);
+  bcast_a3 = _mm256_permute2f128_pd(bcast_a3, bcast_a3, 0x11);
+#endif
 
   // Fused multiply-add
   c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
@@ -2326,10 +2355,21 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
 
   // Broadcast A[0][k], A[1][k], A[2][k], A[3][k] from registers
   b_k = _mm256_loadu_pd(B + 3 * stride);
+#if defined _SLKP_USE_FMA3_INTRINSICS
   bcast_a0 = _mm256_permute4x64_pd(a_r0, 0xFF);
   bcast_a1 = _mm256_permute4x64_pd(a_r1, 0xFF);
   bcast_a2 = _mm256_permute4x64_pd(a_r2, 0xFF);
   bcast_a3 = _mm256_permute4x64_pd(a_r3, 0xFF);
+#else
+  bcast_a0 = _mm256_unpackhi_pd(a_r0, a_r0);
+  bcast_a0 = _mm256_permute2f128_pd(bcast_a0, bcast_a0, 0x11);
+  bcast_a1 = _mm256_unpackhi_pd(a_r1, a_r1);
+  bcast_a1 = _mm256_permute2f128_pd(bcast_a1, bcast_a1, 0x11);
+  bcast_a2 = _mm256_unpackhi_pd(a_r2, a_r2);
+  bcast_a2 = _mm256_permute2f128_pd(bcast_a2, bcast_a2, 0x11);
+  bcast_a3 = _mm256_unpackhi_pd(a_r3, a_r3);
+  bcast_a3 = _mm256_permute2f128_pd(bcast_a3, bcast_a3, 0x11);
+#endif
 
   // Fused multiply-add
   c_r0 = _hy_matrix_handle_axv_mfma(c_r0, bcast_a0, b_k);
@@ -2381,31 +2421,56 @@ void _hy_matrix_multiply_4x4x1(double *C, double *A, double *B, int stride,
 
   __m256d A1, A2, A3, A4;
   __m256d B1;
-  __m256i LOAD_IDX = _mm256_set_epi64x(S3, S2, S1, 0);
 
+#if defined _SLKP_USE_FMA3_INTRINSICS
+  __m256i LOAD_IDX = _mm256_set_epi64x(S3, S2, S1, 0);
   B1 = _mm256_i64gather_pd(B, LOAD_IDX, 8);
+#else
+  B1 = _mm256_set_pd(B[S3], B[S2], B[S1], B[0]);
+#endif
 
   A1 = _mm256_mul_pd(_mm256_loadu_pd(A), B1);
   A2 = _mm256_mul_pd(_mm256_loadu_pd(A + S1), B1);
   A3 = _mm256_mul_pd(_mm256_loadu_pd(A + S2), B1);
   A4 = _mm256_mul_pd(_mm256_loadu_pd(A + S3), B1);
 
-  A1 = _mm256_hadd_pd(A1,
-                      A2); // A1[0]+A1[1], A2[0]+A2[1], A1[2]+A1[3], A2[2]+A2[3]
+  A1 = _mm256_hadd_pd(A1, A2);
+  // A1[0]+A1[1], A2[0]+A2[1], A1[2]+A1[3], A2[2]+A2[3]
   A3 = _mm256_hadd_pd(A3, A4);
+  // A3[0]+A3[1], A4[0]+A4[1], A3[2]+A3[3], A4[2]+A4[3]
 
-  A2 = _mm256_permute4x64_pd(
-      A1, 0 + 4 * 2 + 16 * 1 +
-              64 * 3); // A1[0]+A1[1], A1[2]+A1[3], A2[0]+A2[1], A2[2]+A2[3]
+#if defined _SLKP_USE_FMA3_INTRINSICS
+  A2 = _mm256_permute4x64_pd(A1, 0 + 4 * 2 + 16 * 1 + 64 * 3);
+  // A1[0]+A1[1], A1[2]+A1[3], A2[0]+A2[1], A2[2]+A2[3]
   A4 = _mm256_permute4x64_pd(A3, 0 + 4 * 2 + 16 * 1 + 64 * 3);
+  // A3[0]+A3[1], A3[2]+A3[3], A4[0]+A4[1], A4[2]+A4[3]
 
-  A1 = _mm256_permute4x64_pd(
-      _mm256_hadd_pd(A2, A4),
-      0 + 4 * 2 + 16 * 1 +
-          64 * 3); // A1[0]+A1[1] + A1[2]+A1[3], A2[0]+A2[1] +  A2[2]+A2[3] , x2
-
+  A1 = _mm256_permute4x64_pd(_mm256_hadd_pd(A2, A4),
+                             0 + 4 * 2 + 16 * 1 + 64 * 3);
   __m128d C11 = _mm256_extractf128_pd(A1, 0);
   __m128d C21 = _mm256_extractf128_pd(A1, 1);
+#else
+  A2 = _mm256_unpacklo_pd(A1, A3);
+  // A1[0]+A1[1], A3[0]+A3[1], A1[2]+A1[3], A3[2]+A3[3]
+  A2 = _mm256_add_pd(A2, _mm256_permute2f128_pd(A2, A2, 1));
+  //+
+  // A1[2]+A1[3], A3[2]+A3[3], A1[2]+A1[3], A3[2]+A3[3]
+  A4 = _mm256_unpackhi_pd(A1, A3);
+  // AA2[0]+A2[1], A4[0]+A4[1], A2[2]+A2[3], A4[2]+A4[3]
+  A4 = _mm256_add_pd(A4, _mm256_permute2f128_pd(A4, A4, 1));
+  //+
+  // A2[2]+A2[3], A4[2]+A4[3], A2[2]+A2[3], A4[2]+A4[3]
+
+  // need to pick A2[0], A4[0], A2[1], A4[0] QUADWORDS
+
+  //_mm256_unpacklo_pd (A2, A4);
+  // A2[0], A4[0], A2[3], A4[0]
+  //_mm256_unpacklo_hi (A2, A4);
+
+  __m128d C11 = _mm256_extractf128_pd(_mm256_unpacklo_pd(A2, A4), 0);
+  __m128d C21 = _mm256_extractf128_pd(_mm256_unpackhi_pd(A2, A4), 1);
+
+#endif
 
   if (add) {
     C[0] += _mm_cvtsd_f64(C11);
@@ -2472,10 +2537,14 @@ void _hy_matrix_multiply_4x1x1(double *C, double *A, double *B, int stride) {
 
   __m256d C1, B1 = _mm256_broadcast_sd(B);
 
+#if defined _SLKP_USE_FMA3_INTRINSICS
   __m256i LOAD_IDX = _mm256_set_epi64x(S3, S2, S1, 0);
-
   C1 = _hy_matrix_handle_axv_mfma(_mm256_i64gather_pd(C, LOAD_IDX, 8),
                                   _mm256_i64gather_pd(A, LOAD_IDX, 8), B1);
+#else
+  C1 = _hy_matrix_handle_axv_mfma(_mm256_set_pd(C[S3], C[S2], C[S1], C[0]),
+                                  _mm256_set_pd(A[S3], A[S2], A[S1], A[0]), B1);
+#endif
 
   __m128d C11 = _mm256_extractf128_pd(C1, 0);
   __m128d C21 = _mm256_extractf128_pd(C1, 1);
@@ -2631,14 +2700,12 @@ void _hy_matrix_multiply_2x4x4(double *C, double *A, double *B, int stride,
                                bool add) {
   int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
 
-  __m256d A1, A2, A3, A4;
+  __m256d A1, A2;
   __m256d B1; // current row in B
   __m256d C1, C2;
 
   A1 = _mm256_broadcast_sd(A);      // A[0][0] x4
   A2 = _mm256_broadcast_sd(A + S1); // A[1][0] x4
-  A3 = _mm256_broadcast_sd(A + S2); // A[2][0] x4
-  A4 = _mm256_broadcast_sd(A + S3); // A[3][0] x4
 
   B1 = _mm256_loadu_pd(B); // 00,01
 
@@ -2662,24 +2729,18 @@ void _hy_matrix_multiply_2x4x4(double *C, double *A, double *B, int stride,
 
   A1 = _mm256_broadcast_sd(A + 1);      // A[0][1] x2
   A2 = _mm256_broadcast_sd(A + S1 + 1); // A[1][1] x2
-  A3 = _mm256_broadcast_sd(A + S2 + 1); // A[2][1] x2
-  A4 = _mm256_broadcast_sd(A + S3 + 1); // A[3][1] x2
   B1 = _mm256_loadu_pd(B + S1);         // 00,01
 
   handle_block_madd();
 
   A1 = _mm256_broadcast_sd(A + 2);      // A[0][1] x2
   A2 = _mm256_broadcast_sd(A + S1 + 2); // A[1][1] x2
-  A3 = _mm256_broadcast_sd(A + S2 + 2); // A[2][1] x2
-  A4 = _mm256_broadcast_sd(A + S3 + 2); // A[3][1] x2
   B1 = _mm256_loadu_pd(B + S2);         // 00,01
 
   handle_block_madd();
 
   A1 = _mm256_broadcast_sd(A + 3);      // A[0][1] x2
   A2 = _mm256_broadcast_sd(A + S1 + 3); // A[1][1] x2
-  A3 = _mm256_broadcast_sd(A + S2 + 3); // A[2][1] x2
-  A4 = _mm256_broadcast_sd(A + S3 + 3); // A[3][1] x2
   B1 = _mm256_loadu_pd(B + S3);         // 00,01
 
   handle_block_madd();
@@ -2689,7 +2750,7 @@ void _hy_matrix_multiply_2x4x4(double *C, double *A, double *B, int stride,
 }
 
 void _hy_matrix_multiply_2x2x4(double *C, double *A, double *B, int stride) {
-  int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
+  int S1 = stride;
 
   __m256d A1, A2;
   __m256d B1;
@@ -2954,7 +3015,7 @@ void _hy_matrix_multiply_4x3x3(double *C, double *A, double *B, int stride,
 
 void _hy_matrix_multiply_3x3x4(double *C, double *A, double *B, int stride,
                                bool add) {
-  int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
+  int S1 = stride, S2 = stride << 1;
 
   __m256d A1, A2, A3;
   __m256d B1; // current row in B

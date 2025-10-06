@@ -924,28 +924,20 @@ _String const _TreeTopology::GetNodeStringForTree(node<long> *n,
       node_desc = node_desc & mSpec->Enquote('{', '}');
     }
   }
+
+  if (flags & fGetNodeStringForTreeModel) {
+    hyFloat bl = GetBranchLength(n);
+    if (bl > 0.0) {
+      node_desc = node_desc & ':' & bl;
+    }
+  }
   return node_desc;
 }
 
 //_______________________________________________________________________________________________
 
-BaseRef _TreeTopology::toStr(unsigned long) {
-
-  static const _String kNoInternalLabels("NO_INTERNAL_LABELS");
-
+BaseRef _TreeTopology::getTreeString(int leaf_flag, int inode_flag) {
   _StringBuffer *res = new _StringBuffer((unsigned long)128), num;
-
-  bool skip_internal_labels = EnvVariableTrue(kNoInternalLabels),
-       include_model_info = EnvVariableTrue(include_model_spec);
-
-  int leaf_flag = fGetNodeStringForTreeName,
-      inode_flag = skip_internal_labels ? 0 : fGetNodeStringForTreeName;
-
-  if (include_model_info) {
-    leaf_flag |= fGetNodeStringForTreeModel;
-    inode_flag |= fGetNodeStringForTreeModel;
-  }
-
   if (IsDegenerate()) {
     node_iterator<long> ni(theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
     (*res) << '(';
@@ -992,6 +984,26 @@ BaseRef _TreeTopology::toStr(unsigned long) {
   (*res) << ';';
   res->TrimSpace();
   return res;
+}
+
+//_______________________________________________________________________________________________
+
+BaseRef _TreeTopology::toStr(unsigned long) {
+
+  static const _String kNoInternalLabels("NO_INTERNAL_LABELS");
+
+  bool skip_internal_labels = EnvVariableTrue(kNoInternalLabels),
+       include_model_info = EnvVariableTrue(include_model_spec);
+
+  int leaf_flag = fGetNodeStringForTreeName,
+      inode_flag = skip_internal_labels ? 0 : fGetNodeStringForTreeName;
+
+  if (include_model_info) {
+    leaf_flag |= fGetNodeStringForTreeModel;
+    inode_flag |= fGetNodeStringForTreeModel;
+  }
+
+  return getTreeString(leaf_flag, inode_flag);
 }
 
 //__________________________________________________________________________________

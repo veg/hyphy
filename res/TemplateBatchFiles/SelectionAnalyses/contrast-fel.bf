@@ -1,4 +1,4 @@
-RequireVersion("2.5.50");
+RequireVersion("2.5.84");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -31,8 +31,8 @@ LoadFunctionLibrary("modules/io_functions.ibf");
 fel.analysis_description = {
     terms.io.info: "Contrast-FEL (Fixed Effects Likelihood) investigates whether or not selective pressures differ between two or more sets of
     branches at a site. Site-specific synonymous (alpha) and non-synonymous (beta, one per branch set) substitution rates are estimated
-    and then beta rates are tested for equality at each site. LRT and permutation tests ar used to assess significance at each site, and FDR is applied alignment wide to call sites with different selective profiles. Version 0.6 adds detailed ancestral state reconstruction",
-    terms.io.version: "0.6",
+    and then beta rates are tested for equality at each site. LRT and permutation tests ar used to assess significance at each site, and FDR is applied alignment wide to call sites with different selective profiles. Version 0.6 adds detailed ancestral state reconstruction. Version 0.61 adds storing root states in constant sites for ASR.",
+    terms.io.version: "0.61",
     terms.io.reference: "Mol Biol Evol (2021), (38)3 1184–1198",
     terms.io.authors: "Sergei L Kosakovsky Pond and Steven Weaver",
     terms.io.contact: "spond@temple.edu",
@@ -460,6 +460,7 @@ utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
 
         fel.run_site = selection.io.sitelist_matches_pattern (_pattern_info_[terms.data.sites], fel.site_filter["site-filter"], FALSE, 0);
 
+ 
         if (_pattern_info_[terms.data.is_constant] || (!fel.run_site)) {
             fel.store_results (-1,None,{"0" : "fel.site_likelihood",
                                                             "1" : None,
@@ -1051,6 +1052,10 @@ lfunction fel.store_results (node, result, arguments) {
 
         result_row [k] = sum;
         
+      } else {
+            result = {
+                utility.getGlobalValue("terms.fel.compressed_substitutions") : ancestral.ComputeCompressedSubstitutionConstantSite (pattern_info)
+            };
       }
       
     utility.EnsureKey (^"fel.site_results", partition_index);

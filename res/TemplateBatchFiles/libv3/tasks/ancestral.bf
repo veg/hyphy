@@ -836,6 +836,14 @@ lfunction ancestral.ComputeCompressedSubstitutionsBySite (ancestral_data, site) 
 
 }
 
+
+lfunction ancestral.ComputeCompressedSubstitutionConstantSite (pattern_info) {
+    io.CheckAssertion (utility.Array1D (pattern_info [^"terms.data.characters"]) == 1, "Non-constant site passed to ComputeCompressedSubstitutionConstantSite");
+    return {
+        "root" : (Rows(pattern_info [^"terms.data.characters"]))[0]
+    };
+}
+
 /*******************************************
  **
  * @name ancestral.ComputeCompressedSubstitutions

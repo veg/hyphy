@@ -354,9 +354,10 @@ _String const accept_branch_lengths("ACCEPT_BRANCH_LENGTHS"),
     verbosity_level_string("VERBOSITY_LEVEL"),
     // controls verbosity level during optimization and other long-running
     // operations,
-    enforce_constraint_violations("ENFORCE_CONSTRAINT_VIOLATIONS")
+    enforce_constraint_violations("ENFORCE_CONSTRAINT_VIOLATIONS"),
+    strict_alignment_validation_mode("STRICT_ALIGNMENT_VALIDATION_MODE");
 
-    ;
+;
 
 /** default values get set up in hy_global:: */
 

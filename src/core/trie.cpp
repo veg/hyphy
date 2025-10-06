@@ -47,6 +47,15 @@ _Trie::_Trie(const _String *alphabet) { InitializeTrie(alphabet); }
 
 //----------------------------------------------------------------------------------------------------------------------
 
+_Trie::_Trie(_List const &source, const _String *alphabet) {
+  InitializeTrie(alphabet);
+  source.ForEach([this](BaseRef str, unsigned long index) -> void {
+    this->Insert(*(_String *)str, (long)index);
+  });
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 void _Trie::InitializeTrie(const _String *alphabet) {
   SetAlphabet(alphabet, false);
   AppendNewInstance(new _SimpleList);

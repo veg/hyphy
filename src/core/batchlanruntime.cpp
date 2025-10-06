@@ -3034,7 +3034,8 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &current_program) {
       kBGMGraph("BGM_GRAPH_MATRIX"), kBGMScores("BGM_SCORE_CACHE"),
       kBGMConstraintMx("BGM_CONSTRAINT_MATRIX"),
       kBGMParameters("BGM_NETWORK_PARAMETERS"),
-      kSetModelKeepLocals("SET_MODEL_KEEP_LOCALS"), kModel("MODEL");
+      kSetModelKeepLocals("SET_MODEL_KEEP_LOCALS"), kModel("MODEL"),
+      kSuppressStatusUpdates("SUPPRESS_STATUS_UPDATES");
 
   current_program.advance();
 
@@ -3079,8 +3080,10 @@ bool _ElementaryCommand::HandleSetParameter(_ExecutionList &current_program) {
 
 #ifndef __HEADLESS__
     if (object_to_change == hy_env::status_bar_update_string) {
-      SetStatusLineUser(
-          _ProcessALiteralArgument(*GetIthParameter(1), current_program));
+      if (!hy_env::EnvVariableTrue(kSuppressStatusUpdates)) {
+        SetStatusLineUser(
+            _ProcessALiteralArgument(*GetIthParameter(1), current_program));
+      }
       return true;
     }
 #endif

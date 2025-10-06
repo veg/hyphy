@@ -115,7 +115,7 @@ _String const kEmptyString, kPromptForFilePlaceholder("PROMPT_FOR_FILE"),
                     "\"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line "
                     "argument. This often resolves the issue, which is "
                     "indicative of numerical instability."),
-    kHyPhyVersion = _String("2.5.83"),
+    kHyPhyVersion = _String("2.5.84"),
 
     kNoneToken = "None", kNullToken = "null",
     kNoKWMatch = "__input_value_not_given__",
@@ -395,6 +395,7 @@ bool GlobalStartup(void) {
     // printf ("%s\n\n",term_env);
   }
   has_terminal_stderr = isatty(STDERR_FILENO);
+
 #endif
 
 #if not defined(__HYPHY_MPI_MESSAGE_LOGGING__) && defined(__HYPHYMPI__)
@@ -774,6 +775,14 @@ const _String PrepareErrorContext(_String const &context, long from,
   exit(1);
 }
 
+//____________________________________________________________________________________
+void HandleAlignmentValidationError(const _String &message) {
+  if (EnvVariableTrue(strict_alignment_validation_mode, true)) {
+    HandleApplicationError(message);
+  } else {
+    ReportWarning(message);
+  }
+}
 //____________________________________________________________________________________
 void HandleApplicationError(const _String &message, bool force_exit,
                             bool dump_core, bool minimal_error_reporting) {

@@ -3618,10 +3618,19 @@ void _Matrix::AddMatrix(_Matrix &storage, _Matrix &secondArg, bool subtract)
                    s6 = secondArg.theIndex[i + 6],
                    s7 = secondArg.theIndex[i + 7];
 
+#if defined _SLKP_USE_FMA3_INTRINSICS
               __m256d R1 = _mm256_i64gather_pd(
                   storage.theData, _mm256_set_epi64x(s3, s2, s1, s0), 8);
               __m256d R2 = _mm256_i64gather_pd(
                   storage.theData, _mm256_set_epi64x(s7, s6, s5, s4), 8);
+#else
+              __m256d R1 =
+                  _mm256_set_pd(storage.theData[s3], storage.theData[s2],
+                                storage.theData[s1], storage.theData[s0]);
+              __m256d R2 =
+                  _mm256_set_pd(storage.theData[s7], storage.theData[s6],
+                                storage.theData[s5], storage.theData[s4]);
+#endif
 
               R1 = _mm256_add_pd(R1, S1);
               R2 = _mm256_add_pd(R2, S2);
@@ -3963,40 +3972,40 @@ void _Matrix::Multiply(_Matrix &storage, hyFloat c)
         }
     } else {
 #ifdef _SLKP_USE_AVX_INTRINSICS
-#define CELL_OP(k)                                                             \
+#define CELL_OPM(k)                                                            \
   _mm256_storeu_pd(destination + k,                                            \
                    _mm256_mul_pd(value_op, _mm256_loadu_pd(source + k)))
       long lDimM4 = lDim >> 4 << 4, k = 0;
 
       __m256d value_op = _mm256_set1_pd(c);
       for (k = 0L; k < lDimM4; k += 16) {
-        CELL_OP(k);
-        CELL_OP(k + 4);
-        CELL_OP(k + 8);
-        CELL_OP(k + 12);
+        CELL_OPM(k);
+        CELL_OPM(k + 4);
+        CELL_OPM(k + 8);
+        CELL_OPM(k + 12);
       }
       for (; k < lDim; k++) {
         destination[k] = source[k] * c;
       }
 #elif defined _SLKP_USE_ARM_NEON
-#define CELL_OP(k)                                                             \
+#define CELL_OPM(k)                                                            \
   vst1q_f64(destination + k, vmulq_f64(value_op, vld1q_f64(source + k)))
       long lDimM16 = lDim >> 4 << 4, lDimM2 = lDim >> 1 << 1, k = 0;
 
       float64x2_t value_op = vdupq_n_f64(c);
       for (k = 0L; k < lDimM16; k += 16) {
-        CELL_OP(k);
-        CELL_OP(k + 2);
-        CELL_OP(k + 4);
-        CELL_OP(k + 6);
-        CELL_OP(k + 8);
-        CELL_OP(k + 10);
-        CELL_OP(k + 12);
-        CELL_OP(k + 14);
+        CELL_OPM(k);
+        CELL_OPM(k + 2);
+        CELL_OPM(k + 4);
+        CELL_OPM(k + 6);
+        CELL_OPM(k + 8);
+        CELL_OPM(k + 10);
+        CELL_OPM(k + 12);
+        CELL_OPM(k + 14);
       }
 
       for (; k < lDimM2; k += 2) {
-        CELL_OP(k);
+        CELL_OPM(k);
       }
 
       for (; k < lDim; k++) {
@@ -4470,27 +4479,27 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
                    _mm256_fmadd_pd(value_op, _mm256_loadu_pd(secArg + x),      \
                                    _mm256_loadu_pd(res + x)))
 #else
-#define CELL_OP(x)                                                             \
+#define CELL_OP_2(x)                                                           \
   _mm256_storeu_pd(                                                            \
       res + x,                                                                 \
       _mm256_add_pd(_mm256_loadu_pd(res + x),                                  \
                     _mm256_mul_pd(value_op, _mm256_loadu_pd(secArg + x))))
 #endif
-                CELL_OP(0);
-                CELL_OP(4);
-                CELL_OP(8);
-                CELL_OP(12);
-                CELL_OP(16);
-                CELL_OP(20);
-                CELL_OP(24);
-                CELL_OP(28);
-                CELL_OP(32);
-                CELL_OP(36);
-                CELL_OP(40);
-                CELL_OP(44);
-                CELL_OP(48);
-                CELL_OP(52);
-                CELL_OP(56);
+                CELL_OP_2(0);
+                CELL_OP_2(4);
+                CELL_OP_2(8);
+                CELL_OP_2(12);
+                CELL_OP_2(16);
+                CELL_OP_2(20);
+                CELL_OP_2(24);
+                CELL_OP_2(28);
+                CELL_OP_2(32);
+                CELL_OP_2(36);
+                CELL_OP_2(40);
+                CELL_OP_2(44);
+                CELL_OP_2(48);
+                CELL_OP_2(52);
+                CELL_OP_2(56);
 #elif _SLKP_USE_ARM_NEON
                 float64x2_t value_op = vdupq_n_f64(value);
                 // #define                 CELL_OP(x) vst1q_f64 (res+x,
@@ -4553,10 +4562,11 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
                                       _mm256_loadu_pd(res + idx)));
 #else
                   _mm256_storeu_pd(
-                      res + i, _mm256_add_pd(
-                                   _mm256_loadu_pd(res + idx),
-                                   _mm256_mul_pd(value_op, _mm256_loadu_pd(
-                                                               secArg + idx))));
+                      res + idx,
+                      _mm256_add_pd(
+                          _mm256_loadu_pd(res + idx),
+                          _mm256_mul_pd(value_op,
+                                        _mm256_loadu_pd(secArg + idx))));
 #endif
 #elif defined _SLKP_USE_ARM_NEON
                   vst1q_f64(res + idx, vfmaq_f64(vld1q_f64(res + idx), value_op,
@@ -4831,10 +4841,15 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
                     storageIndex +
                     secondArg.compressedIndex[secondIndex + secondArg.hDim + 3];
 
+#if defined _SLKP_USE_FMA3_INTRINSICS
             __m256i LOAD_IDX = _mm256_set_epi64x(a3, a2, a1, a0);
-
-            __m256d R1 = _mm256_i64gather_pd(storage.theData, LOAD_IDX, 8),
-                    C1 = _mm256_loadu_pd(secondArg.theData + secondIndex);
+            __m256d R1 = _mm256_i64gather_pd(storage.theData, LOAD_IDX, 8);
+#else
+            __m256d R1 =
+                _mm256_set_pd(storage.theData[a3], storage.theData[a2],
+                              storage.theData[a1], storage.theData[a0]);
+#endif
+            __m256d C1 = _mm256_loadu_pd(secondArg.theData + secondIndex);
 
             R1 = _hy_matrix_handle_axv_mfma(R1, C1, c_value);
 
@@ -8385,8 +8400,10 @@ HBLObjectRef _Matrix::MultElements(HBLObjectRef mp, bool elementWiseDivide,
         by_row = true;
       } else {
         HandleApplicationError(
-            "Element-wise multiplication/division requires matrixes of the "
-            "same dimension, or (NxM) $ (1xM) or (Nx1) $ (NxM) matrices ");
+            _String("Element-wise multiplication/division requires matrixes of "
+                    "the same dimension, or (NxM) $ (1xM) or (Nx1) $ (NxM) "
+                    "matrices. Had ") &
+            get_dimension_string() & " and " & m->get_dimension_string());
         return new _Matrix(1, 1);
       }
     }

@@ -930,9 +930,9 @@ lfunction alignments.Extract_site_patterns (data_filter) {
             // first time we see this site
             GetDataInfo (site_characters, ^data_filter, -1, _pattern_);
             sc = {};
-            for (_value_; in; site_characters) {
+            for (i,_value_; in; site_characters) {
                 if (+_value_ > 0) {
-                    sc + (+_value_);
+                    sc[i] = (+_value_);
                 }
             }
             site_characters = sc;

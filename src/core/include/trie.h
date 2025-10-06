@@ -104,6 +104,22 @@ public:
    *
    * @param alphabet The alphabet to use
    */
+
+  _Trie(_List const &source, const _String *alphabet = nil);
+  /**
+   * Construct trie from a list of strings over a given alphabet
+   * @param source -- List of strings (using alphabey)
+   * @param alphabet -- a string listing all valid characters (e.g. "ACGT"). By
+   * default (or if an empty string is passed), all ASCII characters are allowed
+   * @return Nothing.
+   */
+
+  /**
+   * @brief Initialize the trie
+   *
+   * @param alphabet The alphabet to use
+   */
+
   void InitializeTrie(const _String *alphabet);
 
   /**
@@ -179,8 +195,11 @@ public:
    * @param key The string to search for
    * @param path Store the indices for the trie traversal history (if supplied)
    * @param prefixOK Returns a match if a prefix of 'key' in the trie
-   * @param start_index If not null, start searching at this position of the string, and store where the key was matched (if prefixOK is set to true, this is useful to return up to what point the key was matched)
-   * @return long The index of the key in 'nodes' if found, kNotFound/kTrieInvalidLetter otherwise
+   * @param start_index If not null, start searching at this position of the
+   * string, and store where the key was matched (if prefixOK is set to true,
+   * this is useful to return up to what point the key was matched)
+   * @return long The index of the key in 'nodes' if found,
+   * kNotFound/kTrieInvalidLetter otherwise
    */
   long FindKey(const _String &key, _SimpleList *path = nil,
                bool prefixOK = false, unsigned long *start_index = nil) const;
@@ -190,15 +209,18 @@ public:
    *
    * @param key The character to search for
    * @param prefixOK Returns a match if a prefix of 'key' in the trie
-   * @return long The index of the key in 'nodes' if found, kNotFound/kTrieInvalidLetter otherwise
+   * @return long The index of the key in 'nodes' if found,
+   * kNotFound/kTrieInvalidLetter otherwise
    */
   long FindKey(const char key, bool prefixOK = false) const;
 
   /**
-   * @brief A convenience function which calls Find and then GetValue if the key is found
+   * @brief A convenience function which calls Find and then GetValue if the key
+   * is found
    *
    * @param key The string to search for
-   * @return long The value associated with the key if found, kNotFound otherwise
+   * @return long The value associated with the key if found, kNotFound
+   * otherwise
    */
   long GetValueFromString(const _String &key);
   /**
