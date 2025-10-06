@@ -658,16 +658,14 @@ void ProcessNexusTrees(FileState &fState, long pos, hyFile *f,
       long offset = key1.length();
 
       _Trie searchForNames(result.GetNames());
+      _String translate_from;
+      bool read_source = true;
 
       do {
         _StringBuffer buffer(128UL);
         readResult =
             ReadNextNexusStatement(fState, f, CurrentLine, offset, buffer, true,
                                    true, true, false, false);
-
-        bool read_source = true;
-
-        _String translate_from;
 
         if (buffer.nonempty()) {
           if (!read_source) {
