@@ -29,7 +29,7 @@ docker run --rm -v [path-to-your-input-data]:/hyphy/data -it hyphy:latest
 #### Run with Command Line Arguments
 `hyphy <method_name> --alignment <path_to_alignment_file> <additional_method_specific_arguments>`  
 + _`<method_name>` is the name of the analysis you wish to run (can be: absrel, bgm, busted, fade, fel, fubar, gard, meme, relax or slac)_
-+ _`<path_to_alignment_file>` is the relative or absolute path to a fasta, nexus or phylib file containing an alignment and tree_
++ _`<path_to_alignment_file>` is the relative or absolute path to a `FASTA`, `NEXUS`, `Phylip`, or `MEGA` file containing an alignment and tree_
 + _A list of the available `<additional_method_specific_arguments>` can be seen by running `hyphy <method_name> --help`_
 
 or  
