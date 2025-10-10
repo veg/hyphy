@@ -92,7 +92,7 @@ function runTest () {
   
   // TODO: error handling for trying element access lists or numbers should be improved.
   
-  assert (runCommandWithSoftErrors ('exampleList["getTestName"][""]', 'The first argument in an iterator call for Associative Arrays must be a valid identifier of a function taking two arguments (key, value)'), "Failed to return the expected error when providing an invalid callback");
+  assert (runCommandWithSoftErrors ('exampleList["getTestName"][""]', 'The first argument in an iterator call for Associative Arrays must be a valid identifier of a function taking two arguments \(key, value\)'), "Failed to return the expected error when providing an invalid callback");
   
   assert (runCommandWithSoftErrors ('exampleList["dict_callback_action"]["getTestName"]', 'The second argument in an iterator call for Associative Arrays must be either empty or a valid identifier of a function taking a single argument'), "Failed to return the expected error when providing an invalid callback");
 
