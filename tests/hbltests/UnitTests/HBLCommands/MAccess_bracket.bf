@@ -6,6 +6,13 @@ function getTestName () {
   return "MAccess_bracket";
 }		
 
+function dict_callback_action (key, value) {
+    sum += Abs (value);
+}
+
+function dict_callback_filter (key) {
+    return key != "key3";
+}
 
 function runTest () {
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
@@ -64,24 +71,35 @@ function runTest () {
   assert(exampleList["key1"] == "val1", "Failed to access a value from an associative list with the `list['key']` syntax");
   // TODO: Should nested associative lists be accessable without having to wrap the first call in parenthesis? See below.
   assert((exampleList["key3"])["subkey1"] == "subvalue1", "Failed to access a value from a nested associative list when using parentesis `(list['key1'])[key2']` synatax");
+  
+  
+  //---------------------------------------------------------------------------------------------------------
+  // callback on associative lists
+  //---------------------------------------------------------------------------------------------------------
 
-
+  sum = 0;
+  exampleList["dict_callback_action"][""];
+  assert(sum == 10, 'Incorrect result using dict callback exampleList["dict_callback_action"]');
+   
+  sum = 0;
+  exampleList["dict_callback_action"]["dict_callback_filter"];
+  assert(sum == 8, 'Incorrect result using dict callback exampleList["dict_callback_action"]["dict_callback_filter"]');
   
 
   //---------------------------------------------------------------------------------------------------------
   // ERROR HANDLING
   //---------------------------------------------------------------------------------------------------------
-  exampleNumber = 5;
   
   // TODO: error handling for trying element access lists or numbers should be improved.
   
+  assert (runCommandWithSoftErrors ('exampleList["getTestName"][""]', 'The first argument in an iterator call for Associative Arrays must be a valid identifier of a function taking two arguments (key, value)'), "Failed to return the expected error when providing an invalid callback");
+  
+  assert (runCommandWithSoftErrors ('exampleList["dict_callback_action"]["getTestName"]', 'The second argument in an iterator call for Associative Arrays must be either empty or a valid identifier of a function taking a single argument'), "Failed to return the expected error when providing an invalid callback");
+
   // Test for current behaviour for list (return 0 when trying element access on list)
   assert(exampleList[0] == 0, "Failed to return zero when trying element access on list");
   assert(exampleList[100] == 0, "Failed to return zero when trying out of range element access on lilst");
 
-  // Show current behaviour for number (returns <HyPhy Base Object>)
-  //elementAccessOnNumber = exampleNumber[0];
-  //fprintf (stdout, 'elementAccessOnNumber: ', elementAccessOnNumber, '\n');
 
  
 

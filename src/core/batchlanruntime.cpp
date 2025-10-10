@@ -106,6 +106,62 @@ const _String _ElementaryCommand::ExtractStatementAssignment(
 }
 
 //____________________________________________________________________________________
+_Formula *ValidateCallbackFunctionArgument(_String const &function_id,
+                                           unsigned long argument_count,
+                                           bool trap_errors,
+                                           _String const *err_msg) {
+
+  long callback = FindBFFunctionName(function_id);
+
+  if (callback < 0L ||
+      GetBFFunctionArgumentCount(callback) != (long)argument_count) {
+    _String error_msg = function_id.Enquote() & ' ';
+    if (err_msg) {
+      error_msg = error_msg & *err_msg;
+    } else {
+      error_msg = error_msg & " is not a defined HBL function with " &
+                  _String((long)argument_count) & " arguments";
+    }
+    if (trap_errors) {
+      HandleApplicationErrorAndExit(error_msg);
+    }
+    throw(error_msg);
+  }
+  _Formula *callback_formula = new _Formula;
+  for (unsigned long i = 0; i < argument_count; i++) {
+    callback_formula->GetList() < new _Operation();
+  }
+  callback_formula->GetList() < new _Operation(kEmptyString, -callback - 1L);
+  return callback_formula;
+}
+
+//____________________________________________________________________________________
+HBLObjectRef ExecuteCallbackFunction(_Formula *callback, _List const &arguments,
+                                     unsigned long valid_type) {
+  unsigned long expected_arguments = callback->GetList().countitems() - 1;
+  if (expected_arguments > arguments.countitems()) {
+    throw _String("Too few arguments supplied to the callback function");
+  }
+
+  for (unsigned long i = 0; i < expected_arguments; i++) {
+    callback->GetIthTerm(i)->SetNumber((HBLObjectRef)arguments.GetItem(i));
+  }
+
+  HBLObjectRef cb_value = callback->Compute();
+
+  for (unsigned long i = 0; i < expected_arguments; i++) {
+    callback->GetIthTerm(i)->SetNumber(nullptr);
+  }
+
+  if (cb_value->ObjectClass() & valid_type) {
+    return cb_value;
+  }
+
+  throw _String("Incorrect return type for callback: ") &
+      FetchObjectNameFromType(cb_value->ObjectClass()).Enquote();
+}
+
+//____________________________________________________________________________________
 
 const _String _ElementaryCommand::ProcessProcedureCall(_String const &source,
                                                        _String &procedure,
