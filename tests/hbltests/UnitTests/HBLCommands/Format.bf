@@ -22,11 +22,6 @@ function runTest () {
   formattedX3 = Format(unformattedX, 2, 4);
   assert(formattedX2 == '51.123', "Failed to correctly format a number (Format(51.123456, 4, 3))");
 
-  // SHOWING THAT THE SIGFIGS ARGUMENT DOESN'T SEEM TO HAVE AN EFFECT)
-  //fprintf (stdout, 'formattedX1: ', formattedX1, '\n');
-  //fprintf (stdout, 'formattedX2: ', formattedX2, '\n');
-  //fprintf (stdout, 'formattedX3: ', formattedX3, '\n');//assert(formattedX1 == '51.12', "Failed to correctly format a number (Format(51.123456, 3, 3))");
-  //assert(formattedX3 == '51', "Failed to correctly format a number (Format(51.123456, 2, 4))");
 
   // Test rounding.
   assert(Format(0.116, 2, 2) == '0.12', "Failed to format with rounding");
@@ -61,6 +56,29 @@ function runTest () {
   //assert(treeTrueFalse == '((1,b)Node1,(3)Node4,5)', "Failed to format tree with internal node names but without branch lengths");
   //assert(treeFalseTrue == '((1:0.34,b:-1):-1,(3:200):-1,5:-1)', "Failed to format tree without internal node names but with branch lengths");
 
+  //---------------------------------------------------------------------------------------------------------
+  // ASCII ART TREE FORMATTING
+  //---------------------------------------------------------------------------------------------------------
+  Tree simpleTree = ((A:0.1,B:0.2):0.3,C:0.4);
+  ascii_options = {
+      "WIDTH": 20,
+      "SCALE": 10.0,
+      "SHOW_TERMINAL_LABELS": 1,
+      "SHOW_INTERNAL_LABELS": 1
+  };
+  expected_art = "|-A (0.1)\n|--B (0.2)\n|----C (0.4)\n";
+  ascii_art = Format(simpleTree, "ASCII_ART", ascii_options);
+  assert(ascii_art == expected_art, "ASCII ART formatting failed for a simple tree.");
+
+  ascii_options_no_labels = {
+      "WIDTH": 20,
+      "SCALE": 10.0,
+      "SHOW_TERMINAL_LABELS": 0,
+      "SHOW_INTERNAL_LABELS": 0
+  };
+  expected_art_no_labels = "|- (0.1)\n|-- (0.2)\n|---- (0.4)\n";
+  ascii_art_no_labels = Format(simpleTree, "ASCII_ART", ascii_options_no_labels);
+  assert(ascii_art_no_labels == expected_art_no_labels, "ASCII ART formatting failed for a simple tree with no labels.");
 
   //---------------------------------------------------------------------------------------------------------
   // ERROR HANDLING
