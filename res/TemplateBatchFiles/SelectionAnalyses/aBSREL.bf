@@ -876,18 +876,25 @@ absrel.json [terms.json.test_results] = {
                                          };
 
 lfunction absrel.p_value.label (node) {
-    if ((^"absrel.branch.p_values.corrected")[node] < ^"absrel.p_threshold") {
-        return node + "{" + (^"absrel.branch.p_values.corrected")[node] + "}";
+    pv = (^"absrel.branch.p_values.corrected")[node];
+    if (None != pv) {
+        if (pv < ^"absrel.p_threshold") {
+            return node + "{" + (^"absrel.branch.p_values.corrected")[node] + "}";
+        }
     }
     return node;
 }
 
 lfunction absrel.p_value.label_ascii (node) {
     node = node[Abs(^"absrel.baseline.tree")+1][Abs(node)-1];
-    if ((^"absrel.branch.p_values.corrected")[node] < ^"absrel.p_threshold") {
-        return "" + (^"absrel.branch.p_values.corrected")[node];
+    pv = (^"absrel.branch.p_values.corrected")[node];
+    if (None != pv) {
+        if ((^"absrel.branch.p_values.corrected")[node] < ^"absrel.p_threshold") {
+            return "" + (^"absrel.branch.p_values.corrected")[node];
+        }
+        return "N.S";
     }
-    return "N.S";
+    return "Not tested"   
 
 }
  
