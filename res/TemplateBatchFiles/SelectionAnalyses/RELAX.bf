@@ -46,7 +46,8 @@ relax.analysis_description = {
                                                 Version 4.0 adds support for synonymous rate variation.
                                                 Version 4.1 adds further support for multiple hit models.
                                                 Version 4.1.1 adds reporting for convergence diagnostics.
-                                                Version 4.5 adds support for multiple datasets for joint testing.",
+                                                Version 4.5 adds support for multiple datasets for joint testing.
+                                                Version 4.6 adds support for branch- and site-level evidence ratio calculation.",
                                terms.io.version : "4.5",
                                terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
                                terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution g",
@@ -723,8 +724,6 @@ if (relax.analysis_run_mode != relax.kGroupMode) {
 
  
 
-//console.log (relax.model_namespaces);
-//explicit loop to avoid re-entrance errors 
 
 relax.relax_parameter_terms = {};
 relax.bound_weights         = {};
@@ -740,6 +739,8 @@ for (relax.k = 0; relax.k < relax.numbers_of_tested_groups; relax.k += 1) {
         relax.filter_names,
         None);
         
+    
+    
 	for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
 		parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range01);
 	}
@@ -785,6 +786,8 @@ for (relax.k = 0; relax.k < relax.numbers_of_tested_groups; relax.k += 1) {
 		}
    }
 }
+
+
 
 relax.model_map = {};
 for (relax.index, relax.junk ; in; relax.filter_names) {
@@ -1222,6 +1225,78 @@ function relax.FitMainTestPair (prompt) {
 
 	selection.io.stopTimer (relax.json [terms.json.timers], "RELAX alternative model fitting");
 
+  /// START EBF CALCULATION
+   ///=====================================================================================================================================
+ 
+    relax.tree_ids = estimators.LFObjectGetTrees (relax.alternative_model.fit[terms.likelihood_function]);
+	
+    estimators.RestoreLFStateFromSnapshot (relax.alternative_model.fit[terms.likelihood_function],relax.stashLF);
+	
+    utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", TRUE);
+        relax.er_report.tagged_sites    = {};
+        for (_partition_, _selection_; in; relax.selected_branches) {
+        
+
+            relax.tested_branches = {};
+            relax.full_to_short  = {};
+            for (_b_,_class_; in; _selection_) {
+                 if (_class_ == relax.test_branches_name) {
+                     relax.node_name = relax.tree_ids[+_partition_] + '.' + _b_;
+                     relax.tested_branches [relax.node_name] = 1;
+                     relax.full_to_short  [relax.node_name] = _b_;
+                } 
+            }
+            relax.test_model_name = (relax.model_map[_partition_])[_selection_[0]];
+        
+            
+            utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", TRUE);
+            
+            relax.ll_by_branch = {};
+            relax.model_by_branch = {};
+            
+            
+            relax.altLL = relax.alternative_model.fit [terms.fit.log_likelihood];
+            relax.json [terms.json.site_logl] = {};
+            (relax.json [terms.json.site_logl])[terms.json.unconstrained] = selection.ComputeSiteLikelihoods (relax.alternative_model.fit[terms.likelihood_function]);
+           
+            for (_b_,_ignore_; in;  relax.tested_branches) {
+                 GetString    (relax._current_model, ^_b_, -5);                 
+                 relax.model_by_branch [_b_] = relax._current_model;
+                 SetParameter ( ^_b_ , MODEL, ^relax.reference_model_namespace);
+                 
+                 LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),LF_START_COMPUTE);
+                 LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),relax.ll);
+                 relax.ll_by_branch [relax.full_to_short[_b_]] = Exp(relax.altLL-relax.ll);
+                 LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),LF_DONE_COMPUTE);
+
+                 SetParameter ( ^_b_ , MODEL, ^relax._current_model);
+            }
+            
+
+            relax.json [terms.json.evidence_ratios] = {terms.json.by_branch : relax.ll_by_branch};
+         
+            for (_b_,_ignore_; in;  relax.tested_branches) {
+                 SetParameter ( ^_b_ , MODEL, ^relax.reference_model_namespace);
+            }
+            LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),LF_START_COMPUTE);
+            LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),relax.ll);
+            LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),LF_DONE_COMPUTE);
+            (relax.json [terms.json.site_logl])[terms.json.constrained] = selection.ComputeSiteLikelihoods (relax.alternative_model.fit[terms.likelihood_function]);
+
+            for (_b_,_ignore_; in;  relax.tested_branches) {
+                 SetParameter ( ^_b_ , MODEL, ^(relax.model_by_branch[_b_]));
+            }
+
+            (relax.json [terms.json.evidence_ratios])[terms.json.constrained] = selection.EvidenceRatios ( (relax.json [terms.json.site_logl])[terms.json.unconstrained],  (relax.json [terms.json.site_logl])[terms.json.constrained]);
+
+
+           
+       }
+       utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", None);
+    ///=====================================================================================================================================
+	/// END EBF CALCULATION
+
+
 	// NULL MODEL
 
 	selection.io.startTimer (relax.json [terms.json.timers], "RELAX null model fitting", 4);
@@ -1237,7 +1312,8 @@ function relax.FitMainTestPair (prompt) {
 			parameters.SetConstraint (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.relax.k), terms.parameters.one, terms.global);
 		}
 	}
-
+	
+ 
 	relax.null_model.fit = estimators.FitExistingLF (relax.alternative_model.fit[terms.likelihood_function], relax.model_object_map);
 	io.ReportProgressMessageMD ("RELAX", "null", "* " + selection.io.report_fit (relax.null_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
 	relax.LRT = math.DoLRT (relax.null_model.fit[terms.fit.log_likelihood], relax.alternative_model.fit[terms.fit.log_likelihood],  relax.numbers_of_tested_groups-1);

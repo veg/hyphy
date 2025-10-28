@@ -270,8 +270,14 @@ HBLObjectRef _AssociativeList::Random(HBLObjectRef p, HBLObjectRef cache) {
 HBLObjectRef _AssociativeList::MIterator(HBLObjectRef p, HBLObjectRef p2,
                                          HBLObjectRef cache) {
 
-  const _String kAVLIteratorOrder = "INDEXORDER",
-                kAVLIteratorOrderValue = "VALUEINDEXORDER";
+  const static _String kAVLIteratorOrder("INDEXORDER"),
+      kAVLIteratorOrderValue("VALUEINDEXORDER"),
+      kIteratorError("The first argument in an iterator call for "
+                     "Associative Arrays must be a valid identifier of a "
+                     "function taking two arguments (key, value)"),
+      kFilterError("The second argument in an iterator call for "
+                   "Associative Arrays must be either empty or a valid "
+                   "identifier of a function taking a single argument");
 
   long done = 0;
 
@@ -290,64 +296,51 @@ HBLObjectRef _AssociativeList::MIterator(HBLObjectRef p, HBLObjectRef p2,
 
         reference_manager < callback_id < filter_id;
 
-        long callback = FindBFFunctionName(*callback_id),
-             filter = FindBFFunctionName(*filter_id);
+        _Formula *callback = ValidateCallbackFunctionArgument(
+                     *callback_id, 2, false, &kIteratorError),
+                 *filter = nullptr;
+        // callback = ;
 
-        if (callback < 0L || GetBFFunctionArgumentCount(callback) != 2L) {
-          throw(_String("The first argument in an iterator call for "
-                        "Associative Arrays must be a valid identifier of a "
-                        "function taking two arguments (key, value)"));
-        } else {
-          if (filter >= 0L && GetBFFunctionArgumentCount(filter) != 1L) {
-            throw(_String("The second argument in an iterator call for "
-                          "Associative Arrays must be either empty or a valid "
-                          "identifier of a function taking a single argument"));
-          }
-
-          _Formula testFormula, actionFormula;
-
-          actionFormula.GetList() < new _Operation() < new _Operation() <
-              new _Operation(kEmptyString, -callback - 1L);
-
-          if (filter >= 0L) {
-            testFormula.GetList() < new _Operation() <
-                new _Operation(kEmptyString, -filter - 1L);
-          }
-
-          _FString *fKey = new _FString;
-          // TODO SLKP 20181113 : this could be a memory leak, but it needs to
-          // be allocated dynamically otherwise if "actionFormula" makes use of
-          // "theKey" it may not be properly cleared
-          for (AVLListXLIteratorKeyValue filter_key_value :
-               AVLListXLIterator(&avl)) {
-            _String *current_key =
-                (_String *)avl.Retrieve(filter_key_value.get_index());
-            if (current_key) {
-              fKey->SetStringContent(new _StringBuffer(*current_key));
-              if (filter >= 0L) {
-                testFormula.GetIthTerm(0)->SetNumber(fKey);
-                if (CheckEqual(testFormula.Compute()->Value(), 0.0)) {
-                  continue;
-                }
-              }
-              actionFormula.GetIthTerm(0)->SetNumber(fKey);
-              actionFormula.GetIthTerm(1)->SetNumber(
-                  (HBLObjectRef)filter_key_value.get_object());
-              // StringToConsole((_String*)actionFormula.toStr(kFormulaStringConversionNormal));
-              // NLToConsole();
-              actionFormula.Compute();
-              done++;
-            }
-          }
-
-          actionFormula.GetIthTerm(0)->SetNumber(nil);
-          actionFormula.GetIthTerm(1)->SetNumber(nil);
-          if (filter >= 0L) {
-            testFormula.GetIthTerm(0)->SetNumber(nil);
-          }
-
-          DeleteObject(fKey);
+        if (filter_id->nonempty()) {
+          filter = ValidateCallbackFunctionArgument(*filter_id, 1, false,
+                                                    &kFilterError);
         }
+
+        _FString *fKey = new _FString;
+        // TODO SLKP 20181113 : this could be a memory leak, but it needs to
+        // be allocated dynamically otherwise if "actionFormula" makes use of
+        // "theKey" it may not be properly cleared
+        for (AVLListXLIteratorKeyValue filter_key_value :
+             AVLListXLIterator(&avl)) {
+          _String *current_key =
+              (_String *)avl.Retrieve(filter_key_value.get_index());
+          if (current_key) {
+            fKey->SetStringContent(new _StringBuffer(*current_key));
+            if (filter) {
+              filter->GetIthTerm(0)->SetNumber(fKey);
+              if (CheckEqual(filter->Compute()->Value(), 0.0)) {
+                continue;
+              }
+            }
+            callback->GetIthTerm(0)->SetNumber(fKey);
+            callback->GetIthTerm(1)->SetNumber(
+                (HBLObjectRef)filter_key_value.get_object());
+            // StringToConsole((_String*)actionFormula.toStr(kFormulaStringConversionNormal));
+            // NLToConsole();
+            callback->Compute();
+            done++;
+          }
+        }
+
+        callback->GetIthTerm(0)->SetNumber(nil);
+        callback->GetIthTerm(1)->SetNumber(nil);
+        delete callback;
+        if (filter) {
+          filter->GetIthTerm(0)->SetNumber(nil);
+          delete filter;
+        }
+
+        DeleteObject(fKey);
       }
     } else if (p->ObjectClass() == STRING && p2->ObjectClass() == NUMBER) {
       _String *mode = (_String *)p->toStr();

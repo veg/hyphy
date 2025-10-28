@@ -155,6 +155,41 @@ protected:
                      _List &, _AVLListX &, hyFloat);
   void FindCOTHelper2(node<long> *, _Matrix &, _Matrix &, _AVLListX &,
                       node<long> *, hyFloat);
+  /**
+   * @brief A recursive helper function to generate an ASCII representation of a
+   * subtree.
+   *
+   * @param theNode The current node in the tree traversal.
+   * @param prefix The string prefix for the current line, handling indentation
+   * and tree structure lines.
+   * @param isLast True if this is the last child of its parent, for correct
+   * ASCII branch drawing.
+   * @param sb The string buffer to append the ASCII art to.
+   * @param scale A scaling factor for branch lengths.
+   * @param showInternals If true, display names for internal nodes.
+   * @param showTerminals If true, display names for terminal nodes (leaves).
+   */
+  void AsciiArtRecursive(node<long> *theNode, _String const &prefix, int isLast,
+                         _StringBuffer &sb, double scale, bool showInternals,
+                         bool showTerminals, _Formula *callback = nullptr,
+                         _hyExecutionContext *context = nullptr) const;
+
+  /**
+   * @brief Recursively traverses the tree to gather statistics for calculating
+   * ASCII plot scale.
+   *
+   * @param theNode The current node.
+   * @param currentDepth The depth of the current node.
+   * @param currentPathLength The sum of branch lengths from the root to the
+   * current node.
+   * @param maxDepth To be updated with the maximum depth of the tree.
+   * @param maxNameLen To be updated with the maximum length of a node name.
+   * @param maxPath To be updated with the maximum path length from root to a
+   * leaf.
+   */
+  void GetTreeStats(node<long> *theNode, long currentDepth,
+                    hyFloat currentPathLength, long &maxDepth, long &maxNameLen,
+                    hyFloat &maxPath) const;
   static const _TreeTopologyParseSettings CollectParseSettings(void);
   void AddANode(HBLObjectRef);
   /*
@@ -206,6 +241,26 @@ public:
    * @return BaseRef The string representation of the topology
    */
   BaseRef getTreeString(int leaf_flag, int inode_flag);
+  /**
+   * @brief Generates an ASCII art representation of the phylogenetic tree.
+   *
+   * @param scale A scaling factor to adjust the visual length of branches.
+   * @param showInternals If true, display names for internal nodes.
+   * @param showTerminals If true, display names for terminal nodes (leaves).
+   * @return A _StringBuffer object containing the ASCII tree.
+   */
+  _StringBuffer *GetAsciiArt(double scale, bool showInternals,
+                             bool showTerminals, _Formula *callback = nullptr,
+                             _hyExecutionContext *context = nullptr) const;
+
+  /**
+   * @brief Determines the appropriate scale for ASCII art rendering based on
+   * desired width.
+   *
+   * @param desired_width The desired total width of the plot in characters.
+   * @return The calculated scale factor.
+   */
+  double CalculateAsciiScale(long desired_width) const;
   virtual BaseRef toStr(unsigned long = 0UL);
   /**
    * @brief Reroot the tree using an internal traverser

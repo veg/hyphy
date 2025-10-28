@@ -4,7 +4,7 @@ function runCommandWithSoftErrors (command, expected_error_reg_exp) {
     SetParameter(HBL_EXECUTION_ERROR_HANDLING,1,0);
     ExecuteCommands (command);
     SetParameter(HBL_EXECUTION_ERROR_HANDLING,0,0);
-    assert ((LAST_HBL_EXECUTION_ERROR$expected_error_reg_exp)[0] >= 0, "Expected an error matching '" + expected_error_reg_exp + "', while executing '" +  command + "'.\nHad error\n" + LAST_HBL_EXECUTION_ERROR + "\n");
+    assert ((LAST_HBL_EXECUTION_ERROR$(expected_error_reg_exp))[0] >= 0, "Expected an error matching '" + expected_error_reg_exp + "', while executing '" +  command + "'.\nHad error\n" + LAST_HBL_EXECUTION_ERROR + "\n");
     localTestResult          = 1;
     
     return localTestResult;

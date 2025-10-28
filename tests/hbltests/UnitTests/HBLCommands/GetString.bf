@@ -1,13 +1,15 @@
+LoadFunctionLibrary ("libv3/IOFunctions");
+
+
+
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
 return runATest ();
 
-function getTestName ()
-{
+function getTestName () {
 	return "GetString";
 }
 
-function getTestedFunctions ()
-{
+function getTestedFunctions () {
 	return {{"_ExecutionList::HandleGetString"}};
 }
 
@@ -56,9 +58,49 @@ function runTest ()
 	GetString (timeStamp, TIME_STAMP, 0);
 	assert ((timeStamp$"^[0-9]{4}/[0-9][0-9]?/[0-9][0-9]?\\ [0-9][0-9]?\\:[0-9][0-9]?$")[0]==0, "The GMT version of the time stamp must be of the form YYYY/M/D H:M. Had " + timeStamp);
 
+
 	GetString (timeStamp, TIME_STAMP, 1);
 	assert (Type (timeStamp) == "String", "The local version of the time stamp must be a string. Had " + Type (timeStamp));
 
+	//-----------------------------------------------------------------------------------------------------------------
+	// LOADED LIBRARIES
+	//-----------------------------------------------------------------------------------------------------------------
+
+    GetString (lib_list, LIST_OF_LOADED_LIBRARIES, 0);
+    assert (Type (lib_list) == "Matrix" && Rows (lib_list) > 0, "The list of loaded libraries must be a non-empty matrix");
+    
+
+	//-----------------------------------------------------------------------------------------------------------------
+	// COMPUTED EXPONENTIALS
+	//-----------------------------------------------------------------------------------------------------------------
+
+    
+    GetString (mx_comp, MATRIX_EXPONENTIALS_COMPUTED, 0);
+    assert (Type (mx_comp) == "Number", "The number of computed exponentials must be a number");
+
+	//-----------------------------------------------------------------------------------------------------------------
+	// ZLIB support
+	//-----------------------------------------------------------------------------------------------------------------
+
+    
+    GetString (zlib, ZLIB_ENABLED, 0);
+    assert (zlib == 0 || zlib == 1, "ZLIB support must be a boolean");
+    
+ 	//-----------------------------------------------------------------------------------------------------------------
+	// KWARGS
+	//-----------------------------------------------------------------------------------------------------------------
+    
+    KeywordArgument ("foo", "Test argument", "bar");
+    fscanf (stdin, "String", foo_value);
+    
+    GetString (kwargs, KWARGS, 0);
+    assert (Type (kwargs) == "AssociativeList", "KWARGS did not return an AssociativeList");
+ 
+
+ 
+    GetString (kwarg_tags, KWARG_TAGS, 0);
+    assert (Type (kwarg_tags) == "AssociativeList" && Abs (kwarg_tags) == 1, "KWARG_TAGS did not return an AssociativeList with one element");
+ 
 	//-----------------------------------------------------------------------------------------------------------------
 	// DATA SET
 	//-----------------------------------------------------------------------------------------------------------------
@@ -80,7 +122,7 @@ function runTest ()
 	DataSetFilter 		_testDataSetFilter = CreateFilter (_testDataSet,1,"",""+(_testDataSet.species-1)+",1,0");
 
 	GetString (filterNames, _testDataSetFilter, -1);
-	assert (Type(filterNames) == "Matrix" && Type (filterNames[0]) == "String" && Rows(filterNames) == 1 && Columns (filterNames) == _testDataSetFilter.species, "Retrieve all sequence names from a DataSetFilter");
+	assert (Type(filterNames) == "Matrix" && Type (filterNames[0]) == "String" && Rows(filterNames) == 1 && Columns (filterNames) == _testDataSetFilter.species && sequenceNames[0] == filterNames[2], "Retrieve all sequence names from a DataSetFilter");
 
 	GetString (filterSeqName, _testDataSetFilter, 0);
 	assert (sequenceNames[_testDataSet.species-1] == filterSeqName, "Retrieve a sequence name from DataSetFilter by index");

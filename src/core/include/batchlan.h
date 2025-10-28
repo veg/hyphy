@@ -175,7 +175,7 @@ public:
    * @param parent
    */
   void
-  ExecuteSimple(_ExecutionList *parent = nil);   // run a simple compiled list
+  ExecuteSimple(_ExecutionList *parent = nil); // run a simple compiled list
   /**
    * @brief Try to make a simple compiled list
    *
@@ -360,10 +360,13 @@ public:
    */
 
   /**
-   * @brief Scan the body of this function/code for dependancies on various objects (currently only supports HBL functions), and store them in `collection`.
+   * @brief Scan the body of this function/code for dependancies on various
+   * objects (currently only supports HBL functions), and store them in
+   * `collection`.
    *
    * @param collection
-   * @param recursive if true, then new HBL functions will be scanned for dependancies as well
+   * @param recursive if true, then new HBL functions will be scanned for
+   * dependancies as well
    * @param help_mode
    */
   void BuildListOfDependancies(_AVLListX &collection, bool recursive = true,
@@ -475,8 +478,7 @@ public:
    *
    * @param command The string to construct from.
    */
-  _ElementaryCommand(
-      _String &command);
+  _ElementaryCommand(_String &command);
   // starting at a given position
   /**
    * @brief Destroy the _ElementaryCommand object
@@ -541,7 +543,7 @@ public:
    *
    * @param el
    */
-  void ExecuteCase31(_ExecutionList &);       // model construction
+  void ExecuteCase31(_ExecutionList &); // model construction
   /**
    * @brief @sergeilkp
    *
@@ -554,37 +556,37 @@ public:
    *
    * @param el
    */
-  void ExecuteCase52(_ExecutionList &);       // Simulate
+  void ExecuteCase52(_ExecutionList &); // Simulate
   /**
    * @brief @sergeilkp
    *
    * @param el
    */
-  void ExecuteCase54(_ExecutionList &);       // Topology
+  void ExecuteCase54(_ExecutionList &); // Topology
   /**
    * @brief @sergeilkp
    *
    * @param el
    */
-  void ExecuteCase58(_ExecutionList &);       // Profile Code
+  void ExecuteCase58(_ExecutionList &); // Profile Code
   /**
    * @brief @sergeilkp
    *
    * @param el
    */
-  void ExecuteCase61(_ExecutionList &);       // SCFG
+  void ExecuteCase61(_ExecutionList &); // SCFG
   /**
    * @brief @sergeilkp
    *
    * @param el
    */
-  void ExecuteCase63(_ExecutionList &);       // NN; currently not functional
+  void ExecuteCase63(_ExecutionList &); // NN; currently not functional
   /**
    * @brief @sergeilkp
    *
    * @param el
    */
-  void ExecuteCase64(_ExecutionList &);       // BGM
+  void ExecuteCase64(_ExecutionList &); // BGM
 
   /**
    * @brief Handle a conditional branch
@@ -913,11 +915,13 @@ public:
   // used to extract the loop, if-then conditions
 
   /**
-   * @brief Take a command from the current command stream, extract it, make an _ElementaryCommand and add it to the execution list
+   * @brief Take a command from the current command stream, extract it, make an
+   * _ElementaryCommand and add it to the execution list
    *
    * @param current_stream the current command text stream
    * @param command_code the numerical code (from HY_HBL_COMMAND_*)
-   * @param pieces the list of parameters extracted from the () part of the command
+   * @param pieces the list of parameters extracted from the () part of the
+   * command
    * @param command_spec command specification structure
    * @param command_list the command list object to append the command to
    * @return true
@@ -1151,10 +1155,12 @@ public:
   bool DecompileFormulae(void);
 
   /**
-   * @brief Check this command for (currently only supports HBL functions), and store them in `collection`.
+   * @brief Check this command for (currently only supports HBL functions), and
+   * store them in `collection`.
    *
    * @param collection
-   * @param recursive if true, then new HBL functions will be scanned for dependancies as well
+   * @param recursive if true, then new HBL functions will be scanned for
+   * dependancies as well
    * @param chain
    * @param help_mode
    */
@@ -1428,6 +1434,20 @@ _String ProcessStringArgument(_String *data);
 const _String _hblCommandAccessor(_ExecutionList *, long);
 _String const _HYGenerateANameSpace(void);
 void _HYClearANameSpace(_String const &);
+
+/**
+  Check if a valid (defined) HBL function with the specified number of
+  arguments. If not, exit with an error, or throw an exception otherwise (with
+  the error message) return a formula for the callback. Not found will not
+  return (exception or exit)
+ */
+
+_Formula *ValidateCallbackFunctionArgument(_String const &function_id,
+                                           unsigned long argument_count,
+                                           bool trap_errors = true,
+                                           _String const *error_msg = nullptr);
+HBLObjectRef ExecuteCallbackFunction(_Formula *callback, _List const &arguments,
+                                     unsigned long valid_type = HY_ANY_OBJECT);
 
 HBLObjectRef ProcessAnArgumentByType(_String const *,
                                      _VariableContainer const *, long,

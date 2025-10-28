@@ -986,6 +986,192 @@ BaseRef _TreeTopology::getTreeString(int leaf_flag, int inode_flag) {
   return res;
 }
 
+void _TreeTopology::AsciiArtRecursive(node<long> *theNode,
+                                      _String const &prefix, int isLast,
+                                      _StringBuffer &sb, double scale,
+                                      bool showInternals, bool showTerminals,
+                                      _Formula *callback,
+                                      _hyExecutionContext *context) const {
+
+  long child_count = theNode->get_num_nodes();
+  int midpoint = (int)child_count / 2;
+
+  // we need to add | to the padding strings of the second half of descendants
+  // of the first half of the children and to the first half of the descendants
+  // of the second half of the children
+
+  _StringBuffer child_padding_with("|"), child_padding_without(" ");
+
+  hyFloat bl = GetBranchLength(theNode);
+  long scaled_length = (long)(bl * scale + 0.5);
+
+  if (child_count) {
+    if (bl > 0.0) {
+      child_padding_with.AppendNCopies(' ', scaled_length);
+      child_padding_without.AppendNCopies(' ', scaled_length);
+    }
+  }
+
+  _String top_child_prefix;
+  // --- Top half of children ---
+  if (midpoint > 0) {
+    if (isLast == 1) {
+      top_child_prefix = prefix & child_padding_without;
+    } else {
+      top_child_prefix = prefix & child_padding_with;
+    }
+    for (int i = 1; i <= midpoint; i++) {
+      AsciiArtRecursive(theNode->go_down(i), top_child_prefix,
+                        i == 1 ? 1 : 2, // bottom half
+                        sb, scale, showInternals, showTerminals, callback,
+                        context);
+    }
+  }
+
+  sb << prefix;
+  sb << '|';
+
+  bool is_leaf = theNode->is_leaf();
+  if (bl > 0.0) {
+    sb.AppendNCopies('-', scaled_length);
+  }
+
+  if (is_leaf) {
+    if (showTerminals) {
+      sb << GetNodeName(theNode);
+    }
+  } else {
+    sb << '+';
+    if (showInternals) {
+      sb << GetNodeName(theNode);
+    }
+  }
+
+  if (callback) {
+    _List args;
+    args << new _FString(GetNodeName(theNode, true));
+    _FString *cb_value =
+        (_FString *)ExecuteCallbackFunction(callback, args, STRING);
+    sb << " (" << cb_value->get_str() << ")";
+  } else {
+    if (bl > 0.0) {
+      sb << " (" << _String(bl) << ")";
+    }
+  }
+
+  sb << '\n';
+
+  // --- Bottom half of children ---
+  if (isLast == 0) {
+    top_child_prefix = prefix & child_padding_without;
+  } else {
+    top_child_prefix = prefix & child_padding_with;
+  }
+
+  for (int i = midpoint + 1; i <= child_count; i++) {
+    AsciiArtRecursive(theNode->go_down(i), top_child_prefix,
+                      i == child_count ? 0 : 2, sb, scale,
+                      showInternals, // top half
+                      showTerminals, callback, context);
+  }
+}
+
+//_______________________________________________________________________________________________
+/**
+ * Generates an ASCII art representation of the phylogenetic tree.
+ * The declaration for this function and its helper should be added to
+ * topology.h
+ *
+ * @param scale A scaling factor to adjust the visual length of branches.
+ * @param showInternals If true, display names for internal nodes.
+ * @param showTerminals If true, display names for terminal nodes (leaves).
+ * @return A _StringBuffer object containing the ASCII tree.
+ */
+_StringBuffer *_TreeTopology::GetAsciiArt(double scale, bool showInternals,
+                                          bool showTerminals,
+                                          _Formula *callback,
+                                          _hyExecutionContext *context) const {
+  _StringBuffer *res = new _StringBuffer;
+  if (theRoot) {
+    int child_count = (int)theRoot->get_num_nodes();
+    int i = 2;
+    AsciiArtRecursive(theRoot->go_down(1), "", 1, *res, scale, showInternals,
+                      showTerminals, callback, context);
+    for (; i < child_count; i++) {
+      AsciiArtRecursive(theRoot->go_down(i), "", 2, *res, scale, showInternals,
+                        showTerminals, callback, context);
+    }
+    if (i <= child_count) {
+      AsciiArtRecursive(theRoot->go_down(i), "", 0, *res, scale, showInternals,
+                        showTerminals, callback, context);
+    }
+  }
+  return res;
+}
+
+//_______________________________________________________________________________________________
+void _TreeTopology::GetTreeStats(node<long> *theNode, long currentDepth,
+                                 hyFloat currentPathLength, long &maxDepth,
+                                 long &maxNameLen, hyFloat &maxPath) const {
+  // Node name length
+  long nameLen = GetNodeName(theNode).length();
+  if (nameLen > maxNameLen) {
+    maxNameLen = nameLen;
+  }
+
+  // Depth
+  if (currentDepth > maxDepth) {
+    maxDepth = currentDepth;
+  }
+
+  // Path length
+  currentPathLength += GetBranchLength(theNode);
+  if (theNode->is_leaf()) {
+    if (currentPathLength > maxPath) {
+      maxPath = currentPathLength;
+    }
+  }
+
+  // Recurse
+  for (int i = 1; i <= theNode->get_num_nodes(); i++) {
+    GetTreeStats(theNode->go_down(i), currentDepth + 1, currentPathLength,
+                 maxDepth, maxNameLen, maxPath);
+  }
+}
+
+//_______________________________________________________________________________________________
+double _TreeTopology::CalculateAsciiScale(long desired_width) const {
+  if (!theRoot) {
+    return 1.0;
+  }
+
+  long maxDepth = 0;
+  long maxNameLen = GetNodeName(theRoot).length();
+  hyFloat maxPath = 0.0;
+
+  for (int i = 1; i <= theRoot->get_num_nodes(); i++) {
+    GetTreeStats(theRoot->go_down(i), 1, 0.0, maxDepth, maxNameLen, maxPath);
+  }
+
+  if (maxPath == 0.0) {
+    return 1.0;
+  }
+
+  // Estimate fixed-width components of a line
+  // prefix (depth * 4) + connector (4) + name + space + branch length string "
+  // (x.xxx)"
+  long non_branch_width =
+      (maxDepth * 4) + 4 + maxNameLen + 1 + 15; // 15 for branch length string
+
+  long available_width = desired_width - non_branch_width;
+
+  if (available_width <= 0) {
+    return 0.0; // Not enough space
+  }
+
+  return (double)available_width / maxPath;
+}
+
 //_______________________________________________________________________________________________
 
 BaseRef _TreeTopology::toStr(unsigned long) {
@@ -1019,6 +1205,14 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp(long opCode, _List *arguments,
                                             _hyExecutionContext *context,
                                             HBLObjectRef cache) {
   const static _String kSplitNodeNames("SPLIT_NODE_NAMES");
+  const static _String kAsciiArtWidth("WIDTH");
+  const static _String kAsciiArtShowInternals("SHOW_INTERNAL_LABELS");
+  const static _String kAsciiArtShowTerminals("SHOW_TERMINAL_LABELS");
+  const static _String kAsciiArtScale("SCALE");
+  const static _String kAsciiArtAnnotationFunction("ANNOTATION_FUNCTION");
+  const static _String kAsciiArt("ASCII_ART");
+  const static _String kCallbackErrorMessage(
+      "is not a defined function of one argument, 'callback (node_name)'.");
 
   switch (opCode) {    // first check operations without arguments
   case HY_OP_CODE_ABS: // Abs
@@ -1153,6 +1347,64 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp(long opCode, _List *arguments,
       if (arg1) {
         switch (opCode) {
         case HY_OP_CODE_FORMAT: { // Format
+          if (arg0->ObjectClass() == STRING &&
+              ((_FString *)arg0)->get_str() == kAsciiArt) {
+            long width = 80;
+            bool showInternals = true;
+            bool showTerminals = true;
+            double scale = -1.0;
+            HBLObjectRef annotation_function_obj = nil;
+            _Formula *callback = nullptr;
+
+            if (arg1 && arg1->ObjectClass() == ASSOCIATIVE_LIST) {
+              _AssociativeList *options = (_AssociativeList *)arg1;
+
+              _Constant *width_val =
+                  (_Constant *)options->GetByKey(kAsciiArtWidth, NUMBER);
+              if (width_val) {
+                width = width_val->Value();
+              }
+
+              _Constant *show_internals_val = (_Constant *)options->GetByKey(
+                  kAsciiArtShowInternals, NUMBER);
+              if (show_internals_val) {
+                showInternals = show_internals_val->Value() > 0.5;
+              }
+
+              _Constant *show_terminals_val = (_Constant *)options->GetByKey(
+                  kAsciiArtShowTerminals, NUMBER);
+              if (show_terminals_val) {
+                showTerminals = show_terminals_val->Value() > 0.5;
+              }
+
+              _Constant *scale_val =
+                  (_Constant *)options->GetByKey(kAsciiArtScale, NUMBER);
+              if (scale_val) {
+                scale = scale_val->Value();
+              }
+
+              if ((annotation_function_obj = options->GetByKey(
+                       kAsciiArtAnnotationFunction, STRING))) {
+                callback = ValidateCallbackFunctionArgument(
+                    ((_FString *)annotation_function_obj)->get_str(), 1, false,
+                    &kCallbackErrorMessage);
+              }
+            }
+
+            if (scale < 0.0) {
+              scale = CalculateAsciiScale(width);
+            }
+
+            _StringBuffer *ascii_tree = GetAsciiArt(
+                scale, showInternals, showTerminals, callback, context);
+
+            if (callback) {
+              delete callback;
+            }
+
+            return _returnStringOrUseCache(ascii_tree, cache);
+          }
+
           _StringBuffer *tStr = new _StringBuffer(1024UL);
           SubTreeString(theRoot, *tStr, CollectParseSettings(),
                         arg0->Compute()->Value() > 0.1,

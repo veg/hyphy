@@ -1043,27 +1043,28 @@ lfunction tree.Annotate (tree_id, labels, chars, doLengths) {
             }
         }
 
-
-        if (Type (labels) == "String") {
-            _ost * Call (labels, nodeInfo["Name"]);
-        } else {
-            _ost * nodeInfo["Name"];
-            if (labels / nodeInfo["Name"]) {
-                if (Abs(labels[nodeInfo["Name"]])) {
-                    _ost * (chars[0] + labels[nodeInfo["Name"]] + chars[1]);
+        if (rootIndex != nodeIndex) {
+            if (Type (labels) == "String") {
+                _ost * Call (labels, nodeInfo["Name"]);
+            } else {
+                _ost * nodeInfo["Name"];
+                if (labels / nodeInfo["Name"]) {
+                    if (Abs(labels[nodeInfo["Name"]])) {
+                        _ost * (chars[0] + labels[nodeInfo["Name"]] + chars[1]);
+                    }
                 }
             }
-        }
-
-        if (doLengths ) {
-
-             if (nodeIndex < treeSize - 1) {
-                _ost * ":";
-                if (Type (doLengths) == "String") {
-                    _ost * Call (doLengths, nodeInfo);
-                } else {
-                    _ost * (""+nodeInfo ["Length"]);
-
+    
+            if (doLengths ) {
+    
+                 if (nodeIndex < treeSize - 1) {
+                    _ost * ":";
+                    if (Type (doLengths) == "String") {
+                        _ost * Call (doLengths, nodeInfo);
+                    } else {
+                        _ost * (""+nodeInfo ["Length"]);
+    
+                    }
                 }
             }
         }

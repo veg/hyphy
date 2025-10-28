@@ -340,13 +340,13 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
     streamThrough->fputc(c);
   } else {
     if (useHorizontalRep) {
-      long currentWritten = ((_String *)list_data[0])->length();
+      long currentWritten = ((_StringBuffer *)list_data[0])->length();
 
       if (index >= currentWritten) {
         // When we enter here, this means that the current string is longer
         // that all other strings; they need to be padded
         for (unsigned long s = 0; s < lLength - 1; s++) {
-          (*GetSite(s)) << skip_char;
+          (*(_StringBuffer *)GetItem(s)) << skip_char;
         }
 
         (*GetSite(lLength - 1)) << c;
@@ -365,7 +365,7 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
           } else {
             unsigned long s = 1;
             for (; s < lLength; s++) {
-              _Site *site_s = GetSite(s);
+              _StringBuffer *site_s = (_StringBuffer *)GetItem(s);
               if ((long)site_s->length() == index) {
                 (*site_s) << c;
                 break;
@@ -1957,6 +1957,8 @@ void ProcessTree(FileState *fState, hyFile *f, _StringBuffer &CurrentLine) {
 long ProcessLine(_String &s, FileState *fs, _DataSet &ds) {
   long sitesAttached = 0L;
 
+  bool length_warning = true;
+
   try {
     s.Each([&](char letter, unsigned long) -> void {
       letter = _uppercase_char(letter);
@@ -1989,6 +1991,14 @@ long ProcessLine(_String &s, FileState *fs, _DataSet &ds) {
 
           if (fs->curSite + sitesAttached + 1 > fs->totalSitesRead) {
             // pad previous species to full length
+            if (length_warning) {
+              HandleAlignmentValidationError(
+                  _String("Sequence ") & _String(fs->curSpecies) & ' ' &
+                  ds.GetSequenceName(fs->curSpecies)->Enquote('(', ')') &
+                  " is longer than the previous sequences. This implies that "
+                  "some of the sequences are not properly aligned");
+            }
+            length_warning = false;
             _Site *newS = new _Site(fs->skip);
             newS->AppendNCopies(fs->skip, fs->curSpecies - 1L);
             (*newS) << letter;
@@ -2032,6 +2042,12 @@ void PadLine(FileState &fState,
   if (fState.curSite < fState.totalSitesRead) { // pad line if needed
     // printf ("\nPADLINE %d %d\n", fState.curSpecies,
     // fState.totalSitesRead-fState.curSite);
+    // HandleAlignmentValidationError(_String ("Sequence ") &
+    // result.GetSequenceName(fState.curSpecies)->Enquote() & " is " &
+    // _String((long)(fState.totalSitesRead - fState.curSite)) & " sites too
+    // short. This suggests that some of the sequences in this data file are
+    // misaligned.");
+
     for (long j = fState.curSite; j < fState.totalSitesRead; j++) {
       result.Write2Site(j, fState.skip);
     }
@@ -2513,6 +2529,12 @@ _DataSet *ReadDataSetFile(hyFile *f, char execBF, _String *theS,
     // make sure interleaved duplications are handled correctly
 
     result->Finalize();
+    if (fState.totalSpeciesRead != (long)result->GetNames().countitems()) {
+      hy_global::HandleApplicationErrorAndExit(
+          "Internal error with DataSet reader: a discrepancy between expected "
+          "and actual sequence counts");
+    }
+
     result->noOfSpecies = fState.totalSpeciesRead;
     result->theTT = fState.translationTable;
 

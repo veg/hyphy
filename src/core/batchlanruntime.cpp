@@ -106,6 +106,62 @@ const _String _ElementaryCommand::ExtractStatementAssignment(
 }
 
 //____________________________________________________________________________________
+_Formula *ValidateCallbackFunctionArgument(_String const &function_id,
+                                           unsigned long argument_count,
+                                           bool trap_errors,
+                                           _String const *err_msg) {
+
+  long callback = FindBFFunctionName(function_id);
+
+  if (callback < 0L ||
+      GetBFFunctionArgumentCount(callback) != (long)argument_count) {
+    _String error_msg = function_id.Enquote() & ' ';
+    if (err_msg) {
+      error_msg = error_msg & *err_msg;
+    } else {
+      error_msg = error_msg & " is not a defined HBL function with " &
+                  _String((long)argument_count) & " arguments";
+    }
+    if (trap_errors) {
+      HandleApplicationErrorAndExit(error_msg);
+    }
+    throw(error_msg);
+  }
+  _Formula *callback_formula = new _Formula;
+  for (unsigned long i = 0; i < argument_count; i++) {
+    callback_formula->GetList() < new _Operation();
+  }
+  callback_formula->GetList() < new _Operation(kEmptyString, -callback - 1L);
+  return callback_formula;
+}
+
+//____________________________________________________________________________________
+HBLObjectRef ExecuteCallbackFunction(_Formula *callback, _List const &arguments,
+                                     unsigned long valid_type) {
+  unsigned long expected_arguments = callback->GetList().countitems() - 1;
+  if (expected_arguments > arguments.countitems()) {
+    throw _String("Too few arguments supplied to the callback function");
+  }
+
+  for (unsigned long i = 0; i < expected_arguments; i++) {
+    callback->GetIthTerm(i)->SetNumber((HBLObjectRef)arguments.GetItem(i));
+  }
+
+  HBLObjectRef cb_value = callback->Compute();
+
+  for (unsigned long i = 0; i < expected_arguments; i++) {
+    callback->GetIthTerm(i)->SetNumber(nullptr);
+  }
+
+  if (cb_value->ObjectClass() & valid_type) {
+    return cb_value;
+  }
+
+  throw _String("Incorrect return type for callback: ") &
+      FetchObjectNameFromType(cb_value->ObjectClass()).Enquote();
+}
+
+//____________________________________________________________________________________
 
 const _String _ElementaryCommand::ProcessProcedureCall(_String const &source,
                                                        _String &procedure,
@@ -3902,6 +3958,112 @@ bool _ElementaryCommand::HandleKeywordArgument(
 
 //____________________________________________________________________________________
 
+/**
+ * @brief Handles the GetString batch language command.
+ *
+ * This function retrieves a variety of string or other object representations
+ from the HyPhy environment
+ * based on the provided arguments. It can fetch system-level information (like
+ version),
+ * details about various HyPhy objects (like models, datasets, likelihood
+ functions),
+ * and information about variables (like their formulas or dependencies). The
+ result is
+ * stored in a designated receptacle variable.
+ *
+ * The command's behavior is determined by a series of arguments, typically
+ including
+ * a keyword or an object identifier to specify the target of the query.
+ *
+ * The first argument passed to the call is the id of the receptacle variable
+ *  The second argument is WHAT to query for information
+ *  The third and optionally fourth arguments control what type of information
+ to fetch
+ *
+ *  ##LITERAL VALUES
+ *
+ *  "HYPHY_VERSION"
+ *  GetString (versionString, HYPHY_VERSION, 0);  versionString = "2.5.85"
+ *  GetString (versionString, HYPHY_VERSION, 1);  versionString =
+ "HYPHY 2.5.85(MP) for Darwin on arm64 ARM Neon SIMD zlib (v1.2.12)"
+ *  GetString (versionString, HYPHY_VERSION, 2);  versionString = "HyPhy
+ version 2.5.85"
+ *
+ *  "TIME_STAMP"
+ *  GetString (timeStamp, TIME_STAMP, 0); timeStamp = "2025/10/13 18:8"
+ *  GetString (timeStamp, TIME_STAMP, 0); timeStamp = "Mon Oct 13 14:08:15 2025"
+ *
+ *  "LIST_OF_LOADED_LIBRARIES"
+ *  GetString (libList, LIST_OF_LOADED_LIBRARIES, *); libList =
+ "{{"/Users/sergei/Development/hyphy/res/TemplateBatchFiles/libv3/IOFunctions.bf",
+ "/Users/sergei/Development/hyphy/res/TemplateBatchFiles/libv3/UtilityFunctions.bf..."
+ *
+ * "MATRIX_EXPONENTIALS_COMPUTED"
+ * GetString (mexps, MATRIX_EXPONENTIALS_COMPUTED, *);  mexps = 0;
+ * note: only works for NON OpenMP versions
+ *
+ * "ZIP_ENABLED"
+ * GetString (zip_enabled, ZIP_ENABLED, *);  zip_enabled = 0;
+ * note: only works for NON OpenMP versions
+ *
+ * "KWARGS": not yet consumed!
+ * ./hyphy --foo bar --bar baz tests/hbltests/UnitTests/HBLCommands/GetString.bf
+ * ...
+ *     KeywordArgument ("foo", "Test argument", "bar");
+ *     fscanf (stdin, "String", foo_value);
+ *
+ *     GetString (kwargs, KWARGS, 0);
+ *  kwargs = {"bar":"baz"};
+ *
+ *
+ * "KWARG_TAGS" (same example as above)
+ * GetString (kwarg_tags, KWARG_TAGS, *);  kwarg_tags = {"0":  {{"foo", "Test
+ argument", "bar"}}};
+ *
+ *  ##SECOND ARG == DATASET (N sequences) or DATASET FILTER (N sequences)
+ *
+ *      THIRD ARG < 0: return all sequence names as a ROW matrix
+ *      THIRD_ARG = 0 ... N-1 : return the name of the corresponding sequenes
+ *                  for DATASET_FILTER arguments return sequences in the filter
+ order.
+ *      THIRD_ARG >= N : exception
+ *
+ *  ##SECOND ARG == name of an HBL type (see _HY_GetStringGlobalTypes)
+
+ *      THIRD ARG index of the object of this type (>=0); return the NAME of
+ this object, except if the type is User Function, then return
+ *
+ *      function factorial (N) {
+ *          f = 1;
+ *          for (k = 2; k <= N; k+=1) {f = f * k;}
+ *          return f;
+ *      }
+ *
+ *     returns tf arguments (as a Matrix), and the ID of the function
+ *      { "Arguments":  {{"N"}},
+ *        "ID":"factorial"}
+ *
+ *  ##SECOND ARG == HBL function
+ *     THIRD ARG = *
+ *     returns tf arguments (as a Matrix), BODY, and the ID of the function
+ *      { "Arguments":  {{"N"}},
+ *      "Body":"f=1;for(k=2;k<=N;k+=1){f=f*k;}return  f;",
+ *      "ID":"factorial"}
+ *
+ *  ##SECOND ARG == likelihood function or SCFG
+ *     THIRD ARG = *
+ *     returns tf arguments (as a Matrix), BODY, and the ID of the function
+ *      { "Arguments":  {{"N"}},
+ *      "Body":"f=1;for(k=2;k<=N;k+=1){f=f*k;}return  f;",
+ *      "ID":"factorial"}
+ *
+ * @param current_program The current execution list, providing context for the
+ command.
+ * @return Returns `true` if the command executes successfully, and `false`
+ otherwise.
+ *         In case of an error, it uses the _DefaultExceptionHandler to report
+ it.
+ */
 bool _ElementaryCommand::HandleGetString(_ExecutionList &current_program) {
 
   auto make_fstring_pointer = [](_String *s) -> _FString * {
@@ -4261,74 +4423,97 @@ bool _ElementaryCommand::HandleGetString(_ExecutionList &current_program) {
           *GetIthParameter(1UL), current_program.nameSpacePrefix)));
 
       if (var) {
-        if (var->IsIndependent() && index1 != -3) {
-          if (!var->has_been_set()) {
-            return_value = new _MathObject;
+        if (var->ObjectClass() == TREE_NODE && index1 <= -5) {
+          if (index1 == -5) {
+            long model_id = ((_CalcNode *)var)->GetTheModelID();
+            if (model_id != HY_NO_MODEL) {
+              return_value = make_fstring(
+                  *GetObjectNameByType(HY_BL_MODEL, model_id, false));
+            } else {
+              return_value = new _MathObject;
+            }
           } else {
-            return_value = make_fstring_pointer((_String *)var->toStr());
+            if (index1 == -6) {
+              _SimpleList _iv, _id;
+              _AVLList iv(&_iv), id(&_id);
+              ((_CalcNode *)var)->ScanContainerForVariables(id, id);
+              _AssociativeList *var_list_by_kind = new _AssociativeList;
+
+              InsertVarIDsInList(var_list_by_kind, "Global", _iv);
+              InsertVarIDsInList(var_list_by_kind, "Local", _id);
+              return_value = var_list_by_kind;
+            }
           }
         } else {
-          if (index1 == -1) {
-            _SimpleList variable_list =
-                PopulateAndSort([&](_AVLList &parameter_list) -> void {
-                  var->ScanForVariables(parameter_list, true);
-                });
-            _AssociativeList *var_list_by_kind = new _AssociativeList;
-
-            _List split_vars;
-            SplitVariableIDsIntoLocalAndGlobal(variable_list, split_vars);
-            InsertVarIDsInList(var_list_by_kind, "Global",
-                               *(_SimpleList *)split_vars(0));
-            InsertVarIDsInList(var_list_by_kind, "Local",
-                               *(_SimpleList *)split_vars(1));
-            return_value = var_list_by_kind;
-          } else { // formula string
-
-            if (index1 == -3 || index1 == -4) {
-              _StringBuffer local, global;
-
-              _SimpleList var_index;
-              if (index1 == -3 || var->IsIndependent()) {
-                var_index << var->get_index();
-                if (var->IsIndependent()) {
-                  // printf ("ExportIndVariables\n");
-                  ExportIndVariables(global, local, &var_index);
-                } else {
-                  // printf ("ExportDepVariables\n");
-                  ExportDepVariables(global, local, &var_index);
-                }
-              } else {
-                _AVLList vl(&var_index);
-                var->ScanForVariables(vl, true);
-                _SimpleList ind_vars = var_index.Filter(
-                                [](long index, unsigned long) -> bool {
-                                  return LocateVar(index)->IsIndependent();
-                                }),
-                            dep_vars = var_index.Filter(
-                                [](long index, unsigned long) -> bool {
-                                  return !LocateVar(index)->IsIndependent();
-                                });
-                ExportIndVariables(global, local, &ind_vars);
-                ExportDepVariables(global, local, &dep_vars);
-              }
-              return_value = make_fstring_pointer(
-                  &((*new _StringBuffer(128L)) << global << local << '\n'));
-
+          if (var->IsIndependent() && index1 != -3) {
+            if (!var->has_been_set()) {
+              return_value = new _MathObject;
             } else {
-              _Matrix *formula_matrix =
-                  (index2 >= 0 && var->ObjectClass() == MATRIX)
-                      ? (_Matrix *)var->GetValue()
-                      : nil;
-              if (formula_matrix) {
-                _Formula *cell = formula_matrix->GetFormula(index1, index2);
-                if (cell) {
-                  return_value = make_fstring_pointer(
-                      (_String *)cell->toStr(kFormulaStringConversionNormal));
+              return_value = make_fstring_pointer((_String *)var->toStr());
+            }
+          } else {
+            if (index1 == -1) {
+              _SimpleList variable_list =
+                  PopulateAndSort([&](_AVLList &parameter_list) -> void {
+                    var->ScanForVariables(parameter_list, true);
+                  });
+              _AssociativeList *var_list_by_kind = new _AssociativeList;
+
+              _List split_vars;
+              SplitVariableIDsIntoLocalAndGlobal(variable_list, split_vars);
+              InsertVarIDsInList(var_list_by_kind, "Global",
+                                 *(_SimpleList *)split_vars(0));
+              InsertVarIDsInList(var_list_by_kind, "Local",
+                                 *(_SimpleList *)split_vars(1));
+              return_value = var_list_by_kind;
+            } else { // formula string
+
+              if (index1 == -3 || index1 == -4) {
+                _StringBuffer local, global;
+
+                _SimpleList var_index;
+                if (index1 == -3 || var->IsIndependent()) {
+                  var_index << var->get_index();
+                  if (var->IsIndependent()) {
+                    // printf ("ExportIndVariables\n");
+                    ExportIndVariables(global, local, &var_index);
+                  } else {
+                    // printf ("ExportDepVariables\n");
+                    ExportDepVariables(global, local, &var_index);
+                  }
+                } else {
+                  _AVLList vl(&var_index);
+                  var->ScanForVariables(vl, true);
+                  _SimpleList ind_vars = var_index.Filter(
+                                  [](long index, unsigned long) -> bool {
+                                    return LocateVar(index)->IsIndependent();
+                                  }),
+                              dep_vars = var_index.Filter(
+                                  [](long index, unsigned long) -> bool {
+                                    return !LocateVar(index)->IsIndependent();
+                                  });
+                  ExportIndVariables(global, local, &ind_vars);
+                  ExportDepVariables(global, local, &dep_vars);
                 }
+                return_value = make_fstring_pointer(
+                    &((*new _StringBuffer(128L)) << global << local << '\n'));
+
               } else {
-                return_value =
-                    make_fstring_pointer((_String *)var->GetFormulaString(
-                        kFormulaStringConversionNormal));
+                _Matrix *formula_matrix =
+                    (index2 >= 0 && var->ObjectClass() == MATRIX)
+                        ? (_Matrix *)var->GetValue()
+                        : nil;
+                if (formula_matrix) {
+                  _Formula *cell = formula_matrix->GetFormula(index1, index2);
+                  if (cell) {
+                    return_value = make_fstring_pointer(
+                        (_String *)cell->toStr(kFormulaStringConversionNormal));
+                  }
+                } else {
+                  return_value =
+                      make_fstring_pointer((_String *)var->GetFormulaString(
+                          kFormulaStringConversionNormal));
+                }
               }
             }
           }

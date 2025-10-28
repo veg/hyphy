@@ -355,6 +355,12 @@ namespace terms{
         imputed_states        = "Imputed States";
         site_log_likelihood   = "Site Log Likelihood";
         unconstrained         = "unconstrained";
+        site_logl             = "Site Log Likelihood";
+        evidence_ratios       = "Evidence Ratios";
+        by_branch             = "By Branch";
+        unconstrained         = "unconstrained";
+        constrained           = "constrained";
+        optimized_null        = "optimized null";
     }
 
 

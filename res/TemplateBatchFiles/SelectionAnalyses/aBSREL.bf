@@ -1,4 +1,4 @@
-RequireVersion ("2.5.57");
+RequireVersion ("2.5.85");
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 
@@ -68,8 +68,8 @@ absrel.display_orders = {terms.original_name: -1,
 absrel.analysis_description = {terms.io.info : "aBSREL (Adaptive branch-site random effects likelihood)
                             uses an adaptive random effects branch-site model framework
                             to test whether each branch has evolved under positive selection,
-                            using a procedure which infers an optimal number of rate categories per branch. v2.2 adds support for multiple-hit models. v2.3 adds support for SRV. v2.5 adds support for ancestral state reconstruction, identification of sites contributing to selection signal, and some diagnostics. ",
-                            terms.io.version : "2.5",
+                            using a procedure which infers an optimal number of rate categories per branch. v2.2 adds support for multiple-hit models. v2.3 adds support for SRV. v2.5 adds support for ancestral state reconstruction, identification of sites contributing to selection signal, and some diagnostics. v2.6 adds tree reports and ASCII art",
+                            terms.io.version : "2.6",
                             terms.io.reference : "
                                 Less Is More: An Adaptive Branch-Site Random Effects Model for Efficient Detection of Episodic Diversifying Selection (2015). 
                                 Mol Biol Evol 32 (5): 1342-1353. 
@@ -239,6 +239,12 @@ absrel.base.results = estimators.FitCodonModel (absrel.filter_names, absrel.tree
 
 absrel.MG94.model =  (absrel.base.results[terms.model])["VALUEINDEXORDER"][0];
 absrel.MG94.id = absrel.MG94.model [terms.id];
+absrel.baseline.tree = Format (^(absrel.get_tree_name ( absrel.base.results [terms.likelihood_function])),1,1);
+Topology absrel.scaled_tree = absrel.baseline.tree;
+
+
+absrel.baseline.tree = "absrel.scaled_tree";
+
 
 absrel.model_object_map = {
      absrel.MG94.id  : absrel.MG94.model
@@ -552,9 +558,30 @@ selection.io.json_store_branch_attribute(absrel.json, absrel.rate_classes, terms
 io.ReportProgressMessageMD ("absrel", "complexity-summary", "Rate class analyses summary");
 utility.ForEachPair (utility.BinByValue (absrel.branch.complexity), "_rates_", "_branches_",
     "io.ReportProgressMessageMD('absrel',  'complexity-summary', '*  ' + Abs(_branches_) + ' branches with **' + _rates_ + '** rate classes')");
+    
 
-selection.io.stopTimer (absrel.json [terms.json.timers], "Complexity analysis");
+lfunction absrel.complexity_class (node) {
+    return node + "{" + (^"absrel.branch.complexity")[node] + "}";
+}
 
+lfunction absrel.complexity_class.ascii (node) {
+    node = node[Abs(^"absrel.baseline.tree")+1][Abs(node)-1];
+    return "" + (^"absrel.branch.complexity")[node];
+}
+ 
+io.ReportProgressMessageMD ("absrel", "complexity-summary-tree", "Annotated Tree");
+   
+console.log (tree.Annotate (absrel.baseline.tree, "absrel.complexity_class", "{}", FALSE));    
+
+console.log ("\n----\n");
+
+console.log ("\`\`\`\n" + Format(^absrel.baseline.tree, "ASCII_ART", {
+    "WIDTH": 80,
+    "SHOW_INTERNAL_LABELS": 1,
+    "SHOW_TERMINAL_LABELS": 1,
+    "ANNOTATION_FUNCTION" : "absrel.complexity_class.ascii"
+    
+}) + "\`\`\`\n");
 
 selection.io.startTimer (absrel.json [terms.json.timers], "Full adaptive model fitting", 4);
 io.ReportProgressMessageMD ("absrel", "Full adaptive model", "Improving parameter estimates of the adaptive rate class model");
@@ -826,6 +853,7 @@ absrel.branch.p_values.corrected = math.HolmBonferroniCorrection (absrel.branch.
 selection.io.json_store_branch_attribute (absrel.json, terms.json.corrected_pvalue, terms.json.branch_label,  absrel.display_orders[terms.json.corrected_pvalue],
                                                        0,
                                                        absrel.branch.p_values.corrected);
+                                                       
 
 absrel.test.all      = utility.Filter (absrel.branch.p_values.corrected, "_value_", "None!=_value_");
 absrel.test.positive = utility.Filter (absrel.test.all, "_value_", "_value_<=absrel.p_threshold");
@@ -846,6 +874,44 @@ absrel.json [terms.json.test_results] = {
                                              terms.json.tested  : Abs (absrel.test.all),
                                              terms.json.positive : Abs (absrel.test.positive)
                                          };
+
+lfunction absrel.p_value.label (node) {
+    pv = (^"absrel.branch.p_values.corrected")[node];
+    if (None != pv) {
+        if (pv < ^"absrel.p_threshold") {
+            return node + "{" + (^"absrel.branch.p_values.corrected")[node] + "}";
+        }
+    }
+    return node;
+}
+
+lfunction absrel.p_value.label_ascii (node) {
+    node = node[Abs(^"absrel.baseline.tree")+1][Abs(node)-1];
+    pv = (^"absrel.branch.p_values.corrected")[node];
+    if (None != pv) {
+        if ((^"absrel.branch.p_values.corrected")[node] < ^"absrel.p_threshold") {
+            return "" + (^"absrel.branch.p_values.corrected")[node];
+        }
+        return "N.S";
+    }
+    return "Not tested"   
+
+}
+ 
+io.ReportProgressMessageMD ("absrel", "final-tree-report", "Annotated Tree");
+   
+console.log (tree.Annotate (absrel.baseline.tree, "absrel.p_value.label", "{}", FALSE));    
+
+console.log ("\n----\n");
+
+console.log ("\`\`\`\n" + Format(^absrel.baseline.tree, "ASCII_ART", {
+    "WIDTH": 80,
+    "SHOW_INTERNAL_LABELS": 1,
+    "SHOW_TERMINAL_LABELS": 1,
+    "ANNOTATION_FUNCTION" : "absrel.p_value.label_ascii"
+    
+}) + "\`\`\`\n");
+
 
 /***
     Cleanup
