@@ -109,3 +109,13 @@ lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_co
      return result;
 
 }
+
+//------------------------------------------------------------------------------
+lfunction selection.ComputeSiteLikelihoods (id) {
+   ConstructCategoryMatrix (sl, ^id, SITE_LOG_LIKELIHOODS);
+   return sl;
+}
+
+lfunction selection.EvidenceRatios (ha, h0) {
+    return ha["Exp(_MATRIX_ELEMENT_VALUE_-h0[_MATRIX_ELEMENT_COLUMN_])"];
+}

@@ -165,7 +165,7 @@ public:
    *
    * @param lf The likelihood function to copy
    */
-  _LikelihoodFunction(_LikelihoodFunction const &);     // stack copy
+  _LikelihoodFunction(_LikelihoodFunction const &); // stack copy
   /**
    * @brief The assignment operator
    *
@@ -334,7 +334,8 @@ public:
   // get the lower / upper bound for the i-th indepdendent variable
 
   /**
-   * @brief Obtain the g'(x) for the chain rule differentiation under transformed variables
+   * @brief Obtain the g'(x) for the chain rule differentiation under
+   * transformed variables
    *
    * @param i The index of the independent variable
    * @param f The value of the independent variable
@@ -549,7 +550,8 @@ public:
    * @brief Check if the likelihood function depends on a given data filter
    *
    * @param ID The ID of the data filter
-   * @return true if the likelihood function depends on the data filter, false otherwise
+   * @return true if the likelihood function depends on the data filter, false
+   * otherwise
    */
   bool DependOnDF(long ID) const { return theDataFilters.Find(ID) >= 0; }
   /**
@@ -790,7 +792,8 @@ public:
    * @param error The error message
    * @param sig_term Whether the termination was due to a signal
    */
-  void _TerminateAndDump(const _String &error, bool sig_term = false);
+  void _TerminateAndDump(const _String &error, bool sig_term = false,
+                         bool do_not_exit = false);
 
 protected:
   void AllocateTemplateCaches(void);

@@ -3179,9 +3179,7 @@ void _ElementaryCommand::ExecuteCase12(_ExecutionList &chain) {
       _String matrixName(chain.AddNameSpaceToID(*(_String *)parameters(4)));
       if (!(catNameVar =
                 CheckReceptacle(&matrixName, blSimulateDataSet, true))) {
-        DeleteObject(catValues);
-        DeleteObject(catNames);
-        DeleteObject(ds);
+        BatchDeleteObject(catValues, catNames, ds);
         return;
       } else {
         catNames = new _Matrix(1, 1, false, true);
@@ -3202,11 +3200,8 @@ void _ElementaryCommand::ExecuteCase12(_ExecutionList &chain) {
       errMsg = resultingDSName->Enquote() &
                " is not a valid receptacle identifier in call to " &
                blSimulateDataSet;
-      DeleteObject(resultingDSName);
-      DeleteObject(catValues);
-      DeleteObject(catNames);
-      DeleteObject(ds);
-      DeleteObject(ancestral_states);
+      BatchDeleteObject(resultingDSName, catValues, catNames, ds,
+                        ancestral_states);
       HandleApplicationError(errMsg);
       return;
     }

@@ -47,7 +47,7 @@ relax.analysis_description = {
                                                 Version 4.1 adds further support for multiple hit models.
                                                 Version 4.1.1 adds reporting for convergence diagnostics.
                                                 Version 4.5 adds support for multiple datasets for joint testing.
-                                                Version 4.6 adds support for site-level EBF calculation.",
+                                                Version 4.6 adds support for branch- and site-level evidence ratio calculation.",
                                terms.io.version : "4.5",
                                terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
                                terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution g",
@@ -724,8 +724,6 @@ if (relax.analysis_run_mode != relax.kGroupMode) {
 
  
 
-//console.log (relax.model_namespaces);
-//explicit loop to avoid re-entrance errors 
 
 relax.relax_parameter_terms = {};
 relax.bound_weights         = {};
@@ -741,6 +739,8 @@ for (relax.k = 0; relax.k < relax.numbers_of_tested_groups; relax.k += 1) {
         relax.filter_names,
         None);
         
+    
+    
 	for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
 		parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range01);
 	}
@@ -786,6 +786,8 @@ for (relax.k = 0; relax.k < relax.numbers_of_tested_groups; relax.k += 1) {
 		}
    }
 }
+
+
 
 relax.model_map = {};
 for (relax.index, relax.junk ; in; relax.filter_names) {
@@ -1223,6 +1225,78 @@ function relax.FitMainTestPair (prompt) {
 
 	selection.io.stopTimer (relax.json [terms.json.timers], "RELAX alternative model fitting");
 
+  /// START EBF CALCULATION
+   ///=====================================================================================================================================
+ 
+    relax.tree_ids = estimators.LFObjectGetTrees (relax.alternative_model.fit[terms.likelihood_function]);
+	
+    estimators.RestoreLFStateFromSnapshot (relax.alternative_model.fit[terms.likelihood_function],relax.stashLF);
+	
+    utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", TRUE);
+        relax.er_report.tagged_sites    = {};
+        for (_partition_, _selection_; in; relax.selected_branches) {
+        
+
+            relax.tested_branches = {};
+            relax.full_to_short  = {};
+            for (_b_,_class_; in; _selection_) {
+                 if (_class_ == relax.test_branches_name) {
+                     relax.node_name = relax.tree_ids[+_partition_] + '.' + _b_;
+                     relax.tested_branches [relax.node_name] = 1;
+                     relax.full_to_short  [relax.node_name] = _b_;
+                } 
+            }
+            relax.test_model_name = (relax.model_map[_partition_])[_selection_[0]];
+        
+            
+            utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", TRUE);
+            
+            relax.ll_by_branch = {};
+            relax.model_by_branch = {};
+            
+            
+            relax.altLL = relax.alternative_model.fit [terms.fit.log_likelihood];
+            relax.json [terms.json.site_logl] = {};
+            (relax.json [terms.json.site_logl])[terms.json.unconstrained] = selection.ComputeSiteLikelihoods (relax.alternative_model.fit[terms.likelihood_function]);
+           
+            for (_b_,_ignore_; in;  relax.tested_branches) {
+                 GetString    (relax._current_model, ^_b_, -5);                 
+                 relax.model_by_branch [_b_] = relax._current_model;
+                 SetParameter ( ^_b_ , MODEL, ^relax.reference_model_namespace);
+                 
+                 LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),LF_START_COMPUTE);
+                 LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),relax.ll);
+                 relax.ll_by_branch [relax.full_to_short[_b_]] = Exp(relax.altLL-relax.ll);
+                 LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),LF_DONE_COMPUTE);
+
+                 SetParameter ( ^_b_ , MODEL, ^relax._current_model);
+            }
+            
+
+            relax.json [terms.json.evidence_ratios] = {terms.json.by_branch : relax.ll_by_branch};
+         
+            for (_b_,_ignore_; in;  relax.tested_branches) {
+                 SetParameter ( ^_b_ , MODEL, ^relax.reference_model_namespace);
+            }
+            LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),LF_START_COMPUTE);
+            LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),relax.ll);
+            LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),LF_DONE_COMPUTE);
+            (relax.json [terms.json.site_logl])[terms.json.constrained] = selection.ComputeSiteLikelihoods (relax.alternative_model.fit[terms.likelihood_function]);
+
+            for (_b_,_ignore_; in;  relax.tested_branches) {
+                 SetParameter ( ^_b_ , MODEL, ^(relax.model_by_branch[_b_]));
+            }
+
+            (relax.json [terms.json.evidence_ratios])[terms.json.constrained] = selection.EvidenceRatios ( (relax.json [terms.json.site_logl])[terms.json.unconstrained],  (relax.json [terms.json.site_logl])[terms.json.constrained]);
+
+
+           
+       }
+       utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", None);
+    ///=====================================================================================================================================
+	/// END EBF CALCULATION
+
+
 	// NULL MODEL
 
 	selection.io.startTimer (relax.json [terms.json.timers], "RELAX null model fitting", 4);
@@ -1239,148 +1313,7 @@ function relax.FitMainTestPair (prompt) {
 		}
 	}
 	
-   /// START EBF CALCULATION
-   ///=====================================================================================================================================
-	
-  utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", TRUE);
-        
-        relax.er_report.tagged_branches = {};
-        relax.er_report.tagged_sites    = {};
-        
-        for (_partition_, _selection_; in; relax.selected_branches) {
-        
-            busted.branch_level_ER = {};
-            busted.branch_site_level_ER = {};
-            busted.current_weights = {};
-            
-            for (_key_, _value_; in; busted.mixture_weights_parameters) {
-                busted.current_weights  [_value_] = Eval (_key_);
-            }
-            
-            busted.tested_branches = {};
-            busted.full_to_short = {};
-            for (_b_,_class_; in; _selection_) {
-                if (_class_ == terms.tree_attributes.test) {
-                     busted.node_name = busted.tree_ids[+_partition_] + '.' + _b_;
-                     busted.tested_branches [busted.node_name] = 1;
-                     busted.full_to_short  [busted.node_name] = _b_;
-                } else {
-                    busted.branch_level_ER  [_b_] = None;
-                }
-            }
-             
-            busted.tested_branches = Rows (busted.tested_branches);    
-            
-            utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", TRUE);
-            SetParameter ( busted.tested_branches , MODEL, ^busted.er_model);
-            utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", None);
-            
-           
-            for (_b_; in;  busted.tested_branches) {
-                for (_key_, _value_; in; busted.mixture_weights_parameters) {
-                    ^(_b_ + "." + _value_ ) =  busted.current_weights [_value_];
-                }
-            }
-            
-            busted.weight_matrix = {1,busted.rate_classes-1};
-            
-            for (_key_, _value_; in; busted.mixture_weights_parameters) {
-                ^_value_ =^_key_;
-            }
-            
-            for (busted.i = 1; busted.i < busted.rate_classes; busted.i += 1)  {
-                busted.weight_matrix[busted.i-1] = Eval (busted.branch_weight_prefix + (busted.i));
-            }
-            
-            busted.weight_matrix = parameters.GetStickBreakingDistributionWeigths (busted.weight_matrix);
-            
-            io.ReportProgressBar("", "Computing branch and site level posterior probabilities");
-            LFCompute (^(busted.full_model[terms.likelihood_function]),LF_START_COMPUTE);
-            
-            //GetString (exp_counter, MATRIX_EXPONENTIALS_COMPUTED,0);
-            //console.log ("\n\n" + exp_counter + "\n\n");
-            
-            for (_b_; in;  busted.tested_branches) {
-    
-                io.ReportProgressBar("", "Profiling partition " + (+_partition_ + 1) + "/branch " + busted.full_to_short [_b_]);
-                
-                // set all weight parameters to 0; this will yield the weight for the N-1 class
-                
-                busted.branchPP = {busted.rate_classes,1};
-                for (_key_, _value_; in; busted.mixture_weights_parameters) {
-                    ^(_b_ + "." + _value_ ) =  0;
-                }
-                
-                
-                LFCompute (^(busted.full_model[terms.likelihood_function]),logl);
-                ConstructCategoryMatrix (busted.siteLL, ^(busted.full_model[terms.likelihood_function]) , SITE_LOG_LIKELIHOODS, {{+_partition_}});
-                busted.all_siteLL = {busted.rate_classes, Columns (busted.siteLL)};
-                busted.all_siteLL [busted.rate_classes-1][0] = busted.siteLL;
-                busted.branchPP [busted.rate_classes-1] = logl;
-                
-                for (busted.i = 1; busted.i < busted.rate_classes; busted.i += 1) {
-                    if (busted.i > 1) {
-                        ^(_b_ + "." + busted.branch_weight_prefix + (busted.i-1)) = 0;
-                    }
-                    ^(_b_ + "." + busted.branch_weight_prefix + (busted.i)) = 1;
-                    LFCompute (^(busted.full_model[terms.likelihood_function]),logl);
-                    ConstructCategoryMatrix (busted.siteLL, ^(busted.full_model[terms.likelihood_function]) , SITE_LOG_LIKELIHOODS, {{+_partition_}});
-                    busted.all_siteLL [busted.i-1][0] = busted.siteLL;
-                    busted.branchPP [busted.i-1] = logl;
-                }
-                
-                for (_key_, _value_; in; busted.mixture_weights_parameters) {
-                    ^(_b_ + "." + _value_ ) =  busted.current_weights [_value_];
-                }
-                
-                busted.branch_level_ER  [busted.full_to_short [_b_]]      = busted.mixture_site_logl (busted.branchPP,busted.weight_matrix );
-                busted.branch_site_level_ER  [busted.full_to_short [_b_]] = busted.mixture_site_logl (busted.all_siteLL,busted.weight_matrix );
-                
-                busted.branch_site_level_BF = (busted.mixture_site_BF (busted.branch_site_level_ER  [busted.full_to_short [_b_]], busted.weight_matrix))[busted.rate_classes - 1][-1];
-                busted.tagged_sites         = busted.branch_site_level_BF ["_MATRIX_ELEMENT_VALUE_>busted.site_BF_reporting"];
-                busted.tagged_site_count    = +busted.tagged_sites;
-                
-                if (busted.tagged_site_count ) {
-                    busted.er_report.tagged_branches [_partition_ + ":" + _b_] = busted.tagged_site_count;
-                    for (_site_;in;(busted.tagged_sites["(1+_MATRIX_ELEMENT_COLUMN_)*_MATRIX_ELEMENT_VALUE_"])[busted.tagged_sites]) {
-                        _site_tag_ = _partition_ + ":" + _site_;
-                        if ( busted.er_report.tagged_sites / _site_tag_ == FALSE) {
-                             busted.er_report.tagged_sites [_site_tag_] = {};
-                        }
-                        busted.er_report.tagged_sites [_site_tag_] + _b_;
-                    }
-                }
-                //GetString (exp_counter2, MATRIX_EXPONENTIALS_COMPUTED,0);
-                //console.log ("\n\n" + (exp_counter2-exp_counter) + "\n\n");
-                exp_counter = exp_counter2;
-            
-            }	   
-            
-            //GetString (exp_counter2, MATRIX_EXPONENTIALS_COMPUTED,0);
-            //console.log ("\n\n" + (exp_counter2-exp_counter) + "\n\n");
-            
-            LFCompute (^(busted.full_model[terms.likelihood_function]),LF_DONE_COMPUTE);
-            SetParameter ( busted.tested_branches , MODEL, busted.test);
-    
-            estimators.RestoreLFStateFromSnapshot (busted.full_model[terms.likelihood_function], busted.stashLF);
-             
-            
-            selection.io.json_store_branch_attribute(busted.json, busted.ER, terms.json.branch_annotations, busted.display_orders[busted.ER],
-                                                 _partition_,
-                                                 busted.branch_level_ER);
-                                                 
-            selection.io.json_store_branch_attribute(busted.json, busted.bsER, terms.json.branch_annotations, busted.display_orders[busted.bsER],
-                                                 _partition_,
-                                                 busted.branch_site_level_ER);
-                                                 
-            //console.log (busted.er_report.tagged_branches);
-            //console.log (busted.er_report.tagged_sites);
-       }
-       io.ClearProgressBar();
-       utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", None);
-    ///=====================================================================================================================================
-	/// END EBF CALCULATION
-
+ 
 	relax.null_model.fit = estimators.FitExistingLF (relax.alternative_model.fit[terms.likelihood_function], relax.model_object_map);
 	io.ReportProgressMessageMD ("RELAX", "null", "* " + selection.io.report_fit (relax.null_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
 	relax.LRT = math.DoLRT (relax.null_model.fit[terms.fit.log_likelihood], relax.alternative_model.fit[terms.fit.log_likelihood],  relax.numbers_of_tested_groups-1);

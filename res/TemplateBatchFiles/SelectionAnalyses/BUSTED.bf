@@ -56,9 +56,6 @@ busted.FG = "Test";
 busted.BG = "Background";
 busted.SRV = "Synonymous site-to-site rates";
 busted.background = "background";
-busted.unconstrained = "unconstrained";
-busted.constrained   = "constrained";
-busted.optimized_null = "optimized null";
 busted.ER = "Posterior prob omega class";
 busted.bsER = "Posterior prob omega class by site";
 busted.ER2H = "Evidence ratio for 2H";
@@ -67,8 +64,6 @@ busted.ER23H = "Evidence ratio for 2H+3H";
 busted.MG94 = terms.json.mg94xrev_sep_rates;
 
 busted.json.background = busted.background;
-busted.json.site_logl  = "Site Log Likelihood";
-busted.json.evidence_ratios  = "Evidence Ratios";
 busted.json.srv_posteriors  = "Synonymous site-posteriors";
 busted.json.srv_viterbi = "Viterbi synonymous rate path";
 busted.rate_classes = 3;
@@ -82,17 +77,17 @@ busted.json    = { terms.json.analysis: busted.analysis_description,
                    busted.json.background: {},
                    terms.json.fits : {},
                    terms.json.timers : {},
-                   busted.json.site_logl : {},
-                   busted.json.evidence_ratios: {},
-                   busted.json.site_logl : {}
+                   terms.json.site_logl : {},
+                   terms.json.evidence_ratios: {},
+                   terms.json.site_logl : {}
                   };
 
 
 busted.display_orders = {terms.original_name: -1,
                          terms.json.nucleotide_gtr: 0,
                          busted.MG94: 1,
-                         busted.unconstrained: 2,
-                         busted.constrained: 3 ,
+                         terms.json.unconstrained: 2,
+                         terms.json.constrained: 3 ,
                          busted.ER : 4,
                          busted.bsER : 5,
                          busted.ER2H : 6,
@@ -967,7 +962,7 @@ while (!busted.converged) {
     busted.tree_ids = estimators.LFObjectGetTrees (busted.full_model[terms.likelihood_function]);
     busted.EFV_ids = estimators.LFObjectGetEFV (busted.full_model[terms.likelihood_function]);
     
-    (busted.json [busted.json.site_logl])[busted.unconstrained] = busted.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
+    (busted.json [terms.json.site_logl])[terms.json.unconstrained] = selection.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
                                     
     busted.report_multi_hit  (busted.full_model, busted.distribution_for_json, "MultiHit", "alt-mh", busted.branch_length_string, busted.model_parameters);
     
@@ -1261,7 +1256,7 @@ while (!busted.converged) {
                                 busted.full_model[terms.parameters] + 9 , // +9 comes from CF3x4
                                 busted.codon_data_info[terms.data.sample_size],
                                 busted.distribution_for_json,
-                                busted.display_orders[busted.unconstrained]);
+                                busted.display_orders[terms.json.unconstrained]);
     
     
     if (busted.error_sink) {
@@ -1271,7 +1266,7 @@ while (!busted.converged) {
     }
     
     for (_key_, _value_; in; busted.filter_specification) {
-        selection.io.json_store_branch_attribute(busted.json, busted.unconstrained, terms.branch_length, 0,
+        selection.io.json_store_branch_attribute(busted.json, terms.json.unconstrained, terms.branch_length, 0,
                                                  _key_,
                                                  selection.io.extract_branch_info((busted.full_model[terms.branch_length])[_key_], "selection.io.branch.length"));
     }
@@ -1288,11 +1283,11 @@ while (!busted.converged) {
     
         io.ReportProgressMessageMD ("BUSTED", "test", "Performing the constrained (dN/dS > 1 not allowed) model fit");
         parameters.SetConstraint (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes)), terms.parameters.one, terms.global);
-        (busted.json [busted.json.site_logl])[busted.constrained] = busted.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
+        (busted.json [terms.json.site_logl])[terms.json.constrained] = selection.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
         busted.null_results = estimators.FitExistingLF (busted.full_model[terms.likelihood_function], busted.model_object_map);
-        (busted.json [busted.json.site_logl])[busted.optimized_null] = busted.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
+        (busted.json [terms.json.site_logl])[terms.json.optimized_null] = selection.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
         
-        busted.site_ll_diff = Transpose (((busted.json [busted.json.site_logl])[busted.unconstrained] - (busted.json [busted.json.site_logl])[busted.optimized_null])*2);
+        busted.site_ll_diff = Transpose (((busted.json [terms.json.site_logl])[terms.json.unconstrained] - (busted.json [terms.json.site_logl])[terms.json.optimized_null])*2);
         busted.site_ll_sum = +busted.site_ll_diff;
         
         busted.site_ll_diff = ({Rows (busted.site_ll_diff), 2})["(_MATRIX_ELEMENT_COLUMN_==0)*busted.site_ll_diff[_MATRIX_ELEMENT_ROW_]+(_MATRIX_ELEMENT_COLUMN_==1)_MATRIX_ELEMENT_ROW_"] % 0;
@@ -1313,7 +1308,7 @@ while (!busted.converged) {
         selection.io.stopTimer (busted.json [terms.json.timers], "Constrained BUSTED model fitting");
     
         utility.ForEachPair (busted.filter_specification, "_key_", "_value_",
-            'selection.io.json_store_branch_attribute(busted.json, busted.constrained, terms.branch_length, 1,
+            'selection.io.json_store_branch_attribute(busted.json, terms.json.constrained, terms.branch_length, 1,
                                                      _key_,
                                                      selection.io.extract_branch_info((busted.null_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
     
@@ -1373,10 +1368,10 @@ while (!busted.converged) {
                                 busted.null_results[terms.parameters] + 9 , // +9 comes from CF3x4
                                 busted.codon_data_info[terms.data.sample_size],
                                 busted.distribution_for_json,
-                                busted.display_orders[busted.constrained]);
+                                busted.display_orders[terms.json.constrained]);
     
-        (busted.json [busted.json.evidence_ratios])[busted.constrained] = busted.EvidenceRatios ( (busted.json [busted.json.site_logl])[busted.unconstrained],  (busted.json [busted.json.site_logl])[busted.constrained]);
-        (busted.json [busted.json.evidence_ratios ])[busted.optimized_null] = busted.EvidenceRatios ( (busted.json [busted.json.site_logl])[busted.unconstrained],  (busted.json [busted.json.site_logl])[busted.optimized_null]);
+        (busted.json [terms.json.evidence_ratios])[terms.json.constrained] = selection.EvidenceRatios ( (busted.json [terms.json.site_logl])[terms.json.unconstrained],  (busted.json [terms.json.site_logl])[terms.json.constrained]);
+        (busted.json [terms.json.evidence_ratios ])[terms.json.optimized_null] = selection.EvidenceRatios ( (busted.json [terms.json.site_logl])[terms.json.unconstrained],  (busted.json [terms.json.site_logl])[terms.json.optimized_null]);
         
         if (busted.LRT[terms.LRT] < -0.01) {
             parameters.RemoveConstraint (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes)));
@@ -1413,11 +1408,7 @@ return busted.json;
 
 /// HELPERS
 
-//------------------------------------------------------------------------------
-lfunction busted.ComputeSiteLikelihoods (id) {
-   ConstructCategoryMatrix (sl, ^id, SITE_LOG_LIKELIHOODS);
-   return sl;
-}
+
 //------------------------------------------------------------------------------
 
 function busted.ComputeLRT (ha, h0) {
@@ -1425,10 +1416,7 @@ function busted.ComputeLRT (ha, h0) {
             terms.p_value : 0.5*(1-CChi2 (2*(ha-h0),2))};
 }
 
-//------------------------------------------------------------------------------
-lfunction busted.EvidenceRatios (ha, h0) {
-    return ha["Exp(_MATRIX_ELEMENT_VALUE_-h0[_MATRIX_ELEMENT_COLUMN_])"];
-}
+
 
 //------------------------------------------------------------------------------
 lfunction busted.FilteredEvidenceRatios (ha, h0, level) {

@@ -340,13 +340,13 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
     streamThrough->fputc(c);
   } else {
     if (useHorizontalRep) {
-      long currentWritten = ((_String *)list_data[0])->length();
+      long currentWritten = ((_StringBuffer *)list_data[0])->length();
 
       if (index >= currentWritten) {
         // When we enter here, this means that the current string is longer
         // that all other strings; they need to be padded
         for (unsigned long s = 0; s < lLength - 1; s++) {
-          (*GetSite(s)) << skip_char;
+          (*(_StringBuffer *)GetItem(s)) << skip_char;
         }
 
         (*GetSite(lLength - 1)) << c;
@@ -365,7 +365,7 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
           } else {
             unsigned long s = 1;
             for (; s < lLength; s++) {
-              _Site *site_s = GetSite(s);
+              _StringBuffer *site_s = (_StringBuffer *)GetItem(s);
               if ((long)site_s->length() == index) {
                 (*site_s) << c;
                 break;

@@ -5900,7 +5900,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 }
 //_______________________________________________________________________________________
 
-void _LikelihoodFunction::_TerminateAndDump(const _String &error, bool) {
+void _LikelihoodFunction::_TerminateAndDump(const _String &error, bool sig_term,
+                                            bool do_not_exit) {
 
   hyFile *out = doFileOpen("/tmp/hyphy.dump", kFileWrite);
 
@@ -5917,6 +5918,8 @@ void _LikelihoodFunction::_TerminateAndDump(const _String &error, bool) {
     delete out;
   }
 
+  if (do_not_exit)
+    return;
   HandleApplicationError(err & '\n' & error, true);
 }
 //_______________________________________________________________________________________

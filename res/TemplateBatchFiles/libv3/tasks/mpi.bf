@@ -312,15 +312,15 @@ namespace mpi {
 
         io.ReportProgressBar("", "Computing LF on a grid");
         for (i = 1; i < Abs (jobs); i += 1) {
-           //io.ReportProgressBar("", "Computing LF on a grid "  + i + "/" + Abs (jobs));
+           io.ReportProgressBar("", "Computing LF on a grid "  + i + "/" + Abs (jobs));
            mpi.QueueJob (queue, handler, {"0" : lf_id,
                                            "1" : jobs [i],
-                                           "2" : values,
-                                           "3" : &scores}, callback);
+                                           "3" : values,
+                                           "2" : &scores}, callback);
         }
         
 
-        Call (callback, -1, Call (handler, lf_id, jobs[0], values, &scores), {"0" : lf_id, "1" : jobs [0], "3" : values, "2" : &scores});
+        Call (callback, -1, Call (handler, lf_id, jobs[0], &scores, values), {"0" : lf_id, "1" : jobs [0], "3" : values, "2" : &scores});
         mpi.QueueComplete (queue);
 
         io.ClearProgressBar();
@@ -331,7 +331,7 @@ namespace mpi {
 
     //------------------------------------------------------------------------------
 
-    lfunction ComputeOnGrid.SimpleEvaluatorWithValues (lf_id, tasks, values, scores) {
+    lfunction ComputeOnGrid.SimpleEvaluatorWithValues (lf_id, tasks, scores, values) {
     
       
         //#profile START;
