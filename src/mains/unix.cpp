@@ -814,11 +814,19 @@ int main(int argc, char *argv[]) {
   printf ("%ld\n", sscanf (" 0.1e2 beavis", "%lf%n", &value, &read));
   */
 
-  char curWd[4096], dirSlash = get_platform_directory_char();
+  char *curWd = (char *)malloc(4096), dirSlash = get_platform_directory_char();
 
-  getcwd(curWd, 4096);
+  if (!curWd || !getcwd(curWd, 4096)) { // failed to get cwd
+    fprintf(stderr,
+            "Failed to get current working directory path; possibly because it "
+            "is longer than %d characters",
+            4096);
+    return 1;
+  }
 
   _String baseDir(curWd);
+
+  free(curWd);
 
   auto ensure_trailing_dirSlash = [&dirSlash](auto &str) {
     if (str.get_char(str.length() - 1) != dirSlash) {
