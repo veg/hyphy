@@ -254,10 +254,17 @@ _String getLibraryPath() {
   _String baseDir(buffer);
   baseDir.Trim(0, baseDir.FindBackwards(dirSlash, 0, -1) - 1L);
 #else
-  char curWd[_HYPHY_MAX_PATH_LENGTH];
-  getcwd(curWd, _HYPHY_MAX_PATH_LENGTH);
+  char *curWd = (char *)malloc(_HYPHY_MAX_PATH_LENGTH);
+  if (!curWd || !getcwd(curWd, _HYPHY_MAX_PATH_LENGTH)) {
+    fprintf(stderr,
+            "Failed to get current working directory path; possibly because it "
+            "is longer than %ld characters",
+            _HYPHY_MAX_PATH_LENGTH);
+    exit(1);
+  }
 
   _String baseDir(curWd);
+  free(curWd);
 #endif
 
   ensure_trailing_dirSlash(baseDir);
