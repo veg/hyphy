@@ -747,6 +747,16 @@ _List _TreeTopology::RemoveANode(HBLObjectRef nodeName) {
       } else {
         throw _String("Matrix-valued argument was expected to contain strings");
       }
+    } else if (nodeName->ObjectClass() == ASSOCIATIVE_LIST) {
+      _AssociativeList *names = (_AssociativeList *)nodeName;
+      for (AVLListXLIteratorKeyValue key_value : names->ListIterator()) {
+        HBLObjectRef var_value = (HBLObjectRef)key_value.get_object();
+        if (var_value->ObjectClass() == STRING) {
+          RemoveNodeByName((_FString *)var_value);
+        }
+      }
+      clean_indices.Sort();
+      _RemoveNodeList(clean_indices);
     } else {
       throw _String(
           "An invalid argument (not a string or a string matrix) supplied");
