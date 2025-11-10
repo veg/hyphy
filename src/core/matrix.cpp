@@ -4474,7 +4474,7 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
                 __m256d value_op = _mm256_set1_pd(value);
 
 #ifdef _SLKP_USE_FMA3_INTRINSICS
-#define CELL_OP(x)                                                             \
+#define CELL_OP_2(x)                                                           \
   _mm256_storeu_pd(res + x,                                                    \
                    _mm256_fmadd_pd(value_op, _mm256_loadu_pd(secArg + x),      \
                                    _mm256_loadu_pd(res + x)))

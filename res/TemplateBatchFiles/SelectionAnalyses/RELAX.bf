@@ -25,6 +25,8 @@ LoadFunctionLibrary("libv3/models/codon/BS_REL.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
 LoadFunctionLibrary("libv3/tasks/mpi.bf");
 LoadFunctionLibrary("libv3/models/rate_variation.bf");
+LoadFunctionLibrary("libv3/tasks/ancestral.bf");
+
 
 
 
@@ -179,7 +181,14 @@ namespace relax {
     LoadFunctionLibrary ("modules/grid_compute.ibf");
 }
 
-KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'RELAX.json')", relax.codon_data_info [terms.json.json]);
+
+relax.default_output = relax.codon_data_info [terms.json.json];
+
+if (relax.multiple_files) {
+    relax.default_output = (relax.codon_data_info [relax.file_list[0]])[terms.json.json];
+}
+
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'RELAX.json')", relax.default_output);
 
 relax.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
@@ -1180,6 +1189,7 @@ function relax.FitMainTestPair (prompt) {
                 relax.stashLF = estimators.TakeLFStateSnapshot (relax.alternative_model.fit[terms.likelihood_function]);
 
 			} else {
+			    io.ReportProgressMessageMD("RELAX", "alt-2", "> Restoring the original set of parameters (alternative optimization did not yield an improvement).");
 			    estimators.RestoreLFStateFromSnapshot(relax.alternative_model.fit[terms.likelihood_function], relax.take1_snapshot);
 			}
 
@@ -1218,6 +1228,16 @@ function relax.FitMainTestPair (prompt) {
 								relax.distribution_for_json,
 								relax.display_orders[relax.alternative_name]
 							);
+							
+    relax.json [^"terms.substitutions"] = {};
+    
+    for (_partition_, _selection_; in; relax.selected_branches) {
+        relax.ancestral_info = ancestral.build (relax.alternative_model.fit[terms.likelihood_function],0+_partition_,FALSE);
+        (relax.json [^"terms.substitutions"] )[_partition_] = ancestral.ComputeCompressedSubstitutions (relax.ancestral_info);
+        DeleteObject (relax.ancestral_info);
+    }
+
+
 
 	selection.io.json_store_branch_attribute(relax.json, relax.alternative_name, terms.branch_length, relax.display_orders[relax.alternative_name],
 												 0,
@@ -1231,9 +1251,15 @@ function relax.FitMainTestPair (prompt) {
     relax.tree_ids = estimators.LFObjectGetTrees (relax.alternative_model.fit[terms.likelihood_function]);
 	
     estimators.RestoreLFStateFromSnapshot (relax.alternative_model.fit[terms.likelihood_function],relax.stashLF);
+    
 	
     utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", TRUE);
         relax.er_report.tagged_sites    = {};
+        relax.json [terms.json.site_logl] = {};
+        relax.json [terms.json.evidence_ratios]  = {};
+        (relax.json [terms.json.site_logl])[terms.json.unconstrained] = selection.ComputeSiteLikelihoods (relax.alternative_model.fit[terms.likelihood_function]);
+
+
         for (_partition_, _selection_; in; relax.selected_branches) {
         
 
@@ -1254,10 +1280,8 @@ function relax.FitMainTestPair (prompt) {
             relax.ll_by_branch = {};
             relax.model_by_branch = {};
             
-            
+            (relax.json [terms.json.site_logl])[_partition_] = {};
             relax.altLL = relax.alternative_model.fit [terms.fit.log_likelihood];
-            relax.json [terms.json.site_logl] = {};
-            (relax.json [terms.json.site_logl])[terms.json.unconstrained] = selection.ComputeSiteLikelihoods (relax.alternative_model.fit[terms.likelihood_function]);
            
             for (_b_,_ignore_; in;  relax.tested_branches) {
                  GetString    (relax._current_model, ^_b_, -5);                 
@@ -1272,8 +1296,7 @@ function relax.FitMainTestPair (prompt) {
                  SetParameter ( ^_b_ , MODEL, ^relax._current_model);
             }
             
-
-            relax.json [terms.json.evidence_ratios] = {terms.json.by_branch : relax.ll_by_branch};
+            (relax.json [terms.json.evidence_ratios])[_partition_] = {terms.json.by_branch : relax.ll_by_branch};
          
             for (_b_,_ignore_; in;  relax.tested_branches) {
                  SetParameter ( ^_b_ , MODEL, ^relax.reference_model_namespace);
@@ -1281,13 +1304,13 @@ function relax.FitMainTestPair (prompt) {
             LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),LF_START_COMPUTE);
             LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),relax.ll);
             LFCompute (^(relax.alternative_model.fit[terms.likelihood_function]),LF_DONE_COMPUTE);
-            (relax.json [terms.json.site_logl])[terms.json.constrained] = selection.ComputeSiteLikelihoods (relax.alternative_model.fit[terms.likelihood_function]);
+            ((relax.json [terms.json.site_logl])[_partition_])[terms.json.constrained] = selection.ComputeSiteLikelihoods (relax.alternative_model.fit[terms.likelihood_function]);
 
             for (_b_,_ignore_; in;  relax.tested_branches) {
                  SetParameter ( ^_b_ , MODEL, ^(relax.model_by_branch[_b_]));
             }
 
-            (relax.json [terms.json.evidence_ratios])[terms.json.constrained] = selection.EvidenceRatios ( (relax.json [terms.json.site_logl])[terms.json.unconstrained],  (relax.json [terms.json.site_logl])[terms.json.constrained]);
+            ((relax.json [terms.json.site_logl])[_partition_])[terms.json.constrained] = selection.EvidenceRatios ((relax.json [terms.json.site_logl])[terms.json.unconstrained],  ((relax.json [terms.json.site_logl])[_partition_])[terms.json.constrained]);
 
 
            
