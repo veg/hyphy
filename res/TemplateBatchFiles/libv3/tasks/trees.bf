@@ -660,7 +660,11 @@ lfunction trees.ParentMap (topology_object) {
     for (i,k; in; parent_nodes) {
         if (node_names / i) {
             if (k >= 0) {
-                res[node_names[i]] =  node_names[k]; 
+                if (node_names / k) {
+                    res[node_names[i]] =  node_names[k]; 
+                } else {
+                    res[node_names[i]] =  "root";
+                }
             } else {
                 res[node_names[i]] = None;
             }

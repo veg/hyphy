@@ -91,6 +91,21 @@ lfunction genetic_code.ComputeCodonCodeToStringMap(genCode) {
 
 /*----------------------------------------------------------------------------------------------------------*/
 
+lfunction genetic_code.ComputeStringToInteger (genCode) {
+    _codonMap = {};
+    _nucLetters = ^"genetic_code.nucleotides";
+    _cidx = 0;
+    for (_idx = 0; _idx < Columns(genCode); _idx += 1) {
+        if (genCode[_idx] != ^ "genetic_code.stop_code") {
+            _codonMap[(_nucLetters[_idx$16] + _nucLetters[(_idx % 16) $4] + _nucLetters[_idx % 4])] = _cidx;
+            _cidx += 1;
+        }
+    }
+    return _codonMap;
+}
+
+/*----------------------------------------------------------------------------------------------------------*/
+
 lfunction genetic_code.ComputeCodonCodeToStringMapStop (genCode) {
 	_codonMap = {};
 	_nucLetters =  ^"genetic_code.nucleotides";
