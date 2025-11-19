@@ -3575,7 +3575,7 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
   parallelOptimizerTasks.Clear();
   transferrableVars = 0;
 
-  int totalNodeCount = RetrieveMPICount(0);
+  long totalNodeCount = RetrieveMPICount(0);
   hyFloat aplf = 0.0;
   checkParameter(autoParalellizeLF, aplf, 0.0);
   hyphyMPIOptimizerMode = round(aplf);

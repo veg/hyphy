@@ -55,6 +55,8 @@
 #include "mersenne_twister.h"
 #include "string_file_wrapper.h"
 
+#include "matrix_kernels.h"
+
 // #include "profiler.h"
 
 using namespace hy_global;
@@ -4241,223 +4243,39 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
 
         */
 
+        if (compressedIndex) {
+          hyFloat *__restrict__ res = storage.theData;
+          const long *__restrict__ compIdx = compressedIndex;
+          const hyFloat *__restrict__ secondArgBase = secondArg.theData;
+          const hyFloat *__restrict__ theDataPtr = theData;
+
+          switch (vDim) {
+          case 60:
+            _matrix_kernel_multiply_by_compressed_sparse_T<60>(
+                res, compIdx, secondArgBase, theDataPtr);
+            break;
+          case 61:
+            _matrix_kernel_multiply_by_compressed_sparse_T<61>(
+                res, compIdx, secondArgBase, theDataPtr);
+            break;
+          case 62:
+            _matrix_kernel_multiply_by_compressed_sparse_T<62>(
+                res, compIdx, secondArgBase, theDataPtr);
+            break;
+          case 63:
+            _matrix_kernel_multiply_by_compressed_sparse_T<63>(
+                res, compIdx, secondArgBase, theDataPtr);
+            break;
+          default:
+            _matrix_kernel_multiply_by_compressed_sparse(
+                res, compIdx, secondArgBase, theDataPtr, vDim);
+          }
+
+          return;
+        }
+
         if (vDim == 61L) {
           if (compressedIndex) {
-
-#ifdef _SLKP_USE_APPLE_BLAS_2_NOT_USED
-            hyFloat *_hprestrict_ res = storage.theData;
-            long currentXIndex = 0L;
-            for (long i = 0; i < 61; i++) {
-              long up = compressedIndex[i];
-
-              if (currentXIndex < up) {
-
-                for (long cxi = currentXIndex; cxi < up; cxi++) {
-                  long currentXColumn = compressedIndex[cxi + 61];
-                  hyFloat *secArg = secondArg.theData + currentXColumn * 61;
-                  hyFloat value = theData[cxi];
-                  cblas_daxpy(61, value, secArg, 1, res, 1);
-                }
-              }
-              res += 61;
-              currentXIndex = up;
-            }
-#else
-#ifdef _SLKP_USE_ARM_NEON
-
-            hyFloat *_hprestrict_ res = storage.theData;
-            long currentXIndex = 0L;
-            for (long i = 0; i < 61; i++) {
-              long up = compressedIndex[i];
-
-              if (currentXIndex < up) {
-                float64x2x2_t R[15]; // store  60 elements of this row
-
-#pragma unroll 3
-                for (int k = 0; k < 15; k++) {
-                  R[k] = vld1q_f64_x2(res + (k << 2));
-                }
-
-                hyFloat r60 = res[60]; // and the 61st element
-
-                for (long cxi = currentXIndex; cxi < up; cxi++) {
-                  long currentXColumn = compressedIndex[cxi + 61];
-                  hyFloat *secArg = secondArg.theData + currentXColumn * 61;
-
-                  if (cxi + 1 < up) {
-                    long nextXColumn = compressedIndex[cxi + 1 + 61];
-                    __builtin_prefetch(secondArg.theData + nextXColumn * 61, 0,
-                                       0);
-                  }
-
-                  hyFloat value = theData[cxi];
-                  float64x2_t value_op = vdupq_n_f64(value);
-
-                  for (int k = 0; k < 3; k++) {
-                    int k12 = k * 20, k3 = k * 5;
-
-                    float64x2x4_t C1 = vld1q_f64_x4(secArg + k12),
-                                  C2 = vld1q_f64_x4(secArg + k12 + 8);
-                    float64x2x2_t C5 = vld1q_f64_x2(secArg + k12 + 16);
-
-                    R[k3].val[0] = vfmaq_f64(R[k3].val[0], value_op, C1.val[0]);
-                    R[k3].val[1] = vfmaq_f64(R[k3].val[1], value_op, C1.val[1]);
-
-                    R[k3 + 1].val[0] =
-                        vfmaq_f64(R[k3 + 1].val[0], value_op, C1.val[2]);
-                    R[k3 + 1].val[1] =
-                        vfmaq_f64(R[k3 + 1].val[1], value_op, C1.val[3]);
-
-                    R[k3 + 2].val[0] =
-                        vfmaq_f64(R[k3 + 2].val[0], value_op, C2.val[0]);
-                    R[k3 + 2].val[1] =
-                        vfmaq_f64(R[k3 + 2].val[1], value_op, C2.val[1]);
-
-                    R[k3 + 3].val[0] =
-                        vfmaq_f64(R[k3 + 3].val[0], value_op, C2.val[2]);
-                    R[k3 + 3].val[1] =
-                        vfmaq_f64(R[k3 + 3].val[1], value_op, C2.val[3]);
-
-                    R[k3 + 4].val[0] =
-                        vfmaq_f64(R[k3 + 4].val[0], value_op, C5.val[0]);
-                    R[k3 + 4].val[1] =
-                        vfmaq_f64(R[k3 + 4].val[1], value_op, C5.val[1]);
-                  }
-                  r60 += value * secArg[60];
-                }
-
-#pragma unroll 3
-                for (int k = 0; k < 15; k++) {
-                  vst1q_f64_x2(res + (k << 2), R[k]);
-                }
-
-                res[60] = r60;
-              }
-              res += 61;
-              currentXIndex = up;
-            }
-
-#elif defined _SLKP_USE_AVX_INTRINSICS
-            hyFloat *_hprestrict_ res = storage.theData;
-            long currentXIndex = 0L;
-            for (long i = 0; i < 61; i++) {
-              long up = compressedIndex[i];
-
-              if (currentXIndex < up) {
-                __m256d R[15]; // store  60 elements of this row
-
-#pragma unroll 3
-                for (int k = 0; k < 15; k++) {
-                  R[k] = _mm256_loadu_pd(res + (k << 2));
-                }
-
-                hyFloat r60 = res[60]; // and the 61st element
-
-                for (long cxi = currentXIndex; cxi < up; cxi++) {
-                  long currentXColumn = compressedIndex[cxi + 61];
-                  hyFloat *secArg = secondArg.theData + currentXColumn * 61;
-
-                  if (cxi + 1 < up) {
-                    long nextXColumn = compressedIndex[cxi + 1 + 61];
-                    __builtin_prefetch(secondArg.theData + nextXColumn * 61, 0,
-                                       0);
-                  }
-
-                  hyFloat value = theData[cxi];
-                  __m256d value_op = _mm256_set1_pd(value);
-
-                  for (int k = 0; k < 3; k++) {
-                    int k12 = k * 20, k3 = k * 5;
-
-                    R[k3] = _hy_matrix_handle_axv_mfma(
-                        R[k3], value_op, _mm256_loadu_pd(secArg + k12));
-                    R[k3 + 1] = _hy_matrix_handle_axv_mfma(
-                        R[k3 + 1], value_op, _mm256_loadu_pd(secArg + k12 + 4));
-                    R[k3 + 2] = _hy_matrix_handle_axv_mfma(
-                        R[k3 + 2], value_op, _mm256_loadu_pd(secArg + k12 + 8));
-                    R[k3 + 3] = _hy_matrix_handle_axv_mfma(
-                        R[k3 + 3], value_op,
-                        _mm256_loadu_pd(secArg + k12 + 12));
-                    R[k3 + 4] = _hy_matrix_handle_axv_mfma(
-                        R[k3 + 4], value_op,
-                        _mm256_loadu_pd(secArg + k12 + 16));
-                  }
-                  r60 += value * secArg[60];
-                }
-
-#pragma unroll 3
-                for (int k = 0; k < 15; k++) {
-                  _mm256_storeu_pd(res + (k << 2), R[k]);
-                }
-
-                res[60] = r60;
-              }
-              res += 61;
-              currentXIndex = up;
-            }
-#else
-            long currentXIndex = 0L;
-            hyFloat *_hprestrict_ res = storage.theData;
-
-            for (long i = 0; i < hDim; i++) { // row in source
-
-              double r60 = res[60];
-              while (currentXIndex < compressedIndex[i]) {
-                long currentXColumn = compressedIndex[currentXIndex + hDim];
-                // go into the second matrix and look up all the non-zero
-                // entries in the currentXColumn row
-
-                hyFloat value = theData[currentXIndex];
-                hyFloat *_hprestrict_ secArg =
-                    secondArg.theData + currentXColumn * 61;
-#ifdef _SLKP_USE_AVX_INTRINSICS
-                __m256d value_op = _mm256_set1_pd(value);
-#ifdef _SLKP_USE_FMA3_INTRINSICS
-#define CELL_OP(x)                                                             \
-  _mm256_storeu_pd(res + x,                                                    \
-                   _mm256_fmadd_pd(value_op, _mm256_loadu_pd(secArg + x),      \
-                                   _mm256_loadu_pd(res + x)))
-#else
-#define CELL_OP(x)                                                             \
-  _mm256_storeu_pd(                                                            \
-      res + x,                                                                 \
-      _mm256_add_pd(_mm256_loadu_pd(res + x),                                  \
-                    _mm256_mul_pd(value_op, _mm256_loadu_pd(secArg + x))))
-#endif
-
-                CELL_OP(0);
-                CELL_OP(4);
-                CELL_OP(8);
-                CELL_OP(12);
-                CELL_OP(16);
-                CELL_OP(20);
-                CELL_OP(24);
-                CELL_OP(28);
-                CELL_OP(32);
-                CELL_OP(36);
-                CELL_OP(40);
-                CELL_OP(44);
-                CELL_OP(48);
-                CELL_OP(52);
-                CELL_OP(56);
-
-#else
-                for (unsigned long i = 0UL; i < 60UL; i += 4UL) {
-                  res[i] += value * secArg[i];
-                  res[i + 1] += value * secArg[i + 1];
-                  res[i + 2] += value * secArg[i + 2];
-                  res[i + 3] += value * secArg[i + 3];
-                }
-#endif
-                r60 += value * secArg[60];
-                currentXIndex++;
-              }
-              res[60] = r60;
-              res += 61;
-            }
-#endif
-#endif
-
           } else {
 
             for (long k = 0UL; k < lDim;

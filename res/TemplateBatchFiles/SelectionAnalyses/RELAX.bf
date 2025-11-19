@@ -1368,9 +1368,11 @@ function relax.FitMainTestPair (prompt) {
 								relax.display_orders[relax.null_name]
 							);
 
-	selection.io.json_store_branch_attribute(relax.json, relax.null_name, terms.branch_length, relax.display_orders[relax.null_name],
-												 0,
-												 selection.io.extract_branch_info((relax.null_model.fit[terms.branch_length])[0], "selection.io.branch.length"));
+    for (partition, branches; in; relax.selected_branches) {
+	    selection.io.json_store_branch_attribute(relax.json, relax.null_name, terms.branch_length, relax.display_orders[relax.null_name],
+												 partition,
+												 selection.io.extract_branch_info((relax.null_model.fit[terms.branch_length])[partition], "selection.io.branch.length"));
+	}
 
 
 	console.log ("----\n## Test for relaxation (or intensification) of selection [RELAX]");
@@ -1480,10 +1482,13 @@ if (relax.model_set == "All") {
                                 relax.distribution_for_json,
                                 relax.display_orders[relax.partitioned_descriptive_name]
                             );
+    for (partition, branches; in; relax.selected_branches) {
+	    selection.io.json_store_branch_attribute(relax.json, relax.partitioned_descriptive_name, terms.branch_length, relax.display_orders[relax.partitioned_descriptive_name],
+                                                 partition,
+                                                 selection.io.extract_branch_info((relax.pe.fit[terms.branch_length])[partition], "selection.io.branch.length"));
+	}
 
-    selection.io.json_store_branch_attribute(relax.json, relax.partitioned_descriptive_name, terms.branch_length, relax.display_orders[relax.partitioned_descriptive_name],
-                                                 0,
-                                                 selection.io.extract_branch_info((relax.pe.fit[terms.branch_length])[0], "selection.io.branch.length"));
+    
 
 
     selection.io.stopTimer (relax.json [terms.json.timers], "RELAX partitioned descriptive");

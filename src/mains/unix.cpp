@@ -1019,7 +1019,7 @@ int main(int argc, char *argv[]) {
   }
 
   // try to read the preferences
-  _String prefFile(curWd);
+  _String prefFile(baseDir);
   prefFile = prefFile & '/' & prefFileName;
   FILE *testPrefFile = fopen(prefFile.get_str(), "r");
   if (!testPrefFile) {
