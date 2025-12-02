@@ -257,19 +257,19 @@ void mpiNormalLoop(int rank, int size, _String &baseDir) {
           theMessage->Cut(mpiLoopSwitchToOptimize.length(), kStringEnd)
               .to_long();
 
-      // printf("[MPI %d] Switched to mpiOptimizer loop with mode %d\n",
-             hy_mpi_node_rank, hyphyMPIOptimizerMode);
-             // ReportWarning(_String("[MPI] Switched to mpiOptimizer loop with
-             // mode ")
-             // &
-             //               hyphyMPIOptimizerMode);
-             MPISendString(mpiLoopSwitchToOptimize, senderID);
-             mpiOptimizerLoop(rank, size);
-             // ReportWarning("[MPI] Returned from mpiOptimizer loop");
-             // printf("[MPI %d] Returned from mpiOptimizer loop\n",
-             // hy_mpi_node_rank);
-             hyphyMPIOptimizerMode = _hyphyLFMPIModeNone;
-             PushFilePath(baseDir, false, false);
+      // printf("[MPI %d] Switched to mpiOptimizer loop with mode
+      // %d\n",hy_mpi_node_rank, hyphyMPIOptimizerMode);
+      // ReportWarning(_String("[MPI] Switched to mpiOptimizer loop with
+      // mode ")
+      // &
+      //               hyphyMPIOptimizerMode);
+      MPISendString(mpiLoopSwitchToOptimize, senderID);
+      mpiOptimizerLoop(rank, size);
+      // ReportWarning("[MPI] Returned from mpiOptimizer loop");
+      // printf("[MPI %d] Returned from mpiOptimizer loop\n",
+      // hy_mpi_node_rank);
+      hyphyMPIOptimizerMode = _hyphyLFMPIModeNone;
+      PushFilePath(baseDir, false, false);
     } else if (*theMessage == mpiLoopSwitchToBGM) {
       ReportWarning("[MPI] Received signal to switch to mpiBgmLoop");
       MPISendString(
@@ -394,52 +394,49 @@ void mpiOptimizerLoop(int rank, int) {
       // printf("[MPI %d] MPI read command file\n", rank);
       ReadDataSetFile(nil, true, theMessage);
       // printf("[MPI %d] MPI finished command file %g\n", rank,
-             timer.TimeSinceStart());
-             if (likeFuncNamesList.lLength != 1) {
-               HandleApplicationError(
-                   "[MPI] Malformed MPI likelihood function paraller optimizer "
-                   "startup command. Exactly ONE valid LF must be "
-                   "defined.n\n\n");
-               break;
-             }
+      // timer.TimeSinceStart());
+      if (likeFuncNamesList.lLength != 1) {
+        HandleApplicationError(
+            "[MPI] Malformed MPI likelihood function paraller optimizer "
+            "startup command. Exactly ONE valid LF must be "
+            "defined.n\n\n");
+        break;
+      }
 
-             // send back the list of independent variables
+      // send back the list of independent variables
 
-             _LikelihoodFunction *theLF =
-                 (_LikelihoodFunction *)likeFuncList(0);
-             if (hyphyMPIOptimizerMode == _hyphyLFMPIModeREL &&
-                 theLF->CountObjects(kLFCountCategoryVariables)) {
-               HandleApplicationError(_String(
-                   "[MPI] Likelihood functions spawned off to slave MPI nodes "
-                   "can't have category variables.n\n\n"));
-               break;
-             }
+      _LikelihoodFunction *theLF = (_LikelihoodFunction *)likeFuncList(0);
+      if (hyphyMPIOptimizerMode == _hyphyLFMPIModeREL &&
+          theLF->CountObjects(kLFCountCategoryVariables)) {
+        HandleApplicationError(
+            _String("[MPI] Likelihood functions spawned off to slave MPI nodes "
+                    "can't have category variables.n\n\n"));
+        break;
+      }
 
-             _SimpleList const *ivl = &theLF->GetIndependentVars();
+      _SimpleList const *ivl = &theLF->GetIndependentVars();
 
-             _StringBuffer variableSpec(128UL);
+      _StringBuffer variableSpec(128UL);
 
-             (variableSpec) << LocateVar(ivl->list_data[0])->GetName();
+      (variableSpec) << LocateVar(ivl->list_data[0])->GetName();
 
-             for (unsigned long kk = 1; kk < ivl->lLength; kk++) {
-               (variableSpec) << ';';
-               (variableSpec) << LocateVar(ivl->list_data[kk])->GetName();
-             }
+      for (unsigned long kk = 1; kk < ivl->lLength; kk++) {
+        (variableSpec) << ';';
+        (variableSpec) << LocateVar(ivl->list_data[kk])->GetName();
+      }
 
-             ReportWarning(
-                 _String("[MPI] Sending back the following variable list\n") &
-                 variableSpec);
-             MPISendString(variableSpec, senderID);
-             theLF->PrepareToCompute();
-             theLF->MPI_LF_Compute(
-                 senderID,
-                 !(hyphyMPIOptimizerMode == _hyphyLFMPIModeREL ||
-                   hyphyMPIOptimizerMode == _hyphyLFMPIModeSiteTemplate));
-             theLF->DoneComputing();
-             PurgeAll(true);
-             InitializeGlobals();
-             ReportWarning(
-                 "Reset node state at the end of MPI optimizaer loop");
+      ReportWarning(
+          _String("[MPI] Sending back the following variable list\n") &
+          variableSpec);
+      MPISendString(variableSpec, senderID);
+      theLF->PrepareToCompute();
+      theLF->MPI_LF_Compute(
+          senderID, !(hyphyMPIOptimizerMode == _hyphyLFMPIModeREL ||
+                      hyphyMPIOptimizerMode == _hyphyLFMPIModeSiteTemplate));
+      theLF->DoneComputing();
+      PurgeAll(true);
+      InitializeGlobals();
+      ReportWarning("Reset node state at the end of MPI optimizaer loop");
     }
     DeleteObject(theMessage);
     theMessage = MPIRecvString(-1, senderID);
