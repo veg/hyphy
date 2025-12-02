@@ -537,3 +537,39 @@ void _matrix_kernel_multiply_by_compressed_sparse(hyFloat *resBase,
 #endif
 
 /**** END: AVX CODE *****/
+
+/**** START: GENERIC CODE *****/
+
+#if !defined(_SLKP_USE_ARM_SVE) && !defined(_SLKP_USE_ARM_NEON) &&             \
+    !defined(_SLKP_USE_SSE_INTRINSICS) && !defined(_SLKP_USE_AVX_INTRINSICS)
+
+void _matrix_kernel_multiply_by_compressed_sparse(hyFloat *resBase,
+                                                  const long *compIdx,
+                                                  const hyFloat *secondArgBase,
+                                                  const hyFloat *theDataPtr,
+                                                  long N) {
+  long currentXIndex = 0L;
+  hyFloat *res = resBase;
+
+  for (long i = 0; i < N; i++) {
+    long up = compIdx[i];
+
+    if (currentXIndex < up) {
+      for (long j = 0; j < N; j++) {
+        hyFloat acc = res[j];
+        for (long cxi = currentXIndex; cxi < up; cxi++) {
+          long currentXColumn = compIdx[cxi + N];
+          acc += theDataPtr[cxi] * secondArgBase[currentXColumn * N + j];
+        }
+        res[j] = acc;
+      }
+    }
+
+    res += N;
+    currentXIndex = up;
+  }
+}
+
+#endif
+
+/**** END: GENERIC CODE *****/

@@ -50,6 +50,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
    set(NOZLIB ON)
    set(LIBRARY_PATH "/hyphy")
    add_definitions (-D_USE_EMSCRIPTEN_)
+   set(TARGET_NATIVE OFF)
  endif()
 
 #------------------------------------------------------------------------------
