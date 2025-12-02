@@ -53,6 +53,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define HY_BL_ERROR_HANDLING_DEFAULT 0
 #define HY_BL_ERROR_HANDLING_SOFT 1
 
+#define kHBLProfileOff 0
+#define kHBLProfileOn 1
+#define kHBLProfilePaused 2
+
 //____________________________________________________________________________________
 /**
  * @brief Internals for a compiled execution list
@@ -568,7 +572,7 @@ public:
    *
    * @param el
    */
-  void ExecuteCase58(_ExecutionList &); // Profile Code
+  void ExecuteProfileCommand(_ExecutionList &); // Profile Code
   /**
    * @brief @sergeilkp
    *
@@ -1314,6 +1318,7 @@ _ElementaryCommand *makeNewCommand(long);
 void ReportMPIError(int, bool);
 void MPISendString(_String const &, long, bool = false);
 _String *MPIRecvString(long, long &);
+void IProbeForMessage(int source, int tag, int max = 256);
 
 #endif
 //____________________________________________________________________________________

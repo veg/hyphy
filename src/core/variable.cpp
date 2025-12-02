@@ -531,6 +531,12 @@ void _Variable::SetNumericValue(
       theValue = upperBound;
     }
   }
+
+  if (varValue) {
+    if (varValue->ObjectClass() == NUMBER) {
+      ((_Constant *)varValue)->theValue = theValue;
+    }
+  }
 }
 
 //__________________________________________________________________________________

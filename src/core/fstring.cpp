@@ -354,7 +354,14 @@ hyComparisonType _FString::Compare(HBLObjectRef p, bool convert_non_strings) {
     result = the_string->Compare(((_FString *)p)->get_str());
   } else {
     if (convert_non_strings) {
+
       _String convStr((_String *)p->toStr());
+      if (p->ObjectClass() == ASSOCIATIVE_LIST) {
+        if (convStr.length() > 10000) {
+          HandleApplicationError("Check me");
+        }
+        printf("Converting ASSOCIATIVE_LIST\n%s\n", convStr.get_str());
+      }
       result = the_string->Compare(convStr);
     }
   }

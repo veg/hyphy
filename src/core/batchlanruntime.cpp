@@ -420,7 +420,7 @@ bool _ElementaryCommand::HandleConvertBranchLength(
   _Variable *receptacle = nil;
   current_program.advance();
 
-  auto cleanup_cache = [this](long start_at) -> void {
+  /*auto cleanup_cache = [this](long start_at) -> void {
     for (long k = simpleParameters.countitems() - 1; k >= start_at; k--) {
       _Formula *f = (_Formula *)simpleParameters.get(k);
       if (f) {
@@ -428,7 +428,7 @@ bool _ElementaryCommand::HandleConvertBranchLength(
       }
       simpleParameters.Delete(k);
     }
-  };
+  };*/
 
   try {
     receptacle = _ValidateStorageVariable(current_program);
@@ -437,25 +437,31 @@ bool _ElementaryCommand::HandleConvertBranchLength(
         *GetIthParameter(1), STRING, current_program, &dynamic_manager);
     _Formula *lhs_expression = nil, *lhs_derivative = nil;
 
-    if (parameters.countitems() > 4) {
-      _String *cached_fla = GetIthParameter(4);
-      if (!cached_fla->Equal(expression->get_str()) ||
-          simpleParameters.empty()) {
-        cleanup_cache(0);
-        parameters.Delete(4);
-      } else {
-        lhs_expression = (_Formula *)simpleParameters.get(0);
-        if (simpleParameters.countitems() > 1) {
-          lhs_derivative = (_Formula *)simpleParameters.get(1);
-        }
-      }
+    /**
+        20251201: reparsing formulas and obtaining derivatives is expensive,
+       especially for larger expresssions. this is especially noticable for
+       BS-REL models with multiple partitions In light of this, we are simply
+       going to cache everything that this command has "seen" For each new
+       expression, the string gets pushed to parameters, and two formulas get
+       pushed to simple parameters; parsed expression and its derivative (which
+       could be null)
+     */
+
+    long cached_expression_id =
+        parameters.FindObject((BaseRef const)&expression->get_str(), 4);
+    bool need_to_compute = false;
+
+    if (cached_expression_id == kNotFound) {
+      need_to_compute = true;
+    } else {
+      lhs_expression =
+          (_Formula *)simpleParameters.get((cached_expression_id - 4) * 2);
+      lhs_derivative =
+          (_Formula *)simpleParameters.get((cached_expression_id - 4) * 2 + 1);
     }
 
-    if (parameters.countitems() <= 4) {
+    if (need_to_compute) {
       parameters < expression->get_str_ref();
-    }
-
-    if (!lhs_expression) {
       lhs_expression = new _Formula;
       _CheckExpressionForCorrectness(*lhs_expression, expression->get_str(),
                                      current_program);
@@ -471,14 +477,14 @@ bool _ElementaryCommand::HandleConvertBranchLength(
             target_variable->GetName()->Enquote());
     }
 
-    hyFloat target_value = _ProcessNumericArgumentWithExceptions(
-        *GetIthParameter(3), current_program.nameSpacePrefix);
-
-    if (!lhs_derivative && simpleParameters.countitems() < 2) {
+    if (need_to_compute) {
       lhs_derivative =
           lhs_expression->Differentiate(*target_variable->GetName(), false);
       simpleParameters << (long)lhs_derivative;
     }
+
+    hyFloat target_value = _ProcessNumericArgumentWithExceptions(
+        *GetIthParameter(3), current_program.nameSpacePrefix);
 
     if (lhs_derivative) {
       receptacle->SetValue(

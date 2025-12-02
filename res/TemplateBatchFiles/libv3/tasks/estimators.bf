@@ -497,13 +497,16 @@ lfunction estimators.TraverseLocalParameters (likelihood_function_id, model_desc
  */
 function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions, initial_values, _application_type, keep_track_of_proportional_scalers) {
 
+    //#profile START;
+
     SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
 
     estimators.ApplyExistingEstimatesToTree.constraint_count = 0;
 
     ExecuteCommands("GetInformation (estimators.ApplyExistingEstimatesToTree.map, `_tree_name`);");
     estimators.ApplyExistingEstimatesToTree.branch_names = Rows(estimators.ApplyExistingEstimatesToTree.map);
-    
+        
+                
     for (i,v; in; model_descriptions) {
         parameters.SetCategoryVariables   (v);
     }
@@ -548,6 +551,10 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
 
 
     //fprintf (stdout, Format (^_tree_name, 1,1), "\n");
+    
+    //#profile _hyphy_profile_dump;
+    //utility.FinishAndPrintProfile (_hyphy_profile_dump);
+
 
     return estimators.ApplyExistingEstimatesToTree.constraint_count;
 }
@@ -586,6 +593,7 @@ function estimators.ApplyExistingEstimatesOverride(likelihood_function_id, model
  */
 function estimators.ApplyExistingEstimates(likelihood_function_id, model_descriptions, initial_values, branch_length_conditions) {
     //fprintf (stdout, model_descriptions, "\n", initial_values, "\n");
+    
 
 	/* set all category variable values to one */
 

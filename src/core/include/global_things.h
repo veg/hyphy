@@ -320,6 +320,8 @@ extern long system_CPU_count, print_digit_specification, verbosity_level;
 
 extern unsigned long matrix_exp_count, taylor_terms_count, squarings_count;
 
+void print_status_line(const char *);
+
 extern hyTreeDefinitionPhase isDefiningATree;
 
 extern _String const kHyPhyVersion, kEmptyString, kPromptForFilePlaceholder,

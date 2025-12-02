@@ -226,6 +226,44 @@ void MPISendString(_String const &theMessage, long destID, bool isError) {
   // setParameter (mpiLastSentMsg, &sentVal);
 }
 
+void IProbeForMessage(int sender, int tag, int MAX_DELAY_US) {
+  const int MIN_DELAY_US = 1; // Start with a 1 microsecond sleep.
+
+  // This should be managed in a scope that persists between calls to this wait
+  // loop. A static variable is a simple way to achieve this for demonstration.
+  static int s_current_delay_us = MIN_DELAY_US;
+
+  // --- Your Improved Loop ---
+
+  // printf ("%d entering IProbeForMessage delay  %d\n", hy_mpi_node_rank,
+  // s_current_delay_us);
+
+  int message_received = 0;
+  while (!message_received) {
+    // Probe for the message without blocking.
+    MPI_Iprobe(sender, tag, MPI_COMM_WORLD, &message_received,
+               MPI_STATUS_IGNORE);
+
+    // If no message, sleep and increase the delay for the next iteration.
+    if (!message_received) {
+      usleep(s_current_delay_us);
+
+      // Double the delay for the next wait.
+      s_current_delay_us *= 2;
+      if (s_current_delay_us > MAX_DELAY_US) {
+        s_current_delay_us = MAX_DELAY_US;
+      }
+    }
+  }
+
+  // printf ("%d exiting IProbeForMessage delay  %d\n", hy_mpi_node_rank,
+  // s_current_delay_us);
+  //  --- Message has been detected ---
+
+  // CRITICAL: Reset the delay so the *next* wait will be fast again.
+  s_current_delay_us = MIN_DELAY_US;
+}
+
 //____________________________________________________________________________________
 _String *MPIRecvString(long senderT, long &senderID) {
   _String *theMessage = nil;
@@ -239,42 +277,7 @@ _String *MPIRecvString(long senderT, long &senderID) {
   }
 
   MPI_Status status;
-
-  // --- Configuration for the adaptive sleep ---
-  // You can tune these values based on your expected message frequency.
-  const int MIN_DELAY_US = 1; // Start with a 1 microsecond sleep.
-  const int MAX_DELAY_US =
-      131072; // Cap the sleep at 10 milliseconds to stay responsive.
-
-  // This should be managed in a scope that persists between calls to this wait
-  // loop. A static variable is a simple way to achieve this for demonstration.
-  static int s_current_delay_us = MIN_DELAY_US;
-
-  // --- Your Improved Loop ---
-  int message_received = 0;
-  while (!message_received) {
-    // Probe for the message without blocking.
-    MPI_Iprobe(senderT, HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD, &message_received,
-               MPI_STATUS_IGNORE);
-
-    // If no message, sleep and increase the delay for the next iteration.
-    if (!message_received) {
-      usleep(s_current_delay_us);
-
-      // Double the delay for the next wait.
-      s_current_delay_us *= 2;
-
-      // Cap the delay at the maximum value.
-      if (s_current_delay_us > MAX_DELAY_US) {
-        s_current_delay_us = MAX_DELAY_US;
-      }
-    }
-  }
-
-  // --- Message has been detected ---
-
-  // CRITICAL: Reset the delay so the *next* wait will be fast again.
-  s_current_delay_us = MIN_DELAY_US;
+  IProbeForMessage(senderT, HYPHY_MPI_SIZE_TAG);
 
   ReportMPIError(MPI_Recv(&messageLength, 1, MPI_LONG, senderT,
                           HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD, &status),
@@ -1060,7 +1063,7 @@ void _ExecutionList::ReportAnExecutionError(_String errMsg,
 void _ExecutionList::StartProfile(void) {
   DeleteObject(profileCounter);
   profileCounter = new _Matrix(lLength, 2, false, true);
-  doProfile = 1;
+  doProfile = kHBLProfileOn;
 }
 
 //____________________________________________________________________________________
@@ -1094,7 +1097,7 @@ _AssociativeList *_ExecutionList::CollectProfile(void) {
     profileDump->MStore("INSTRUCTION INDEX", instCounter, false);
     profileDump->MStore("INSTRUCTION", descList, false);
     profileDump->MStore("STATS", execProfile, false);
-    doProfile = 0;
+    doProfile = kHBLProfileOff;
     DeleteAndZeroObject(profileCounter);
   }
 
@@ -1510,6 +1513,10 @@ HBLObjectRef _ExecutionList::Execute(_ExecutionList *parent,
 
     terminate_execution = false;
 
+    if (parent && parent->doProfile == kHBLProfileOn) {
+      StartProfile();
+    }
+
     bool is_c = is_compiled();
     if (is_c) {
       // PopulateArraysForASimpleFormula (cli->varList, cli->values);
@@ -1533,12 +1540,12 @@ HBLObjectRef _ExecutionList::Execute(_ExecutionList *parent,
         }
       }
 
-      if (doProfile == 1 && profileCounter) {
+      if (doProfile == kHBLProfileOn && profileCounter) {
         long instCounter = currentCommand;
         hyFloat timeDiff = 0.0;
 
         TimeDifference timer;
-        (((_ElementaryCommand **)list_data)[currentCommand])->Execute(*this);
+        GetIthCommand(currentCommand)->Execute(*this);
         timeDiff = timer.TimeSinceStart();
 
         if (profileCounter) {
@@ -2619,7 +2626,7 @@ BaseRef _ElementaryCommand::toStr(unsigned long) {
     (*string_form) << assignment(HY_HBL_COMMAND_DATA_SET, "Simulate");
   } break;
 
-  case 58: {
+  case HY_HBL_COMMAND_PROFILE: {
     (*string_form) << hash_pragma(HY_HBL_COMMAND_PROFILE);
   } break;
 
@@ -3844,8 +3851,8 @@ bool _ElementaryCommand::Execute(_ExecutionList &chain) {
     return HandleAlignSequences(chain);
     break;
 
-  case 58: // #profile
-    ExecuteCase58(chain);
+  case HY_HBL_COMMAND_PROFILE: // #profile
+    ExecuteProfileCommand(chain);
     break;
 
   case HY_HBL_COMMAND_DELETE_OBJECT:
@@ -3876,13 +3883,15 @@ bool _ElementaryCommand::Execute(_ExecutionList &chain) {
     HandleGetDataInfo(chain);
     break;
 
-  case HY_HBL_COMMAND_INIT_ITERATOR:
+  case HY_HBL_COMMAND_INIT_ITERATOR: {
     HandleInitializeIterator(chain);
     break;
+  }
 
-  case HY_HBL_COMMAND_ADVANCE_ITERATOR:
+  case HY_HBL_COMMAND_ADVANCE_ITERATOR: {
     HandleAdvanceIterator(chain);
     break;
+  }
 
   case HY_HBL_COMMAND_NESTED_LIST:
     chain.currentCommand++;
@@ -4405,9 +4414,9 @@ bool _ElementaryCommand::MakeGeneralizedLoop(_String *p1, _String *p2,
       // None != iterator_value, but we don't know
 
       _StringBuffer iterator_condition;
-      iterator_condition << kEndIteration.Enquote() << "!="
-                         << (_String *)advance->parameters.GetItem(
-                                advance->parameters.countitems() - 1);
+      iterator_condition << (_String *)advance->parameters.GetItem(
+                                advance->parameters.countitems() - 1)
+                         << "!=" << kEndIteration.Enquote();
       // StringToConsole(iterator_condition);NLToConsole();
       target.GetIthCommand(for_return)
           ->MakeJumpCommand(&iterator_condition, for_return + 1, target.lLength,

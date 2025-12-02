@@ -476,7 +476,7 @@ void UpdateOptimizationStatus(hyFloat max, hyFloat pdone, char init,
       if (outFile) {
         outFile->puts(reportString.get_str());
       } else
-        printf("\015%s", reportString.get_str());
+        print_status_line(reportString.get_str());
     } else {
       char buffer[1024];
       if (optimization) {
@@ -500,7 +500,7 @@ void UpdateOptimizationStatus(hyFloat max, hyFloat pdone, char init,
       if (outFile) {
         outFile->puts(buffer);
       } else {
-        printf("\015%s", buffer);
+        print_status_line(buffer);
       }
     }
 
@@ -509,7 +509,6 @@ void UpdateOptimizationStatus(hyFloat max, hyFloat pdone, char init,
       outFile->puts("DONE");
     } else {
       printf("\033\015 ");
-      setvbuf(stdout, nil, _IOLBF, 1024);
     }
   }
   if (outFile) {
@@ -1532,18 +1531,22 @@ void _LikelihoodFunction::MPI_LF_Compute(long, bool)
   hyFloat siteLL = 0.;
 
   MPI_Status status;
+
   // ReportWarning (_String ("Waiting on:") & (long) indexInd.lLength & "
   // MPI_DOUBLES");
+
+  // printf ("[ENTER NODE] %d\n", hy_mpi_node_rank);
+  IProbeForMessage(senderID, HYPHY_MPI_VARS_TAG);
+
   ReportMPIError(MPI_Recv(variableStash.theData, indexInd.lLength, MPI_DOUBLE,
                           senderID, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD,
                           &status),
                  false);
 
-  // printf ("[ENTER NODE] %d\n", hy_mpi_node_rank);
+  // printf ("%d received first set of variables\n", hy_mpi_node_rank);
 
-  while (variableStash.theData[0] >= -1e100)
-  // variableStash.theData[0] < -1e100 terminates the computation
-  {
+  while (variableStash.theData[0] >= -1e100) {
+    // variableStash.theData[0] < -1e100 terminates the computation
     // ReportWarning (_String("In at step  ") & loopie);
     bool doSomething = false;
     for (unsigned long i = 0; i < indexInd.lLength; i++) {
@@ -1583,8 +1586,8 @@ void _LikelihoodFunction::MPI_LF_Compute(long, bool)
     // else
     //   printf ("%d : NOTHING TO DO!\n", hy_mpi_node_rank);
 
-    // printf ("%d [mode = %d] %d/%d\n", hy_mpi_node_rank, partMode,
-    // siteResults->GetSize(), siteScalerBuffer.lLength);
+    // printf ("%d [mode = %d] Compute done %g\n", hy_mpi_node_rank, partMode,
+    // siteLL);
 
     if (partMode) {
       ReportMPIError(MPI_Send(&siteLL, 1, MPI_DOUBLE, senderID,
@@ -1597,10 +1600,43 @@ void _LikelihoodFunction::MPI_LF_Compute(long, bool)
                               MPI_COMM_WORLD),
                      true);
     }
+
+    // printf ("%d [mode = Waiting for next set of values]\n", hy_mpi_node_rank,
+    // partMode);
+    IProbeForMessage(senderID, HYPHY_MPI_VARS_TAG, 16);
+    // printf ("%d IProbeForMessage done\n", hy_mpi_node_rank);
+
     ReportMPIError(MPI_Recv(variableStash.theData, indexInd.lLength, MPI_DOUBLE,
                             senderID, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD,
                             &status),
                    false);
+
+    // printf ("%d Values received\n", hy_mpi_node_rank);
+
+    /*MPI_Request request;
+    int request_complete = 0;
+
+    ReportMPIError(MPI_Irecv(variableStash.theData, indexInd.lLength,
+    MPI_DOUBLE, senderID, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD, &request), false);
+
+    int s_current_delay_us = 1;
+
+    while (!request_complete) {
+              // Check if the data has arrived
+      int res = MPI_Test(&request, &request_complete, &status);
+
+      printf ("%d %d %d [%d]\n", hy_mpi_node_rank, s_current_delay_us,
+    request_complete, res); if (!request_complete) {
+          // 3. SLEEP to avoid processor saturation (Busy Waiting)
+          // Sleep for 1 millisecond (adjust based on latency needs)
+          usleep (s_current_delay_us);
+          if (s_current_delay_us < 16394) {
+              s_current_delay_us *= 2;
+          }
+
+          // You can also perform other useful background work here
+      }
+    }*/
   }
 #endif
 }
@@ -3903,6 +3939,8 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
             ReportWarning(_String("InitMPIOptimizer sending partitions ") &
                           _String((_String *)my_part.toStr()) & " to node " &
                           i);
+            printf("InitMPIOptimizer sending partitions %s to %d\n",
+                   _String((_String *)my_part.toStr()).get_str(), i);
 
             // fprintf (stderr, "%s\n", _String
             // ((_String*)my_part.toStr()).getStr());

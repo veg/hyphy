@@ -902,6 +902,12 @@ const _String GetVersionString(void) {
 }
 
 //____________________________________________________________________________________
+void print_status_line(const char *message) {
+  printf("\033[2K\r%s", message);
+  fflush(stdout);
+}
+
+//____________________________________________________________________________________
 const _String GetTimeStamp(bool do_gmt) {
   time_t c_time;
   time(&c_time);

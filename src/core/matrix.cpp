@@ -1829,6 +1829,8 @@ HBLObjectRef _Matrix::ExecuteSingleOp(long opCode, _List *arguments,
       return K_Means(arg0, cache);
     case HY_OP_CODE_EQ: // ==
       return _returnConstantOrUseCache(Equal(arg0), cache);
+    case HY_OP_CODE_NEQ: // ==
+      return _returnConstantOrUseCache(!Equal(arg0), cache);
       // return ProfileMeanFit(arg0);
     case HY_OP_CODE_GREATER: // >
       return NeighborJoin(!CheckEqual(arg0->Value(), 0.0), cache);
@@ -3542,65 +3544,69 @@ void _Matrix::AddMatrix(_Matrix &storage, _Matrix &secondArg, bool subtract)
             }
           } else {
             long i = 0L;
+
 #ifdef _SLKP_USE_ARM_NEON
             const long up2 = (secondArg.lDim >> 3 << 3);
+            double *__restrict destBase = storage.theData;
+            const double *__restrict srcBase = secondArg.theData;
+            const long *__restrict idxBase = secondArg.theIndex;
+
             for (; i < up2; i += 8) {
+              // 1. Prefetching: Critical for scatter/gather performance.
+              // Hint to CPU to bring the NEXT batch of indices and data into
+              // cache.
+              __builtin_prefetch(&idxBase[i + 16], 0, 0);
+              __builtin_prefetch(&srcBase[i + 16], 0, 0);
 
-              float64x2_t S1 = vld1q_f64(secondArg.theData + i),
-                          S2 = vld1q_f64(secondArg.theData + i + 2),
-                          S3 = vld1q_f64(secondArg.theData + i + 4),
-                          S4 = vld1q_f64(secondArg.theData + i + 6);
+              // 2. Load source values (streaming)
+              float64x2_t Val01 = vld1q_f64(srcBase + i);
+              float64x2_t Val23 = vld1q_f64(srcBase + i + 2);
+              float64x2_t Val45 = vld1q_f64(srcBase + i + 4);
+              float64x2_t Val67 = vld1q_f64(srcBase + i + 6);
 
-              long s0 = secondArg.theIndex[i], s1 = secondArg.theIndex[i + 1],
-                   s2 = secondArg.theIndex[i + 2],
-                   s3 = secondArg.theIndex[i + 3],
-                   s4 = secondArg.theIndex[i + 4],
-                   s5 = secondArg.theIndex[i + 5],
-                   s6 = secondArg.theIndex[i + 6],
-                   s7 = secondArg.theIndex[i + 7];
+              // 3. Load indices
+              long s0 = idxBase[i], s1 = idxBase[i + 1];
+              long s2 = idxBase[i + 2], s3 = idxBase[i + 3];
+              long s4 = idxBase[i + 4], s5 = idxBase[i + 5];
+              long s6 = idxBase[i + 6], s7 = idxBase[i + 7];
 
-              if (s1 - s0 == 1L) {
-                vst1q_f64(storage.theData + s0,
-                          vaddq_f64(vld1q_f64(storage.theData + s0), S1));
+              // --- Block 0-1 ---
+              if ((s1 - s0) == 1) {
+                // Fast Path: Contiguous Vector Load/Add/Store
+                float64x2_t curr = vld1q_f64(destBase + s0);
+                vst1q_f64(destBase + s0, vaddq_f64(curr, Val01));
               } else {
-                float64x2_t R1 = vcombine_f64(vld1_f64(storage.theData + s0),
-                                              vld1_f64(storage.theData + s1));
-                R1 = vaddq_f64(R1, S1);
-                vst1q_lane_f64(storage.theData + s0, R1, 0);
-                vst1q_lane_f64(storage.theData + s1, R1, 1);
+                // Fallback: Scalar math is faster than constructing vectors
+                // manually
+                destBase[s0] += vgetq_lane_f64(Val01, 0);
+                destBase[s1] += vgetq_lane_f64(Val01, 1);
               }
 
-              if (s3 - s2 == 1L) {
-                vst1q_f64(storage.theData + s2,
-                          vaddq_f64(vld1q_f64(storage.theData + s2), S2));
+              // --- Block 2-3 ---
+              if ((s3 - s2) == 1) {
+                float64x2_t curr = vld1q_f64(destBase + s2);
+                vst1q_f64(destBase + s2, vaddq_f64(curr, Val23));
               } else {
-                float64x2_t R2 = vcombine_f64(vld1_f64(storage.theData + s2),
-                                              vld1_f64(storage.theData + s3));
-                R2 = vaddq_f64(R2, S2);
-                vst1q_lane_f64(storage.theData + s2, R2, 0);
-                vst1q_lane_f64(storage.theData + s3, R2, 1);
+                destBase[s2] += vgetq_lane_f64(Val23, 0);
+                destBase[s3] += vgetq_lane_f64(Val23, 1);
               }
 
-              if (s5 - s4 == 1L) {
-                vst1q_f64(storage.theData + s4,
-                          vaddq_f64(vld1q_f64(storage.theData + s4), S3));
+              // --- Block 4-5 ---
+              if ((s5 - s4) == 1) {
+                float64x2_t curr = vld1q_f64(destBase + s4);
+                vst1q_f64(destBase + s4, vaddq_f64(curr, Val45));
               } else {
-                float64x2_t R3 = vcombine_f64(vld1_f64(storage.theData + s4),
-                                              vld1_f64(storage.theData + s5));
-                R3 = vaddq_f64(R3, S3);
-                vst1q_lane_f64(storage.theData + s4, R3, 0);
-                vst1q_lane_f64(storage.theData + s5, R3, 1);
+                destBase[s4] += vgetq_lane_f64(Val45, 0);
+                destBase[s5] += vgetq_lane_f64(Val45, 1);
               }
 
-              if (s7 - s6 == 1L) {
-                vst1q_f64(storage.theData + s6,
-                          vaddq_f64(vld1q_f64(storage.theData + s6), S4));
+              // --- Block 6-7 ---
+              if ((s7 - s6) == 1) {
+                float64x2_t curr = vld1q_f64(destBase + s6);
+                vst1q_f64(destBase + s6, vaddq_f64(curr, Val67));
               } else {
-                float64x2_t R4 = vcombine_f64(vld1_f64(storage.theData + s6),
-                                              vld1_f64(storage.theData + s7));
-                R4 = vaddq_f64(R4, S4);
-                vst1q_lane_f64(storage.theData + s6, R4, 0);
-                vst1q_lane_f64(storage.theData + s7, R4, 1);
+                destBase[s6] += vgetq_lane_f64(Val67, 0);
+                destBase[s7] += vgetq_lane_f64(Val67, 1);
               }
             }
 #endif

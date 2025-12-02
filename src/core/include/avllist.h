@@ -47,7 +47,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //_____________________________________________________________________________
 /**
  * @brief An AVL tree implementation that stores pointers to BaseObj objects.
- * This class is used to store sorted lists of objects, and provides fast insertion, deletion, and searching.
+ * This class is used to store sorted lists of objects, and provides fast
+ * insertion, deletion, and searching.
  */
 class _AVLList : public BaseObj {
 
@@ -60,13 +61,15 @@ public:
   // Methods
   /**
    * @brief Construct a new _AVLList object from a _SimpleList.
-   * The new list will contain pointers to the data in the _SimpleList, but will not own the data.
-   * The _SimpleList will be cleared after the new _AVLList is created.
+   * The new list will contain pointers to the data in the _SimpleList, but will
+   * not own the data. The _SimpleList will be cleared after the new _AVLList is
+   * created.
    *
    * @param sl The _SimpleList to construct from.
    * @return A new _AVLList object.
    *
-   * @example _SimpleList sl; sl << 1 << 2 << 3; _AVLList avl(&sl); // avl now contains 1, 2, 3
+   * @example _SimpleList sl; sl << 1 << 2 << 3; _AVLList avl(&sl); // avl now
+   * contains 1, 2, 3
    */
   /**
    * @brief Construct a new _AVLList object
@@ -133,16 +136,19 @@ public:
 
   /**
    * @brief Reorder the list.
-   * This function is used to re-balance the AVL tree after a series of insertions or deletions.
+   * This function is used to re-balance the AVL tree after a series of
+   * insertions or deletions.
    *
-   * @param sl A _SimpleList to store the reordered indices. If nil, a new list will be created.
+   * @param sl A _SimpleList to store the reordered indices. If nil, a new list
+   * will be created.
    */
   virtual void ReorderList(_SimpleList * = nil);
   /**
    * @brief Insert data into the list.
    *
    * @param data The data to insert.
-   * @param index The index to insert at. If -1, the data will be inserted at the end.
+   * @param index The index to insert at. If -1, the data will be inserted at
+   * the end.
    * @param shallow If true, the data will not be copied.
    * @return The index where the data was inserted.
    */
@@ -159,7 +165,8 @@ public:
    *
    * @param sl The _SimpleList to store the indices in.
    * @param index The starting index for the traversal.
-   * @param node The node to start the traversal from. If -1, the traversal starts from the root.
+   * @param node The node to start the traversal from. If -1, the traversal
+   * starts from the root.
    * @return The number of nodes traversed.
    */
   virtual long Traverser(_SimpleList &, long &, long = -1) const;
@@ -171,7 +178,8 @@ public:
   virtual long GetRoot(void) const { return root; }
   /**
    * @brief This is a virtual function that does nothing in this class.
-   * It is meant to be overridden in derived classes to delete extra data associated with a node.
+   * It is meant to be overridden in derived classes to delete extra data
+   * associated with a node.
    * @sergeilkp
    *
    * @param l The index of the node.
@@ -220,7 +228,8 @@ public:
   long FindLong(long) const;
   /**
    * @brief Find the best match for an item in the list.
-   * "Best" is defined as the largest element smaller than or equal to the search key.
+   * "Best" is defined as the largest element smaller than or equal to the
+   * search key.
    *
    * @param brc The item to find the best match for.
    * @param l The index of the best match will be stored here.
@@ -279,7 +288,8 @@ public:
    * @param br The item to insert.
    * @param l The index to insert at. Not used.
    * @param b1 If true, the item will be duplicated before insertion.
-   * @param b2 If b1 is false and the item already exists, the item will be deleted.
+   * @param b2 If b1 is false and the item already exists, the item will be
+   * deleted.
    * @return The index of the inserted item.
    */
   long Insert(BaseRef, long = 0, bool = true, bool = false);
@@ -327,12 +337,24 @@ public:
    * @return A _List object containing the keys.
    */
   const _List Keys(void) const;
+
+  /**
+   * @brief data array setter, but only if the data object is null
+   * Set the data object to a list
+   */
+
+  void _set_data(_SimpleList *data_object) {
+    if (dataList == nil) {
+      dataList = data_object;
+    }
+  }
 };
 
 /**
  * @brief A utility function to populate and sort a list.
  *
- * @tparam AGGREGARTOR A function object that takes an _AVLList& as an argument and populates it.
+ * @tparam AGGREGARTOR A function object that takes an _AVLList& as an argument
+ * and populates it.
  * @param agg The aggregator function.
  * @return A _SimpleList containing the sorted indices of the populated list.
  *
@@ -343,7 +365,8 @@ public:
  *   list.Insert(new _String("A"));
  *   list.Insert(new _String("B"));
  * });
- * // sorted_indices will contain the indices of the sorted list, e.g., {1, 2, 0}
+ * // sorted_indices will contain the indices of the sorted list, e.g., {1, 2,
+ * 0}
  * \endcode
  */
 template <typename AGGREGARTOR>
