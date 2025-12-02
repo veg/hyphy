@@ -302,8 +302,13 @@ HBLObjectRef _AssociativeList::MIterator(HBLObjectRef p, HBLObjectRef p2,
         // callback = ;
 
         if (filter_id->nonempty()) {
-          filter = ValidateCallbackFunctionArgument(*filter_id, 1, false,
-                                                    &kFilterError);
+          try {
+            filter = ValidateCallbackFunctionArgument(*filter_id, 1, false,
+                                                      &kFilterError);
+          } catch (const _String &err) {
+            delete callback;
+            throw(err);
+          }
         }
 
         _FString *fKey = new _FString;
