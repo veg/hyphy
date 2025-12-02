@@ -3939,8 +3939,8 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
             ReportWarning(_String("InitMPIOptimizer sending partitions ") &
                           _String((_String *)my_part.toStr()) & " to node " &
                           i);
-            printf("InitMPIOptimizer sending partitions %s to %d\n",
-                   _String((_String *)my_part.toStr()).get_str(), i);
+            // printf("InitMPIOptimizer sending partitions %s to %d\n",
+            // _String((_String *)my_part.toStr()).get_str(), i);
 
             // fprintf (stderr, "%s\n", _String
             // ((_String*)my_part.toStr()).getStr());
