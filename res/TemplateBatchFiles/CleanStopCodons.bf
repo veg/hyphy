@@ -1,51 +1,57 @@
+RequireVersion ("2.5.80");
+LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/IOFunctions.bf");
+LoadFunctionLibrary("libv3/tasks/alignments.bf");
+
+utility.SetEnvVariable ("USE_MEMORY_SAVING_DATA_STRUCTURES", 1e8);
+utility.SetEnvVariable ("STRICT_ALIGNMENT_VALIDATION_MODE", FALSE);
+
+
+/*------------------------------------------------------------------------------*/
+
+cln.analysis_description = {
+                               terms.io.info : 
+"Read a sequence alignment and 'normalize' it, by cleaning  
+sequence identifiers, removing duplicates and or gaps, etc",
+                               terms.io.version : "0.1",
+                               terms.io.reference : "N/A",
+                               terms.io.authors : "Sergei L Kosakovsky Pond",
+                               terms.io.contact : "spond@temple.edu",
+                               terms.io.requirements : "an alignment of nucleotide (coding) sequences",
+                               terms.settings: {}
+                              };
+
+
+io.DisplayAnalysisBanner ( cln.analysis_description );
+
+
+KeywordArgument ("code",        "Genetic code to use", "Universal", "Choose Genetic Code");
+KeywordArgument ("alignment",   "Sequence alignment to clean");
+
+
 if (onlyFilterSequenceNames != 1) {
-	#include "TemplateModels/chooseGeneticCode.def";
-
-	SetDialogPrompt ("Please choose a codon data file:");
-
-	DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
-	fprintf (stdout, "\n\nData Read:\n", ds);
-
-	if (IS_TREE_PRESENT_IN_DATA) {
-		fprintf (stdout, "\nTree In Data:", DATAFILE_TREE);
-	}
-
-    DataSetFilter	    all64 = CreateFilter (ds, 3, "", "");
-}
-else {
-	SetDialogPrompt ("Please choose a data file:");
-
-	DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
-	fprintf (stdout, "\n\nData Read:\n", ds);
-
-	if (IS_TREE_PRESENT_IN_DATA) {
-		fprintf (stdout, "\nTree In Data:", DATAFILE_TREE);
-	}
-
-	DataSetFilter	    all64 = CreateFilter (ds, 1, "", "");
+    cln.code_info = alignments.LoadGeneticCode (None);
+    cln.alignment_info = alignments.ReadNucleotideDataSet ("cln.sequences", null);
+    DataSetFilter	    all64 = CreateFilter (cln.sequences, 3, "", "");
 }
 
-ChoiceList (filteringOption,"Filter duplicates/gaps?",1,SKIP_NONE,"No/No",    "Keep all sequences and sites",
-                                                                  "No/Yes",   "Keep all sequences, filter sites with nothing but gaps",
-								  	      	    		   	  	  "Yes/No",   "Filter duplicate sequences but keep all sites",
-                                                                  "Yes/Yes",  "Filter duplicate sequences and sites with nothing but gaps",
-                                                                  "Disallow stops", "Filter duplicate sequences and all sequences that have stop codons");
+KeywordArgument ("filtering-method",   "How to filter duplicates/gaps?", "No/No");
+filteringOption = io.SelectAnOption ({"No/No" :  "Keep all sequences and sites",
+                                                                  "No/Yes" :   "Keep all sequences, filter sites with nothing but gaps",
+								  	      	    		   	  	  "Yes/No" :  "Filter duplicate sequences but keep all sites",
+                                                                  "Yes/Yes" :  "Filter duplicate sequences and sites with nothing but gaps",
+                                                                  "Disallow stops" : "Filter duplicate sequences and all sequences that have stop codons"},"Filter duplicates/gaps?");
 
-if (filteringOption < 0){
-	return 0;
-}
+
+KeywordArgument ("output", "Write the resulting alignment to");
+
 
 GetDataInfo (filterDimensions,all64,"CHARACTERS");
 filterDimensions = Columns(filterDimensions);
 
-if (onlyFilterSequenceNames != 1) {
-    stopCodonTemplate = _Genetic_Code ["_MATRIX_ELEMENT_VALUE_==10"];
-    nonStopCodonTemplate = _Genetic_Code ["_MATRIX_ELEMENT_VALUE_!=10"];
-}
-else {
-	nonStopCodonTemplate = {1,filterDimensions}["1"];
-	stopCodonTemplate     = {1,filterDimensions}["0"];
-}
+stopCodonTemplate = _Genetic_Code ["_MATRIX_ELEMENT_VALUE_==10"];
+nonStopCodonTemplate = _Genetic_Code ["_MATRIX_ELEMENT_VALUE_!=10"];
 
 sequenceNames = {all64.species, 1};
 doSomething     = 0;
@@ -196,25 +202,23 @@ if (!doSomething) {
     fprintf (stdout, "\n\nNo stop codons found\n\n");
 }
 
-SetDialogPrompt ("Save cleaned data to:");
-fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN);
+
+cln.file_path = io.PromptUserForFilePath ("Save cleaned data to:");SetDialogPrompt ();
+fprintf (cln.file_path, CLEAR_FILE, KEEP_OPEN);
 seqLen = Abs (sequenceData[0]);
 for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex += 1) {
     if (notDuplicate[sequenceIndex]) {
         if (filterSites) {
-            fprintf (LAST_FILE_PATH, ">", sequenceNames[sequenceIndex], "\n");
+            fprintf (cln.file_path, ">", sequenceNames[sequenceIndex], "\n");
             for (s = 0; s < seqLen; s+=3) {
                 if (haveInfoAtSites[duplicateMapper[s$3]]) {
-                    fprintf (LAST_FILE_PATH, (sequenceData[sequenceIndex])[s][s+2]);
+                    fprintf (cln.file_path, (sequenceData[sequenceIndex])[s][s+2]);
                 }
             }
-            fprintf (LAST_FILE_PATH, "\n\n");
+            fprintf (cln.file_path, "\n\n");
         } else {
-            fprintf (LAST_FILE_PATH, ">", sequenceNames[sequenceIndex], "\n", sequenceData[sequenceIndex], "\n\n");
+            fprintf (cln.file_path, ">", sequenceNames[sequenceIndex], "\n", sequenceData[sequenceIndex], "\n\n");
         }
     }
 }
-fprintf (LAST_FILE_PATH, CLOSE_FILE);
-
-
-sequenceData = 0;
+fprintf (cln.file_path, CLOSE_FILE);

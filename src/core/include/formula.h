@@ -231,6 +231,9 @@ public:
   hyFloat ComputeSimple(_SimpleFormulaDatum *stack,
                         _SimpleFormulaDatum *varValues);
 
+  hyFloat ComputeSimpleNLP(_SimpleFormulaDatum *stack,
+                           _SimpleFormulaDatum *varValues);
+
   hyFloat Newton(_Formula &, _Variable *, hyFloat, hyFloat, hyFloat);
   hyFloat Newton(_Formula &, hyFloat, hyFloat, hyFloat, _Variable *);
   hyFloat Newton(_Variable *, hyFloat, hyFloat, hyFloat, hyFloat);

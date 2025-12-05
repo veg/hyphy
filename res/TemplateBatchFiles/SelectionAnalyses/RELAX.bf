@@ -50,7 +50,7 @@ relax.analysis_description = {
                                                 Version 4.1.1 adds reporting for convergence diagnostics.
                                                 Version 4.5 adds support for multiple datasets for joint testing.
                                                 Version 4.6 adds support for branch- and site-level evidence ratio calculation.",
-                               terms.io.version : "4.5",
+                               terms.io.version : "4.6",
                                terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
                                terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution g",
                                terms.io.contact : "spond@temple.edu",
@@ -1042,7 +1042,7 @@ function relax.FitMainTestPair (prompt) {
             parameters.DeclareGlobalWithRanges (relax.scaler.id, 1, 0, 1000);
         }       
         
-        VERBOSITY_LEVEL = 10;
+        //VERBOSITY_LEVEL = 5;
 
         
         relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names, relax.trees, relax.model_map,

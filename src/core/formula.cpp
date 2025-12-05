@@ -2668,9 +2668,11 @@ bool _Formula::ConvertToSimple(_AVLList &variable_index) {
 
   if (!theFormula.empty()) {
 
-    simpleExpressionStatus = new long[theFormula.countitems()];
+    const unsigned long N = theFormula.countitems();
 
-    for (unsigned long i = 0UL; i < theFormula.countitems(); i++) {
+    simpleExpressionStatus = new long[N + 1];
+
+    for (unsigned long i = 0UL; i < N; i++) {
       _Operation *this_op = ItemAt(i);
       simpleExpressionStatus[i] = -64L;
       if (this_op->theNumber) {
@@ -2725,7 +2727,23 @@ bool _Formula::ConvertToSimple(_AVLList &variable_index) {
             simpleOperationCodes.Find(this_op->opCode));
       }
     }
+    bool simple_lookups = true;
+    for (unsigned long i = 0UL; i < theFormula.countitems() && simple_lookups;
+         i++) {
+      if (simpleExpressionStatus[i] < 0L) {
+        if (simpleExpressionStatus[i] == -1) {
+          simple_lookups = false;
+        } else {
+          if (simpleExpressionStatus[i] > -10000 &&
+              simpleExpressionStatus[i] <= -2 - available_slots) {
+            simple_lookups = false;
+          }
+        }
+      }
+    }
+    simpleExpressionStatus[N] = simple_lookups;
   }
+
   return has_volatiles;
 }
 
@@ -2768,6 +2786,58 @@ void _Formula::ConvertFromSimpleList(_SimpleList const &variableIndex) {
 }
 
 //__________________________________________________________________________________
+hyFloat _Formula::ComputeSimpleNLP(_SimpleFormulaDatum *stack,
+                                   _SimpleFormulaDatum *varValues) {
+  unsigned long upper_bound = NumberOperations();
+  long stackTop = 0;
+  const hyFloat *constants = (hyFloat *)theStack.theStack._getStatic();
+
+  for (unsigned long i = 0UL; i < upper_bound; i++) {
+    if (simpleExpressionStatus[i] >= 0L) {
+      stack[stackTop++] = varValues[simpleExpressionStatus[i]];
+    } else {
+      if (simpleExpressionStatus[i] <= -10000) {
+        const long instruction_op = -simpleExpressionStatus[i] - 10000L;
+
+        stackTop--;
+
+        hyFloat new_value;
+
+        switch (instruction_op) {
+        case 0:
+          new_value = stack[stackTop - 1].value + stack[stackTop].value;
+          break;
+        case 1:
+          new_value = stack[stackTop - 1].value - stack[stackTop].value;
+          break;
+        case 2:
+          new_value = stack[stackTop - 1].value * stack[stackTop].value;
+          break;
+        case 3:
+          new_value = stack[stackTop - 1].value / stack[stackTop].value;
+          break;
+        case 4: {
+          if (stack[stackTop - 1].value == 0.0) {
+            if (stack[stackTop].value > 0.0) {
+              new_value = 0.0;
+            } else {
+              new_value = 1.0;
+            }
+          } else {
+            new_value = pow(stack[stackTop - 1].value, stack[stackTop].value);
+          }
+          break;
+        }
+        }
+        stack[stackTop - 1].value = new_value;
+      } else {
+        stack[stackTop++].value = constants[-simpleExpressionStatus[i] - 2L];
+      }
+    }
+  }
+  return stack[0].value;
+}
+//__________________________________________________________________________________
 hyFloat _Formula::ComputeSimple(_SimpleFormulaDatum *stack,
                                 _SimpleFormulaDatum *varValues) {
   if (theFormula.nonempty()) {
@@ -2776,90 +2846,81 @@ hyFloat _Formula::ComputeSimple(_SimpleFormulaDatum *stack,
       HandleApplicationError("Internal error, calling _Formula::ComputeSimple "
                              "on a standard _Formula object");
     } else {
-      long stackTop = 0;
+
       unsigned long upper_bound = NumberOperations();
+      bool assume_no_lookups = simpleExpressionStatus[upper_bound];
 
-      const hyFloat *constants = (hyFloat *)theStack.theStack._getStatic();
+      if (assume_no_lookups) {
+        return ComputeSimpleNLP(stack, varValues);
+      } else {
+        long stackTop = 0;
+        const hyFloat *constants = (hyFloat *)theStack.theStack._getStatic();
 
-      for (unsigned long i = 0UL; i < upper_bound; i++) {
-        printf("%ld => %ld\n", i, simpleExpressionStatus[i]);
-
-        if (simpleExpressionStatus[i] >= 0L) {
-          stack[stackTop++] = varValues[simpleExpressionStatus[i]];
-        } else {
-          if (simpleExpressionStatus[i] <= -2L &&
-              simpleExpressionStatus[i] >= -32L) {
-            stack[stackTop++].value =
-                constants[-simpleExpressionStatus[i] - 2L];
+        for (unsigned long i = 0UL; i < upper_bound; i++) {
+          if (simpleExpressionStatus[i] >= 0L) {
+            stack[stackTop++] = varValues[simpleExpressionStatus[i]];
           } else {
-            if (simpleExpressionStatus[i] == -1L) {
+            if (simpleExpressionStatus[i] <= -2L &&
+                simpleExpressionStatus[i] >= -32L) {
               stack[stackTop++].value =
-                  ((_Operation **)theFormula.list_data)[i]->theNumber->Value();
+                  constants[-simpleExpressionStatus[i] - 2L];
             } else {
-              const long instruction_op = -simpleExpressionStatus[i] - 10000L;
-              if (instruction_op >= 0) {
-                stackTop--;
-                if (instruction_op < 5) {
-                  switch (instruction_op) {
-                  case 0:
-                    stack[stackTop - 1].value =
-                        stack[stackTop - 1].value + stack[stackTop].value;
-                    break;
-                  case 1:
-                    stack[stackTop - 1].value =
-                        stack[stackTop - 1].value - stack[stackTop].value;
-                    break;
-                  case 2:
-                    stack[stackTop - 1].value =
-                        stack[stackTop - 1].value * stack[stackTop].value;
-                    break;
-                  case 3:
-                    stack[stackTop - 1].value =
-                        stack[stackTop - 1].value / stack[stackTop].value;
-                    break;
-                  case 4: {
-                    if (stack[stackTop - 1].value == 0.0) {
-                      if (stack[stackTop].value > 0.0) {
-                        stack[stackTop - 1].value = 0.0;
-                      } else {
-                        stack[stackTop - 1].value = 1.0;
-                      }
-                    } else {
-                      stack[stackTop - 1].value =
-                          pow(stack[stackTop - 1].value, stack[stackTop].value);
-                    }
-                    break;
-                  }
-                  }
-                } else {
-
-                  HandleApplicationError(
-                      "Internal error in _Formula::ComputeSimple - unsupported "
-                      "shortcut operation.)",
-                      true);
-                  return 0.0;
-                }
-
+              if (simpleExpressionStatus[i] == -1L) {
+                stack[stackTop++].value =
+                    ((_Operation **)theFormula.list_data)[i]
+                        ->theNumber->Value();
               } else {
-                _Operation const *thisOp = ItemAt(i);
-                stackTop--;
-                if (thisOp->numberOfTerms == 2) {
-                  hyFloat (*theFunc)(hyFloat, hyFloat);
-                  theFunc = (hyFloat (*)(hyFloat, hyFloat))thisOp->opCode;
-                  if (stackTop < 1L) {
+                const long instruction_op = -simpleExpressionStatus[i] - 10000L;
+                if (instruction_op >= 0) {
+                  stackTop--;
+                  if (instruction_op < 5) {
+                    switch (instruction_op) {
+                    case 0:
+                      stack[stackTop - 1].value =
+                          stack[stackTop - 1].value + stack[stackTop].value;
+                      break;
+                    case 1:
+                      stack[stackTop - 1].value =
+                          stack[stackTop - 1].value - stack[stackTop].value;
+                      break;
+                    case 2:
+                      stack[stackTop - 1].value =
+                          stack[stackTop - 1].value * stack[stackTop].value;
+                      break;
+                    case 3:
+                      stack[stackTop - 1].value =
+                          stack[stackTop - 1].value / stack[stackTop].value;
+                      break;
+                    case 4: {
+                      if (stack[stackTop - 1].value == 0.0) {
+                        if (stack[stackTop].value > 0.0) {
+                          stack[stackTop - 1].value = 0.0;
+                        } else {
+                          stack[stackTop - 1].value = 1.0;
+                        }
+                      } else {
+                        stack[stackTop - 1].value = pow(
+                            stack[stackTop - 1].value, stack[stackTop].value);
+                      }
+                      break;
+                    }
+                    }
+                  } else {
+
                     HandleApplicationError(
-                        "Internal error in _Formula::ComputeSimple - stack "
-                        "underflow.)",
+                        "Internal error in _Formula::ComputeSimple - "
+                        "unsupported "
+                        "shortcut operation.)",
                         true);
                     return 0.0;
                   }
-                  stack[stackTop - 1].value = (*theFunc)(
-                      stack[stackTop - 1].value, stack[stackTop].value);
+
                 } else {
-                  switch (thisOp->numberOfTerms) {
-                  case -2: {
-                    hyFloat (*theFunc)(hyPointer, hyFloat);
-                    theFunc = (hyFloat (*)(hyPointer, hyFloat))thisOp->opCode;
+                  _Operation const *thisOp = ItemAt(i);
+                  stackTop--;
+                  if (thisOp->numberOfTerms == 2) {
+                    hyFloat (*theFunc)(hyFloat, hyFloat);
+                    theFunc = (hyFloat (*)(hyFloat, hyFloat))thisOp->opCode;
                     if (stackTop < 1L) {
                       HandleApplicationError(
                           "Internal error in _Formula::ComputeSimple - stack "
@@ -2868,33 +2929,48 @@ hyFloat _Formula::ComputeSimple(_SimpleFormulaDatum *stack,
                       return 0.0;
                     }
                     stack[stackTop - 1].value = (*theFunc)(
-                        stack[stackTop - 1].reference, stack[stackTop].value);
-                    break;
-                  }
-                  case -3: {
-                    void (*theFunc)(hyPointer, hyFloat, hyFloat);
-                    theFunc =
-                        (void (*)(hyPointer, hyFloat, hyFloat))thisOp->opCode;
-                    if (stackTop != 2 || i != theFormula.lLength - 1) {
-                      HandleApplicationError(
-                          "Internal error in _Formula::ComputeSimple - stack "
-                          "underflow or MCoord command is not the last one.)",
-                          true);
-
-                      return 0.0;
+                        stack[stackTop - 1].value, stack[stackTop].value);
+                  } else {
+                    switch (thisOp->numberOfTerms) {
+                    case -2: {
+                      hyFloat (*theFunc)(hyPointer, hyFloat);
+                      theFunc = (hyFloat (*)(hyPointer, hyFloat))thisOp->opCode;
+                      if (stackTop < 1L) {
+                        HandleApplicationError(
+                            "Internal error in _Formula::ComputeSimple - stack "
+                            "underflow.)",
+                            true);
+                        return 0.0;
+                      }
+                      stack[stackTop - 1].value = (*theFunc)(
+                          stack[stackTop - 1].reference, stack[stackTop].value);
+                      break;
                     }
-                    // stackTop = 0;
-                    //  value, reference, index
-                    (*theFunc)(stack[1].reference, stack[2].value,
-                               stack[0].value);
-                    break;
-                  }
-                  default: {
-                    hyFloat (*theFunc)(hyFloat);
-                    theFunc = (hyFloat (*)(hyFloat))thisOp->opCode;
-                    stack[stackTop].value = (*theFunc)(stack[stackTop].value);
-                    ++stackTop;
-                  }
+                    case -3: {
+                      void (*theFunc)(hyPointer, hyFloat, hyFloat);
+                      theFunc =
+                          (void (*)(hyPointer, hyFloat, hyFloat))thisOp->opCode;
+                      if (stackTop != 2 || i != theFormula.lLength - 1) {
+                        HandleApplicationError(
+                            "Internal error in _Formula::ComputeSimple - stack "
+                            "underflow or MCoord command is not the last one.)",
+                            true);
+
+                        return 0.0;
+                      }
+                      // stackTop = 0;
+                      //  value, reference, index
+                      (*theFunc)(stack[1].reference, stack[2].value,
+                                 stack[0].value);
+                      break;
+                    }
+                    default: {
+                      hyFloat (*theFunc)(hyFloat);
+                      theFunc = (hyFloat (*)(hyFloat))thisOp->opCode;
+                      stack[stackTop].value = (*theFunc)(stack[stackTop].value);
+                      ++stackTop;
+                    }
+                    }
                   }
                 }
               }
