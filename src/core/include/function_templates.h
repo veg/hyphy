@@ -49,7 +49,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "variablecontainer.h"
 
 /**
- * @brief Check for a parameter in a variable container and assign a default value if not found.
+ * @brief Check for a parameter in a variable container and assign a default
+ * value if not found.
  *
  * @tparam ARG_TYPE The type of the parameter.
  * @param name The name of the parameter.
@@ -268,6 +269,30 @@ void InitializeArray(ARG_TYPE *array, unsigned long dimension,
   }
 }
 
+template <typename ARG_TYPE>
+ARG_TYPE ArrayMin(ARG_TYPE *array, unsigned long dimension) {
+  // #pragma clang loop unroll_count(8)
+  ARG_TYPE min = array[0];
+  for (unsigned long i = 1UL; i < dimension; i++) {
+    if (array[i] < min) {
+      min = array[i];
+    }
+  }
+  return min;
+}
+
+template <typename ARG_TYPE>
+ARG_TYPE ArrayMax(ARG_TYPE *array, unsigned long dimension) {
+  // #pragma clang loop unroll_count(8)
+  ARG_TYPE max = array[0];
+  for (unsigned long i = 1UL; i < dimension; i++) {
+    if (array[i] > max) {
+      max = array[i];
+    }
+  }
+  return max;
+}
+
 /**
  * @brief Copies an array.
  *
@@ -301,7 +326,8 @@ void CopyArrayWithOffset(ARG_TYPE *to, ARG_TYPE const *from,
 }
 
 /**
- * @brief Deconstruct a number into 'places' digits according to the supplied radix
+ * @brief Deconstruct a number into 'places' digits according to the supplied
+ * radix
  *
  * @tparam ARG_TYPE The type of the number.
  * @param composition The number to deconstruct.
@@ -309,8 +335,8 @@ void CopyArrayWithOffset(ARG_TYPE *to, ARG_TYPE const *from,
  * @param radix The radix to use.
  * @return _SimpleList The list of digits.
  *
- * @example SplitIntoDigits (5,3,2) will return (higher to lower significe digits)
- * 1,0,1 (e.g. 101 in binary)
+ * @example SplitIntoDigits (5,3,2) will return (higher to lower significe
+ * digits) 1,0,1 (e.g. 101 in binary)
  */
 template <typename ARG_TYPE>
 const _SimpleList SplitIntoDigits(ARG_TYPE composition, unsigned long places,
@@ -355,7 +381,8 @@ const ARG_TYPE CombineDigits(ARG_TYPE const *digits, unsigned long places,
 }
 
 /**
- * @brief Delete (or decrease ref count) of an object pointer. If the object was deleted, set the pointer to NULL.
+ * @brief Delete (or decrease ref count) of an object pointer. If the object was
+ * deleted, set the pointer to NULL.
  *
  * @tparam ARG_TYPE The type of the object.
  * @param object The object to delete.
@@ -386,7 +413,8 @@ unsigned long DrawFromDiscrete(ARG_TYPE const *cdf, unsigned long dimension) {
 }
 
 /**
- * @brief Draw a random index from a discrete distribution using a generator function.
+ * @brief Draw a random index from a discrete distribution using a generator
+ * function.
  *
  * @tparam FUNCTOR The type of the generator function.
  * @param generator The generator function.

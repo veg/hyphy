@@ -160,8 +160,7 @@ public:
   void ScanFForVariables(_AVLList &l, bool includeGlobals = false,
                          bool includeAll = false, bool includeCateg = true,
                          bool skipMatrixAssignments = false,
-                         _AVLListX *tagger = nil, long weight = 0,
-                         long weight2 = 0) const;
+                         _AVLListX *tagger = nil, long weight = 0) const;
   void ScanFForType(_SimpleList &, unsigned long);
   /* SLKP 20100716:
           A simple utility function to retrieve all variables of a given type

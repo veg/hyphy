@@ -2703,11 +2703,22 @@ bool _Formula::ConvertToSimple(_AVLList &variable_index) {
         if (this_op->numberOfTerms == 2) {
           switch (this_op->opCode) {
           case HY_OP_CODE_ADD:
+            simpleExpressionStatus[i] = -10000;
+            break;
           case HY_OP_CODE_SUB:
+            simpleExpressionStatus[i] = -10001;
+            break;
           case HY_OP_CODE_MUL:
+            simpleExpressionStatus[i] = -10002;
+            break;
           case HY_OP_CODE_DIV:
+            simpleExpressionStatus[i] = -10003;
+            break;
           case HY_OP_CODE_POWER:
-            simpleExpressionStatus[i] = -10000L - this_op->opCode;
+            simpleExpressionStatus[i] = -10004;
+            break;
+
+            // simpleExpressionStatus[i] = -10000L - this_op->opCode;
           }
         }
         this_op->opCode = simpleOperationFunctions(
@@ -2771,6 +2782,7 @@ hyFloat _Formula::ComputeSimple(_SimpleFormulaDatum *stack,
       const hyFloat *constants = (hyFloat *)theStack.theStack._getStatic();
 
       for (unsigned long i = 0UL; i < upper_bound; i++) {
+        printf("%ld => %ld\n", i, simpleExpressionStatus[i]);
 
         if (simpleExpressionStatus[i] >= 0L) {
           stack[stackTop++] = varValues[simpleExpressionStatus[i]];
@@ -2784,49 +2796,50 @@ hyFloat _Formula::ComputeSimple(_SimpleFormulaDatum *stack,
               stack[stackTop++].value =
                   ((_Operation **)theFormula.list_data)[i]->theNumber->Value();
             } else {
-              if (simpleExpressionStatus[i] <= -10000L) {
+              const long instruction_op = -simpleExpressionStatus[i] - 10000L;
+              if (instruction_op >= 0) {
                 stackTop--;
-                switch (-simpleExpressionStatus[i] - 10000L) {
-                case HY_OP_CODE_ADD:
-                  stack[stackTop - 1].value =
-                      stack[stackTop - 1].value + stack[stackTop].value;
-                  break;
-                case HY_OP_CODE_SUB:
-                  stack[stackTop - 1].value =
-                      stack[stackTop - 1].value - stack[stackTop].value;
-                  break;
-                case HY_OP_CODE_MUL:
-                  stack[stackTop - 1].value =
-                      stack[stackTop - 1].value * stack[stackTop].value;
-                  break;
-                case HY_OP_CODE_DIV:
-                  stack[stackTop - 1].value =
-                      stack[stackTop - 1].value / stack[stackTop].value;
-                  break;
-                case HY_OP_CODE_POWER: {
-                  // stack[stackTop-1].value = pow (stack[stackTop-1].value,
-                  // stack[stackTop].value);
-
-                  if (stack[stackTop - 1].value == 0.0) {
-                    if (stack[stackTop].value > 0.0) {
-                      stack[stackTop - 1].value = 0.0;
-                    } else {
-                      stack[stackTop - 1].value = 1.0;
-                    }
-                  } else {
+                if (instruction_op < 5) {
+                  switch (instruction_op) {
+                  case 0:
                     stack[stackTop - 1].value =
-                        pow(stack[stackTop - 1].value, stack[stackTop].value);
+                        stack[stackTop - 1].value + stack[stackTop].value;
+                    break;
+                  case 1:
+                    stack[stackTop - 1].value =
+                        stack[stackTop - 1].value - stack[stackTop].value;
+                    break;
+                  case 2:
+                    stack[stackTop - 1].value =
+                        stack[stackTop - 1].value * stack[stackTop].value;
+                    break;
+                  case 3:
+                    stack[stackTop - 1].value =
+                        stack[stackTop - 1].value / stack[stackTop].value;
+                    break;
+                  case 4: {
+                    if (stack[stackTop - 1].value == 0.0) {
+                      if (stack[stackTop].value > 0.0) {
+                        stack[stackTop - 1].value = 0.0;
+                      } else {
+                        stack[stackTop - 1].value = 1.0;
+                      }
+                    } else {
+                      stack[stackTop - 1].value =
+                          pow(stack[stackTop - 1].value, stack[stackTop].value);
+                    }
+                    break;
                   }
+                  }
+                } else {
 
-                  break;
-                }
-                default:
                   HandleApplicationError(
                       "Internal error in _Formula::ComputeSimple - unsupported "
                       "shortcut operation.)",
                       true);
                   return 0.0;
                 }
+
               } else {
                 _Operation const *thisOp = ItemAt(i);
                 stackTop--;
@@ -3093,7 +3106,7 @@ bool _Formula::HasChangedSimple(_SimpleList &variableIndex) {
 void _Formula::ScanFForVariables(_AVLList &l, bool includeGlobals,
                                  bool includeAll, bool includeCategs,
                                  bool skipMatrixAssignments, _AVLListX *tagger,
-                                 long weight, long weight2) const {
+                                 long weight) const {
   unsigned long const upper_bound = NumberOperations();
 
   for (unsigned long i = 0UL; i < upper_bound; i++) {
@@ -3126,8 +3139,9 @@ void _Formula::ScanFForVariables(_AVLList &l, bool includeGlobals,
                 printf ("\n\n\nWEIGHT2\n%d: %s\n", weight2,
             v->GetName()->get_str());
             }*/
-            tagger->UpdateValue((BaseRef)f, weight2 > 0 ? weight2 : weight,
-                                weight2 > 0);
+            // tagger->UpdateValue((BaseRef)f, weight2 > 0 ? weight2 : weight,
+            // weight2 > 0);
+            tagger->SetOrIncrement((BaseRef)f, weight, 1);
           }
         }
 

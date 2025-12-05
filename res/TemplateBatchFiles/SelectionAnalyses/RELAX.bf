@@ -342,6 +342,7 @@ if (relax.run_full_mg94) {
     relax.final_partitioned_mg_results = estimators.FitMGREV (relax.filter_names, relax.trees, relax.codon_data_info [terms.code], {
         terms.run_options.model_type: terms.local,
         terms.run_options.partitioned_omega: relax.selected_branches,
+        "retain-lf-object": TRUE
     }, relax.partitioned_mg_results);
 
     if (Type (relax.save_intermediate_fits) == "AssociativeList") {
@@ -351,6 +352,7 @@ if (relax.run_full_mg94) {
         io.SpoolJSON (relax.save_intermediate_fits[^"terms.data.value"],relax.save_intermediate_fits[^"terms.data.file"]);      
     }
 }
+
 
 
 io.ReportProgressMessageMD("RELAX", "codon-refit", "* " + selection.io.report_fit (relax.final_partitioned_mg_results, 0, relax.codon_data_info[terms.data.sample_size]));
@@ -1040,6 +1042,7 @@ function relax.FitMainTestPair (prompt) {
             parameters.DeclareGlobalWithRanges (relax.scaler.id, 1, 0, 1000);
         }       
         
+        VERBOSITY_LEVEL = 10;
 
         
         relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names, relax.trees, relax.model_map,

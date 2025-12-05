@@ -5547,7 +5547,7 @@ _Matrix *_Matrix::Exponentiate(hyFloat scale_to, bool check_transition,
       RowAndColumnMax(max, t, stash);
       max *= t;
       if (max > .1) {
-        max = scale_to * sqrt(10. * max);
+        max = scale_to * sqrt(2. * max);
         power2 = (long)((log(max) / _log2)) + 1L;
         max = exp(power2 * _log2);
         mmax = max;

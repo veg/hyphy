@@ -1116,7 +1116,7 @@ void _VariableContainer::ScanContainerForVariables(
       iVariables, [&](long var_idx, long, unsigned long) -> void {
         long insert_location = l.Insert((BaseRef)var_idx);
         if (tagger) {
-          tagger->UpdateValue((BaseRef)var_idx, weight, 0);
+          tagger->SetOrIncrement((BaseRef)var_idx, weight, 1);
         }
         if (map_variables_to_nodes) {
           // printf ("%ld (%s) -> %ld\n", var_idx, LocateVar
@@ -1146,7 +1146,7 @@ void _VariableContainer::ScanContainerForVariables(
       if (!v->IsGlobal() && v->IsIndependent()) {
         long insert_location = l.Insert((BaseRef)var_index);
         if (tagger) {
-          tagger->UpdateValue((BaseRef)var_index, weight, 0);
+          tagger->SetOrIncrement((BaseRef)var_index, weight, 1);
         }
         if (map_variables_to_nodes) {
           if (insert_location >= 0) { // was inserted
@@ -1192,7 +1192,7 @@ void _VariableContainer::ScanForGVariables(_AVLList &independent,
     if (v->IsIndependent()) {
       independent.Insert((BaseRef)var_idx);
       if (tagger) {
-        tagger->UpdateValue((BaseRef)var_idx, weight, 0);
+        tagger->SetOrIncrement((BaseRef)var_idx, weight, 1);
       }
     } else {
       dependent.Insert((BaseRef)var_idx);
@@ -1218,6 +1218,8 @@ void _VariableContainer::ScanForGVariables(_AVLList &independent,
     var_list.Each([&](long var_idx, unsigned long) -> void {
       _Variable *v = LocateVar(var_idx);
       if (v->IsGlobal()) {
+        // printf ("%s (%d %ld)\n", v->GetName()->get_str(), v->IsIndependent(),
+        // weight);
         insert_g_var(LocateVar(var_idx), var_idx);
       }
     });
