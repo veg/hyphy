@@ -30,11 +30,11 @@ KeywordArgument ("code",        "Genetic code to use", "Universal", "Choose Gene
 KeywordArgument ("alignment",   "Sequence alignment to clean");
 
 
-if (onlyFilterSequenceNames != 1) {
-    cln.code_info = alignments.LoadGeneticCode (None);
-    cln.alignment_info = alignments.ReadNucleotideDataSet ("cln.sequences", null);
-    DataSetFilter	    all64 = CreateFilter (cln.sequences, 3, "", "");
-}
+cln.code_info = alignments.LoadGeneticCode (None);
+cln.alignment_info = alignments.ReadNucleotideDataSet ("cln.sequences", null);
+DataSetFilter	    all64 = CreateFilter (cln.sequences, 3, "", "");
+
+_Genetic_Code = cln.code_info[terms.code];
 
 KeywordArgument ("filtering-method",   "How to filter duplicates/gaps?", "No/No");
 filteringOption = io.SelectAnOption ({"No/No" :  "Keep all sequences and sites",
@@ -203,7 +203,8 @@ if (!doSomething) {
 }
 
 
-cln.file_path = io.PromptUserForFilePath ("Save cleaned data to:");SetDialogPrompt ();
+cln.file_path = io.PromptUserForFilePath ("Save cleaned data to:");
+
 fprintf (cln.file_path, CLEAR_FILE, KEEP_OPEN);
 seqLen = Abs (sequenceData[0]);
 for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex += 1) {

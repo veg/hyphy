@@ -2733,10 +2733,14 @@ bool _Formula::ConvertToSimple(_AVLList &variable_index) {
       if (simpleExpressionStatus[i] < 0L) {
         if (simpleExpressionStatus[i] == -1) {
           simple_lookups = false;
+          // printf ("NLP fail because of -1 %ld/%ld\n", available_slots,
+          // used_float_slots);
         } else {
           if (simpleExpressionStatus[i] > -10000 &&
               simpleExpressionStatus[i] <= -2 - available_slots) {
             simple_lookups = false;
+            // printf ("NLP fail because of constant overflow %ld\n",
+            // simpleExpressionStatus[i]);
           }
         }
       }
@@ -2793,11 +2797,12 @@ hyFloat _Formula::ComputeSimpleNLP(_SimpleFormulaDatum *stack,
   const hyFloat *constants = (hyFloat *)theStack.theStack._getStatic();
 
   for (unsigned long i = 0UL; i < upper_bound; i++) {
-    if (simpleExpressionStatus[i] >= 0L) {
-      stack[stackTop++] = varValues[simpleExpressionStatus[i]];
+    const long ses = simpleExpressionStatus[i];
+    if (ses >= 0L) {
+      stack[stackTop++] = varValues[ses];
     } else {
-      if (simpleExpressionStatus[i] <= -10000) {
-        const long instruction_op = -simpleExpressionStatus[i] - 10000L;
+      if (ses <= -10000) {
+        const long instruction_op = -ses - 10000L;
 
         stackTop--;
 
@@ -2831,7 +2836,7 @@ hyFloat _Formula::ComputeSimpleNLP(_SimpleFormulaDatum *stack,
         }
         stack[stackTop - 1].value = new_value;
       } else {
-        stack[stackTop++].value = constants[-simpleExpressionStatus[i] - 2L];
+        stack[stackTop++].value = constants[-ses - 2L];
       }
     }
   }
