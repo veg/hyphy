@@ -758,8 +758,8 @@ _List _TreeTopology::RemoveANode(HBLObjectRef nodeName) {
       clean_indices.Sort();
       _RemoveNodeList(clean_indices);
     } else {
-      throw _String(
-          "An invalid argument (not a string or a string matrix) supplied");
+      throw _String("An invalid argument (not a string or a string matrix or "
+                    "an associative array [key : node]) supplied");
     }
   } catch (const _String &err) {
     HandleApplicationError(err & " in " & __PRETTY_FUNCTION__);

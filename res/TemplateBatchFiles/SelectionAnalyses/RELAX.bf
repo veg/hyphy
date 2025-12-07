@@ -50,7 +50,7 @@ relax.analysis_description = {
                                                 Version 4.1.1 adds reporting for convergence diagnostics.
                                                 Version 4.5 adds support for multiple datasets for joint testing.
                                                 Version 4.6 adds support for branch- and site-level evidence ratio calculation.",
-                               terms.io.version : "4.5",
+                               terms.io.version : "4.6",
                                terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
                                terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution g",
                                terms.io.contact : "spond@temple.edu",
@@ -342,6 +342,7 @@ if (relax.run_full_mg94) {
     relax.final_partitioned_mg_results = estimators.FitMGREV (relax.filter_names, relax.trees, relax.codon_data_info [terms.code], {
         terms.run_options.model_type: terms.local,
         terms.run_options.partitioned_omega: relax.selected_branches,
+        "retain-lf-object": TRUE
     }, relax.partitioned_mg_results);
 
     if (Type (relax.save_intermediate_fits) == "AssociativeList") {
@@ -351,6 +352,7 @@ if (relax.run_full_mg94) {
         io.SpoolJSON (relax.save_intermediate_fits[^"terms.data.value"],relax.save_intermediate_fits[^"terms.data.file"]);      
     }
 }
+
 
 
 io.ReportProgressMessageMD("RELAX", "codon-refit", "* " + selection.io.report_fit (relax.final_partitioned_mg_results, 0, relax.codon_data_info[terms.data.sample_size]));
@@ -1040,6 +1042,7 @@ function relax.FitMainTestPair (prompt) {
             parameters.DeclareGlobalWithRanges (relax.scaler.id, 1, 0, 1000);
         }       
         
+        //VERBOSITY_LEVEL = 5;
 
         
         relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names, relax.trees, relax.model_map,
@@ -1368,9 +1371,11 @@ function relax.FitMainTestPair (prompt) {
 								relax.display_orders[relax.null_name]
 							);
 
-	selection.io.json_store_branch_attribute(relax.json, relax.null_name, terms.branch_length, relax.display_orders[relax.null_name],
-												 0,
-												 selection.io.extract_branch_info((relax.null_model.fit[terms.branch_length])[0], "selection.io.branch.length"));
+    for (partition, branches; in; relax.selected_branches) {
+	    selection.io.json_store_branch_attribute(relax.json, relax.null_name, terms.branch_length, relax.display_orders[relax.null_name],
+												 partition,
+												 selection.io.extract_branch_info((relax.null_model.fit[terms.branch_length])[partition], "selection.io.branch.length"));
+	}
 
 
 	console.log ("----\n## Test for relaxation (or intensification) of selection [RELAX]");
@@ -1480,10 +1485,13 @@ if (relax.model_set == "All") {
                                 relax.distribution_for_json,
                                 relax.display_orders[relax.partitioned_descriptive_name]
                             );
+    for (partition, branches; in; relax.selected_branches) {
+	    selection.io.json_store_branch_attribute(relax.json, relax.partitioned_descriptive_name, terms.branch_length, relax.display_orders[relax.partitioned_descriptive_name],
+                                                 partition,
+                                                 selection.io.extract_branch_info((relax.pe.fit[terms.branch_length])[partition], "selection.io.branch.length"));
+	}
 
-    selection.io.json_store_branch_attribute(relax.json, relax.partitioned_descriptive_name, terms.branch_length, relax.display_orders[relax.partitioned_descriptive_name],
-                                                 0,
-                                                 selection.io.extract_branch_info((relax.pe.fit[terms.branch_length])[0], "selection.io.branch.length"));
+    
 
 
     selection.io.stopTimer (relax.json [terms.json.timers], "RELAX partitioned descriptive");

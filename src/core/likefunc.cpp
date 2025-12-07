@@ -476,7 +476,7 @@ void UpdateOptimizationStatus(hyFloat max, hyFloat pdone, char init,
       if (outFile) {
         outFile->puts(reportString.get_str());
       } else
-        printf("\015%s", reportString.get_str());
+        print_status_line(reportString.get_str());
     } else {
       char buffer[1024];
       if (optimization) {
@@ -500,7 +500,7 @@ void UpdateOptimizationStatus(hyFloat max, hyFloat pdone, char init,
       if (outFile) {
         outFile->puts(buffer);
       } else {
-        printf("\015%s", buffer);
+        print_status_line(buffer);
       }
     }
 
@@ -509,7 +509,6 @@ void UpdateOptimizationStatus(hyFloat max, hyFloat pdone, char init,
       outFile->puts("DONE");
     } else {
       printf("\033\015 ");
-      setvbuf(stdout, nil, _IOLBF, 1024);
     }
   }
   if (outFile) {
@@ -1532,18 +1531,22 @@ void _LikelihoodFunction::MPI_LF_Compute(long, bool)
   hyFloat siteLL = 0.;
 
   MPI_Status status;
+
   // ReportWarning (_String ("Waiting on:") & (long) indexInd.lLength & "
   // MPI_DOUBLES");
+
+  // printf ("[ENTER NODE] %d\n", hy_mpi_node_rank);
+  IProbeForMessage(senderID, HYPHY_MPI_VARS_TAG);
+
   ReportMPIError(MPI_Recv(variableStash.theData, indexInd.lLength, MPI_DOUBLE,
                           senderID, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD,
                           &status),
                  false);
 
-  // printf ("[ENTER NODE] %d\n", hy_mpi_node_rank);
+  // printf ("%d received first set of variables\n", hy_mpi_node_rank);
 
-  while (variableStash.theData[0] >= -1e100)
-  // variableStash.theData[0] < -1e100 terminates the computation
-  {
+  while (variableStash.theData[0] >= -1e100) {
+    // variableStash.theData[0] < -1e100 terminates the computation
     // ReportWarning (_String("In at step  ") & loopie);
     bool doSomething = false;
     for (unsigned long i = 0; i < indexInd.lLength; i++) {
@@ -1583,8 +1586,8 @@ void _LikelihoodFunction::MPI_LF_Compute(long, bool)
     // else
     //   printf ("%d : NOTHING TO DO!\n", hy_mpi_node_rank);
 
-    // printf ("%d [mode = %d] %d/%d\n", hy_mpi_node_rank, partMode,
-    // siteResults->GetSize(), siteScalerBuffer.lLength);
+    // printf ("%d [mode = %d] Compute done %g\n", hy_mpi_node_rank, partMode,
+    // siteLL);
 
     if (partMode) {
       ReportMPIError(MPI_Send(&siteLL, 1, MPI_DOUBLE, senderID,
@@ -1597,10 +1600,43 @@ void _LikelihoodFunction::MPI_LF_Compute(long, bool)
                               MPI_COMM_WORLD),
                      true);
     }
+
+    // printf ("%d [mode = Waiting for next set of values]\n", hy_mpi_node_rank,
+    // partMode);
+    IProbeForMessage(senderID, HYPHY_MPI_VARS_TAG, 16);
+    // printf ("%d IProbeForMessage done\n", hy_mpi_node_rank);
+
     ReportMPIError(MPI_Recv(variableStash.theData, indexInd.lLength, MPI_DOUBLE,
                             senderID, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD,
                             &status),
                    false);
+
+    // printf ("%d Values received\n", hy_mpi_node_rank);
+
+    /*MPI_Request request;
+    int request_complete = 0;
+
+    ReportMPIError(MPI_Irecv(variableStash.theData, indexInd.lLength,
+    MPI_DOUBLE, senderID, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD, &request), false);
+
+    int s_current_delay_us = 1;
+
+    while (!request_complete) {
+              // Check if the data has arrived
+      int res = MPI_Test(&request, &request_complete, &status);
+
+      printf ("%d %d %d [%d]\n", hy_mpi_node_rank, s_current_delay_us,
+    request_complete, res); if (!request_complete) {
+          // 3. SLEEP to avoid processor saturation (Busy Waiting)
+          // Sleep for 1 millisecond (adjust based on latency needs)
+          usleep (s_current_delay_us);
+          if (s_current_delay_us < 16394) {
+              s_current_delay_us *= 2;
+          }
+
+          // You can also perform other useful background work here
+      }
+    }*/
   }
 #endif
 }
@@ -3575,7 +3611,7 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
   parallelOptimizerTasks.Clear();
   transferrableVars = 0;
 
-  int totalNodeCount = RetrieveMPICount(0);
+  long totalNodeCount = RetrieveMPICount(0);
   hyFloat aplf = 0.0;
   checkParameter(autoParalellizeLF, aplf, 0.0);
   hyphyMPIOptimizerMode = round(aplf);
@@ -3903,6 +3939,8 @@ void _LikelihoodFunction::InitMPIOptimizer(void) {
             ReportWarning(_String("InitMPIOptimizer sending partitions ") &
                           _String((_String *)my_part.toStr()) & " to node " &
                           i);
+            // printf("InitMPIOptimizer sending partitions %s to %d\n",
+            // _String((_String *)my_part.toStr()).get_str(), i);
 
             // fprintf (stderr, "%s\n", _String
             // ((_String*)my_part.toStr()).getStr());
@@ -5109,6 +5147,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
         _SimpleList(indexInd.lLength, (long)indexInd.lLength, -1), 1);
     _List changes_history;
 
+    unsigned char lastConvergenceMode = 0;
+
     while (inCount < termFactor || smoothingTerm > 0.) {
       _Matrix old_values;
       GetAllIndependent(old_values);
@@ -5152,7 +5192,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
               MAX(GOLDEN_RATIO, MIN(stdFactor, oldAverage / averageChange));
 
           long steps = logLHistory.get_used();
-          // printf ("DIFFS\n");
+          // printf ("\n\nDIFFS\n");
+          // ObjectToConsole (&logLHistory);
           for (long k = 1; k <= MIN(5, steps - 1); k++) {
             diffs[k - 1] = logLHistory.theData[steps - k] -
                            logLHistory.theData[steps - k - 1];
@@ -5195,29 +5236,46 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                    || diffs[0] / diffs[1] <= _HY_SLOW_CONVERGENCE_RATIO) &&
                    (diffs[1] / diffs[2] >= _HY_SLOW_CONVERGENCE_RATIO_INV ||
                    diffs[1] / diffs[2] <= _HY_SLOW_CONVERGENCE_RATIO)) {*/
-                  if (average_change3 / diffs[0] > 4.0) {
+                  if (average_change3 / diffs[0] >= 4.0) {
                     convergenceMode = 2;
-                    if (steps > 4) {
-                      /*if (diffs[3] > 0.) {
-                       if (diffs[2] / diffs[3] >=
-                       _HY_SLOW_CONVERGENCE_RATIO_INV ||
-                       diffs[2] / diffs[3] <= _HY_SLOW_CONVERGENCE_RATIO) {
-                       convergenceMode = 3;
-                       }*/
-                      if (average_change5 / MAX(diffs[0], diffs[1]) > 5.0) {
-                        convergenceMode = 3;
+                    if (convergenceMode < 3) {
+                      if (steps > 4) {
+                        /*if (diffs[3] > 0.) {
+                         if (diffs[2] / diffs[3] >=
+                         _HY_SLOW_CONVERGENCE_RATIO_INV ||
+                         diffs[2] / diffs[3] <= _HY_SLOW_CONVERGENCE_RATIO) {
+                         convergenceMode = 3;
+                         }*/
+                        // if (average_change5 / MAX(diffs[0], diffs[1]) > 5.0)
+                        // {
+                        if (average_change5 / diffs[0] >= 8.0) {
+                          convergenceMode = 3;
+                        }
                       }
                     }
                   }
+                  if (convergenceMode < 2) {
+                    if (steps > 4) {
+                      hyFloat mind = ArrayMin(diffs, 5),
+                              maxd = ArrayMax(diffs, 5);
+
+                      if (mind > 0.) {
+                        if ((maxd - mind) / mind < GOLDEN_RATIO) {
+                          convergenceMode = 3;
+                        }
+                      }
+                    }
+                  }
+
                 } else {
-                  convergenceMode = 2;
+                  convergenceMode = 3;
                 }
               }
             }
           }
 
-          // printf ("===>CONV MODE %ld\n", convergenceMode);
-          // ObjectToConsole (&_variables_that_dont_change); NLToConsole();
+          // printf ("===>CONV MODE %d\n", convergenceMode);
+          //  ObjectToConsole (&_variables_that_dont_change); NLToConsole();
           switch (convergenceMode) {
           case 1:
             shrink_factor = GOLDEN_RATIO_R;
@@ -5341,7 +5399,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             break;
           }
 
-          if (loopCounter - last_gradient_search >= 3L) {
+          if (loopCounter - last_gradient_search >= 3L ||
+              lastConvergenceMode > 2) {
 
             _Matrix bestMSoFar;
             GetAllIndependent(bestMSoFar);
@@ -5398,7 +5457,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       large_change.Sort();
 
       if (!do_large_change_only) {
-        if (large_change.countitems() >= 3 &&
+        if (large_change.countitems() >= 2 &&
             (large_change.countitems() <= indexInd.countitems() / 4L ||
              large_change.countitems() <= 8)) {
           // iterate only the variables that are changing a lot, until they stop
@@ -5427,6 +5486,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       // NLToConsole();
 
       LoggerAddCoordinatewisePhase(shrink_factor, convergenceMode);
+
+      lastConvergenceMode = convergenceMode;
 
       for (jjj = forward ? 0 : indexInd.lLength - 1;
            forward ? (jjj < (long)indexInd.lLength) : jjj >= 0;
@@ -5481,10 +5542,10 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
               _variables_that_dont_change[current_index] = 1;
             else
               _variables_that_dont_change[current_index]++;
-            // printf ("\nSkipping %s (%ld, %ld, %ld)\n",
-            // GetIthIndependentVar(current_index)->GetName()->get_str(),
-            // _variables_that_dont_change[current_index], inCount, termFactor
-            // );
+            /*printf ("\n[loop %ld] Skipping %s (%ld, %ld, %ld)\n",loopCounter,
+             GetIthIndependentVar(current_index)->GetName()->get_str(),
+             _variables_that_dont_change[current_index], inCount, termFactor
+             );*/
             continue;
           }
         }
@@ -8425,7 +8486,8 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
 
     if (verbosity_level > 100) {
       char buffer[512];
-      snprintf(buffer, 512, "\n>Simplex iteration %ld", (it_count + 1));
+      snprintf(buffer, 512, "\n>Simplex iteration %ld [D=%ld]", (it_count + 1),
+               N);
       BufferToConsole(buffer);
       echo_values(new_point, trial_value);
     }
@@ -8558,9 +8620,10 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
       if (verbosity_level > 5) {
         char buffer[2048];
         snprintf(buffer, sizeof(buffer),
-                 "Simplex iteration %10ld; current max %12.6g, current value "
+                 "Simplex iteration %10ld [N=%5ld]; current max %12.6g, "
+                 "current value "
                  "spread %12.6g [precision %g]\n",
-                 it_count, -function_values(0, 0),
+                 it_count, N, -function_values(0, 0),
                  fabs(function_values(N, 0) - function_values(1, 0)),
                  gPrecision);
         BufferToConsole(buffer);
@@ -8808,26 +8871,50 @@ _CategoryVariable *_LikelihoodFunction::FindCategoryVar(long index) {
 
 //_______________________________________________________________________________________
 void _LikelihoodFunction::ScanAllVariables(void) {
-  _SimpleList allVariables, covCat, cpCat, treeSizes, rankVariablesSupp;
+
+  _SimpleList allVariables, covCat, cpCat, treeSizes, cumulativeTreeSizes,
+      rankVariablesSupp;
 
   _AVLListX rankVariables(&rankVariablesSupp);
   _AVLList avl(&allVariables);
 
+  auto localTreeOffset = [&cumulativeTreeSizes](long tree_index) {
+    return cumulativeTreeSizes.get(tree_index);
+  };
+
+  auto globalTreeOffset = [&cumulativeTreeSizes](long tree_index) {
+    return (cumulativeTreeSizes.Element(-1) << 4) + tree_index;
+  };
+
+  auto overallGlobalOffset = [&cumulativeTreeSizes](void) {
+    return (cumulativeTreeSizes.Element(-1) << 8);
+  };
+
   // scan parameters that may be present in frequency vectors and compute tree
   // sizes rank these global variables as influential
 
-  theProbabilities.Each([this, &treeSizes, &rankVariables,
-                         &avl](long var_index, unsigned long index) -> void {
+  theProbabilities.Each([this, &treeSizes, &cumulativeTreeSizes](
+                            long, unsigned long index) -> void {
     long iNodeCount, lNodeCount;
     GetIthTree(index)->EdgeCount(iNodeCount, lNodeCount);
-    treeSizes << (iNodeCount + lNodeCount);
+    long tree_size = iNodeCount + lNodeCount;
+    treeSizes << tree_size;
+    cumulativeTreeSizes << (index ? cumulativeTreeSizes.get(index - 1) +
+                                        (tree_size << 4)
+                                  : (tree_size << 4));
+  });
+
+  // ObjectToConsole(&cumulativeTreeSizes);
+
+  theProbabilities.Each([overallGlobalOffset, &rankVariables,
+                         &avl](long var_index, unsigned long) -> void {
     LocateVar(var_index)->ScanForVariables(avl, true, &rankVariables,
-                                           treeSizes.GetElement(-1) << 4);
+                                           overallGlobalOffset());
   });
 
   if (computingTemplate) {
     computingTemplate->ScanFForVariables(avl, true, false, true, false,
-                                         &rankVariables, treeSizes.Sum() << 2);
+                                         &rankVariables, overallGlobalOffset());
   }
 
   avl.ReorderList();
@@ -8862,14 +8949,18 @@ void _LikelihoodFunction::ScanAllVariables(void) {
     }
   }
 
-  theTrees.Each([&iia, &iid, &rankVariables,
-                 &treeSizes](long tree_index, unsigned long index) -> void {
+  theTrees.Each([globalTreeOffset, localTreeOffset, &iia, &iid,
+                 &rankVariables](long tree_index, unsigned long index) -> void {
     _TheTree *tree_var = (_TheTree *)LocateVar(tree_index);
     tree_var->ScanAndAttachVariables();
-    tree_var->ScanForGVariables(iia, iid, &rankVariables,
-                                treeSizes.GetElement(index) << 4);
-    tree_var->ScanContainerForVariables(iia, iid, &rankVariables,
-                                        1L + treeSizes.GetElement(index));
+    long gto = globalTreeOffset(index), lto = localTreeOffset(index);
+    // printf ("\nGlobal weight for tree %ld (size %ld) = %ld\n", index,
+    // treeSizes.GetElement(index), gto); ObjectToConsole(&rankVariables);
+    tree_var->ScanForGVariables(iia, iid, &rankVariables, gto);
+    // ObjectToConsole(&rankVariables);
+    // printf ("LOCAL weight for tree %ld (size %ld) = %ld\n", index,
+    // treeSizes.GetElement(index), lto);
+    tree_var->ScanContainerForVariables(iia, iid, &rankVariables, lto);
     tree_var->ScanForDVariables(iid, iia);
     tree_var->SetUp();
   });
@@ -12255,7 +12346,7 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
       } else {
         varRank.list_data[k] = -tagger->GetXtra(idx);
       }
-      // printf ("%s : %d\n", GetIthIndependentName (k)->get_str(),
+      // printf ("%s : %ld\n", GetIthIndependentName (k)->get_str(),
       // tagger->GetXtra(idx));
     }
   } else {
@@ -12333,7 +12424,6 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
               existingRanking.UpdateValue((BaseRef)variableIndex,
                                           -offset - dimension + variable_id, 0);
               thisBlock << variableIndex;
-              // printf ("%s<%ld>\n",variableID.sData, variableIndex );
               re_sort = true;
             }
           }

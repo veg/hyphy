@@ -47,6 +47,7 @@
 #include "hbl_env.h"
 #include "hy_string_buffer.h"
 #include "likefunc.h"
+#include "time_difference.h"
 
 using namespace hy_global;
 
@@ -153,8 +154,6 @@ bool Get_a_URL(_String &urls, _String *
 #endif
 }
 
-#ifndef __HYPHY_GTK__
-
 //____________________________________________________________________________________
 
 _String *StringFromConsole() {
@@ -231,15 +230,14 @@ void ObjectToConsole(BaseRef obj, void *extra) {
   StringToConsole(_String(((_String *)obj->toStr())), extra);
 }
 
-#endif
-
 #ifdef __HYPHYMPI__
 
 //__________________________________________________________________________________
 void mpiNormalLoop(int rank, int size, _String &baseDir) {
   long senderID = 0;
 
-  ReportWarning("[MPI] Entered mpiNormalLoop");
+  // ReportWarning("[MPI] Entered mpiNormalLoop");
+  // printf("[MPI %d] Entered mpiNormalLoop\n", hy_mpi_node_rank);
 
   _String *theMessage =
       MPIRecvString(-1, senderID); // listen for messages from any node
@@ -259,11 +257,17 @@ void mpiNormalLoop(int rank, int size, _String &baseDir) {
           theMessage->Cut(mpiLoopSwitchToOptimize.length(), kStringEnd)
               .to_long();
 
-      ReportWarning(_String("[MPI] Switched to mpiOptimizer loop with mode ") &
-                    hyphyMPIOptimizerMode);
+      // printf("[MPI %d] Switched to mpiOptimizer loop with mode
+      // %d\n",hy_mpi_node_rank, hyphyMPIOptimizerMode);
+      // ReportWarning(_String("[MPI] Switched to mpiOptimizer loop with
+      // mode ")
+      // &
+      //               hyphyMPIOptimizerMode);
       MPISendString(mpiLoopSwitchToOptimize, senderID);
       mpiOptimizerLoop(rank, size);
-      ReportWarning("[MPI] Returned from mpiOptimizer loop");
+      // ReportWarning("[MPI] Returned from mpiOptimizer loop");
+      // printf("[MPI %d] Returned from mpiOptimizer loop\n",
+      // hy_mpi_node_rank);
       hyphyMPIOptimizerMode = _hyphyLFMPIModeNone;
       PushFilePath(baseDir, false, false);
     } else if (*theMessage == mpiLoopSwitchToBGM) {
@@ -349,7 +353,7 @@ void mpiNormalLoop(int rank, int size, _String &baseDir) {
       }*/
 
       if (hy_env::EnvVariableTrue(preserveSlaveNodeState) == false) {
-        printf("\n\nMPI Node %d; PURGING\n", rank);
+        // printf("\n\nMPI Node %d; PURGING\n", rank);
         PurgeAll(true);
         InitializeGlobals();
         PushFilePath(baseDir, false, false);
@@ -373,8 +377,11 @@ void mpiOptimizerLoop(int rank, int) {
   ReportWarning(_String("[MPI] Node:") & (long)rank &
                 " is ready for MPIParallelOptimizer tasks");
 
+  // printf("[MPI %d] is ready for MPIParallelOptimizer tasks\n", rank);
+
   if (hyphyMPIOptimizerMode == _hyphyLFMPIModePartitions) {
     ReportWarning("[MPI] MPI Partitions mode");
+    // printf("[MPI %d] MPI Partitions mode\n", rank);
   }
 
   // printf ("Node %d waiting for a string\n", rank);
@@ -382,11 +389,17 @@ void mpiOptimizerLoop(int rank, int) {
   while (theMessage->nonempty()) {
     if (theMessage->BeginsWith("#NEXUS")) {
       // ReportWarning (*theMessage);
+
+      TimeDifference timer;
+      // printf("[MPI %d] MPI read command file\n", rank);
       ReadDataSetFile(nil, true, theMessage);
+      // printf("[MPI %d] MPI finished command file %g\n", rank,
+      // timer.TimeSinceStart());
       if (likeFuncNamesList.lLength != 1) {
         HandleApplicationError(
             "[MPI] Malformed MPI likelihood function paraller optimizer "
-            "startup command. Exactly ONE valid LF must be defined.n\n\n");
+            "startup command. Exactly ONE valid LF must be "
+            "defined.n\n\n");
         break;
       }
 

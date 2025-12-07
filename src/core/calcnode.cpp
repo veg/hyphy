@@ -896,6 +896,11 @@ void _CalcNode::ConvertToSimpleMatrix(unsigned long category_count) {
   _Formula *mf = GetExplicitFormModel();
   if (mf) {
     if (!templateFormulaClone) {
+      /*
+      #ifdef __HYPHYMPI__
+              printf ("Setting up templateFormulaClone for %s at node %d\n",
+      GetName()->get_str(),hy_mpi_node_rank); #endif
+      */
       templateFormulaClone = new _Formula *[category_count];
       for (unsigned long i = 0; i < category_count; i++) {
         templateFormulaClone[i] = new _Formula(*mf);

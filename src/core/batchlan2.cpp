@@ -666,7 +666,7 @@ bool _ElementaryCommand::ConstructProfileStatement(_StringBuffer &source,
     return false;
   }
 
-  _ElementaryCommand *sp = new _ElementaryCommand(58);
+  _ElementaryCommand *sp = new _ElementaryCommand(HY_HBL_COMMAND_PROFILE);
   sp->addAndClean(target, &pieces, 0);
   return true;
 }
@@ -1047,7 +1047,7 @@ void _ElementaryCommand::ExecuteCase54(_ExecutionList &chain) {
 
 //____________________________________________________________________________________
 
-void _ElementaryCommand::ExecuteCase58(_ExecutionList &chain) {
+void _ElementaryCommand::ExecuteProfileCommand(_ExecutionList &chain) {
   chain.currentCommand++;
 
   static const _String kStart("START"), kPause("PAUSE"), kResume("RESUME");
@@ -1057,9 +1057,9 @@ void _ElementaryCommand::ExecuteCase58(_ExecutionList &chain) {
   if (*profileCode == kStart) {
     chain.StartProfile();
   } else if (*profileCode == kPause) {
-    chain.doProfile = 2;
+    chain.doProfile = kHBLProfilePaused;
   } else if (*profileCode == kResume) {
-    chain.doProfile = 1;
+    chain.doProfile = kHBLProfileOn;
   } else {
     _Variable *outVar = CheckReceptacle(
         &AppendContainerName(*profileCode, chain.nameSpacePrefix), blHBLProfile,

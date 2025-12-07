@@ -61,6 +61,11 @@ _AVLList::_AVLList(_SimpleList *d) {
   root = -1;
 }
 
+_AVLList::_AVLList(void) {
+  dataList = nil;
+  root = -1;
+}
+
 _AVLList::_AVLList(_AVLList const &) {
   HandleApplicationError("Called _AVLList:: copy constructor  method stub that "
                          "is not implemented");

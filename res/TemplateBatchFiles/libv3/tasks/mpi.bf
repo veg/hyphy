@@ -346,7 +346,6 @@ namespace mpi {
            v[^"terms.model.branch_length_override"] = TRUE;
         }
         for (i = 0; i < task_count; i+=1) {
-            
             parameters.SetValues (tasks[task_ids[i]]);
             ^"estimators._global_do_not_set" = tasks[task_ids[i]];
             estimators.ApplyExistingEstimates (lf_id, values[0], values[1], values[2]);

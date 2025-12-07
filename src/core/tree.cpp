@@ -2373,13 +2373,13 @@ void _TheTree::ScanForGVariables(_AVLList &li, _AVLList &ld, _AVLListX *tagger,
           }
         }
       } else {
-        explicitFormM_expression->ScanFForVariables(
-            tempA, true, false, true, true, tagger, weight, weight >> 2);
+        explicitFormM_expression->ScanFForVariables(tempA, true, false, true,
+                                                    true, tagger, weight);
       }
 
       cLL.Insert(modelM ? (BaseRef)modelM : (BaseRef)explicitFormM_expression);
     }
-    iterator->ScanForGVariables(li, ld);
+    iterator->ScanForGVariables(li, ld, tagger, weight);
   }
 }
 

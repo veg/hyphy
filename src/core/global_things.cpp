@@ -115,7 +115,7 @@ _String const kEmptyString, kPromptForFilePlaceholder("PROMPT_FOR_FILE"),
                     "\"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line "
                     "argument. This often resolves the issue, which is "
                     "indicative of numerical instability."),
-    kHyPhyVersion = _String("2.5.86"),
+    kHyPhyVersion = _String("2.5.88"),
 
     kNoneToken = "None", kNullToken = "null",
     kNoKWMatch = "__input_value_not_given__",
@@ -899,6 +899,12 @@ const _String GetVersionString(void) {
   theMessage << " zlib (v" << ZLIB_VERSION << ")";
 #endif
   return theMessage;
+}
+
+//____________________________________________________________________________________
+void print_status_line(const char *message) {
+  printf("\033[2K\r%s", message);
+  fflush(stdout);
 }
 
 //____________________________________________________________________________________

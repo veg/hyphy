@@ -55,6 +55,8 @@
 #include "mersenne_twister.h"
 #include "string_file_wrapper.h"
 
+#include "matrix_kernels.h"
+
 // #include "profiler.h"
 
 using namespace hy_global;
@@ -1827,6 +1829,8 @@ HBLObjectRef _Matrix::ExecuteSingleOp(long opCode, _List *arguments,
       return K_Means(arg0, cache);
     case HY_OP_CODE_EQ: // ==
       return _returnConstantOrUseCache(Equal(arg0), cache);
+    case HY_OP_CODE_NEQ: // ==
+      return _returnConstantOrUseCache(!Equal(arg0), cache);
       // return ProfileMeanFit(arg0);
     case HY_OP_CODE_GREATER: // >
       return NeighborJoin(!CheckEqual(arg0->Value(), 0.0), cache);
@@ -3540,65 +3544,69 @@ void _Matrix::AddMatrix(_Matrix &storage, _Matrix &secondArg, bool subtract)
             }
           } else {
             long i = 0L;
+
 #ifdef _SLKP_USE_ARM_NEON
             const long up2 = (secondArg.lDim >> 3 << 3);
+            double *__restrict destBase = storage.theData;
+            const double *__restrict srcBase = secondArg.theData;
+            const long *__restrict idxBase = secondArg.theIndex;
+
             for (; i < up2; i += 8) {
+              // 1. Prefetching: Critical for scatter/gather performance.
+              // Hint to CPU to bring the NEXT batch of indices and data into
+              // cache.
+              __builtin_prefetch(&idxBase[i + 16], 0, 0);
+              __builtin_prefetch(&srcBase[i + 16], 0, 0);
 
-              float64x2_t S1 = vld1q_f64(secondArg.theData + i),
-                          S2 = vld1q_f64(secondArg.theData + i + 2),
-                          S3 = vld1q_f64(secondArg.theData + i + 4),
-                          S4 = vld1q_f64(secondArg.theData + i + 6);
+              // 2. Load source values (streaming)
+              float64x2_t Val01 = vld1q_f64(srcBase + i);
+              float64x2_t Val23 = vld1q_f64(srcBase + i + 2);
+              float64x2_t Val45 = vld1q_f64(srcBase + i + 4);
+              float64x2_t Val67 = vld1q_f64(srcBase + i + 6);
 
-              long s0 = secondArg.theIndex[i], s1 = secondArg.theIndex[i + 1],
-                   s2 = secondArg.theIndex[i + 2],
-                   s3 = secondArg.theIndex[i + 3],
-                   s4 = secondArg.theIndex[i + 4],
-                   s5 = secondArg.theIndex[i + 5],
-                   s6 = secondArg.theIndex[i + 6],
-                   s7 = secondArg.theIndex[i + 7];
+              // 3. Load indices
+              long s0 = idxBase[i], s1 = idxBase[i + 1];
+              long s2 = idxBase[i + 2], s3 = idxBase[i + 3];
+              long s4 = idxBase[i + 4], s5 = idxBase[i + 5];
+              long s6 = idxBase[i + 6], s7 = idxBase[i + 7];
 
-              if (s1 - s0 == 1L) {
-                vst1q_f64(storage.theData + s0,
-                          vaddq_f64(vld1q_f64(storage.theData + s0), S1));
+              // --- Block 0-1 ---
+              if ((s1 - s0) == 1) {
+                // Fast Path: Contiguous Vector Load/Add/Store
+                float64x2_t curr = vld1q_f64(destBase + s0);
+                vst1q_f64(destBase + s0, vaddq_f64(curr, Val01));
               } else {
-                float64x2_t R1 = vcombine_f64(vld1_f64(storage.theData + s0),
-                                              vld1_f64(storage.theData + s1));
-                R1 = vaddq_f64(R1, S1);
-                vst1q_lane_f64(storage.theData + s0, R1, 0);
-                vst1q_lane_f64(storage.theData + s1, R1, 1);
+                // Fallback: Scalar math is faster than constructing vectors
+                // manually
+                destBase[s0] += vgetq_lane_f64(Val01, 0);
+                destBase[s1] += vgetq_lane_f64(Val01, 1);
               }
 
-              if (s3 - s2 == 1L) {
-                vst1q_f64(storage.theData + s2,
-                          vaddq_f64(vld1q_f64(storage.theData + s2), S2));
+              // --- Block 2-3 ---
+              if ((s3 - s2) == 1) {
+                float64x2_t curr = vld1q_f64(destBase + s2);
+                vst1q_f64(destBase + s2, vaddq_f64(curr, Val23));
               } else {
-                float64x2_t R2 = vcombine_f64(vld1_f64(storage.theData + s2),
-                                              vld1_f64(storage.theData + s3));
-                R2 = vaddq_f64(R2, S2);
-                vst1q_lane_f64(storage.theData + s2, R2, 0);
-                vst1q_lane_f64(storage.theData + s3, R2, 1);
+                destBase[s2] += vgetq_lane_f64(Val23, 0);
+                destBase[s3] += vgetq_lane_f64(Val23, 1);
               }
 
-              if (s5 - s4 == 1L) {
-                vst1q_f64(storage.theData + s4,
-                          vaddq_f64(vld1q_f64(storage.theData + s4), S3));
+              // --- Block 4-5 ---
+              if ((s5 - s4) == 1) {
+                float64x2_t curr = vld1q_f64(destBase + s4);
+                vst1q_f64(destBase + s4, vaddq_f64(curr, Val45));
               } else {
-                float64x2_t R3 = vcombine_f64(vld1_f64(storage.theData + s4),
-                                              vld1_f64(storage.theData + s5));
-                R3 = vaddq_f64(R3, S3);
-                vst1q_lane_f64(storage.theData + s4, R3, 0);
-                vst1q_lane_f64(storage.theData + s5, R3, 1);
+                destBase[s4] += vgetq_lane_f64(Val45, 0);
+                destBase[s5] += vgetq_lane_f64(Val45, 1);
               }
 
-              if (s7 - s6 == 1L) {
-                vst1q_f64(storage.theData + s6,
-                          vaddq_f64(vld1q_f64(storage.theData + s6), S4));
+              // --- Block 6-7 ---
+              if ((s7 - s6) == 1) {
+                float64x2_t curr = vld1q_f64(destBase + s6);
+                vst1q_f64(destBase + s6, vaddq_f64(curr, Val67));
               } else {
-                float64x2_t R4 = vcombine_f64(vld1_f64(storage.theData + s6),
-                                              vld1_f64(storage.theData + s7));
-                R4 = vaddq_f64(R4, S4);
-                vst1q_lane_f64(storage.theData + s6, R4, 0);
-                vst1q_lane_f64(storage.theData + s7, R4, 1);
+                destBase[s6] += vgetq_lane_f64(Val67, 0);
+                destBase[s7] += vgetq_lane_f64(Val67, 1);
               }
             }
 #endif
@@ -4241,223 +4249,39 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
 
         */
 
+        if (compressedIndex) {
+          hyFloat *__restrict__ res = storage.theData;
+          const long *__restrict__ compIdx = compressedIndex;
+          const hyFloat *__restrict__ secondArgBase = secondArg.theData;
+          const hyFloat *__restrict__ theDataPtr = theData;
+
+          switch (vDim) {
+          case 60:
+            _matrix_kernel_multiply_by_compressed_sparse_T<60>(
+                res, compIdx, secondArgBase, theDataPtr);
+            break;
+          case 61:
+            _matrix_kernel_multiply_by_compressed_sparse_T<61>(
+                res, compIdx, secondArgBase, theDataPtr);
+            break;
+          case 62:
+            _matrix_kernel_multiply_by_compressed_sparse_T<62>(
+                res, compIdx, secondArgBase, theDataPtr);
+            break;
+          case 63:
+            _matrix_kernel_multiply_by_compressed_sparse_T<63>(
+                res, compIdx, secondArgBase, theDataPtr);
+            break;
+          default:
+            _matrix_kernel_multiply_by_compressed_sparse(
+                res, compIdx, secondArgBase, theDataPtr, vDim);
+          }
+
+          return;
+        }
+
         if (vDim == 61L) {
           if (compressedIndex) {
-
-#ifdef _SLKP_USE_APPLE_BLAS_2_NOT_USED
-            hyFloat *_hprestrict_ res = storage.theData;
-            long currentXIndex = 0L;
-            for (long i = 0; i < 61; i++) {
-              long up = compressedIndex[i];
-
-              if (currentXIndex < up) {
-
-                for (long cxi = currentXIndex; cxi < up; cxi++) {
-                  long currentXColumn = compressedIndex[cxi + 61];
-                  hyFloat *secArg = secondArg.theData + currentXColumn * 61;
-                  hyFloat value = theData[cxi];
-                  cblas_daxpy(61, value, secArg, 1, res, 1);
-                }
-              }
-              res += 61;
-              currentXIndex = up;
-            }
-#else
-#ifdef _SLKP_USE_ARM_NEON
-
-            hyFloat *_hprestrict_ res = storage.theData;
-            long currentXIndex = 0L;
-            for (long i = 0; i < 61; i++) {
-              long up = compressedIndex[i];
-
-              if (currentXIndex < up) {
-                float64x2x2_t R[15]; // store  60 elements of this row
-
-#pragma unroll 3
-                for (int k = 0; k < 15; k++) {
-                  R[k] = vld1q_f64_x2(res + (k << 2));
-                }
-
-                hyFloat r60 = res[60]; // and the 61st element
-
-                for (long cxi = currentXIndex; cxi < up; cxi++) {
-                  long currentXColumn = compressedIndex[cxi + 61];
-                  hyFloat *secArg = secondArg.theData + currentXColumn * 61;
-
-                  if (cxi + 1 < up) {
-                    long nextXColumn = compressedIndex[cxi + 1 + 61];
-                    __builtin_prefetch(secondArg.theData + nextXColumn * 61, 0,
-                                       0);
-                  }
-
-                  hyFloat value = theData[cxi];
-                  float64x2_t value_op = vdupq_n_f64(value);
-
-                  for (int k = 0; k < 3; k++) {
-                    int k12 = k * 20, k3 = k * 5;
-
-                    float64x2x4_t C1 = vld1q_f64_x4(secArg + k12),
-                                  C2 = vld1q_f64_x4(secArg + k12 + 8);
-                    float64x2x2_t C5 = vld1q_f64_x2(secArg + k12 + 16);
-
-                    R[k3].val[0] = vfmaq_f64(R[k3].val[0], value_op, C1.val[0]);
-                    R[k3].val[1] = vfmaq_f64(R[k3].val[1], value_op, C1.val[1]);
-
-                    R[k3 + 1].val[0] =
-                        vfmaq_f64(R[k3 + 1].val[0], value_op, C1.val[2]);
-                    R[k3 + 1].val[1] =
-                        vfmaq_f64(R[k3 + 1].val[1], value_op, C1.val[3]);
-
-                    R[k3 + 2].val[0] =
-                        vfmaq_f64(R[k3 + 2].val[0], value_op, C2.val[0]);
-                    R[k3 + 2].val[1] =
-                        vfmaq_f64(R[k3 + 2].val[1], value_op, C2.val[1]);
-
-                    R[k3 + 3].val[0] =
-                        vfmaq_f64(R[k3 + 3].val[0], value_op, C2.val[2]);
-                    R[k3 + 3].val[1] =
-                        vfmaq_f64(R[k3 + 3].val[1], value_op, C2.val[3]);
-
-                    R[k3 + 4].val[0] =
-                        vfmaq_f64(R[k3 + 4].val[0], value_op, C5.val[0]);
-                    R[k3 + 4].val[1] =
-                        vfmaq_f64(R[k3 + 4].val[1], value_op, C5.val[1]);
-                  }
-                  r60 += value * secArg[60];
-                }
-
-#pragma unroll 3
-                for (int k = 0; k < 15; k++) {
-                  vst1q_f64_x2(res + (k << 2), R[k]);
-                }
-
-                res[60] = r60;
-              }
-              res += 61;
-              currentXIndex = up;
-            }
-
-#elif defined _SLKP_USE_AVX_INTRINSICS
-            hyFloat *_hprestrict_ res = storage.theData;
-            long currentXIndex = 0L;
-            for (long i = 0; i < 61; i++) {
-              long up = compressedIndex[i];
-
-              if (currentXIndex < up) {
-                __m256d R[15]; // store  60 elements of this row
-
-#pragma unroll 3
-                for (int k = 0; k < 15; k++) {
-                  R[k] = _mm256_loadu_pd(res + (k << 2));
-                }
-
-                hyFloat r60 = res[60]; // and the 61st element
-
-                for (long cxi = currentXIndex; cxi < up; cxi++) {
-                  long currentXColumn = compressedIndex[cxi + 61];
-                  hyFloat *secArg = secondArg.theData + currentXColumn * 61;
-
-                  if (cxi + 1 < up) {
-                    long nextXColumn = compressedIndex[cxi + 1 + 61];
-                    __builtin_prefetch(secondArg.theData + nextXColumn * 61, 0,
-                                       0);
-                  }
-
-                  hyFloat value = theData[cxi];
-                  __m256d value_op = _mm256_set1_pd(value);
-
-                  for (int k = 0; k < 3; k++) {
-                    int k12 = k * 20, k3 = k * 5;
-
-                    R[k3] = _hy_matrix_handle_axv_mfma(
-                        R[k3], value_op, _mm256_loadu_pd(secArg + k12));
-                    R[k3 + 1] = _hy_matrix_handle_axv_mfma(
-                        R[k3 + 1], value_op, _mm256_loadu_pd(secArg + k12 + 4));
-                    R[k3 + 2] = _hy_matrix_handle_axv_mfma(
-                        R[k3 + 2], value_op, _mm256_loadu_pd(secArg + k12 + 8));
-                    R[k3 + 3] = _hy_matrix_handle_axv_mfma(
-                        R[k3 + 3], value_op,
-                        _mm256_loadu_pd(secArg + k12 + 12));
-                    R[k3 + 4] = _hy_matrix_handle_axv_mfma(
-                        R[k3 + 4], value_op,
-                        _mm256_loadu_pd(secArg + k12 + 16));
-                  }
-                  r60 += value * secArg[60];
-                }
-
-#pragma unroll 3
-                for (int k = 0; k < 15; k++) {
-                  _mm256_storeu_pd(res + (k << 2), R[k]);
-                }
-
-                res[60] = r60;
-              }
-              res += 61;
-              currentXIndex = up;
-            }
-#else
-            long currentXIndex = 0L;
-            hyFloat *_hprestrict_ res = storage.theData;
-
-            for (long i = 0; i < hDim; i++) { // row in source
-
-              double r60 = res[60];
-              while (currentXIndex < compressedIndex[i]) {
-                long currentXColumn = compressedIndex[currentXIndex + hDim];
-                // go into the second matrix and look up all the non-zero
-                // entries in the currentXColumn row
-
-                hyFloat value = theData[currentXIndex];
-                hyFloat *_hprestrict_ secArg =
-                    secondArg.theData + currentXColumn * 61;
-#ifdef _SLKP_USE_AVX_INTRINSICS
-                __m256d value_op = _mm256_set1_pd(value);
-#ifdef _SLKP_USE_FMA3_INTRINSICS
-#define CELL_OP(x)                                                             \
-  _mm256_storeu_pd(res + x,                                                    \
-                   _mm256_fmadd_pd(value_op, _mm256_loadu_pd(secArg + x),      \
-                                   _mm256_loadu_pd(res + x)))
-#else
-#define CELL_OP(x)                                                             \
-  _mm256_storeu_pd(                                                            \
-      res + x,                                                                 \
-      _mm256_add_pd(_mm256_loadu_pd(res + x),                                  \
-                    _mm256_mul_pd(value_op, _mm256_loadu_pd(secArg + x))))
-#endif
-
-                CELL_OP(0);
-                CELL_OP(4);
-                CELL_OP(8);
-                CELL_OP(12);
-                CELL_OP(16);
-                CELL_OP(20);
-                CELL_OP(24);
-                CELL_OP(28);
-                CELL_OP(32);
-                CELL_OP(36);
-                CELL_OP(40);
-                CELL_OP(44);
-                CELL_OP(48);
-                CELL_OP(52);
-                CELL_OP(56);
-
-#else
-                for (unsigned long i = 0UL; i < 60UL; i += 4UL) {
-                  res[i] += value * secArg[i];
-                  res[i + 1] += value * secArg[i + 1];
-                  res[i + 2] += value * secArg[i + 2];
-                  res[i + 3] += value * secArg[i + 3];
-                }
-#endif
-                r60 += value * secArg[60];
-                currentXIndex++;
-              }
-              res[60] = r60;
-              res += 61;
-            }
-#endif
-#endif
-
           } else {
 
             for (long k = 0UL; k < lDim;
@@ -5723,7 +5547,7 @@ _Matrix *_Matrix::Exponentiate(hyFloat scale_to, bool check_transition,
       RowAndColumnMax(max, t, stash);
       max *= t;
       if (max > .1) {
-        max = scale_to * sqrt(10. * max);
+        max = scale_to * sqrt(2. * max);
         power2 = (long)((log(max) / _log2)) + 1L;
         max = exp(power2 * _log2);
         mmax = max;

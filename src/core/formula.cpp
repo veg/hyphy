@@ -1346,6 +1346,77 @@ void _Formula::SubtreeToString(_StringBuffer &result, node<long> *top_node,
 bool _Formula::IsEmpty(void) const { return theFormula.empty(); }
 
 //__________________________________________________________________________________
+// helper function to check if an expression is a simple formula, and if so,
+// return the index of the target variable
+
+struct _simpleComputeAux {
+  long stack_depth, target_index;
+  _SimpleFormulaDatum *stack, *vvals;
+  _SimpleList fvidx_aux, changing_vars, idx_map;
+  _AVLList *fvidx;
+};
+
+void _convertFormulaFromSimple(_Formula *f, _simpleComputeAux *data) {
+  if (data->target_index >= 0) {
+    f->ConvertFromSimple(*data->fvidx);
+  }
+  DeleteAndZeroObject(data->fvidx);
+  BatchDeleteArray(data->stack, data->vvals);
+  delete data;
+}
+
+_simpleComputeAux *_convertFormulaToSimple(_Formula *f, _Variable *x) {
+  _simpleComputeAux *result = new _simpleComputeAux;
+  result->stack_depth = -1L;
+  result->target_index = -1L;
+  result->stack = nil;
+  result->vvals = nil;
+  result->fvidx = new _AVLList(&result->fvidx_aux);
+
+  // return result;
+
+  if (f->AmISimple(result->stack_depth, *result->fvidx)) {
+    result->stack = new _SimpleFormulaDatum[result->stack_depth];
+    f->ConvertToSimple(*result->fvidx);
+    if (result->fvidx->countitems()) { // could be a constant expression with no
+                                       // variable dependancies
+      result->vvals = new _SimpleFormulaDatum[result->fvidx->countitems()];
+      // fvidx.ReorderList();
+      long dx_index = x->get_index();
+      // printf ("\n::: %ld / %ld\n", result->fvidx->countitems(), dx_index);
+      for (unsigned long vi = 0; vi < result->fvidx_aux.countitems(); vi++) {
+        _Variable *variable_in_expression =
+            LocateVar(result->fvidx_aux.Element(vi));
+        // printf ("%ld => %s\n", vi,
+        // variable_in_expression->GetName()->get_str());
+
+        if (variable_in_expression->CheckFForDependence(dx_index, true)) {
+          result->changing_vars << result->fvidx_aux.Element(vi);
+          result->idx_map << vi;
+        }
+        result->vvals[vi].value = variable_in_expression->Compute()->Value();
+      }
+
+      long depends_on_dx = result->fvidx->FindLong(dx_index);
+
+      if (depends_on_dx >= 0) {
+        result->changing_vars.InsertElement((BaseRef)dx_index, 0, false, false);
+        result->idx_map.InsertElement((BaseRef)depends_on_dx, 0, false, false);
+        result->target_index = depends_on_dx;
+      } else {
+        result->target_index = 0L;
+      }
+    } else { // constant expression
+      result->vvals = new _SimpleFormulaDatum[1L];
+      result->target_index = 0L;
+    }
+  } else {
+    result->stack_depth = -1L;
+  }
+  return result;
+}
+
+//__________________________________________________________________________________
 hyFloat _Formula::Newton(_Formula &derivative, _Variable *unknown,
                          hyFloat target_value, hyFloat left, hyFloat right) {
   // find a root of the formulaic expression, using Newton's method, given the
@@ -1353,89 +1424,134 @@ hyFloat _Formula::Newton(_Formula &derivative, _Variable *unknown,
   // Newton iterations based on what is fatser check that there is indeed a sign
   // change on the interval
 
-  auto set_and_compute = [&](hyFloat x) -> hyFloat {
-    unknown->SetValue(x);
-    return Compute()->Value() - target_value;
+  _simpleComputeAux *simple_f = _convertFormulaToSimple(this, unknown),
+                    *simple_d = _convertFormulaToSimple(&derivative, unknown);
+
+  auto set_and_compute = [&](_Formula *f, hyFloat x, _simpleComputeAux *s,
+                             hyFloat target_v, bool set) -> hyFloat {
+    hyFloat result;
+    if (s->target_index >= 0) {
+      if (s->changing_vars.countitems() == 1L) {
+        s->vvals[s->idx_map.get(0)].value = x;
+      } else {
+        if (s->changing_vars.countitems() > 0) {
+          unknown->SetNumericValue(x);
+          s->changing_vars.Each([&](long v, unsigned long vi) -> void {
+            _Variable *me = LocateVar(v);
+            s->vvals[s->idx_map.get(vi)].value = me->Compute()->Value();
+            // printf (">%s (%ld) => %g (%g)\n", me->GetName()->get_str(),
+            // s->idx_map.get(vi), s->vvals[s->idx_map.get(vi)].value, x);
+          });
+        }
+      }
+      result = f->ComputeSimple(s->stack, s->vvals) - target_v;
+    } else {
+
+      if (set) {
+        unknown->SetValue(x);
+      }
+      result = f->Compute()->Value() - target_v;
+    }
+    // printf ("%g => %g\n", x, result);
+    return result;
+  };
+
+  auto cleanup = [&]() -> void {
+    _convertFormulaFromSimple(this, simple_f);
+    _convertFormulaFromSimple(&derivative, simple_d);
   };
 
   hyFloat func_left, func_right, // keeps track of function values in the
                                  // current interval, [left,right]
       root_guess, func_root_guess, lastCorrection = 100., newCorrection;
 
-  func_left = set_and_compute(left);
-  if (func_left == 0.0) {
-    return left;
-  }
-  unknown->SetValue(right);
-  func_right = set_and_compute(right);
-  if (func_right == 0.0) {
-    return right;
-  }
+  try {
 
-  if (func_left * func_right > 0.0) { // bracket fail
-    ReportWarning(
-        _String((_String *)toStr(kFormulaStringConversionReportRanges)) &
-        " = " & _String(target_value) & " has no (or multiple) roots in [" &
-        _String(left) & ",Inf); " & func_left & "-" & func_right);
-    return left;
-  }
-  // else all is good we can start the machine
-  bool useNewton = false;
-
-  root_guess = (right + left) * .5;
-
-  for (unsigned long iterCount = 0L;
-       fabs(right - left) / MAX(left, right) > kMachineEpsilon * 10. &&
-       iterCount < 200UL;
-       iterCount++) {
-    func_root_guess = set_and_compute(root_guess);
-    if (func_root_guess == 0.) {
-      return root_guess;
+    func_left = set_and_compute(this, left, simple_f, target_value, true);
+    if (func_left == 0.0) {
+      throw left;
     }
-    // get the correction term from the derivative
-    hyFloat df_dx = derivative.Compute()->Value(), adjusted_root_guess;
+    unknown->SetValue(right);
+    func_right = set_and_compute(this, right, simple_f, target_value, true);
+    if (func_right == 0.0) {
+      throw right;
+    }
 
-    useNewton = true;
-    if (df_dx == 0.0) {
-      useNewton = false;
-    } else {
-      newCorrection = -func_root_guess / df_dx;
+    if (func_left * func_right > 0.0) { // bracket fail
+      cleanup();
+      ReportWarning(
+          _String((_String *)toStr(kFormulaStringConversionReportRanges)) &
+          " = " & _String(target_value) & " has no (or multiple) roots in [" &
+          _String(left) & ",Inf); " & func_left & "-" & func_right);
+      return left;
+    }
+    // else all is good we can start the machine
+    bool useNewton = false;
 
-      if (fabs(newCorrection / func_root_guess) < kMachineEpsilon * 2. ||
-          fabs(newCorrection) <
-              kMachineEpsilon *
-                  2.) { // correction too small - the root has been found
-        return root_guess;
+    root_guess = (right + left) * .5;
+
+    for (unsigned long iterCount = 0L;
+         fabs(right - left) / MAX(left, right) > kMachineEpsilon * 10. &&
+         iterCount < 200UL;
+         iterCount++) {
+      func_root_guess =
+          set_and_compute(this, root_guess, simple_f, target_value, true);
+      if (func_root_guess == 0.) {
+        throw root_guess;
       }
+      // get the correction term from the derivative
+      hyFloat df_dx = set_and_compute(&derivative, root_guess, simple_d, 0.0,
+                                      false),
+              adjusted_root_guess;
 
-      if (fabs(newCorrection / lastCorrection) >
-          4.) { // Newton correction too large - revert to bisection
-        useNewton = false;
-      }
-
-      adjusted_root_guess = root_guess + newCorrection;
-      if (adjusted_root_guess <= left || adjusted_root_guess >= right) {
+      useNewton = true;
+      if (df_dx == 0.0) {
         useNewton = false;
       } else {
-        lastCorrection = newCorrection;
-      }
-    }
+        newCorrection = -func_root_guess / df_dx;
 
-    if (useNewton) {
-      root_guess = adjusted_root_guess;
-    } else {
-      if (func_root_guess == 0.0) {
-        return root_guess;
+        if (fabs(newCorrection / func_root_guess) < kMachineEpsilon * 2. ||
+            fabs(newCorrection) <
+                kMachineEpsilon *
+                    2.) { // correction too small - the root has been found
+          throw root_guess;
+        }
+
+        if (fabs(newCorrection / lastCorrection) >
+            4.) { // Newton correction too large - revert to bisection
+          useNewton = false;
+        }
+
+        adjusted_root_guess = root_guess + newCorrection;
+        if (adjusted_root_guess <= left || adjusted_root_guess >= right) {
+          useNewton = false;
+        } else {
+          lastCorrection = newCorrection;
+        }
       }
-      if (func_root_guess * func_left > 0.0) { // move to the right half
-        func_left = func_root_guess;
-        left = root_guess;
+
+      if (useNewton) {
+        root_guess = adjusted_root_guess;
       } else {
-        right = root_guess;
+        if (func_root_guess == 0.0) {
+          throw root_guess;
+        }
+        if (func_root_guess * func_left > 0.0) { // move to the right half
+          func_left = func_root_guess;
+          left = root_guess;
+        } else {
+          right = root_guess;
+        }
+        root_guess = (right + left) * .5;
       }
-      root_guess = (right + left) * .5;
     }
+  } catch (hyFloat &v) {
+    cleanup();
+    // HandleApplicationError("DIE");
+    return v;
   }
+  cleanup();
+  // HandleApplicationError("DIE");
   return root_guess;
 }
 
@@ -2552,9 +2668,11 @@ bool _Formula::ConvertToSimple(_AVLList &variable_index) {
 
   if (!theFormula.empty()) {
 
-    simpleExpressionStatus = new long[theFormula.countitems()];
+    const unsigned long N = theFormula.countitems();
 
-    for (unsigned long i = 0UL; i < theFormula.countitems(); i++) {
+    simpleExpressionStatus = new long[N + 1];
+
+    for (unsigned long i = 0UL; i < N; i++) {
       _Operation *this_op = ItemAt(i);
       simpleExpressionStatus[i] = -64L;
       if (this_op->theNumber) {
@@ -2587,18 +2705,49 @@ bool _Formula::ConvertToSimple(_AVLList &variable_index) {
         if (this_op->numberOfTerms == 2) {
           switch (this_op->opCode) {
           case HY_OP_CODE_ADD:
+            simpleExpressionStatus[i] = -10000;
+            break;
           case HY_OP_CODE_SUB:
+            simpleExpressionStatus[i] = -10001;
+            break;
           case HY_OP_CODE_MUL:
+            simpleExpressionStatus[i] = -10002;
+            break;
           case HY_OP_CODE_DIV:
+            simpleExpressionStatus[i] = -10003;
+            break;
           case HY_OP_CODE_POWER:
-            simpleExpressionStatus[i] = -10000L - this_op->opCode;
+            simpleExpressionStatus[i] = -10004;
+            break;
+
+            // simpleExpressionStatus[i] = -10000L - this_op->opCode;
           }
         }
         this_op->opCode = simpleOperationFunctions(
             simpleOperationCodes.Find(this_op->opCode));
       }
     }
+    bool simple_lookups = true;
+    for (unsigned long i = 0UL; i < theFormula.countitems() && simple_lookups;
+         i++) {
+      if (simpleExpressionStatus[i] < 0L) {
+        if (simpleExpressionStatus[i] == -1) {
+          simple_lookups = false;
+          // printf ("NLP fail because of -1 %ld/%ld\n", available_slots,
+          // used_float_slots);
+        } else {
+          if (simpleExpressionStatus[i] > -10000 &&
+              simpleExpressionStatus[i] <= -2 - available_slots) {
+            simple_lookups = false;
+            // printf ("NLP fail because of constant overflow %ld\n",
+            // simpleExpressionStatus[i]);
+          }
+        }
+      }
+    }
+    simpleExpressionStatus[N] = simple_lookups;
   }
+
   return has_volatiles;
 }
 
@@ -2641,6 +2790,59 @@ void _Formula::ConvertFromSimpleList(_SimpleList const &variableIndex) {
 }
 
 //__________________________________________________________________________________
+hyFloat _Formula::ComputeSimpleNLP(_SimpleFormulaDatum *stack,
+                                   _SimpleFormulaDatum *varValues) {
+  unsigned long upper_bound = NumberOperations();
+  long stackTop = 0;
+  const hyFloat *constants = (hyFloat *)theStack.theStack._getStatic();
+
+  for (unsigned long i = 0UL; i < upper_bound; i++) {
+    const long ses = simpleExpressionStatus[i];
+    if (ses >= 0L) {
+      stack[stackTop++] = varValues[ses];
+    } else {
+      if (ses <= -10000) {
+        const long instruction_op = -ses - 10000L;
+
+        stackTop--;
+
+        hyFloat new_value;
+
+        switch (instruction_op) {
+        case 0:
+          new_value = stack[stackTop - 1].value + stack[stackTop].value;
+          break;
+        case 1:
+          new_value = stack[stackTop - 1].value - stack[stackTop].value;
+          break;
+        case 2:
+          new_value = stack[stackTop - 1].value * stack[stackTop].value;
+          break;
+        case 3:
+          new_value = stack[stackTop - 1].value / stack[stackTop].value;
+          break;
+        case 4: {
+          if (stack[stackTop - 1].value == 0.0) {
+            if (stack[stackTop].value > 0.0) {
+              new_value = 0.0;
+            } else {
+              new_value = 1.0;
+            }
+          } else {
+            new_value = pow(stack[stackTop - 1].value, stack[stackTop].value);
+          }
+          break;
+        }
+        }
+        stack[stackTop - 1].value = new_value;
+      } else {
+        stack[stackTop++].value = constants[-ses - 2L];
+      }
+    }
+  }
+  return stack[0].value;
+}
+//__________________________________________________________________________________
 hyFloat _Formula::ComputeSimple(_SimpleFormulaDatum *stack,
                                 _SimpleFormulaDatum *varValues) {
   if (theFormula.nonempty()) {
@@ -2649,87 +2851,81 @@ hyFloat _Formula::ComputeSimple(_SimpleFormulaDatum *stack,
       HandleApplicationError("Internal error, calling _Formula::ComputeSimple "
                              "on a standard _Formula object");
     } else {
-      long stackTop = 0;
+
       unsigned long upper_bound = NumberOperations();
+      bool assume_no_lookups = simpleExpressionStatus[upper_bound];
 
-      const hyFloat *constants = (hyFloat *)theStack.theStack._getStatic();
+      if (assume_no_lookups) {
+        return ComputeSimpleNLP(stack, varValues);
+      } else {
+        long stackTop = 0;
+        const hyFloat *constants = (hyFloat *)theStack.theStack._getStatic();
 
-      for (unsigned long i = 0UL; i < upper_bound; i++) {
-
-        if (simpleExpressionStatus[i] >= 0L) {
-          stack[stackTop++] = varValues[simpleExpressionStatus[i]];
-        } else {
-          if (simpleExpressionStatus[i] <= -2L &&
-              simpleExpressionStatus[i] >= -32L) {
-            stack[stackTop++].value =
-                constants[-simpleExpressionStatus[i] - 2L];
+        for (unsigned long i = 0UL; i < upper_bound; i++) {
+          if (simpleExpressionStatus[i] >= 0L) {
+            stack[stackTop++] = varValues[simpleExpressionStatus[i]];
           } else {
-            if (simpleExpressionStatus[i] == -1L) {
+            if (simpleExpressionStatus[i] <= -2L &&
+                simpleExpressionStatus[i] >= -32L) {
               stack[stackTop++].value =
-                  ((_Operation **)theFormula.list_data)[i]->theNumber->Value();
+                  constants[-simpleExpressionStatus[i] - 2L];
             } else {
-              if (simpleExpressionStatus[i] <= -10000L) {
-                stackTop--;
-                switch (-simpleExpressionStatus[i] - 10000L) {
-                case HY_OP_CODE_ADD:
-                  stack[stackTop - 1].value =
-                      stack[stackTop - 1].value + stack[stackTop].value;
-                  break;
-                case HY_OP_CODE_SUB:
-                  stack[stackTop - 1].value =
-                      stack[stackTop - 1].value - stack[stackTop].value;
-                  break;
-                case HY_OP_CODE_MUL:
-                  stack[stackTop - 1].value =
-                      stack[stackTop - 1].value * stack[stackTop].value;
-                  break;
-                case HY_OP_CODE_DIV:
-                  stack[stackTop - 1].value =
-                      stack[stackTop - 1].value / stack[stackTop].value;
-                  break;
-                case HY_OP_CODE_POWER: {
-                  // stack[stackTop-1].value = pow (stack[stackTop-1].value,
-                  // stack[stackTop].value);
-
-                  if (stack[stackTop - 1].value == 0.0) {
-                    if (stack[stackTop].value > 0.0) {
-                      return 0.0;
-                    } else {
-                      return 1.0;
-                    }
-                  }
-                  stack[stackTop - 1].value =
-                      pow(stack[stackTop - 1].value, stack[stackTop].value);
-
-                  break;
-                }
-                default:
-                  HandleApplicationError(
-                      "Internal error in _Formula::ComputeSimple - unsupported "
-                      "shortcut operation.)",
-                      true);
-                  return 0.0;
-                }
+              if (simpleExpressionStatus[i] == -1L) {
+                stack[stackTop++].value =
+                    ((_Operation **)theFormula.list_data)[i]
+                        ->theNumber->Value();
               } else {
-                _Operation const *thisOp = ItemAt(i);
-                stackTop--;
-                if (thisOp->numberOfTerms == 2) {
-                  hyFloat (*theFunc)(hyFloat, hyFloat);
-                  theFunc = (hyFloat (*)(hyFloat, hyFloat))thisOp->opCode;
-                  if (stackTop < 1L) {
+                const long instruction_op = -simpleExpressionStatus[i] - 10000L;
+                if (instruction_op >= 0) {
+                  stackTop--;
+                  if (instruction_op < 5) {
+                    switch (instruction_op) {
+                    case 0:
+                      stack[stackTop - 1].value =
+                          stack[stackTop - 1].value + stack[stackTop].value;
+                      break;
+                    case 1:
+                      stack[stackTop - 1].value =
+                          stack[stackTop - 1].value - stack[stackTop].value;
+                      break;
+                    case 2:
+                      stack[stackTop - 1].value =
+                          stack[stackTop - 1].value * stack[stackTop].value;
+                      break;
+                    case 3:
+                      stack[stackTop - 1].value =
+                          stack[stackTop - 1].value / stack[stackTop].value;
+                      break;
+                    case 4: {
+                      if (stack[stackTop - 1].value == 0.0) {
+                        if (stack[stackTop].value > 0.0) {
+                          stack[stackTop - 1].value = 0.0;
+                        } else {
+                          stack[stackTop - 1].value = 1.0;
+                        }
+                      } else {
+                        stack[stackTop - 1].value = pow(
+                            stack[stackTop - 1].value, stack[stackTop].value);
+                      }
+                      break;
+                    }
+                    }
+                  } else {
+
                     HandleApplicationError(
-                        "Internal error in _Formula::ComputeSimple - stack "
-                        "underflow.)",
+                        "Internal error in _Formula::ComputeSimple - "
+                        "unsupported "
+                        "shortcut operation.)",
                         true);
                     return 0.0;
                   }
-                  stack[stackTop - 1].value = (*theFunc)(
-                      stack[stackTop - 1].value, stack[stackTop].value);
+
                 } else {
-                  switch (thisOp->numberOfTerms) {
-                  case -2: {
-                    hyFloat (*theFunc)(hyPointer, hyFloat);
-                    theFunc = (hyFloat (*)(hyPointer, hyFloat))thisOp->opCode;
+                  _Operation const *thisOp = ItemAt(i);
+                  stackTop--;
+                  if (thisOp->numberOfTerms == 2) {
+                    hyFloat (*theFunc)(hyFloat, hyFloat);
+                    theFunc = (hyFloat (*)(hyFloat, hyFloat))thisOp->opCode;
                     if (stackTop < 1L) {
                       HandleApplicationError(
                           "Internal error in _Formula::ComputeSimple - stack "
@@ -2738,33 +2934,48 @@ hyFloat _Formula::ComputeSimple(_SimpleFormulaDatum *stack,
                       return 0.0;
                     }
                     stack[stackTop - 1].value = (*theFunc)(
-                        stack[stackTop - 1].reference, stack[stackTop].value);
-                    break;
-                  }
-                  case -3: {
-                    void (*theFunc)(hyPointer, hyFloat, hyFloat);
-                    theFunc =
-                        (void (*)(hyPointer, hyFloat, hyFloat))thisOp->opCode;
-                    if (stackTop != 2 || i != theFormula.lLength - 1) {
-                      HandleApplicationError(
-                          "Internal error in _Formula::ComputeSimple - stack "
-                          "underflow or MCoord command is not the last one.)",
-                          true);
-
-                      return 0.0;
+                        stack[stackTop - 1].value, stack[stackTop].value);
+                  } else {
+                    switch (thisOp->numberOfTerms) {
+                    case -2: {
+                      hyFloat (*theFunc)(hyPointer, hyFloat);
+                      theFunc = (hyFloat (*)(hyPointer, hyFloat))thisOp->opCode;
+                      if (stackTop < 1L) {
+                        HandleApplicationError(
+                            "Internal error in _Formula::ComputeSimple - stack "
+                            "underflow.)",
+                            true);
+                        return 0.0;
+                      }
+                      stack[stackTop - 1].value = (*theFunc)(
+                          stack[stackTop - 1].reference, stack[stackTop].value);
+                      break;
                     }
-                    // stackTop = 0;
-                    //  value, reference, index
-                    (*theFunc)(stack[1].reference, stack[2].value,
-                               stack[0].value);
-                    break;
-                  }
-                  default: {
-                    hyFloat (*theFunc)(hyFloat);
-                    theFunc = (hyFloat (*)(hyFloat))thisOp->opCode;
-                    stack[stackTop].value = (*theFunc)(stack[stackTop].value);
-                    ++stackTop;
-                  }
+                    case -3: {
+                      void (*theFunc)(hyPointer, hyFloat, hyFloat);
+                      theFunc =
+                          (void (*)(hyPointer, hyFloat, hyFloat))thisOp->opCode;
+                      if (stackTop != 2 || i != theFormula.lLength - 1) {
+                        HandleApplicationError(
+                            "Internal error in _Formula::ComputeSimple - stack "
+                            "underflow or MCoord command is not the last one.)",
+                            true);
+
+                        return 0.0;
+                      }
+                      // stackTop = 0;
+                      //  value, reference, index
+                      (*theFunc)(stack[1].reference, stack[2].value,
+                                 stack[0].value);
+                      break;
+                    }
+                    default: {
+                      hyFloat (*theFunc)(hyFloat);
+                      theFunc = (hyFloat (*)(hyFloat))thisOp->opCode;
+                      stack[stackTop].value = (*theFunc)(stack[stackTop].value);
+                      ++stackTop;
+                    }
+                    }
                   }
                 }
               }
@@ -2976,7 +3187,7 @@ bool _Formula::HasChangedSimple(_SimpleList &variableIndex) {
 void _Formula::ScanFForVariables(_AVLList &l, bool includeGlobals,
                                  bool includeAll, bool includeCategs,
                                  bool skipMatrixAssignments, _AVLListX *tagger,
-                                 long weight, long weight2) const {
+                                 long weight) const {
   unsigned long const upper_bound = NumberOperations();
 
   for (unsigned long i = 0UL; i < upper_bound; i++) {
@@ -3009,8 +3220,9 @@ void _Formula::ScanFForVariables(_AVLList &l, bool includeGlobals,
                 printf ("\n\n\nWEIGHT2\n%d: %s\n", weight2,
             v->GetName()->get_str());
             }*/
-            tagger->UpdateValue((BaseRef)f, weight2 > 0 ? weight2 : weight,
-                                weight2 > 0);
+            // tagger->UpdateValue((BaseRef)f, weight2 > 0 ? weight2 : weight,
+            // weight2 > 0);
+            tagger->SetOrIncrement((BaseRef)f, weight, 1);
           }
         }
 
@@ -3063,7 +3275,7 @@ bool _Formula::CheckFForDependence(long varID, bool checkAll) {
           return true;
         }
         if (checkAll) {
-          if (LocateVar(f)->CheckFForDependence(varID)) {
+          if (LocateVar(f)->CheckFForDependence(varID, checkAll)) {
             return true;
           }
         }
