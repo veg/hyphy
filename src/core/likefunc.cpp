@@ -5238,30 +5238,41 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                    diffs[1] / diffs[2] <= _HY_SLOW_CONVERGENCE_RATIO)) {*/
                   if (average_change3 / diffs[0] >= 4.0) {
                     convergenceMode = 2;
-                    if (convergenceMode < 3) {
-                      if (steps > 4) {
-                        /*if (diffs[3] > 0.) {
-                         if (diffs[2] / diffs[3] >=
-                         _HY_SLOW_CONVERGENCE_RATIO_INV ||
-                         diffs[2] / diffs[3] <= _HY_SLOW_CONVERGENCE_RATIO) {
-                         convergenceMode = 3;
-                         }*/
-                        // if (average_change5 / MAX(diffs[0], diffs[1]) > 5.0)
-                        // {
-                        if (average_change5 / diffs[0] >= 8.0) {
-                          convergenceMode = 3;
-                        }
+                    if (steps > 4) {
+                      /*if (diffs[3] > 0.) {
+                       if (diffs[2] / diffs[3] >=
+                       _HY_SLOW_CONVERGENCE_RATIO_INV ||
+                       diffs[2] / diffs[3] <= _HY_SLOW_CONVERGENCE_RATIO) {
+                       convergenceMode = 3;
+                       }*/
+                      // if (average_change5 / MAX(diffs[0], diffs[1]) > 5.0)
+                      // {
+                      if (average_change5 / diffs[0] >= 8.0) {
+                        convergenceMode = 3;
                       }
                     }
                   }
                   if (convergenceMode < 2) {
+
                     if (steps > 4 || lastConvergenceMode != 3) {
                       hyFloat mind = ArrayMin(diffs, 5),
                               maxd = ArrayMax(diffs, 5);
 
                       if (mind > 0.) {
-                        if ((maxd - mind) / mind < GOLDEN_RATIO) {
+                        if (mind < 10. * precision &&
+                            (maxd - mind) / mind < GOLDEN_RATIO) {
                           convergenceMode = 3;
+                        }
+                      }
+                    }
+
+                    if (convergenceMode < 3) {
+                      hyFloat mind = ArrayMin(diffs, 3),
+                              maxd = ArrayMax(diffs, 3);
+
+                      if (mind > 0.) {
+                        if ((maxd - mind) / mind < 3.) {
+                          convergenceMode = 2;
                         }
                       }
                     }
@@ -5400,8 +5411,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           }
 
           if (loopCounter - last_gradient_search >= 3L ||
-              lastConvergenceMode > 2 ||
-              (lastConvergenceMode == 3 && convergenceMode == 3)) {
+              lastConvergenceMode > 2) {
 
             _Matrix bestMSoFar;
             GetAllIndependent(bestMSoFar);
@@ -5416,24 +5426,27 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                 _SimpleList *this_block = (_SimpleList *)(gradientBlocks(b));
                 if (this_block->countitems() <= maxGradientBlockDimension) {
                   maxSoFar = ConjugateGradientDescent(
-                      prec / pow(indexInd.lLength, .25), bestMSoFar, true,
-                      kMaxGradientStepCount, this_block, maxSoFar,
+                      prec / pow(this_block->countitems(), .25), bestMSoFar,
+                      true, kMaxGradientStepCount, this_block, maxSoFar,
                       grad_precision);
                 }
                 // maxSoFar = ConjugateGradientDescent (prec,
                 // bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
 
-                large_change.Clear();
                 //_variables_that_dont_change.Populate (indexInd.lLength, 0, 0);
               }
             } else {
-              maxSoFar = ConjugateGradientDescent(
-                  prec / pow(indexInd.lLength, .25), bestMSoFar, true,
-                  kMaxGradientStepCount, nil, maxSoFar, grad_precision);
-              large_change.Clear();
+              if (indexInd.countitems() <= maxGradientBlockDimension) {
+                maxSoFar = ConjugateGradientDescent(
+                    prec / pow(indexInd.lLength, .25), bestMSoFar, true,
+                    kMaxGradientStepCount, nil, maxSoFar, grad_precision);
+              }
               //_variables_that_dont_change.Populate (indexInd.lLength, 0, 0);
             }
 
+            large_change.Clear();
+            do_large_change_only = false;
+            //_variables_that_dont_change.Populate (indexInd.lLength, 0, 0);
             GetAllIndependent(bestMSoFar);
             for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
               ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
@@ -12392,6 +12405,7 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
   _AssociativeList *variableGrouping =
       (_AssociativeList *)FetchObjectFromVariableByType(
           &userSuppliedVariableGrouping, ASSOCIATIVE_LIST);
+
   if (variableGrouping) {
 
     _SimpleList hist, supportList;
