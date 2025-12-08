@@ -12484,7 +12484,7 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
                 re_sort = true;
               }
             }
-            if (thisBlock.lLength) {
+            if (thisBlock.lLength > 1) {
               gradientBlocks && &thisBlock;
             }
             offset += dimension;
@@ -12510,10 +12510,10 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
                 thisBlockL << variableIndex;
               }
             });
-        if (thisBlockG.lLength) {
+        if (thisBlockG.lLength > 1) {
           gradientBlocks && &thisBlockG;
         }
-        if (thisBlockL.lLength) {
+        if (thisBlockL.lLength > 1) {
           gradientBlocks && &thisBlockL;
         }
       }
