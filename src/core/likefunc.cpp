@@ -5255,7 +5255,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                     }
                   }
                   if (convergenceMode < 2) {
-                    if (steps > 4) {
+                    if (steps > 4 || lastConvergenceMode != 3) {
                       hyFloat mind = ArrayMin(diffs, 5),
                               maxd = ArrayMax(diffs, 5);
 
@@ -5400,7 +5400,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           }
 
           if (loopCounter - last_gradient_search >= 3L ||
-              lastConvergenceMode > 2) {
+              lastConvergenceMode > 2 ||
+              (lastConvergenceMode == 3 && convergenceMode == 3)) {
 
             _Matrix bestMSoFar;
             GetAllIndependent(bestMSoFar);
@@ -5458,7 +5459,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
       if (!do_large_change_only) {
         if (large_change.countitems() >= 2 &&
-            (large_change.countitems() <= indexInd.countitems() / 4L ||
+            (large_change.countitems() <= indexInd.countitems() / 2L ||
              large_change.countitems() <= 8)) {
           // iterate only the variables that are changing a lot, until they stop
           // changing
@@ -5466,7 +5467,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           last_large_change = large_change;
         }
       } else {
-        if (large_change.countitems() < 3) {
+        if (large_change.countitems() < 2) {
           do_large_change_only = false;
         } else {
           unsigned long logLStep = logLDeltaHistory.get_used();
