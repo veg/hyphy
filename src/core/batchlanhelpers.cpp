@@ -122,6 +122,10 @@ bool ExpressionCalculator(void) {
     return false;
   }
 
+  if (hy_env::EnvVariableTrue(hy_env::end_of_file)) {
+    return false;
+  }
+
   _Formula lhs, rhs;
 
   _FormulaParsingContext fpc;

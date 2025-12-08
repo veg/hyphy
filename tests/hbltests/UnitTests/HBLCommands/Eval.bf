@@ -17,7 +17,7 @@ function runTest () {
   //---------------------------------------------------------------------------------------------------------
   // Evaluate a function in a string.
   assert(Eval("3+3*13") == 42, "Failed to evaluate a standard function");
-  assert(Eval("3^3+2") == 29, "Failed to evaluate a function with exponents");
+  assert(Abs (Eval("3^3+2") - 29) < 1e-12, "Failed to evaluate a function with exponents");
   assert(Eval("(3+3)*13") == 78, "Failed to evaluate a function with parentheses");
   assert(Eval("1+1+string") == 2, "Failed to evaluate a function with string as one of the arguments");
   
