@@ -4900,27 +4900,6 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
   _AssociativeList *initial_grid =
       get_optimization_setting_dict(kOptimizationStartGrid);
 
-  _List remapped_blocks;
-  if (gradientBlocks.nonempty()) {
-    _SimpleList _svl;
-    _AVLListX mapper(&_svl);
-
-    indexInd.Each([&](long vi, unsigned long idx) -> void {
-      mapper.SetOrIncrement((BaseRef)vi, idx, 0);
-    });
-
-    for (unsigned long bi = 0; bi < gradientBlocks.countitems(); bi++) {
-      _SimpleList *remapped = new _SimpleList,
-                  *block = (_SimpleList *)gradientBlocks.GetItem(0);
-
-      block->Each([&](long vi, unsigned long) -> void {
-        (*remapped) << mapper.GetDataByKey(vi);
-      });
-
-      remapped_blocks < remapped;
-    }
-  }
-
   if (initial_grid) {
 
     hyFloat max_value = -INFINITY;
@@ -5028,8 +5007,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             //});
             maxSoFar = ConjugateGradientDescent(
                 currentPrecision, bestSoFar, true, kMaxGradientStepCount,
-                (_SimpleList *)remapped_blocks.GetItem(b), maxSoFar,
-                grad_precision);
+                this_block, maxSoFar, grad_precision);
           } else {
             // printf ("\n...Skipping a large gradient (or a trivial) block with
             // %ld variables\n", this_block->countitems());
@@ -5450,9 +5428,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                 _SimpleList *this_block = (_SimpleList *)(gradientBlocks(b));
                 if (this_block->countitems() <= maxGradientBlockDimension) {
                   maxSoFar = ConjugateGradientDescent(
-                      prec / pow(this_block->countitems(), .25), bestMSoFar,
-                      true, kMaxGradientStepCount,
-                      (_SimpleList *)remapped_blocks.GetItem(b), maxSoFar,
+                      prec * pow(this_block->countitems(), -.25), bestMSoFar,
+                      true, kMaxGradientStepCount, this_block, maxSoFar,
                       grad_precision);
                 }
                 // maxSoFar = ConjugateGradientDescent (prec,
@@ -5463,7 +5440,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             } else {
               if (indexInd.countitems() <= maxGradientBlockDimension) {
                 maxSoFar = ConjugateGradientDescent(
-                    prec / pow(indexInd.lLength, .25), bestMSoFar, true,
+                    prec * pow(indexInd.lLength, -.25), bestMSoFar, true,
                     kMaxGradientStepCount, nil, maxSoFar, grad_precision);
               }
               //_variables_that_dont_change.Populate (indexInd.lLength, 0, 0);
@@ -7503,6 +7480,14 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
 
   if (only_these_parameters) {
     only_these_parameters->Sort();
+    /*
+      printf ("\n==========\n");
+      for (long i = 0; i < only_these_parameters->countitems(); i++) {
+          printf (">>CJG: %ld %s\n", i, FetchVar (indexInd.get
+      (only_these_parameters->get(i)))->GetName()->get_str());
+      }
+      printf ("\n==========\n");
+     */
     _SimpleList all(indexInd.lLength, 0, 1);
     freeze.Subtract(all, *only_these_parameters);
   }
@@ -12512,24 +12497,14 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
             });
         if (thisBlockG.lLength > 1) {
           gradientBlocks && &thisBlockG;
+          re_sort = true;
         }
         if (thisBlockL.lLength > 1) {
           gradientBlocks && &thisBlockL;
+          re_sort = true;
         }
       }
     }
-
-    /*
-    NLToConsole();
-    gradientBlocks.ForEach ([&] (BaseRef item, unsigned long i) -> void {
-        _SimpleList * block = (_SimpleList*)item;
-        block->Each([i] (long item, unsigned long) -> void {
-            printf ("Block %d, variable %s\n", i,
-    LocateVar(item)->GetName()->get_str());
-        });
-    });
-    NLToConsole();
-    */
 
     if (re_sort) {
       _SimpleList new_ranks;
@@ -12540,7 +12515,7 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
       }
       SortLists(&new_ranks, &indexInd);
 
-      if (gradientBlocks.lLength) {
+      if (gradientBlocks.nonempty()) {
         _SimpleList aux_list, included(indexInd.lLength, 0, 0), not_listed;
 
         _AVLListX indexIndToGlobalID(&aux_list);
@@ -12557,8 +12532,9 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
             // printf ("%ld %ld\n",i,t);
             if (t >= 0) {
               t = indexIndToGlobalID.GetXtra(t);
-              // printf ("%ld %ld %ld/ %ld /%ld\n", b, i, a_block->list_data[i],
-              // indexIndToGlobalID.Find ((BaseRef)a_block->list_data[i]), t);
+              // printf (">>> %ld %ld %ld/ %ld /%ld\n", b, i,
+              // a_block->list_data[i],
+              //  indexIndToGlobalID.Find ((BaseRef)a_block->list_data[i]), t);
               a_block->list_data[i] = t;
               included.list_data[t] = 1;
             } else {
@@ -12591,6 +12567,15 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
       }
     }
   }
+  /*NLToConsole();
+  gradientBlocks.ForEach ([&] (BaseRef item, unsigned long i) -> void {
+      _SimpleList * block = (_SimpleList*)item;
+      block->Each([i, this] (long item, unsigned long) -> void {
+          printf ("Block %d, variable %s\n", i,
+  LocateVar(indexInd.get (item))->GetName()->get_str());
+      });
+  });
+  NLToConsole();*/
 }
 
 //_______________________________________________________________________________________
