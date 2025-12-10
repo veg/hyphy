@@ -2948,6 +2948,8 @@ LikelihoodFunction cpEBXWHJ.likelihoodFunction = (cpEBXWHJ.filter_0,cpEBXWHJ.tre
 OPTIMIZATION_PRECISION     = 0.001;
 VERBOSITY_LEVEL	           = 5;
 AUTO_PARTITIONS_FOR_OPTIMIZE   = 1;
+AUTO_PARALLELIZE_OPTIMIZE = 1;
+USE_LAST_RESULTS = 0;
 
 Optimize 			(res,cpEBXWHJ.likelihoodFunction);
 

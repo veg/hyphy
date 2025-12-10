@@ -5411,9 +5411,10 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             break;
           }
 
-          if (loopCounter - last_gradient_search >= 3L ||
-              (loopCounter - last_gradient_search > 1 &&
-               lastConvergenceMode > 2)) {
+          if ((loopCounter - last_gradient_search >= 3L ||
+               (loopCounter - last_gradient_search > 1 &&
+                lastConvergenceMode > 2)) &&
+              (inCount < termFactor - 2)) {
 
             _Matrix bestMSoFar;
             GetAllIndependent(bestMSoFar);
@@ -5448,7 +5449,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
             large_change.Clear();
             do_large_change_only = false;
-            //_variables_that_dont_change.Populate (indexInd.lLength, 0, 0);
+            _variables_that_dont_change.Populate(indexInd.lLength, 0, 0);
             GetAllIndependent(bestMSoFar);
             for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
               ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
@@ -5474,7 +5475,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
       if (!do_large_change_only) {
         if (large_change.countitems() >= 2 &&
-            (large_change.countitems() <= indexInd.countitems() / 2L ||
+            (large_change.countitems() <= indexInd.countitems() / 4L ||
              large_change.countitems() <= 8)) {
           // iterate only the variables that are changing a lot, until they stop
           // changing
@@ -5486,9 +5487,9 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           do_large_change_only = false;
         } else {
           unsigned long logLStep = logLDeltaHistory.get_used();
-          if (logLDeltaHistory.theData[logLStep - 1] /
-                  logLDeltaHistory.theData[logLStep - 2] <
-              GOLDEN_RATIO_R) {
+          if (logLDeltaHistory.theData[logLStep - 2] == 0. ||
+              logLDeltaHistory.theData[logLStep - 1] <
+                  logLDeltaHistory.theData[logLStep - 2] * 0.5) {
             do_large_change_only = false;
           } else {
             last_large_change = large_change;

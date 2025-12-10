@@ -841,9 +841,12 @@ void HandleApplicationError(const _String &message, bool force_exit,
 #endif
 
 #if defined __UNIX__
-  if (hy_drop_into_debug_mode)
+  if (hy_drop_into_debug_mode) {
+    hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_FALSE, false);
+
     while (ExpressionCalculator())
       ;
+  }
 #endif
 #ifdef __HYPHYMPI__
   if (hy_mpi_node_rank == 0) {
