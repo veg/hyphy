@@ -1,5 +1,7 @@
 GetString (version, HYPHY_VERSION, 0);
 
+//VERBOSITY_LEVEL = 10;
+
 if (+version >= 2.4) {
     LoadFunctionLibrary ("support/FitMG94.bf", {"--code" : "Vertebrate-mtDNA", "--alignment" : PATH_TO_CURRENT_BF + "data/COXI.nex"});
 } else {

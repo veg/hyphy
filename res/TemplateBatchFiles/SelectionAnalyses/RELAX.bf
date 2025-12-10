@@ -892,7 +892,13 @@ if (relax.has_unclassified) {
 
 if (relax.do_lhc) {
     relax.initial_grid         = estimators.LHC (relax.initial_ranges,relax.initial_grid.N);
-    relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.reference_branches_name`.+"))["0"])[terms.fit.MLE];
+    
+    if (relax.analysis_run_mode == relax.kGroupMode) {
+        relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.reference_set_name`.+"))["0"])[terms.fit.MLE];
+    } else {
+        relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.reference_branches_name`.+"))["0"])[terms.fit.MLE];
+   }
+    
 
  
     relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 

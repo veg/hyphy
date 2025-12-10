@@ -115,7 +115,7 @@ _String const kEmptyString, kPromptForFilePlaceholder("PROMPT_FOR_FILE"),
                     "\"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line "
                     "argument. This often resolves the issue, which is "
                     "indicative of numerical instability."),
-    kHyPhyVersion = _String("2.5.88"),
+    kHyPhyVersion = _String("2.5.89"),
 
     kNoneToken = "None", kNullToken = "null",
     kNoKWMatch = "__input_value_not_given__",
@@ -841,9 +841,12 @@ void HandleApplicationError(const _String &message, bool force_exit,
 #endif
 
 #if defined __UNIX__
-  if (hy_drop_into_debug_mode)
+  if (hy_drop_into_debug_mode) {
+    hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_FALSE, false);
+
     while (ExpressionCalculator())
       ;
+  }
 #endif
 #ifdef __HYPHYMPI__
   if (hy_mpi_node_rank == 0) {

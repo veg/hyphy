@@ -162,6 +162,7 @@ _String const kOptimizationHardLimit("OPTIMIZATION_TIME_HARD_LIMIT"),
     userSuppliedVariableGrouping("PARAMETER_GROUPING"),
     kAddLFSmoothing("LF_SMOOTHING_SCALER"),
     kOptimizationPrecision("OPTIMIZATION_PRECISION"),
+    kOptimizationAutoPartitioning("AUTO_CREATE_PARTITION_GROUPINGS"),
     kOptimizationMethod("OPTIMIZATION_METHOD"),
     kReduceLFSmoothing("LF_SMOOTHING_REDUCTION"),
     kOptimizationStartGrid("OPTIMIZATION_START_GRID");
@@ -5238,30 +5239,41 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                    diffs[1] / diffs[2] <= _HY_SLOW_CONVERGENCE_RATIO)) {*/
                   if (average_change3 / diffs[0] >= 4.0) {
                     convergenceMode = 2;
-                    if (convergenceMode < 3) {
-                      if (steps > 4) {
-                        /*if (diffs[3] > 0.) {
-                         if (diffs[2] / diffs[3] >=
-                         _HY_SLOW_CONVERGENCE_RATIO_INV ||
-                         diffs[2] / diffs[3] <= _HY_SLOW_CONVERGENCE_RATIO) {
-                         convergenceMode = 3;
-                         }*/
-                        // if (average_change5 / MAX(diffs[0], diffs[1]) > 5.0)
-                        // {
-                        if (average_change5 / diffs[0] >= 8.0) {
-                          convergenceMode = 3;
-                        }
+                    if (steps > 4) {
+                      /*if (diffs[3] > 0.) {
+                       if (diffs[2] / diffs[3] >=
+                       _HY_SLOW_CONVERGENCE_RATIO_INV ||
+                       diffs[2] / diffs[3] <= _HY_SLOW_CONVERGENCE_RATIO) {
+                       convergenceMode = 3;
+                       }*/
+                      // if (average_change5 / MAX(diffs[0], diffs[1]) > 5.0)
+                      // {
+                      if (average_change5 / diffs[0] >= 8.0) {
+                        convergenceMode = 3;
                       }
                     }
                   }
                   if (convergenceMode < 2) {
-                    if (steps > 4) {
+
+                    if (steps > 4 || lastConvergenceMode != 3) {
                       hyFloat mind = ArrayMin(diffs, 5),
                               maxd = ArrayMax(diffs, 5);
 
                       if (mind > 0.) {
-                        if ((maxd - mind) / mind < GOLDEN_RATIO) {
+                        if (mind < 10. * precision &&
+                            (maxd - mind) / mind < GOLDEN_RATIO) {
                           convergenceMode = 3;
+                        }
+                      }
+                    }
+
+                    if (convergenceMode < 3) {
+                      hyFloat mind = ArrayMin(diffs, 3),
+                              maxd = ArrayMax(diffs, 3);
+
+                      if (mind > 0.) {
+                        if ((maxd - mind) / mind < 3.) {
+                          convergenceMode = 2;
                         }
                       }
                     }
@@ -5399,8 +5411,10 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             break;
           }
 
-          if (loopCounter - last_gradient_search >= 3L ||
-              lastConvergenceMode > 2) {
+          if ((loopCounter - last_gradient_search >= 3L ||
+               (loopCounter - last_gradient_search > 1 &&
+                lastConvergenceMode > 2)) &&
+              (inCount < termFactor - 2)) {
 
             _Matrix bestMSoFar;
             GetAllIndependent(bestMSoFar);
@@ -5415,24 +5429,27 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                 _SimpleList *this_block = (_SimpleList *)(gradientBlocks(b));
                 if (this_block->countitems() <= maxGradientBlockDimension) {
                   maxSoFar = ConjugateGradientDescent(
-                      prec / pow(indexInd.lLength, .25), bestMSoFar, true,
-                      kMaxGradientStepCount, this_block, maxSoFar,
+                      prec * pow(this_block->countitems(), -.25), bestMSoFar,
+                      true, kMaxGradientStepCount, this_block, maxSoFar,
                       grad_precision);
                 }
                 // maxSoFar = ConjugateGradientDescent (prec,
                 // bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
 
-                large_change.Clear();
                 //_variables_that_dont_change.Populate (indexInd.lLength, 0, 0);
               }
             } else {
-              maxSoFar = ConjugateGradientDescent(
-                  prec / pow(indexInd.lLength, .25), bestMSoFar, true,
-                  kMaxGradientStepCount, nil, maxSoFar, grad_precision);
-              large_change.Clear();
+              if (indexInd.countitems() <= maxGradientBlockDimension) {
+                maxSoFar = ConjugateGradientDescent(
+                    prec * pow(indexInd.lLength, -.25), bestMSoFar, true,
+                    kMaxGradientStepCount, nil, maxSoFar, grad_precision);
+              }
               //_variables_that_dont_change.Populate (indexInd.lLength, 0, 0);
             }
 
+            large_change.Clear();
+            do_large_change_only = false;
+            _variables_that_dont_change.Populate(indexInd.lLength, 0, 0);
             GetAllIndependent(bestMSoFar);
             for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
               ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
@@ -5466,13 +5483,13 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           last_large_change = large_change;
         }
       } else {
-        if (large_change.countitems() < 3) {
+        if (large_change.countitems() < 2) {
           do_large_change_only = false;
         } else {
           unsigned long logLStep = logLDeltaHistory.get_used();
-          if (logLDeltaHistory.theData[logLStep - 1] /
-                  logLDeltaHistory.theData[logLStep - 2] <
-              GOLDEN_RATIO_R) {
+          if (logLDeltaHistory.theData[logLStep - 2] == 0. ||
+              logLDeltaHistory.theData[logLStep - 1] <
+                  logLDeltaHistory.theData[logLStep - 2] * 0.5) {
             do_large_change_only = false;
           } else {
             last_large_change = large_change;
@@ -7247,7 +7264,7 @@ void _LikelihoodFunction::ComputeGradient(_Matrix &gradient,
     for (unsigned long index = 0; index < indexInd.lLength; index++) {
       if (freeze.Find(index) != kNotFound) {
         // printf ("%ld %s %20.18g [FROZEN]\n", index, GetIthIndependentName
-        // (index)->get_str(), GetIthIndependent(index));
+        //(index)->get_str(), GetIthIndependent(index));
         gradient[index] = 0.;
       } else {
 
@@ -7257,7 +7274,7 @@ void _LikelihoodFunction::ComputeGradient(_Matrix &gradient,
                 testStep = MAX(fabs(currentValue) * gradientStep, gradientStep);
 
         // printf ("%ld %s %20.18g\n", index, GetIthIndependentName
-        // (index)->get_str(), currentValue);
+        //(index)->get_str(), currentValue);
 
         if (testStep >= ub) {
           if (testStep < lb) {
@@ -7289,17 +7306,20 @@ void _LikelihoodFunction::ComputeGradient(_Matrix &gradient,
           } else if (gradient.theData[index] < -kMaxD) {
             gradient.theData[index] = -kMaxD;
           }
+
+          // printf ("\nGradient = %g\n", gradient.theData[index]);
+
           /*if (currentValue < 0.) {
               printf ("Negative value stashed %15.12lg\n", currentValue);
           }
           hyFloat check_vv = GetIthIndependent(index);*/
           // if (verbosity_level > 150) {
-          // printf ("_LikelihoodFunction::ComputeGradient %ld\t%s\t @%20.18g\t
-          // f(x) = %20.18g, f(x+h) = %20.18g, delta(F) = %20.18g, h = %20.18g,
-          // correction = %20.18g, grad = %20.18g\n", index,
-          // GetIthIndependentName(index)->get_str(), currentValue, funcValue,
-          // dF, dF-funcValue, testStep, DerivativeCorrection (index,
-          // currentValue), gradient.theData[index]);
+          /*printf ("_LikelihoodFunction::ComputeGradient %ld\t%s\t
+          @%20.18g\tf(x) = %20.18g, f(x+h) = %20.18g, delta(F) = %20.18g, h =
+          %20.18g,correction = %20.18g, grad = %20.18g\n", index,
+          GetIthIndependentName(index)->get_str(), currentValue, funcValue,
+          dF, dF-funcValue, testStep, DerivativeCorrection (index,
+          currentValue), gradient.theData[index]);*/
           //}
           SetIthIndependent(index, currentValue);
         } else {
@@ -7461,6 +7481,14 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
 
   if (only_these_parameters) {
     only_these_parameters->Sort();
+    /*
+      printf ("\n==========\n");
+      for (long i = 0; i < only_these_parameters->countitems(); i++) {
+          printf (">>CJG: %ld %s\n", i, FetchVar (indexInd.get
+      (only_these_parameters->get(i)))->GetName()->get_str());
+      }
+      printf ("\n==========\n");
+     */
     _SimpleList all(indexInd.lLength, 0, 1);
     freeze.Subtract(all, *only_these_parameters);
   }
@@ -12391,61 +12419,93 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
   _AssociativeList *variableGrouping =
       (_AssociativeList *)FetchObjectFromVariableByType(
           &userSuppliedVariableGrouping, ASSOCIATIVE_LIST);
-  if (variableGrouping) {
+
+  bool auto_group_partitions =
+      hy_env::EnvVariableTrue(kOptimizationAutoPartitioning, true);
+
+  if (variableGrouping || auto_group_partitions) {
 
     _SimpleList hist, supportList;
 
     _AVLListX existingRanking(&supportList);
 
+    _List _slv;
+    _AVLList alreadySeen(&_slv);
+
     for (unsigned long vi = 0; vi < indexInd.lLength; vi++) {
       existingRanking.Insert((BaseRef)indexInd.list_data[vi], vi, true);
     }
+
     long offset = 1;
     bool re_sort = false;
 
-    for (AVLListXLIteratorKeyValue key_value :
-         variableGrouping->ListIterator()) {
-      HBLObjectRef anEntry = (HBLObjectRef)key_value.get_object();
-      if (anEntry->ObjectClass() == MATRIX) {
-        _Matrix *variableGroup = (_Matrix *)anEntry;
-        if (variableGroup->IsAStringMatrix()) {
-          unsigned long dimension =
-              variableGroup->GetHDim() * variableGroup->GetVDim();
+    if (variableGrouping) {
+      for (AVLListXLIteratorKeyValue key_value :
+           variableGrouping->ListIterator()) {
+        HBLObjectRef anEntry = (HBLObjectRef)key_value.get_object();
+        if (anEntry->ObjectClass() == MATRIX) {
+          _Matrix *variableGroup = (_Matrix *)anEntry;
+          if (variableGroup->IsAStringMatrix()) {
+            unsigned long dimension =
+                variableGroup->GetHDim() * variableGroup->GetVDim();
 
-          _SimpleList thisBlock;
-          for (unsigned long variable_id = 0; variable_id < dimension;
-               variable_id++) {
-            _String variableID(
-                (_String *)variableGroup->GetFormula(variable_id, -1)
-                    ->Compute()
-                    ->toStr());
-            long variableIndex = LocateVarByName(variableID);
-            if (variableIndex >= 0) {
-              existingRanking.UpdateValue((BaseRef)variableIndex,
-                                          -offset - dimension + variable_id, 0);
-              thisBlock << variableIndex;
-              re_sort = true;
+            _SimpleList thisBlock;
+            for (unsigned long variable_id = 0; variable_id < dimension;
+                 variable_id++) {
+              _String variableID(
+                  (_String *)variableGroup->GetFormula(variable_id, -1)
+                      ->Compute()
+                      ->toStr());
+
+              if (alreadySeen.Find(&variableID) >= 0L) {
+                continue;
+              }
+              alreadySeen.Insert(new _String(variableID), 0, false, true);
+              long variableIndex = LocateVarByName(variableID);
+              if (variableIndex >= 0) {
+                existingRanking.UpdateValue((BaseRef)variableIndex,
+                                            -offset - dimension + variable_id,
+                                            0);
+                thisBlock << variableIndex;
+                re_sort = true;
+              }
             }
+            if (thisBlock.lLength > 1) {
+              gradientBlocks && &thisBlock;
+            }
+            offset += dimension;
           }
-          if (thisBlock.lLength) {
-            gradientBlocks && &thisBlock;
-          }
-          offset += dimension;
         }
       }
     }
 
-    /*
-    NLToConsole();
-    gradientBlocks.ForEach ([&] (BaseRef item, unsigned long i) -> void {
-        _SimpleList * block = (_SimpleList*)item;
-        block->Each([i] (long item, unsigned long) -> void {
-            printf ("Block %d, variable %s\n", i,
-    LocateVar(item)->GetName()->get_str());
-        });
-    });
-    NLToConsole();
-    */
+    if (auto_group_partitions && indVarsByPartition.countitems() > 1) {
+      for (unsigned long k = 0; k < indVarsByPartition.countitems(); k++) {
+        _SimpleList thisBlockG, thisBlockL;
+        ((_SimpleList *)indVarsByPartition.GetItem(k))
+            ->Each([&](long variableIndex, unsigned long) -> void {
+              _Variable *v = FetchVar(variableIndex);
+              _String variableID = *v->GetName();
+              // printf ("%s\n", variableID.get_str());
+              if (alreadySeen.Find(&variableID) >= 0)
+                return;
+              alreadySeen.Insert(new _String(variableID), 0, false, true);
+              if (v->IsGlobal()) {
+                thisBlockG << variableIndex;
+              } else {
+                thisBlockL << variableIndex;
+              }
+            });
+        if (thisBlockG.lLength > 1) {
+          gradientBlocks && &thisBlockG;
+          re_sort = true;
+        }
+        if (thisBlockL.lLength > 1) {
+          gradientBlocks && &thisBlockL;
+          re_sort = true;
+        }
+      }
+    }
 
     if (re_sort) {
       _SimpleList new_ranks;
@@ -12456,7 +12516,7 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
       }
       SortLists(&new_ranks, &indexInd);
 
-      if (gradientBlocks.lLength) {
+      if (gradientBlocks.nonempty()) {
         _SimpleList aux_list, included(indexInd.lLength, 0, 0), not_listed;
 
         _AVLListX indexIndToGlobalID(&aux_list);
@@ -12473,8 +12533,9 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
             // printf ("%ld %ld\n",i,t);
             if (t >= 0) {
               t = indexIndToGlobalID.GetXtra(t);
-              // printf ("%ld %ld %ld/ %ld /%ld\n", b, i, a_block->list_data[i],
-              // indexIndToGlobalID.Find ((BaseRef)a_block->list_data[i]), t);
+              // printf (">>> %ld %ld %ld/ %ld /%ld\n", b, i,
+              // a_block->list_data[i],
+              //  indexIndToGlobalID.Find ((BaseRef)a_block->list_data[i]), t);
               a_block->list_data[i] = t;
               included.list_data[t] = 1;
             } else {
@@ -12507,6 +12568,15 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
       }
     }
   }
+  /*NLToConsole();
+  gradientBlocks.ForEach ([&] (BaseRef item, unsigned long i) -> void {
+      _SimpleList * block = (_SimpleList*)item;
+      block->Each([i, this] (long item, unsigned long) -> void {
+          printf ("Block %d, variable %s\n", i,
+  LocateVar(indexInd.get (item))->GetName()->get_str());
+      });
+  });
+  NLToConsole();*/
 }
 
 //_______________________________________________________________________________________
