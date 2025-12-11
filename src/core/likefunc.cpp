@@ -5083,7 +5083,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
     _SimpleList large_change, // this will store the indices of variables that
                               // drive large LF changes
         last_large_change, glVars, shuffledOrder,
-        _variables_that_dont_change(indexInd.lLength, 0, 0);
+        _variables_that_dont_change(indexInd.lLength, 0, 0),
+        _variables_at_boundary(indexInd.lLength, 0, 0);
 
     _List *stepHistory = nil;
     _Vector logLHistory, logLDeltaHistory;
@@ -5450,6 +5451,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             large_change.Clear();
             do_large_change_only = false;
             _variables_that_dont_change.Populate(indexInd.lLength, 0, 0);
+            _variables_at_boundary.Populate(indexInd.lLength, 0, 0);
             GetAllIndependent(bestMSoFar);
             for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
               ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
@@ -5487,9 +5489,10 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           do_large_change_only = false;
         } else {
           unsigned long logLStep = logLDeltaHistory.get_used();
-          if (logLDeltaHistory.theData[logLStep - 2] == 0. ||
-              logLDeltaHistory.theData[logLStep - 1] <
-                  logLDeltaHistory.theData[logLStep - 2] * 0.5) {
+          if (logLStep > 2 &&
+              (logLDeltaHistory.theData[logLStep - 2] == 0. ||
+               logLDeltaHistory.theData[logLStep - 1] <=
+                   logLDeltaHistory.theData[logLStep - 2] * 0.5)) {
             do_large_change_only = false;
           } else {
             last_large_change = large_change;
@@ -5564,6 +5567,12 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
              _variables_that_dont_change[current_index], inCount, termFactor
              );*/
             continue;
+          }
+          if (_variables_at_boundary.get(current_index) > 1) {
+            if (inCount <= termFactor - 1) {
+              _variables_that_dont_change[current_index]++;
+              continue;
+            }
           }
         }
 
@@ -5693,11 +5702,17 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           LocateTheBump(current_index, brackStep, maxSoFar, bestVal, go2Bound);
         }
 
-        if (maxSoFar - lastLogL > precision) {
+        hyFloat ll_delta = maxSoFar - lastLogL;
+        // ll_last = (logLDeltaHistory.get_used () > 0 ?
+        // logLDeltaHistory.get_direct (logLDeltaHistory.get_used ()-1) : 0.)/
+        // (indexInd.countitems() - _variables_that_dont_change.countitems() +
+        // 1);
+
+        // if (ll_delta > MAX (precision, ll_last)) {
+        if (ll_delta > precision) {
           large_change << current_index;
         }
 
-        hyFloat ll_delta = (maxSoFar - lastLogL);
         variableImpact.theData[current_index] = ll_delta;
 
         if ((maxSoFar - lastLogL) / lastLogL > kNonDecreaseBound) {
@@ -5791,7 +5806,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       unsigned long nc = 0;
 
       _variables_that_dont_change.Each(
-          [this, &nc, &at_boundary](long v, unsigned long i) -> void {
+          [this, &nc, &at_boundary,
+           &_variables_at_boundary](long v, unsigned long i) -> void {
             if (i >= 0) {
               if (v > 0) {
                 nc++;
@@ -5800,6 +5816,9 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
               if (CheckEqual(cv, GetIthIndependentBound(i, true)) ||
                   CheckEqual(cv, GetIthIndependentBound(i, false))) {
                 at_boundary << i;
+                _variables_at_boundary[i]++;
+              } else {
+                _variables_at_boundary[i] = 0;
               }
             }
           });

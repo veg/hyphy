@@ -1,6 +1,6 @@
 GetString (version, HYPHY_VERSION, 0);
 
-//VERBOSITY_LEVEL = 10;
+//VERBOSITY_LEVEL = 5;
 
 if (+version >= 2.4) {
     LoadFunctionLibrary ("SelectionAnalyses/BUSTED.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex", "--branches" : "GROUP1", "--srv" : "Yes", "--starting-points" : "5"});
