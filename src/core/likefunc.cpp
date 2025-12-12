@@ -5076,14 +5076,19 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
     const hyFloat kNonDecreaseBound = kMachineEpsilon * PartitionLengths(1);
 
     long inCount = 0, termFactor, lfCount = likeFuncEvalCallCount,
-         nan_counter = 0L, meCount = matrix_exp_count, loopCounter = 0;
+         nan_counter = 0L, meCount = matrix_exp_count, loopCounter = 0,
+         lastCore = 0;
+
+    const long coreInterval = MIN(5, sqrt(sqrt(indexInd.lLength)));
 
     bool do_large_change_only = false;
 
     _SimpleList large_change, // this will store the indices of variables that
                               // drive large LF changes
         last_large_change, glVars, shuffledOrder,
-        _variables_that_dont_change(indexInd.lLength, 0, 0);
+        _variables_that_dont_change(indexInd.lLength, 0, 0),
+        _variables_at_boundary(indexInd.lLength, 0, 0),
+        large_change_all_time(indexInd.lLength, 0, 0);
 
     _List *stepHistory = nil;
     _Vector logLHistory, logLDeltaHistory;
@@ -5150,6 +5155,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
     unsigned char lastConvergenceMode = 0;
 
+    // optimization passes loop start
     while (inCount < termFactor || smoothingTerm > 0.) {
       _Matrix old_values;
       GetAllIndependent(old_values);
@@ -5411,10 +5417,10 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             break;
           }
 
-          if ((loopCounter - last_gradient_search >= 3L ||
+          if ((loopCounter - last_gradient_search >= 3L /*||
                (loopCounter - last_gradient_search > 1 &&
-                lastConvergenceMode > 2)) &&
-              (inCount < termFactor - 2)) {
+                lastConvergenceMode > 2)*/) &&
+              (inCount < termFactor - 2) && !do_large_change_only) {
 
             _Matrix bestMSoFar;
             GetAllIndependent(bestMSoFar);
@@ -5449,7 +5455,19 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
             large_change.Clear();
             do_large_change_only = false;
-            _variables_that_dont_change.Populate(indexInd.lLength, 0, 0);
+            for (unsigned long i = 0; i < indexInd.lLength; i++) {
+              hyFloat cv = GetIthIndependent(i);
+              if (!CheckEqual(bestMSoFar.get(i, 0), cv)) {
+                _variables_that_dont_change[i] = 0;
+              }
+              if (!CheckEqual(cv, GetIthIndependentBound(i, true)) &&
+                  !CheckEqual(cv, GetIthIndependentBound(i, false))) {
+                _variables_at_boundary[i] = 0;
+              }
+            }
+
+            //_variables_that_dont_change.Populate(indexInd.lLength, 0, 0);
+            //_variables_at_boundary.Populate(indexInd.lLength, 0, 0);
             GetAllIndependent(bestMSoFar);
             for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
               ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
@@ -5487,15 +5505,61 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           do_large_change_only = false;
         } else {
           unsigned long logLStep = logLDeltaHistory.get_used();
-          if (logLDeltaHistory.theData[logLStep - 2] == 0. ||
-              logLDeltaHistory.theData[logLStep - 1] <
-                  logLDeltaHistory.theData[logLStep - 2] * 0.5) {
+          if (logLStep > 2 &&
+              ((logLDeltaHistory.theData[logLStep - 2] > 0. &&
+                logLDeltaHistory.theData[logLStep - 1] <=
+                    logLDeltaHistory.theData[logLStep - 2] * 0.5) ||
+               logLDeltaHistory.theData[logLStep - 1] < precision)) {
             do_large_change_only = false;
           } else {
             last_large_change = large_change;
           }
         }
       }
+
+      //** heuristics for iterating over "core" variables
+
+      if (!do_large_change_only) {
+        // see how many variables are unchanging
+        if (loopCounter - lastCore > coreInterval) {
+          _SimpleList core_candidates;
+          long cutoff = MAX(5, loopCounter / sqrt(indexInd.countitems()));
+          unsigned long unchanging = 0;
+          large_change_all_time.Each(
+              [&](long count, unsigned long idx) -> void {
+                if (count >= cutoff) {
+                  core_candidates << idx;
+                }
+                if (_variables_that_dont_change.get(idx)) {
+                  unchanging++;
+                }
+              });
+
+          if (core_candidates.countitems() >= 2 &&
+              unchanging >= core_candidates.countitems() * 2) {
+            last_large_change = core_candidates;
+            /*
+            printf ("\n\n$$$$$ CORE %ld/%ld # = %ld, interval = %ld\n\n",
+            lastCore, loopCounter, core_candidates.countitems(), coreInterval);
+            NLToConsole();
+            core_candidates.Each ([&](long vc, unsigned long ) -> void {
+                printf ("[CORE] %s (%ld)\n",
+            GetIthIndependentName(vc)->get_str(),
+            large_change_all_time.get(vc));
+            });
+            NLToConsole();
+            */
+
+            lastCore = loopCounter;
+            do_large_change_only = true;
+            for (unsigned long i = 0; i < last_large_change.countitems(); i++) {
+              _variables_that_dont_change[last_large_change.get(i)] = 0;
+            }
+          }
+        }
+      }
+
+      //**
 
       large_change.Clear();
 
@@ -5564,6 +5628,12 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
              _variables_that_dont_change[current_index], inCount, termFactor
              );*/
             continue;
+          }
+          if (_variables_at_boundary.get(current_index) > 1) {
+            if (inCount <= termFactor - 1) {
+              _variables_that_dont_change[current_index]++;
+              continue;
+            }
           }
         }
 
@@ -5693,11 +5763,18 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           LocateTheBump(current_index, brackStep, maxSoFar, bestVal, go2Bound);
         }
 
-        if (maxSoFar - lastLogL > precision) {
+        hyFloat ll_delta = maxSoFar - lastLogL;
+        // ll_last = (logLDeltaHistory.get_used () > 0 ?
+        // logLDeltaHistory.get_direct (logLDeltaHistory.get_used ()-1) : 0.)/
+        // (indexInd.countitems() - _variables_that_dont_change.countitems() +
+        // 1);
+
+        // if (ll_delta > MAX (precision, ll_last)) {
+        if (ll_delta > precision) {
           large_change << current_index;
+          large_change_all_time[current_index]++;
         }
 
-        hyFloat ll_delta = (maxSoFar - lastLogL);
         variableImpact.theData[current_index] = ll_delta;
 
         if ((maxSoFar - lastLogL) / lastLogL > kNonDecreaseBound) {
@@ -5791,7 +5868,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       unsigned long nc = 0;
 
       _variables_that_dont_change.Each(
-          [this, &nc, &at_boundary](long v, unsigned long i) -> void {
+          [this, &nc, &at_boundary,
+           &_variables_at_boundary](long v, unsigned long i) -> void {
             if (i >= 0) {
               if (v > 0) {
                 nc++;
@@ -5800,6 +5878,9 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
               if (CheckEqual(cv, GetIthIndependentBound(i, true)) ||
                   CheckEqual(cv, GetIthIndependentBound(i, false))) {
                 at_boundary << i;
+                _variables_at_boundary[i]++;
+              } else {
+                _variables_at_boundary[i] = 0;
               }
             }
           });
@@ -5912,7 +5993,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                               "because the hard time limit was exceeded."));
         break;
       }
-    }
+    } // optimization passes finish
 
     ReportWarning(_String("Optimization finished in ") & loopCounter &
                   " loop passes.\n" &
@@ -5927,6 +6008,12 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       ConjugateGradientDescent(currentPrecision * .01, bestMSoFar);
     }
     DeleteObject(stepHistory);
+
+    /*NLToConsole();
+    large_change_all_time.Each ([&](long vc, unsigned long vi) -> void {
+        printf ("[LLC] %s => %ld\n", GetIthIndependentName(vi)->get_str(), vc);
+    });
+    NLToConsole();*/
 
   } else if (optimization_mode == kOptimizationNedlerMead) {
     SimplexMethod(
@@ -5978,7 +6065,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 }
 //_______________________________________________________________________________________
 
-void _LikelihoodFunction::_TerminateAndDump(const _String &error, bool sig_term,
+void _LikelihoodFunction::_TerminateAndDump(const _String &error, bool,
                                             bool do_not_exit) {
 
   hyFile *out = doFileOpen("/tmp/hyphy.dump", kFileWrite);

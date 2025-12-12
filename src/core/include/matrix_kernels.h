@@ -48,78 +48,7 @@ void _matrix_kernel_multiply_by_compressed_sparse_T(
     const hyFloat *__restrict__ secondArgBase,
     const hyFloat *__restrict__ theDataPtr);
 
-#if defined _SLKP_USE_ARM_SVE
-#include <arm_sve.h>
-
-template <int N>
-void _matrix_kernel_multiply_by_compressed_sparse_T(
-    hyFloat *__restrict__ resBase, const long *__restrict__ compIdx,
-    const hyFloat *__restrict__ secondArgBase,
-    const hyFloat *__restrict__ theDataPtr) {
-  long currentXIndex = 0L;
-  hyFloat *res = resBase;
-
-  uint64_t vl = svcntd();
-
-  for (long i = 0; i < N; i++) {
-    long up = compIdx[i];
-
-    if (currentXIndex < up) {
-      long j = 0;
-      // Unrolled loop
-      while (j + 4 * vl <= N) {
-        svbool_t pgAll = svptrue_b64();
-        svfloat64_t acc0 = svld1(pgAll, res + j);
-        svfloat64_t acc1 = svld1(pgAll, res + j + vl);
-        svfloat64_t acc2 = svld1(pgAll, res + j + 2 * vl);
-        svfloat64_t acc3 = svld1(pgAll, res + j + 3 * vl);
-
-        for (long cxi = currentXIndex; cxi < up; cxi++) {
-          long currentXColumn = compIdx[cxi + N];
-          const hyFloat *secArg = secondArgBase + currentXColumn * N;
-          svfloat64_t valVec = svdup_f64(theDataPtr[cxi]);
-
-          svfloat64_t b0 = svld1(pgAll, secArg + j);
-          svfloat64_t b1 = svld1(pgAll, secArg + j + vl);
-          svfloat64_t b2 = svld1(pgAll, secArg + j + 2 * vl);
-          svfloat64_t b3 = svld1(pgAll, secArg + j + 3 * vl);
-
-          acc0 = svmla_f64_x(pgAll, acc0, valVec, b0);
-          acc1 = svmla_f64_x(pgAll, acc1, valVec, b1);
-          acc2 = svmla_f64_x(pgAll, acc2, valVec, b2);
-          acc3 = svmla_f64_x(pgAll, acc3, valVec, b3);
-        }
-
-        svst1(pgAll, res + j, acc0);
-        svst1(pgAll, res + j + vl, acc1);
-        svst1(pgAll, res + j + 2 * vl, acc2);
-        svst1(pgAll, res + j + 3 * vl, acc3);
-
-        j += 4 * vl;
-      }
-
-      // Tail loop
-      while (j < N) {
-        svbool_t pg = svwhilelt_b64(j, N);
-        svfloat64_t acc = svld1(pg, res + j);
-
-        for (long cxi = currentXIndex; cxi < up; cxi++) {
-          long currentXColumn = compIdx[cxi + N];
-          const hyFloat *secArg = secondArgBase + currentXColumn * N;
-          svfloat64_t valVec = svdup_f64(theDataPtr[cxi]);
-          svfloat64_t b = svld1(pg, secArg + j);
-          acc = svmla_f64_m(pg, acc, valVec, b);
-        }
-        svst1(pg, res + j, acc);
-        j += vl;
-      }
-    }
-    res += N;
-    currentXIndex = up;
-  }
-}
-
-#elif defined _SLKP_USE_ARM_NEON
+#if defined _SLKP_USE_ARM_NEON
 
 template <>
 inline void _matrix_kernel_multiply_by_compressed_sparse_T<61>(
