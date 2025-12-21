@@ -28,30 +28,14 @@ jobs:
           
       - name: Configure and build with Emscripten
         run: |
-          # Build with Emscripten - but without preloading files to avoid issues with CMake tests
           mkdir -p build
           cd build
           
-          # Configure without preload files to avoid issues during compiler checks
-          emcmake cmake .. -DCMAKE_EXE_LINKER_FLAGS="-sTOTAL_STACK=2097152 -O2 -sASSERTIONS=1 -sMODULARIZE=1 -sALLOW_MEMORY_GROWTH -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 -s EXPORTED_RUNTIME_METHODS=[\"callMain\",\"FS\",\"PROXYFS\",\"WORKERFS\",\"UTF8ToString\",\"getValue\",\"AsciiToString\"] -lworkerfs.js -lproxyfs.js -s INVOKE_RUN=0 -s ENVIRONMENT=\"web,worker\" -fwasm-exceptions"
+          # Configure with preload files to generate hyphy.data
+          # Map local ../res to /res in the virtual filesystem
+          emcmake cmake .. -DCMAKE_EXE_LINKER_FLAGS="-sTOTAL_STACK=2097152 -O2 -sASSERTIONS=1 -sMODULARIZE=1 -sALLOW_MEMORY_GROWTH -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 -s EXPORTED_RUNTIME_METHODS=[\"callMain\",\"FS\",\"PROXYFS\",\"WORKERFS\",\"UTF8ToString\",\"getValue\",\"AsciiToString\"] -lworkerfs.js -lproxyfs.js -s INVOKE_RUN=0 -s ENVIRONMENT=\"web,worker\" -fwasm-exceptions --preload-file ../res@/res"
           
-          # Build without preloading files
           emmake make -j hyphy
-          
-      - name: Package resource files
-        run: |
-          cd build
-          
-          # Instead of bundling resources, we'll package them separately for download
-          mkdir -p hyphy_resources
-          cp -r ../res hyphy_resources/
-          cp -r ../tests/hbltests hyphy_resources/tests
-          
-          # Create a README for the resources
-          echo "These resource files should be placed in the same directory as hyphy.js, hyphy.wasm, and hyphy.data" > hyphy_resources/README.txt
-          
-          # Create a zip file of the resources
-          tar -czvf hyphy_resources.tar.gz hyphy_resources
           
       - name: Display build artifacts
         run: |
@@ -65,7 +49,7 @@ jobs:
           path: |
             build/hyphy.js
             build/hyphy.wasm
-            build/hyphy_resources.tar.gz
+            build/hyphy.data
           retention-days: 30
 
       - name: Prepare for deployment
@@ -73,8 +57,8 @@ jobs:
           mkdir -p public
           cp build/hyphy.js public/
           cp build/hyphy.wasm public/
-          cp build/hyphy_resources.tar.gz public/
-          echo "<html><body><h1>HyPhy WASM Build</h1><ul><li><a href='hyphy.wasm'>hyphy.wasm</a></li><li><a href='hyphy.js'>hyphy.js</a></li><li><a href='hyphy_resources.tar.gz'>hyphy_resources.tar.gz</a></li></ul></body></html>" > public/index.html
+          cp build/hyphy.data public/
+          echo "<html><body><h1>HyPhy WASM Build</h1><ul><li><a href='hyphy.wasm'>hyphy.wasm</a></li><li><a href='hyphy.js'>hyphy.js</a></li><li><a href='hyphy.data'>hyphy.data</a></li></ul></body></html>" > public/index.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
