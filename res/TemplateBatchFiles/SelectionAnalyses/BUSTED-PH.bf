@@ -119,7 +119,7 @@ if (!busted.run_background_test) {
                                                          "{terms.json.omega_ratio : busted.inferred_test_distribution_raw [_index_][0],
                                                            terms.json.proportion : busted.inferred_test_distribution_raw [_index_][1]}")};
 
-    busted.report_multi_hit  (busted.null_results, busted.distribution_for_json, "MultiHit", "null-mh",busted.branch_length_string, busted.model_parameters);
+    busted.report_multi_hit  (busted.background_null_results, busted.distribution_for_json, "MultiHit", "null-mh",busted.branch_length_string, busted.model_parameters);
     busted.null_distro_raw = parameters.GetStickBreakingDistribution (busted.distribution);
     
     if (busted.error_sink) {
