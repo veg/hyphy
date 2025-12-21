@@ -148,11 +148,11 @@ io.ReportProgressMessageMD('FEL',  'selector', 'Branches to use as the test set 
 
 fel.branch_sets = {};
 
-utility.ForEachPair (fel.selected_branches[0], "_branch_", "_model_",
-"
+for (_branch_, _model_; in; fel.selected_branches[0]) {
     utility.EnsureKey (fel.branch_sets, _model_);
     fel.branch_sets[_model_] + _branch_;
-");
+}
+
 
 fel.branch_class_count = utility.Array1D (fel.branch_sets);
 fel.scaler_parameter_names = {};
@@ -164,23 +164,22 @@ fel.branches.testable = {};
 fel.branches.has_background = FALSE;
 
 
-utility.ForEachPair (fel.branch_sets, "_group_", "_branches_",
-    "
-     if (_group_ != terms.tree_attributes.background) {
-        fel.site_tested_classes [_group_] = 'Site relative non-synonymous rate (' + _group_ + ' branches)';
-        fel.branch_class_counter += 1;
-        fel.branches.testable + _group_;
-        fel.scaler_parameter_names [_group_] = 'fel.beta_scaler_group_' + fel.branch_class_counter;
-        io.ReportProgressMessageMD('FEL',  'selector', '* Selected ' + Abs(_branches_) + ' branches in group _' + _group_ + '_ : \\\`' + Join (', ',_branches_) + '\\\`')
-     } else {
-        fel.scaler_parameter_names [_group_] = 'fel.beta_scaler_background';
-        fel.site_tested_classes [_group_] = 'Site relative non-synonymous rate (reference branches)';
-        fel.branches.has_background = TRUE;
-        io.ReportProgressMessageMD('FEL',  'selector', '* ' + Abs(_branches_) + ' branches are in the background group : \\\`' + Join (', ',_branches_) + '\\\`')
-     }
-     "
-);
+for (_group_, _branches_; in; fel.branch_sets) {
+    if (_group_ != terms.tree_attributes.background) {
+            fel.site_tested_classes [_group_] = 'Site relative non-synonymous rate (' + _group_ + ' branches)';
+            fel.branch_class_counter += 1;
+            fel.branches.testable + _group_;
+            fel.scaler_parameter_names [_group_] = 'fel.beta_scaler_group_' + fel.branch_class_counter;
+            io.ReportProgressMessageMD('FEL',  'selector', '* Selected ' + Abs(_branches_) + ' branches in group _' + _group_ + '_ : \\\`' + Join (', ',_branches_) + '\\\`')
+         } else {
+            fel.scaler_parameter_names [_group_] = 'fel.beta_scaler_background';
+            fel.site_tested_classes [_group_] = 'Site relative non-synonymous rate (reference branches)';
+            fel.branches.has_background = TRUE;
+            io.ReportProgressMessageMD('FEL',  'selector', '* ' + Abs(_branches_) + ' branches are in the background group : \\\`' + Join (', ',_branches_) + '\\\`')
+         }
+}
 
+io.CheckAssertion  ("utility.Array1D(fel.branches.testable) > 0", "Must select  a non-empty testable branch set");
 
 
 fel.test_count = 1;
@@ -614,6 +613,7 @@ lfunction fel.select_branches(partition_info) {
             selectTheseForTesting[k][1] = "Set of " + available_models[list_models[k-3]] + " unlabeled branches";
         }
     }
+    
 
     ChoiceList(testSet, "Choose sets of branches to compare. If more than one set is chosen, pairwise comparisons will be carried out in addition to a group-level difference test.", 0, NO_SKIP, selectTheseForTesting);
     io.CheckAssertion ("`&testSet[0]` >= 0", "User cancelled branch selection; analysis terminating");
@@ -623,6 +623,7 @@ lfunction fel.select_branches(partition_info) {
     tree_for_analysis  = (partition_info[0])[utility.getGlobalValue("terms.data.tree")];
     branch_set_count   = utility.Array1D (testSet);
     test_sets          = {};
+    
 
     for (k = 0; k < branch_set_count; k+=1) {
         tag_test = selectTheseForTesting [testSet[k]][0];
@@ -631,6 +632,7 @@ lfunction fel.select_branches(partition_info) {
         }
         test_sets[tag_test] = TRUE;
     }
+    
     
     if (test_sets / 'Random set of branches') {
         KeywordArgument ("random-subset", "How many branches in the random subset to test", (internal_count+leaf_count)$2);
