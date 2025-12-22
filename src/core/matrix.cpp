@@ -5680,7 +5680,7 @@ _Matrix *_Matrix::Exponentiate(hyFloat scale_to, bool check_transition,
           if (i > 2) {
             temp *= 1.0 / (mmax * i);
           } else {
-            temp *= 1.0 / (mmax * mmax * i);
+            temp *= 0.5 / (mmax * mmax);
           }
           (*result) += temp;
           i++;

@@ -2792,11 +2792,10 @@ void _Formula::ConvertFromSimpleList(_SimpleList const &variableIndex) {
 //__________________________________________________________________________________
 hyFloat _Formula::ComputeSimpleNLP(_SimpleFormulaDatum *stack,
                                    _SimpleFormulaDatum *varValues) {
-  unsigned long upper_bound = NumberOperations();
   long stackTop = 0;
   const hyFloat *constants = (hyFloat *)theStack.theStack._getStatic();
 
-  for (unsigned long i = 0UL; i < upper_bound; i++) {
+  for (unsigned long i = 0UL; i < theFormula.lLength; i++) {
     const long ses = simpleExpressionStatus[i];
     if (ses >= 0L) {
       stack[stackTop++] = varValues[ses];

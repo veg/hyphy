@@ -993,10 +993,11 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     //utility.SetEnvVariable ("VERBOSITY_LEVEL", 110);
     
     Optimize (results, ^lf_fel
-        , {"OPTIMIZATION_METHOD" : "nedler-mead", OPTIMIZATION_PRECISION: 1e-4}
+        , {"OPTIMIZATION_METHOD" : "nedler-mead", OPTIMIZATION_PRECISION: 0.01}
     );
     
-    
+    Optimize (results, ^lf_fel, {"OPTIMIZATION_METHOD" : "coordinate-wise"});
+        
     fel = estimators.ExtractMLEsOptions (lf_fel, model_mapping, {^"terms.globals_only" : TRUE});
     fel[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
  
