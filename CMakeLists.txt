@@ -30,7 +30,7 @@ option(RUN_CLANG_TIDY "Run clang-tidy on all files" OFF)
 option(CODE_COVERAGE "Enable code coverage" OFF)
 option(USE_ASAN "Enable Address Sanitizer" OFF)
 option(USE_GCC_ANALYZER "Enable GCC static analyzer" OFF)
-option(TARGET_NATIVE "Target the native CPU" ON)
+option(TARGET_NATIVE "Target the native CPU" OFF)
 option(INCLUDE_DEBUG_INFO "Include debug info in all builds" OFF)
 
 if(RUN_CLANG_TIDY)
