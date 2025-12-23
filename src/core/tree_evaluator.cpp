@@ -848,7 +848,7 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
 }
 
 template <int D>
-void _hy_mvp_blocked_4x4(double *C, double const *M, double const *V) {
+void _hy_mvp_blocked(double *C, double const *M, double const *V) {
   _hy_matrix_vector_product_blocked_4x4(C, M, V, D);
 }
 /*
@@ -932,15 +932,12 @@ void _mx_vect_8x8_add(float64x2x4_t &cv, double const *__restrict M,
   // Load the 8x8 matrix M, 8 rows at a time
   const float64x2x4_t m_row1 = vld1q_f64_x4(M);
   const float64x2x4_t m_row2 = vld1q_f64_x4(M + stride);
-  const float64x2x4_t m_row3 = vld1q_f64_x4(M + (stride << 1));
-  const float64x2x4_t m_row4 =
-      vld1q_f64_x4(M + (stride << 2) - stride);                 // (stride*3)
-  const float64x2x4_t m_row5 = vld1q_f64_x4(M + (stride << 2)); // (stride*4)
-  const float64x2x4_t m_row6 =
-      vld1q_f64_x4(M + (stride << 2) + stride); // (stride*5)
-  const float64x2x4_t m_row7 =
-      vld1q_f64_x4(M + (stride << 3) - stride);                 // (stride*6)
-  const float64x2x4_t m_row8 = vld1q_f64_x4(M + (stride << 3)); // (stride*7)
+  const float64x2x4_t m_row3 = vld1q_f64_x4(M + 2 * stride);
+  const float64x2x4_t m_row4 = vld1q_f64_x4(M + 3 * stride);
+  const float64x2x4_t m_row5 = vld1q_f64_x4(M + 4 * stride);
+  const float64x2x4_t m_row6 = vld1q_f64_x4(M + 5 * stride);
+  const float64x2x4_t m_row7 = vld1q_f64_x4(M + 6 * stride);
+  const float64x2x4_t m_row8 = vld1q_f64_x4(M + 7 * stride);
 
   // Calculate dot product parts for each of the 8 rows
   float64x2_t dp1 = vmulq_f64(m_row1.val[0], v.val[0]);
@@ -1421,7 +1418,7 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
 }
 
 template <int D>
-void _hy_mvp_blocked_4x4(double *C, double const *M, double const *V) {
+void _hy_mvp_blocked(double *C, double const *M, double const *V) {
   auto offset = [](int i, int j) -> int { return (i << 2) * D + (j << 2); };
 
   int blocks = D >> 2;
@@ -2084,7 +2081,7 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
 }
 
 template <int D>
-void _hy_mvp_blocked_4x4(double *C, double const *M, double const *V) {
+void _hy_mvp_blocked(double *C, double const *M, double const *V) {
   auto offset = [](int i, int j) -> int { return (i << 2) * D + (j << 2); };
 
   int blocks = D >> 2;
@@ -2613,15 +2610,12 @@ void _mx_vect_8x8_add(float64x2x4_t &cv, double const *__restrict M,
   // Load the 8x8 matrix M, 8 rows at a time
   const float64x2x4_t m_row1 = vld1q_f64_x4(M);
   const float64x2x4_t m_row2 = vld1q_f64_x4(M + stride);
-  const float64x2x4_t m_row3 = vld1q_f64_x4(M + (stride << 1));
-  const float64x2x4_t m_row4 =
-      vld1q_f64_x4(M + (stride << 2) - stride);                 // (stride*3)
-  const float64x2x4_t m_row5 = vld1q_f64_x4(M + (stride << 2)); // (stride*4)
-  const float64x2x4_t m_row6 =
-      vld1q_f64_x4(M + (stride << 2) + stride); // (stride*5)
-  const float64x2x4_t m_row7 =
-      vld1q_f64_x4(M + (stride << 3) - stride);                 // (stride*6)
-  const float64x2x4_t m_row8 = vld1q_f64_x4(M + (stride << 3)); // (stride*7)
+  const float64x2x4_t m_row3 = vld1q_f64_x4(M + 2 * stride);
+  const float64x2x4_t m_row4 = vld1q_f64_x4(M + 3 * stride);
+  const float64x2x4_t m_row5 = vld1q_f64_x4(M + 4 * stride);
+  const float64x2x4_t m_row6 = vld1q_f64_x4(M + 5 * stride);
+  const float64x2x4_t m_row7 = vld1q_f64_x4(M + 6 * stride);
+  const float64x2x4_t m_row8 = vld1q_f64_x4(M + 7 * stride);
 
   // Calculate dot product parts for each of the 8 rows
   float64x2_t dp1 = vmulq_f64(m_row1.val[0], v.val[0]);
@@ -3202,6 +3196,93 @@ void _hy_mvp_blocked_4x4(double *C, double const *M, double const *V) {
   }
 }
 
+template <int D>
+void _hy_mvp_blocked(double *C, double const *M, double const *V) {
+  constexpr int B = 8;
+  if (D >= B) {
+    int const blocks = D >> 3;
+    int const edge = blocks << 3;
+    int const rem = D & 7;
+
+    for (int i = 0; i < blocks; i++) {
+      float64x2x4_t accumulator;
+      _mx_vect_8x8(accumulator, M + (i << 3) * D, V, D);
+      for (int j = 1; j < blocks; j++) {
+        _mx_vect_8x8_add(accumulator, M + (i << 3) * D + (j << 3), V + (j << 3),
+                         D);
+      }
+
+      if (rem >= 4) {
+        float64x2x2_t top, bot;
+        top.val[0] = accumulator.val[0];
+        top.val[1] = accumulator.val[1];
+        bot.val[0] = accumulator.val[2];
+        bot.val[1] = accumulator.val[3];
+
+        _mx_vect_4x4_add(top, M + (i << 3) * D + edge, V + edge, D);
+        _mx_vect_4x4_add(bot, M + ((i << 3) + 4) * D + edge, V + edge, D);
+
+        accumulator.val[0] = top.val[0];
+        accumulator.val[1] = top.val[1];
+        accumulator.val[2] = bot.val[0];
+        accumulator.val[3] = bot.val[1];
+      }
+
+      vst1q_f64_x4(C + (i << 3), accumulator);
+
+      int const start_col = edge + (rem >= 4 ? 4 : 0);
+      if (start_col < D) {
+        for (int row = 0; row < 8; row++) {
+          double sum = 0;
+          for (int col = start_col; col < D; col++) {
+            sum += M[((i << 3) + row) * D + col] * V[col];
+          }
+          C[(i << 3) + row] += sum;
+        }
+      }
+    }
+
+    int start_row = edge;
+    if (D - start_row >= 4) {
+      float64x2x2_t acc;
+      _mx_vect_4x4(acc, M + start_row * D, V, D);
+      _mx_vect_4x4_add(acc, M + start_row * D + 4, V + 4, D);
+      for (int j = 1; j < blocks; j++) {
+        _mx_vect_4x4_add(acc, M + start_row * D + (j << 3), V + (j << 3), D);
+        _mx_vect_4x4_add(acc, M + start_row * D + (j << 3) + 4,
+                         V + (j << 3) + 4, D);
+      }
+      if (rem >= 4) {
+        _mx_vect_4x4_add(acc, M + start_row * D + edge, V + edge, D);
+      }
+      vst1q_f64(C + start_row, acc.val[0]);
+      vst1q_f64(C + start_row + 2, acc.val[1]);
+
+      int const start_col = edge + (rem >= 4 ? 4 : 0);
+      if (start_col < D) {
+        for (int row = 0; row < 4; row++) {
+          double sum = 0;
+          for (int col = start_col; col < D; col++) {
+            sum += M[(start_row + row) * D + col] * V[col];
+          }
+          C[start_row + row] += sum;
+        }
+      }
+      start_row += 4;
+    }
+
+    for (int row = start_row; row < D; row++) {
+      double sum = 0;
+      for (int col = 0; col < D; col++) {
+        sum += M[row * D + col] * V[col];
+      }
+      C[row] = sum;
+    }
+  } else {
+    _hy_mvp_blocked_4x4<D>(C, M, V);
+  }
+}
+
 // ddot multiply in and accumulate
 
 template <int D> double _hy_vvmult_sum(double *C, double const *M) {
@@ -3749,7 +3830,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
         cblas_dgemv(CblasRowMajor, CblasNoTrans, 20, 20, 1., tMatrix, 20,
                     childVector, 1, 0., mvs, 1);
 #else
-        _hy_mvp_blocked_4x4<20>(mvs, tMatrix, childVector);
+        _hy_mvp_blocked<20>(mvs, tMatrix, childVector);
 #endif
         sum += _hy_vvmult_sum<20>(parentConditionals, mvs);
 
@@ -3778,7 +3859,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
           continue;
         }
 
-        _hy_mvp_blocked_4x4<60>(mvs, tMatrix, childVector);
+        _hy_mvp_blocked<60>(mvs, tMatrix, childVector);
         sum += _hy_vvmult_sum<60>(parentConditionals, mvs);
 
         __ll_loop_handle_scaling<60L, true>(
@@ -3832,7 +3913,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
         cblas_dgemv(CblasRowMajor, CblasNoTrans, 61, 61, 1., tMatrix, 61,
                     childVector, 1, 0., mvs, 1);
 #else
-        _hy_mvp_blocked_4x4<61>(mvs, tMatrix, childVector);
+        _hy_mvp_blocked<61>(mvs, tMatrix, childVector);
 #endif
         sum += _hy_vvmult_sum<61>(parentConditionals, mvs);
 
@@ -3882,7 +3963,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
         cblas_dgemv(CblasRowMajor, CblasNoTrans, 62, 62, 1., tMatrix, 62,
                     childVector, 1, 0., mvs, 1);
 #else
-        _hy_mvp_blocked_4x4<62>(mvs, tMatrix, childVector);
+        _hy_mvp_blocked<62>(mvs, tMatrix, childVector);
 #endif
         sum += _hy_vvmult_sum<62>(parentConditionals, mvs);
         __ll_loop_handle_scaling<62L, true>(
@@ -3910,7 +3991,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
         cblas_dgemv(CblasRowMajor, CblasNoTrans, 63, 63, 1., tMatrix, 63,
                     childVector, 1, 0., mvs, 1);
 #else
-        _hy_mvp_blocked_4x4<63>(mvs, tMatrix, childVector);
+        _hy_mvp_blocked<63>(mvs, tMatrix, childVector);
 #endif
 
         sum += _hy_vvmult_sum<63>(parentConditionals, mvs);
@@ -3945,7 +4026,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
                                               (int)alphabetDimension);
 #endif
 
-        //_hy_mvp_blocked_4x4<16> (mvs, tMatrix, childVector);
+        //_hy_mvp_blocked<16> (mvs, tMatrix, childVector);
         sum += _hy_vvmult_sum_generic(parentConditionals, mvs,
                                       (int)alphabetDimension);
         // sum += _hy_vvmult_sum<16> (parentConditionals, mvs);
@@ -4569,7 +4650,7 @@ void _TheTree::ComputeBranchCache(
         }
         long didScale = 0;
         hyFloat sum = 0.;
-        _hy_mvp_blocked_4x4<20>(mvs, tMatrix, childProbabilitiesVector);
+        _hy_mvp_blocked<20>(mvs, tMatrix, childProbabilitiesVector);
         sum = _hy_vvmult_sum<20>(parentConditionals, mvs);
         if (canScale) {
           __ll_loop_handle_scaling<20L, false>(
@@ -4595,7 +4676,7 @@ void _TheTree::ComputeBranchCache(
         }
         long didScale = 0;
         hyFloat sum = 0.;
-        _hy_mvp_blocked_4x4<60>(mvs, tMatrix, childProbabilitiesVector);
+        _hy_mvp_blocked<60>(mvs, tMatrix, childProbabilitiesVector);
         sum = _hy_vvmult_sum<60>(parentConditionals, mvs);
         if (canScale) {
           __ll_loop_handle_scaling<60L, false>(
@@ -4622,7 +4703,7 @@ void _TheTree::ComputeBranchCache(
         }
         long didScale = 0;
 
-        _hy_mvp_blocked_4x4<61>(mvs, tMatrix, childProbabilitiesVector);
+        _hy_mvp_blocked<61>(mvs, tMatrix, childProbabilitiesVector);
         hyFloat sum = _hy_vvmult_sum<61>(parentConditionals, mvs);
 
         if (canScale) {
@@ -4655,7 +4736,7 @@ void _TheTree::ComputeBranchCache(
         long didScale = 0;
         hyFloat sum = 0.;
 
-        _hy_mvp_blocked_4x4<62>(mvs, tMatrix, childProbabilitiesVector);
+        _hy_mvp_blocked<62>(mvs, tMatrix, childProbabilitiesVector);
         sum = _hy_vvmult_sum<62>(parentConditionals, mvs);
 
         if (canScale) {
@@ -4687,7 +4768,7 @@ void _TheTree::ComputeBranchCache(
         }
         long didScale = 0;
         hyFloat sum = 0.;
-        _hy_mvp_blocked_4x4<63>(mvs, tMatrix, childProbabilitiesVector);
+        _hy_mvp_blocked<63>(mvs, tMatrix, childProbabilitiesVector);
         sum = _hy_vvmult_sum<63>(parentConditionals, mvs);
         if (canScale) {
           __ll_loop_handle_scaling<63L, false>(

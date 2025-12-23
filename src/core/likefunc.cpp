@@ -8469,19 +8469,38 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
   long N = indexInd.countitems();
   unsigned long lf_evaluations = 0;
 
-  hyFloat N_inv = 1. / N, simplex_alpha = 1.,
-          simplex_beta = /*1. + 2. * N_inv*/ GOLDEN_RATIO,
-          simplex_gamma = /*.75 - 0.5*N_inv*/ GOLDEN_RATIO_R * GOLDEN_RATIO_R,
-          simplex_delta = /*1. - N_inv*/ GOLDEN_RATIO_R * GOLDEN_RATIO_R;
+  hyFloat N_inv = 1. / N;
+  hyFloat simplex_alpha = 1.0;
+  hyFloat simplex_beta, simplex_gamma, simplex_delta;
+
+  if (N <= 5) {
+    // Aggressive parameters for low dimensions
+    simplex_beta = 2.;
+    simplex_gamma = 0.25;
+    simplex_delta = 0.25;
+  } else {
+    // Adaptive parameters for high dimensions (Gao & Han)
+    simplex_beta = 1.0 + 2.0 * N_inv;
+    simplex_gamma = 0.75 - 0.5 * N_inv;
+    simplex_delta = 1.0 - N_inv;
+  }
 
   _Constant zero(0.);
 
   // allocate the points of the simplex + scratch
-  _Matrix *simplex = new _Matrix[N + 1], centroid(N, 1, false, true),
-          function_values = _Matrix(N + 1, 2, false, true);
+  std::vector<_Matrix> simplex(N + 1);
+  _Matrix centroid(N, 1, false, true), function_values(N + 1, 2, false, true);
+
+  // pre-allocate working matrices to avoid reallocation in the loop
+  _Matrix new_point(N, 1, false, true), t(N, 1, false, true),
+      expansion(N, 1, false, true), temp_point(N, 1, false, true),
+      cv(N, 1, false, true), temp_value(N, 1, false, true),
+      sum_matrix(N, 1, false, true);
 
   auto replace_point = [&](_Matrix const &new_point, hyFloat new_value,
                            long index, long sorted_index) -> void {
+    sum_matrix -= simplex[index];
+    sum_matrix += const_cast<_Matrix &>(new_point);
     simplex[index] = new_point;
     function_values.Store(sorted_index, 0, new_value);
   };
@@ -8493,10 +8512,9 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
     return ll;
   };
 
-  auto resort_values = [&zero](_Matrix &v) -> void {
-    _Matrix *sorted = (_Matrix *)v.SortMatrixOnColumn(&zero, nil);
-    v = *sorted;
-    DeleteObject(sorted);
+  auto resort_values = [](_Matrix &v) -> void {
+    _SimpleList zero_column((long)0);
+    v.RecursiveIndexSort(0, v.GetHDim() - 1, &zero_column);
   };
 
   auto echo_values = [=](_Matrix &, hyFloat lf) -> void {
@@ -8566,6 +8584,11 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
     }
   }
 
+  // initialize sum_matrix for O(N) centroid updates
+  for (long i = 0L; i <= N; i++) {
+    sum_matrix += simplex[i];
+  }
+
   resort_values(function_values);
   if (verbosity_level > 100) {
     BufferToConsole("\nInitial simplex");
@@ -8578,22 +8601,17 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
     /** compute the centroid of all EXCEPT the WORST point **/
 
     long worst_index = (long)function_values(N, 1);
-    for (long k = 0L; k < N; k++) {
-      hyFloat kth_coordinate = 0.;
-      for (long c = 0L; c <= N; c++) {
-        if (c != worst_index) {
-          kth_coordinate += simplex[c](k, 0);
-        }
-      }
-      centroid[k] = kth_coordinate * N_inv;
-    }
+    // Optimized centroid calculation
+    centroid = sum_matrix;
+    centroid -= simplex[worst_index];
+    centroid *= N_inv;
 
     /** reflection
      x[r] = ¯x +α(¯x −x[n+1]).
     */
 
-    _Matrix new_point(centroid);
-    _Matrix t(centroid);
+    new_point = centroid;
+    t = centroid;
     t -= simplex[worst_index];
     t *= simplex_alpha;
     new_point += t;
@@ -8625,7 +8643,8 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
         if (verbosity_level > 100) {
           BufferToConsole("\nTrying expansion");
         }
-        _Matrix expansion(centroid), temp_point(new_point);
+        expansion = centroid;
+        temp_point = new_point;
         temp_point -= centroid;
         temp_point *= simplex_beta;
         expansion += temp_point;
@@ -8653,7 +8672,8 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
         }
         // x[ic] = x ̄− γ (x ̄−x[n+1])
         // x[oc] = ¯x ̄+γ alpha (x ̄−x[n+1])
-        _Matrix cv(centroid), temp_value(centroid);
+        cv = centroid;
+        temp_value = centroid;
 
         temp_value -= simplex[worst_try_index];
         temp_value *= simplex_gamma;
@@ -8705,19 +8725,33 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
         echo_values(simplex[best_idx], function_values(0, 0));
       }
 
+      bool collapsed = false;
+
       // x[i] = x[1] + δ(x[i] − x[1]).
       for (long i = 1L; i <= N; i++) {
         long idx = (long)function_values(i, 1);
-        _Matrix temp_value(simplex[idx]);
+
+        sum_matrix -= simplex[idx];
+
+        temp_value = simplex[idx];
         temp_value -= simplex[best_idx];
         temp_value *= simplex_delta;
         simplex[idx] = simplex[best_idx];
         simplex[idx] += temp_value;
 
+        sum_matrix += simplex[idx];
+
+        if (!collapsed && simplex[idx].Equal(&simplex[best_idx])) {
+          collapsed = true;
+        }
+
         function_values.Store(i, 0, set_point_and_compute(simplex[idx]));
         if (verbosity_level > 100) {
           echo_values(simplex[idx], function_values(i, 0));
         }
+      }
+      if (collapsed) {
+        break;
       }
     }
     resort_values(function_values);
@@ -8726,6 +8760,18 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
       echo_simplex_values(function_values);
       NLToConsole();
     }
+
+    hyFloat mean = 0.0, variance = 0.0;
+    for (long k = 0; k <= N; k++) {
+      mean += function_values(k, 0);
+    }
+    mean /= (N + 1);
+    for (long k = 0; k <= N; k++) {
+      variance += SQR(function_values(k, 0) - mean);
+    }
+    variance /= N;
+    hyFloat std_dev = sqrt(variance);
+
     if (verbosity_level == 1) {
       UpdateOptimizationStatus(
           -function_values(0, 0),
@@ -8737,15 +8783,13 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
         snprintf(buffer, sizeof(buffer),
                  "Simplex iteration %10ld [N=%5ld]; current max %12.6g, "
                  "current value "
-                 "spread %12.6g [precision %g]\n",
-                 it_count, N, -function_values(0, 0),
-                 fabs(function_values(N, 0) - function_values(1, 0)),
-                 gPrecision);
+                 "std.dev %12.6g [precision %g]\n",
+                 it_count, N, -function_values(0, 0), std_dev, gPrecision);
         BufferToConsole(buffer);
       }
     }
 
-    if (fabs(function_values(N, 0) - function_values(1, 0)) < gPrecision) {
+    if (std_dev < gPrecision) {
       break;
     }
 
@@ -8779,23 +8823,22 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
   simplex[best_idx][i]);
   }*/
 
-  N_inv = -set_point_and_compute(simplex[best_idx]);
+  hyFloat final_logL = -set_point_and_compute(simplex[best_idx]);
 
   if (verbosity_level > 100) {
     BufferToConsole("\nFinal simplex point");
-    echo_values(simplex[best_idx], N_inv);
+    echo_values(simplex[best_idx], final_logL);
     NLToConsole();
   }
 
-  if (fabs(N_inv + function_values(0, 0)) > .1) {
+  if (fabs(final_logL + function_values(0, 0)) > .1) {
     _TerminateAndDump(
         _String("Internal error in _SimplexMethod; final point log-likelihood "
                 "does not match the best recorded log-L: ") &
-        N_inv & " vs " & -function_values(0, 0));
+        final_logL & " vs " & -function_values(0, 0));
   }
 
-  delete[] simplex;
-  return N_inv;
+  return final_logL;
 }
 
 //_______________________________________________________________________________________
@@ -12668,21 +12711,4 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
 
 //_______________________________________________________________________________________
 
-hyFloat _CustomFunction::Compute(void) {
-  likeFuncEvalCallCount++;
-  _SimpleList const *iv = &GetIndependentVars();
-  for (unsigned long i = 0UL; i < iv->lLength; i++) {
-    hyFloat result = GetIthIndependent(i);
-
-    if (result < GetIthIndependentBound(i, true) ||
-        result > GetIthIndependentBound(i, false)) {
-      return -INFINITY;
-    }
-  }
-
-  HBLObjectRef res = myBody.Compute();
-  if (res) {
-    return res->Value();
-  }
-  return 0.0;
-}
+hyFloat _CustomFunction::Compute(void) { return myBody.Compute()->Value(); }

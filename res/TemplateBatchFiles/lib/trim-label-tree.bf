@@ -37,12 +37,28 @@ SetDialogPrompt  ("Load an alignment to trim the tree to)");
 labeler.tree = trees.LoadAnnotatedTopology (TRUE);
 labeler.ts = labeler.tree [^"terms.trees.newick_with_lengths"];
 KeywordArgument  ("exclude", "Remove these sequences from the tree (semicolon-separated; 'null' to NOT remove any sequences)", "null");
-labeler.exclude = io.PromptUserForString("Remove these sequences from the tree (comma-separated; 'null' to NOT remove any sequences)");
+labeler.exclude = io.PromptUserForString("Remove these sequences from the tree (semicolon-separated; 'null' to NOT remove any sequences)");
 
 Topology T = labeler.ts;
 
+
+
 if (labeler.exclude != "null") {
-    labeler.exclude  = utility.DictToArray(regexp.Split (labeler.exclude, ";"));
+    labeler.existing_tips = {};
+    
+    for (t; in; trees.LeafNames (labeler.tree)) {
+         labeler.existing_tips[t] = 1;
+    }
+    
+    
+    labeler.exclude_t = {};
+    for (t; in; regexp.Split (labeler.exclude, ";")) {
+        if (labeler.existing_tips[t]) {
+            labeler.exclude_t + t;
+        }
+    }
+    labeler.exclude =  utility.DictToArray (labeler.exclude_t);
+    
     T - labeler.exclude;
 }
 
