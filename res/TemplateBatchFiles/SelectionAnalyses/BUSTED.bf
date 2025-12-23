@@ -1,4 +1,4 @@
-RequireVersion ("2.5.79");
+RequireVersion ("2.5.91");
 
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
@@ -40,8 +40,11 @@ Version 4.2 adds calculation of MH-attributable fractions of substitutions.
 Version 4.5 adds an 'error absorption' component 
 
 Version 4.6 adds support for MSS-type models
+
+Version 4.7 adds user configurable options for the error class.
+
 ",
-                               terms.io.version : "4.6",
+                               terms.io.version : "4.7",
                                terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71, *Synonymous Site-to-Site Substitution Rate Variation Dramatically Inflates False Positive Rates of Selection Analyses: Ignore at Your Own Peril*, Mol Biol Evol. 37(8):2430-2439",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
                                terms.io.contact : "spond@temple.edu",
@@ -197,7 +200,7 @@ if (busted.do_srv) {
     busted.synonymous_rate_classes = io.PromptUser ("The number alpha rate classes to include in the model [1-10, default 3]", busted.synonymous_rate_classes, 1, 10, TRUE);
 }
 
-KeywordArgument ("error-sink",  "[Advanced experimental setting] Include a rate class to capture misalignment artifacts", "No");
+KeywordArgument ("error-sink",  "Include a rate class to capture misalignment artifacts", "No");
 
 busted.error_sink = io.SelectAnOption ({
                                         {"No", "Standard dN/dS model (all rates are used for inference)"}
@@ -206,8 +209,26 @@ busted.error_sink = io.SelectAnOption ({
 
 selection.io.json_store_setting  (busted.json, "error-sink", busted.error_sink);
 
+busted.positive_class_range = terms.range_1_100;
+busted.error_class_range = terms.range_high;
+busted.error_sink_weight = terms.range_small_fraction;
+busted.error_class_bound = 100;
+busted.error_class_weight = 0.01;
+
 if (busted.error_sink) {
     busted.rate_classes += 1;
+    KeywordArgument ("error-sink-bound",  "[Advanced setting] Set the lower bound for error-class dN/dS", "100");
+    busted.error_class_bound = 
+     io.PromptUser ("[Advanced setting] Set the lower bound for error-class dN/dS", 100, 1, 1e6, FALSE);
+     
+    busted.positive_class_range [terms.upper_bound] = "" + busted.error_class_bound;
+    busted.error_class_range [terms.lower_bound] = "" + busted.error_class_bound;
+    KeywordArgument ("error-sink-weight",  "[Advanced setting] Set the maximum weight for error-class dN/dS", "0.01");
+    busted.error_class_weight = 
+     io.PromptUser ("[Advanced setting] Set the maximum weight for error-class dN/dS", 0.01, 1e-8, 1.0, FALSE);
+     
+    busted.error_sink_weight [terms.upper_bound] = "" + busted.error_class_weight;
+
 }
 
 KeywordArgument ("grid-size", "The number of points in the initial distributional guess for likelihood fitting", 250);
@@ -513,14 +534,12 @@ busted.omega_eds_w_parameter = terms.AddCategory (utility.getGlobalValue("terms.
 
 
 if (busted.error_sink) {
-     parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,1)), terms.range_high);
-     parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,1)), terms.range_high);
-     parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , busted.omega_eds_parameter), terms.range_1_100);
-     parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , busted.omega_eds_parameter), terms.range_1_100);
-     parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,1)), terms.range_high);
-     parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,1)), terms.range_high);
-     parameters.SetRange  (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), 1)),terms.range_small_fraction);
-     parameters.SetRange  (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), 1)),terms.range_small_fraction);
+     parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,1)), busted.error_class_range);
+     parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,1)), busted.error_class_range);
+     parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , busted.omega_eds_parameter), busted.positive_class_range);
+     parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , busted.omega_eds_parameter), busted.positive_class_range);
+     parameters.SetRange  (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), 1)), busted.error_sink_weight);
+     parameters.SetRange  (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), 1)), busted.error_sink_weight);
 } else {
     parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , busted.omega_eds_parameter), terms.range_gte1);
 }
@@ -1610,10 +1629,10 @@ function busted.init_grid_setup (omega_distro, error_sink, rate_count) {
             busted.initial_grid_presets [_name_] = 0;
             
             if (error_sink && _index_ == 0) {
-                 busted.initial_grid  [_name_] = {{100,500,1000,5000}};
+                 busted.initial_grid  [_name_] = {{busted.error_class_bound,busted.error_class_bound*5,busted.error_class_bound*10,busted.error_class_bound*50}};
                  busted.initial_ranges [_name_] = {
-                    terms.lower_bound : 100,
-                    terms.upper_bound : 1000
+                    terms.lower_bound : busted.error_class_bound,
+                    terms.upper_bound : busted.error_class_bound*50
                 };
             } else {                
                 busted.initial_ranges [_name_] = {
@@ -1629,7 +1648,7 @@ function busted.init_grid_setup (omega_distro, error_sink, rate_count) {
             };
             busted.initial_ranges [_name_] = {
                 terms.lower_bound : 1,
-                terms.upper_bound : 100,
+                terms.upper_bound : busted.error_class_bound,
                 terms.range_transform : "Sqrt(`terms.range_transform_variable`)"
             };
             busted.initial_grid_presets [_name_] = 2;
@@ -1647,7 +1666,7 @@ function busted.init_grid_setup (omega_distro, error_sink, rate_count) {
         if (error_sink && _index_ == 0) {
             busted.initial_grid  [_name_] = {
                 {
-                    0, 0.001, 0.0025, 0.025
+                    0, busted.error_class_weight / 64, busted.error_class_weight / 32 , busted.error_class_weight / 4
                 }
             };        
              busted.initial_ranges [_name_] = {
