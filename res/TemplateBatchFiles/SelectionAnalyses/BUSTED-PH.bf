@@ -21,8 +21,7 @@ terms.busted.busted_ph        = "BUSTED-PH tests";
 bustedph.test_set = "";
 bustedph.analysis_description = {
 
-                               terms.io.info : "BUSTED-PH (phenotype) tests if episodic diversifying selection is associated with the set of designated (FG) branches.
-The BUSTED model with selected options is fitted to the FG branches (test 1), then the rest of the branches (BG, test 2), and finally to all branches together (test 3). A BUSTED-PH detects selection associated with the phenotype is test 1 IS significant, test 2 is NOT significant, and test 3 IS significant when comparing it to the FG+BG model (i.e., selection regimes differ between the sets of branches)",
+                               terms.io.info : "BUSTED-PH (phenotype) tests if episodic diversifying selection is associated with the set of designated (FG) branches. The BUSTED model with selected options is fitted to the FG branches (test 1), then the rest of the branches (BG, test 2), and finally to all branches together (test 3). A BUSTED-PH detects selection associated with the phenotype is test 1 IS significant, test 2 is NOT significant, and test 3 IS significant when comparing it to the FG+BG model (i.e., selection regimes differ between the sets of branches)",
                                terms.io.version : "1.0",
                                terms.io.reference : "TBD",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
