@@ -159,6 +159,14 @@ namespace terms{
             return "Importance factor for property " + id;
         }
     }
+    
+    function omegaType  (id, type) {
+        if (Abs (type)) { 
+            return parameters.omega_ratio + " for " + type;
+        } else {
+            return parameters.omega_ratio;
+        }
+    }
 
     function binaryRate(fromX, toX) {
         return "Substitution rate from character " + fromX + " to character " + toX;

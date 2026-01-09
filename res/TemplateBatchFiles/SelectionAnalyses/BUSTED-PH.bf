@@ -21,8 +21,8 @@ terms.busted.busted_ph        = "BUSTED-PH tests";
 bustedph.test_set = "";
 bustedph.analysis_description = {
 
-                               terms.io.info : "BUSTED-PH (phenotype) tests if episodic diversifying selection is associated with the set of designated (FG) branches. The BUSTED model with selected options is fitted to the FG branches (test 1), then the rest of the branches (BG, test 2), and finally to all branches together (test 3). A BUSTED-PH detects selection associated with the phenotype is test 1 IS significant, test 2 is NOT significant, and test 3 IS significant when comparing it to the FG+BG model (i.e., selection regimes differ between the sets of branches)",
-                               terms.io.version : "1.0",
+                               terms.io.info : "BUSTED-PH (phenotype) tests if episodic diversifying selection is associated with the set of designated (FG) branches. The BUSTED model with selected options is fitted to the FG branches (test 1), then the rest of the branches (BG, test 2), and finally to all branches together (test 3). A BUSTED-PH detects selection associated with the phenotype is test 1 IS significant, test 2 is NOT significant, and test 3 IS significant when comparing it to the FG+BG model (i.e., selection regimes differ between the sets of branches). V2.0 changes significance evaluation to Union-Intersection testing and AIC based background neutrality testing",
+                               terms.io.version : "2.0",
                                terms.io.reference : "TBD",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
                                terms.io.contact : "spond@temple.edu",
@@ -239,35 +239,29 @@ bustedph.test_results = {
     'Level' : busted.p_value
 };
 
-bustedph.test_results [terms.json.corrected_pvalue ] = math.HolmBonferroniCorrection (bustedph.test_results[terms.json.uncorrected_pvalue]);
+bustedph.p1 = (bustedph.test_results [terms.json.uncorrected_pvalue ])['FG'];
+bustedph.p2 = (bustedph.test_results [terms.json.uncorrected_pvalue ])['BG'];
+bustedph.p3 = (bustedph.test_results [terms.json.uncorrected_pvalue ])['DIFF'];
+
 
 console.log ("----\n## Branch-site unrestricted statistical test of episodic diversification and association with phenotype/trait [BUSTED-PH]");
-console.log ( "Likelihood ratio test for episodic diversifying positive selection on test branches , **p = " + Format ((bustedph.test_results [terms.json.corrected_pvalue ])['FG'], 8, 4) + "**.");
-console.log ( "Likelihood ratio test for episodic diversifying positive selection on background branches , **p = " + Format ((bustedph.test_results [terms.json.corrected_pvalue ])['BG'], 8, 4) + "**.");
-console.log ( "Likelihood ratio test for differences in distributions between **test** and **background** , **p = " + Format ((bustedph.test_results [terms.json.corrected_pvalue ])['Comparative'], 8, 4) + "**.");
+console.log ( "Likelihood ratio test for episodic diversifying positive selection on test branches , **p = " + Format (bustedph.p1, 8, 4) + "**.");
+console.log ( "Likelihood ratio test for episodic diversifying positive selection on background branches , **p = " + Format (bustedph.p2, 8, 4) + "**.");
+console.log ( "Likelihood ratio test for differences in distributions between **test** and **background** , **p = " + Format (bustedph.p3, 8, 4) + "**.");
 
 console.log ("\n\n## Analysis summary (p = " + bustedph.test_results['Level'] + ")");
 
 bustedph.summary = "";
 
-if ((bustedph.test_results [terms.json.corrected_pvalue ])['FG'] <= busted.p_value ) {
-    if ((bustedph.test_results [terms.json.corrected_pvalue ])['BG'] > busted.p_value) {
-        if ((bustedph.test_results [terms.json.corrected_pvalue ])['Comparative'] <= busted.p_value) {
-            bustedph.summary = ("Selection is associated with the phenotype / trait");
-        } else {
-            bustedph.summary = ("Selection is associated with the phenotype / trait, but there is no significant difference between test and background branches in terms of selective pressure");
-        }
+if (Max (bustedph.p1, bustedph.p3) <= busted.p_value ) {
+    bustedph.summary =  ("The composite null hypothesis for no selection on foreground or no difference between background and background has been rejected.");
+    if (bustedph.p2 > 0.068) {
+        bustedph.summary += " The neutral model of evolution for background branches is sufficiently supported. There is **statistical evidence that the selection is associated with the trait**";
     } else {
-        console.log ("Selection is acting on the branches with the phenotype / trait, but is **also** acting on background branches.");
-        if ((bustedph.test_results [terms.json.corrected_pvalue ])['Comparative'] <= busted.p_value) {
-            bustedph.summary = ("There is a significant difference between test and background branches in terms of selective pressure");
-        } else {
-            bustedph.summary = ("There is no significant difference between test and background branches in terms of selective pressure");
-        }
-        
+        bustedph.summary += " The neutral model of evolution for background branches is **not** sufficiently supported. Selection is acting broadly on the tree, not just of branches with the trait";
     }
 } else {
-    bustedph.summary = ("There is **no evidence** of episodic diversifying selection on test branches; selection is not associated with phenotype/trait");
+    bustedph.summary = ("The composite null hypothesis for no selection on foreground or no difference between background and background could not be rejected. There is **no** statistical evidence that the selection is associated with the trait.");
 }
 
 console.log (bustedph.summary);
