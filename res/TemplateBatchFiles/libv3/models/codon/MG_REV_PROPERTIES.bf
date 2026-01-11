@@ -139,6 +139,74 @@ terms.model.MG_REV_PROPERTIES.predefined = {
                "Y":1.512
               }
      },
+     "3PROP": {
+    "Hydrophobicity_KyteDoolittle": {
+      "A": 1.8,
+      "C": 2.5,
+      "D": -3.5,
+      "E": -3.5,
+      "F": 2.8,
+      "G": -0.4,
+      "H": -3.2,
+      "I": 4.5,
+      "K": -3.9,
+      "L": 3.8,
+      "M": 1.9,
+      "N": -3.5,
+      "P": -1.6,
+      "Q": -3.5,
+      "R": -4.5,
+      "S": -0.8,
+      "T": -0.7,
+      "V": 4.2,
+      "W": -0.9,
+      "Y": -1.3
+    },
+    "Volume_Angstrom3": {
+      "A": 88.6,
+      "C": 108.5,
+      "D": 111.1,
+      "E": 138.4,
+      "F": 189.9,
+      "G": 60.1,
+      "H": 153.2,
+      "I": 166.7,
+      "K": 168.6,
+      "L": 166.7,
+      "M": 162.9,
+      "N": 114.1,
+      "P": 112.7,
+      "Q": 143.8,
+      "R": 173.4,
+      "S": 89.0,
+      "T": 116.1,
+      "V": 140.0,
+      "W": 227.8,
+      "Y": 193.6
+    },
+    "Isoelectric_Point_pI": {
+      "A": 6.0,
+      "C": 5.07,
+      "D": 2.77,
+      "E": 3.22,
+      "F": 5.48,
+      "G": 5.97,
+      "H": 7.59,
+      "I": 6.02,
+      "K": 9.74,
+      "L": 5.98,
+      "M": 5.74,
+      "N": 5.41,
+      "P": 6.3,
+      "Q": 5.65,
+      "R": 10.76,
+      "S": 5.68,
+      "T": 5.6,
+      "V": 5.96,
+      "W": 5.89,
+      "Y": 5.66
+    }
+  },
      "LCAP" : {
         "Chemical Composition" : {
             {-0.5868927454579467}
@@ -580,6 +648,7 @@ lfunction model.codon.MG_REV_PROPERTIES.prompt_and_define (type, code) {
             {
                 "Atchley":"Use the five properties derived from a factor analysis of 500 amino-acid properties [Table 2 in PNAS (2005) 102(18) 6395-6400 doi: 10.1073/pnas.0408677102]",
                 "LCAP":"Use the five properties defined in the Conant and Stadler LCAP model [Mol Biol Evol (2009) 26 (5): 1155-1161. doi: 10.1093/molbev/msp031]",
+                "3PROP" : "Use three primary properties: Hydrophobicity (Kyle-Doolitle), Volume (cubic angstroms), Isoelectric Point (pI)",
                 "Random-2" : "Two random properties (for null hypothesis testing)",
                 "Random-3" : "Three random properties (for null hypothesis testing)",
                 "Random-4" : "Four random properties (for null hypothesis testing)",
