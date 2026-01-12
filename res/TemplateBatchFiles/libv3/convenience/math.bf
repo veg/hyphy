@@ -238,7 +238,6 @@ lfunction math.BenjaminiHochbergFDR(ps) {
   }
   indexed = indexed % 0;
 
-
   for (k = 0; k < count; k+=1) {
     indexed[k][0] = indexed[k][0] * count/(k+1);
   }
@@ -250,6 +249,46 @@ lfunction math.BenjaminiHochbergFDR(ps) {
   }
   
   utility.Extend (corrected, ps);
+  return corrected;
+};
+
+/**
+* Returns Benjamini-Hochberg corrected q-values (FDR)
+* @name math.BenjaminiHochbergFDRClassifier 
+* @param {Dict} ps - a key -> p-value (or null, for not done)
+* @param {Number} qv - significance level
+
+*/
+
+lfunction math.BenjaminiHochbergFDRClassifier(ps, qv) {
+  tested  = utility.Filter (ps, "_value_", "None!=_value_");
+  count   = utility.Array1D (tested);
+  names   = utility.Keys (tested);
+  indexed = {count, 2};
+    
+  for (k = 0; k < count; k+=1) {
+    indexed [k][0] = tested[names[k]];
+    indexed [k][1] = k;
+  }
+  indexed = indexed % 0;
+
+  for (k = 0; k < count; k+=1) {
+    if (indexed[k][0] <= qv * (k+1) / count) {
+        indexed[k][0]  = 1;
+    } else {
+        indexed[k][0] = 0;
+        break;
+    }
+  }
+  for (; k < count; k+=1) {
+    indexed[k][0] = 0;
+  }
+  corrected = {};
+
+  for (k = 0; k < count; k+=1) {
+    corrected[names[indexed[k][1]]] = indexed[k][0];
+  }
+  //utility.Extend (corrected, ps);
   return corrected;
 };
 

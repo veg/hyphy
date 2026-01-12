@@ -64,6 +64,7 @@ namespace terms{
     simulated      = "simulated";
     LRT            = "LRT";
     p_value        = "p-value";
+    q_value        = "q-value";
 
     branch_selection_attributes   = "Branch selection attributes";
     empirical_bayes_factor  = "BF";
