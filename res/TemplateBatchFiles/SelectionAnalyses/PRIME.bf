@@ -580,10 +580,12 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
 
 io.ClearProgressBar ();
 
+console.log (prime.q_values);
+
 prime.q_values_numeric =  math.BenjaminiHochbergFDR (prime.q_values);
 prime.q_values =  math.BenjaminiHochbergFDRClassifier (prime.q_values, prime.pvalue);
 
-/*
+
 console.log (prime.q_values_numeric );
 console.log (prime.q_values);
 
@@ -591,7 +593,8 @@ for (s, v; in; prime.q_values) {
     if (+v) {
         console.log (s + " => " + prime.q_values_numeric[s])
     }
-}*/
+}
+
 
 //console.log (prime.q_values);
 
@@ -643,9 +646,20 @@ if (prime.q_count == 0) {
         prime.table_output_options[utility.getGlobalValue("terms.table_options.header")] = TRUE;
         for (idx, site; in; sites) {
             prime.site_report ["codon"] = site;
-            prime.site_report [terms.q_value] = prime.q_values_numeric["" + pi + "|" + idx];
+            prime.site_report [terms.q_value] = prime.q_values_numeric["" + pi + "|" + site];
             prime.site.composition.string = ((prime.site.composition.string_cache)[0+pi])[site];
-            prime.site_report  ["properties"] = (prime.report.echo (site, 0+pi, (prime.site_results[pi])[site][-1], prime.pvalue, prime.pvalue2));
+            prime.site_report  ["properties"] = math.HolmBonferroniCorrection (prime.report.echo (site, 0+pi, (prime.site_results[pi])[site][-1], prime.pvalue, 1));
+            
+            prime.delete_keys = {};
+            for (k, v; in;  prime.site_report  ["properties"] ) {
+                if (v > prime.pvalue2 ) {
+                    prime.delete_keys [k] = 1;
+                }
+            }
+            
+            prime.site_report  ["properties"] - prime.delete_keys;
+           
+            
             (prime.json [terms.json.test_results])[terms.stage_1_sites] + prime.site_report;
         }
         
@@ -999,6 +1013,7 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
 function prime.report.echo (prime.report.site, prime.report.partition, prime.report.row, p1, p2) {
 
     prime.report.site_properties = {};
+    
     
    
     for (key, value; in; prime.p_value_indices) {

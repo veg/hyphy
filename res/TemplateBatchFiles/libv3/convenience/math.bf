@@ -238,6 +238,7 @@ lfunction math.BenjaminiHochbergFDR(ps) {
   }
   indexed = indexed % 0;
 
+
   for (k = 0; k < count; k+=1) {
     indexed[k][0] = indexed[k][0] * count/(k+1);
   }
@@ -275,7 +276,6 @@ lfunction math.BenjaminiHochbergFDRClassifier(ps, qv) {
   max_index = 0;
 
   for (k = 0; k < count; k+=1) { 
-    console.log ("=>" + k + " " + indexed[k][0] + " < " + qv * (k+1) / count);
     if (indexed[k][0] <= qv * (k+1) / count) {
         indexed[k][0]  = 1;
         max_index = k;
