@@ -580,11 +580,12 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
 
 io.ClearProgressBar ();
 
-console.log (prime.q_values);
+//console.log (prime.q_values);
 
 prime.q_values_numeric =  math.BenjaminiHochbergFDR (prime.q_values);
 prime.q_values =  math.BenjaminiHochbergFDRClassifier (prime.q_values, prime.pvalue);
 
+/*
 
 console.log (prime.q_values_numeric );
 console.log (prime.q_values);
@@ -593,7 +594,7 @@ for (s, v; in; prime.q_values) {
     if (+v) {
         console.log (s + " => " + prime.q_values_numeric[s])
     }
-}
+}*/
 
 
 //console.log (prime.q_values);
