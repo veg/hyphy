@@ -271,18 +271,25 @@ lfunction math.BenjaminiHochbergFDRClassifier(ps, qv) {
     indexed [k][1] = k;
   }
   indexed = indexed % 0;
+  
+  max_index = 0;
 
-  for (k = 0; k < count; k+=1) {
+  for (k = 0; k < count; k+=1) { 
+    console.log ("=>" + k + " " + indexed[k][0] + " < " + qv * (k+1) / count);
     if (indexed[k][0] <= qv * (k+1) / count) {
         indexed[k][0]  = 1;
+        max_index = k;
     } else {
         indexed[k][0] = 0;
-        break;
     }
   }
-  for (; k < count; k+=1) {
-    indexed[k][0] = 0;
+  
+  
+  for (k=0; k < max_index; k+=1) {
+    indexed[k][0] = 1;
   }
+  
+  
   corrected = {};
 
   for (k = 0; k < count; k+=1) {

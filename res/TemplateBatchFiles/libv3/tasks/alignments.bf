@@ -401,10 +401,16 @@ function alignments.LoadCodonDataFile(dataset_name, datafilter_name, data_info) 
                 alignments.LoadCodonDataFile.name = alignments.GetIthSequenceOriginalName (dataset_name, alignments.LoadCodonDataFile.i);
 
                 alignments.LoadCodonDataFile.site_map = ^"`datafilter_name`.site_map";
+                
+                               
 
                 alignments.LoadCodonDataFile.annotation_string = utility.PopulateDict (0, ^"`dataset_name`.sites",
                                                        '(alignments.LoadCodonDataFile.name[terms.data.sequence])[_idx]',
                                                        '_idx');
+                                                       
+                for (i = 0; i < Abs (alignments.LoadCodonDataFile.annotation_string); i = i+1 ) {
+                    console.log ( alignments.LoadCodonDataFile.annotation_string[i]);
+                }
 
 
                 utility.ForEach (alignments.LoadCodonDataFile.site_map, "_value_",
@@ -412,7 +418,7 @@ function alignments.LoadCodonDataFile(dataset_name, datafilter_name, data_info) 
                         `&alignments.LoadCodonDataFile.annotation_string`[_value_] = `&alignments.LoadCodonDataFile.annotation_string`[_value_] && 0;
                     ');
 
-                console.log ("*** PROBLEM WITH SEQUENCE ' " + alignments.LoadCodonDataFile.name[terms.id] + "' (" + ^"`dataset_name`.sites" + " nt long, stop codons shown in capital letters)\n\n" + Join ("",alignments.LoadCodonDataFile.annotation_string));
+                console.log ("*** PROBLEM WITH SEQUENCE ' " + alignments.LoadCodonDataFile.name[terms.id] + "' (" + ^"`dataset_name`.sites" + " nt long, stop codons shown in capital letters)\n\n" + Join ("",utility.DictToArray(alignments.LoadCodonDataFile.annotation_string)));
                 break;
             }
         }
