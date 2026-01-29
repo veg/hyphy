@@ -29,8 +29,8 @@ io.DisplayAnalysisBanner ( cln.analysis_description );
 KeywordArgument ("code",        "Genetic code to use", "Universal", "Choose Genetic Code");
 KeywordArgument ("alignment",   "Sequence alignment to clean");
 
-
-cln.code_info = alignments.LoadGeneticCode (None);
+cln.code = io.GetKeywordValue ("code");
+cln.code_info = alignments.LoadGeneticCode (cln.code);
 cln.alignment_info = alignments.ReadNucleotideDataSet ("cln.sequences", null);
 DataSetFilter	    all64 = CreateFilter (cln.sequences, 3, "", "");
 
