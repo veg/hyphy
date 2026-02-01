@@ -408,9 +408,6 @@ function alignments.LoadCodonDataFile(dataset_name, datafilter_name, data_info) 
                                                        '(alignments.LoadCodonDataFile.name[terms.data.sequence])[_idx]',
                                                        '_idx');
                                                        
-                for (i = 0; i < Abs (alignments.LoadCodonDataFile.annotation_string); i = i+1 ) {
-                    console.log ( alignments.LoadCodonDataFile.annotation_string[i]);
-                }
 
 
                 utility.ForEach (alignments.LoadCodonDataFile.site_map, "_value_",

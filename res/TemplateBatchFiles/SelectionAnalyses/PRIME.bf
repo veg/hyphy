@@ -649,7 +649,7 @@ if (prime.q_count == 0) {
             prime.site_report ["codon"] = site;
             prime.site_report [terms.q_value] = prime.q_values_numeric["" + pi + "|" + site];
             prime.site.composition.string = ((prime.site.composition.string_cache)[0+pi])[site];
-            prime.site_report  ["properties"] = math.HolmBonferroniCorrection (prime.report.echo (site, 0+pi, (prime.site_results[pi])[site][-1], prime.pvalue, 1));
+            prime.site_report  ["properties"] = math.HolmBonferroniCorrection (prime.report.echo (site, 0+pi, (prime.site_results[pi])[site][-1], prime.pvalue, prime.pvalue2));
             
             prime.delete_keys = {};
             for (k, v; in;  prime.site_report  ["properties"] ) {
