@@ -940,7 +940,8 @@ lfunction alignments.Extract_site_patterns (data_filter) {
             for (i,v; in; site_characters) {
                 ((site_info[_pattern_])[^"terms.data.characters"])[filter_characters[+i]] = v;
             }
-            (site_info[_pattern_])[^"terms.data.is_constant"] = Abs (site_characters) <= 1;
+            site_character_count = Abs (site_characters);
+            (site_info[_pattern_])[^"terms.data.is_constant"] = (site_character_count == 1);
         }
         
         

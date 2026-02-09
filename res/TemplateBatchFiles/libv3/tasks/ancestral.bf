@@ -838,10 +838,15 @@ lfunction ancestral.ComputeCompressedSubstitutionsBySite (ancestral_data, site) 
 
 
 lfunction ancestral.ComputeCompressedSubstitutionConstantSite (pattern_info) {
-    io.CheckAssertion (utility.Array1D (pattern_info [^"terms.data.characters"]) == 1, "Non-constant site passed to ComputeCompressedSubstitutionConstantSite");
-    return {
-        "root" : (Rows(pattern_info [^"terms.data.characters"]))[0]
-    };
+    char_count = utility.Array1D (pattern_info [^"terms.data.characters"]);
+    if (char_count == 1) {
+        return {
+            "root" : (Rows(pattern_info [^"terms.data.characters"]))[0]
+        };
+    }
+    
+    // Fallback for ambiguous/gappy patterns misclassified as constant
+    return ancestral.ComputeCompressedSubstitutionsBySite ((^"fel.ancestors_cache"), (pattern_info[^"terms.data.sites"])[0]);
 }
 
 /*******************************************

@@ -1,0 +1,62 @@
+// Test for constant site pattern detection bug fix
+// This test verifies that sites are correctly classified as constant/non-constant
+// Bug: sites with 0 characters (all gaps) were incorrectly marked as constant with <= 1 check
+// Fix: changed to == 1 check so only sites with exactly 1 character are marked constant
+
+LoadFunctionLibrary("libv3/all-terms.bf");
+LoadFunctionLibrary("libv3/tasks/alignments.bf");
+
+// Test with absrel-in1.fa which has gaps (the original failing test case)
+DataSet test_ds = ReadDataFile(PATH_TO_CURRENT_BF + "data/absrel-in1.fa");
+DataSetFilter test_filter = CreateFilter(test_ds, 1);
+
+site_patterns = alignments.Extract_site_patterns("test_filter");
+
+// Verify constant and non-constant classification
+constant_count = 0;
+gap_only_count = 0;
+variable_site_count = 0;
+all_constant_valid = TRUE;
+all_gap_sites_valid = TRUE;
+all_variable_sites_valid = TRUE;
+
+for (pattern_id, pattern_info; in; site_patterns) {
+    char_count = utility.Array1D(pattern_info[terms.data.characters]);
+    is_constant = pattern_info[terms.data.is_constant];
+    
+    if (is_constant) {
+        constant_count += 1;
+        // Critical assertion: constant sites must have exactly 1 character
+        if (char_count != 1) {
+            console.log("ERROR: Pattern " + pattern_id + " marked as constant but has " + char_count + " characters");
+            all_constant_valid = FALSE;
+        }
+    } else {
+        if (char_count == 0) {
+            gap_only_count += 1;
+            // Ensure gappy sites are never marked as constant
+            if (is_constant) {
+                console.log("ERROR: Gap-only pattern " + pattern_id + " incorrectly marked as constant");
+                all_gap_sites_valid = FALSE;
+            }
+        } else {
+            variable_site_count += 1;
+            // Ensure multi-character sites stay non-constant
+            if (is_constant) {
+                console.log("ERROR: Variable pattern " + pattern_id + " incorrectly marked as constant");
+                all_variable_sites_valid = FALSE;
+            }
+        }
+    }
+}
+
+assert(all_constant_valid, "All constant sites must have exactly 1 character");
+assert(all_gap_sites_valid, "Gap-only sites must NEVER be marked constant");
+assert(all_variable_sites_valid, "Variable sites must NEVER be marked constant");
+assert(constant_count > 0, "Should have found some constant sites");
+assert(gap_only_count > 0, "Should have found some gap-only sites in absrel-in1.fa");
+
+console.log("✓ Constant site pattern detection working correctly");
+console.log("  Found " + constant_count + " constant sites (all single-character)");
+console.log("  Found " + gap_only_count + " gap-only sites (all correctly non-constant)");
+console.log("  Found " + variable_site_count + " variable sites (all correctly non-constant)");
