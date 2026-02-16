@@ -7,12 +7,16 @@ LoadFunctionLibrary("BS_REL.bf");
 
 
 lfunction model.codon.MG_REV_PROPERTIES_BSREL.prompt_and_define (type, code) {
-    KeywordArgument ("property-set", "How to partition synonymous codons into classes", "Atchley");
+    KeywordArgument ("property-set", "How to partition synonymous codons into classes", "3PROP");
     
     property_set = io.SelectAnOption (
             {
                 "Atchley":"Use the five properties derived from a factor analysis of 500 amino-acid properties [Table 2 in PNAS (2005) 102(18) 6395-6400 doi: 10.1073/pnas.0408677102]",
                 "LCAP":"Use the five properties defined in the Conant and Stadler LCAP model [Mol Biol Evol (2009) 26 (5): 1155-1161. doi: 10.1093/molbev/msp031]",
+                "2PROP" : "Use two primary properties: Hydrophobicity (Kyle-Doolitle), Volume (cubic angstroms)",
+                "3PROP" : "Use three primary properties: Hydrophobicity (Kyle-Doolitle), Volume (cubic angstroms), Isoelectric Point (pI)",
+                "4PROP" : "Use four primary properties: Hydrophobicity (Kyle-Doolitle), Volume (cubic angstroms), Isoelectric Point (pI), Alpha-Helix Propensity (Chou-Fasman)",
+                "5PROP" : "Use five primary properties: Hydrophobicity (Kyle-Doolitle), Volume (cubic angstroms), Isoelectric Point (pI), Alpha-Helix Propensity (Chou-Fasman), Beta-Sheet Propensity (Chou-Fasman)",
                 "Random-2" : "Two random properties (for null hypothesis testing)",
                 "Random-3" : "Three random properties (for null hypothesis testing)",
                 "Random-4" : "Four random properties (for null hypothesis testing)",

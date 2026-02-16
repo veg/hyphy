@@ -57,9 +57,13 @@ if (labeler.exclude != "null") {
             labeler.exclude_t + t;
         }
     }
-    labeler.exclude =  utility.DictToArray (labeler.exclude_t);
     
-    T - labeler.exclude;
+    if (Abs (labeler.exclude_t )) {
+    
+        labeler.exclude =  utility.DictToArray (labeler.exclude_t);
+        T - labeler.exclude;
+        
+    }
 }
 
 

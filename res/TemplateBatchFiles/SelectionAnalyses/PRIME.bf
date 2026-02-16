@@ -1,4 +1,4 @@
-RequireVersion("2.5.37");
+RequireVersion("2.5.94");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -36,9 +36,9 @@ prime.analysis_description = {
     A subset of branches can be selected
     for testing as well, in which case an additional (nuisance) parameter will be
     inferred -- the non-synonymous rate on branches NOT selected for testing. Multiple partitions within a NEXUS file are also supported
-    for recombination - aware analysis.
+    for recombination - aware analysis. V 0.2.5 adds hierarchical FDR correction.
     ",
-    terms.io.version: "0.2.0",
+    terms.io.version: "0.2.5",
     terms.io.reference: "TBD",
     terms.io.authors: "Sergei L. Kosakovsky Pond",
     terms.io.contact: "spond@temple.edu",
@@ -65,6 +65,9 @@ prime.parameter_site_beta_nuisance  = "Site relative non-synonymous rate (untest
 prime.parameter_property_prefix     = "Site importance for property ";
 prime.parameter_site_beta           = "Site log (baseline beta)";
 terms.prime_imputed_states          = "Imputed States";
+terms.second_stage_p          = "Stage 2 p-value";
+terms.stage_1_sites       = "Global test significant sites";
+terms.second_stage_p          = "Stage 2 p-value";
 
 // default cutoff for printing to screen
 prime.pvalue = 0.1;
@@ -101,7 +104,7 @@ the next set of variables.
 */
 
 prime.site.composition.string = "";
-
+prime.site.composition.string_cache = {};
 
 prime.table_screen_output  = {{"Codon", "Partition", "#subs", "#AA", "alpha", "beta", "Property Description", "Importance", "p-value","Most common codon substitutions at this site"}};
 prime.table_output_options = {  terms.table_options.header : TRUE, 
@@ -336,6 +339,7 @@ prime.table_headers[10][0] = "q-value"; prime.table_headers[9][1] = "Omnibus q-v
                          
 prime.lambdas = {};                                                                      
 prime.property_to_index = {};
+io.ReportProgressMessageMD ("PRIME", "property-warning", "The following table shows **preliminary results** (prior to multiple testing correction)");
 io.ReportProgressMessageMD ("PRIME", "property-description", "Using the following set of **" + utility.Array1D (prime.properties) + "** properties");
 
 prime.i = 1;
@@ -522,7 +526,7 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
     prime.queue = mpi.CreateQueue ({terms.mpi.LikelihoodFunctions: {{"prime.site_likelihood","prime.site_likelihood_property"}},
                                    terms.mpi.Models : {{"prime.site.background_fel","prime.site.property_model"}},
                                    terms.mpi.Headers : utility.GetListOfLoadedModules ("libv3/"),
-                                   terms.mpi.Variables : {{"prime.selected_branches","prime.pairwise_counts","prime.codon_data_info","prime.lambdas","prime.impute_states","terms.prime_imputed_states"}}
+                                   terms.mpi.Variables : {{"prime.selected_branches","prime.pairwise_counts","prime.codon_data_info","prime.lambdas","prime.impute_states","terms.prime_imputed_states","prime.pvalue"}}
                                   });
 
 
@@ -576,19 +580,38 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
 
 io.ClearProgressBar ();
 
-prime.q_values =  math.HolmBonferroniCorrection (prime.q_values);
+//console.log (prime.q_values);
+
+prime.q_values_numeric =  math.BenjaminiHochbergFDR (prime.q_values);
+prime.q_values =  math.BenjaminiHochbergFDRClassifier (prime.q_values, prime.pvalue);
+
+/*
+
+console.log (prime.q_values_numeric );
+console.log (prime.q_values);
+
+for (s, v; in; prime.q_values) {
+    if (+v) {
+        console.log (s + " => " + prime.q_values_numeric[s])
+    }
+}*/
+
 
 //console.log (prime.q_values);
 
 prime.q_index  = prime.p_value_indices["Overall"] + 1;
 print.q_count  = 0;
+prime.q_indices = {};
+prime.N_test = utility.Array1D (prime.q_values);
+
 for (prime.partition_index = 0; prime.partition_index < prime.partition_count; prime.partition_index += 1) {
     prime.N = Rows (prime.site_results[prime.partition_index]);
-    //console.log ("\n" + prime.N + "\n");
+    prime.q_indices [prime.partition_index] = {};
     for (prime.i = 0; prime.i < prime.N; prime.i += 1) {
-        (prime.site_results[prime.partition_index])[prime.i][prime.q_index] =  prime.q_values["" + prime.partition_index + "|" + prime.i];
-        if ( (prime.site_results[prime.partition_index])[prime.i][prime.q_index] <= prime.pvalue) {
+        (prime.site_results[prime.partition_index])[prime.i][prime.q_index] =  prime.q_values_numeric["" + prime.partition_index + "|" + prime.i];
+        if ( prime.q_values ["" + prime.partition_index + "|" + prime.i]) {
             prime.q_count += 1;
+            (prime.q_indices [prime.partition_index] ) + prime.i;
         }
     }
 }
@@ -604,10 +627,46 @@ if (prime.impute_states) {
 
 io.ReportProgressMessageMD ("PRIME", "results", "** Found _" + prime.q_count + "_ sites where the Overall property importance false discovery rate was at q <= " + prime.pvalue + "**");
 
-for (key, value; in;  prime.report.count) {
-    io.ReportProgressMessageMD ("PRIME", "results", "** Found _" + value + "_ sites where " + key + " property was important at p <= " + prime.pvalue + "**");
-}
+prime.json [terms.json.test_results] = {
+    terms.qvalue : prime.pvalue,
+    terms.stage_1_sites: {}
+};
 
+if (prime.q_count == 0) {
+    io.ReportProgressMessageMD ("PRIME", "results", "No statistically significant property influence at various sites detected");
+} else {
+    prime.pvalue2 = prime.pvalue * (prime.q_count / prime.N_test);
+    prime.json [terms.second_stage_p ] =  prime.pvalue ;
+    io.ReportProgressMessageMD ("PRIME", "HRFDR", "Report for property importance at individual sites (using adjusted p-value of " + prime.pvalue +")");
+    
+    
+    for (pi, sites; in; prime.q_indices) {
+        prime.report.header_done = FALSE;
+        prime.site_report = {};
+        prime.site_report ["partiton"] = +pi;
+        prime.table_output_options[utility.getGlobalValue("terms.table_options.header")] = TRUE;
+        for (idx, site; in; sites) {
+            prime.site_report ["codon"] = site;
+            prime.site_report [terms.q_value] = prime.q_values_numeric["" + pi + "|" + site];
+            prime.site.composition.string = ((prime.site.composition.string_cache)[0+pi])[site];
+            prime.site_report  ["properties"] = math.HolmBonferroniCorrection (prime.report.echo (site, 0+pi, (prime.site_results[pi])[site][-1], prime.pvalue, prime.pvalue2));
+            
+            prime.delete_keys = {};
+            for (k, v; in;  prime.site_report  ["properties"] ) {
+                if (v > prime.pvalue2 ) {
+                    prime.delete_keys [k] = 1;
+                }
+            }
+            
+            prime.site_report  ["properties"] - prime.delete_keys;
+           
+            
+            (prime.json [terms.json.test_results])[terms.stage_1_sites] + prime.site_report;
+        }
+        
+        
+    }
+}
 selection.io.stopTimer (prime.json [terms.json.timers], "Total time");
 selection.io.stopTimer (prime.json [terms.json.timers], "PRIME analysis");
 
@@ -952,13 +1011,20 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
 /* echo to screen calls */
 
 //----------------------------------------------------------------------------------------
-function prime.report.echo (prime.report.site, prime.report.partition, prime.report.row) {
+function prime.report.echo (prime.report.site, prime.report.partition, prime.report.row, p1, p2) {
 
+    prime.report.site_properties = {};
     
+    
+   
     for (key, value; in; prime.p_value_indices) {
         prime.print_row = None;
+        prime.pv_hybrid = p2;
+        if (key == "Overall") {
+            prime.pv_hybrid = p1;
+        }
         
-        if (prime.report.row [value] <= prime.pvalue) {
+        if (prime.report.row [value] <= prime.pv_hybrid) {
             prime.print_row              = prime.report.significant_site;
             prime.print_index            =  value;
             prime.report.count[key]     += 1;
@@ -967,12 +1033,13 @@ function prime.report.echo (prime.report.site, prime.report.partition, prime.rep
                  prime.report_rate = 0;
             } else {
                 prime.report_rate = prime.report.row[ prime.print_index-1];
+                prime.report.site_properties [key] = prime.report.row [value];
             }
         }
 
          if (None != prime.print_row) {
             if (!prime.report.header_done) {
-                io.ReportProgressMessageMD("PRIME", "" + prime.report.partition, "For partition " + (prime.report.partition+1) + " these sites are significant at p <=" + prime.pvalue + "\n");
+                io.ReportProgressMessageMD("PRIME", "" + prime.report.partition, "For partition " + (prime.report.partition+1) + " these sites are significant at p <=" + p1 + " (stage 2 p-value = " + p2 + ")\n");
                 io.ReportProgressMessageMD("PRIME", "" + prime.report.partition, "Properties with positive importance factors are **conserved**, and those with negative -- **changing**\n");
                 fprintf (stdout,
                     io.FormatTableRow (prime.table_screen_output,prime.table_output_options));
@@ -985,6 +1052,8 @@ function prime.report.echo (prime.report.site, prime.report.partition, prime.rep
                 io.FormatTableRow (prime.print_row,prime.table_output_options));
         }
     }
+    
+    return  prime.report.site_properties;
 
 }
 
@@ -1129,7 +1198,10 @@ lfunction prime.store_results (node, result, arguments) {
             }
         
        
+            po = p_values["Overall"];
+            p_values - "Overall";
             p_values = math.HolmBonferroniCorrection(p_values);
+            p_values["Overall"] = po;
             result_row[(^"prime.p_value_indices")["Overall"]] = p_values["Overall"];
             for (key, prop; in; result[utility.getGlobalValue ("terms.model.residue_properties")]) {
                 property_index = ((^"prime.p_value_indices")[(^"prime.local_to_property_name")[key]]);
@@ -1150,6 +1222,7 @@ lfunction prime.store_results (node, result, arguments) {
         utility.EnsureKey (^"prime.imputed_leaf_states", partition_index);
     }
     utility.EnsureKey (^"prime.sub_mapping", partition_index);
+    utility.EnsureKey (^"prime.site.composition.string_cache", partition_index);
 
     sites_mapping_to_pattern = pattern_info[utility.getGlobalValue("terms.data.sites")];
     sites_mapping_to_pattern.count = utility.Array1D (sites_mapping_to_pattern);
@@ -1158,9 +1231,11 @@ lfunction prime.store_results (node, result, arguments) {
         site_index = sites_mapping_to_pattern[i];
         ((^"prime.site_results")[partition_index])[site_index] = result_row;
         ((^"prime.sub_mapping")[partition_index])[site_index] = sub_map;
+        ((^"prime.site.composition.string_cache")[partition_index])[site_index] = sub_profile;
+        
         if (^"prime.impute_states") {
              ((^"prime.imputed_leaf_states")[partition_index])[site_index] = result[^"terms.prime_imputed_states"];
         }
-        prime.report.echo (site_index, partition_index, result_row);
+        prime.report.echo (site_index, partition_index, result_row, ^"prime.pvalue", ^"prime.pvalue");
     }
 }

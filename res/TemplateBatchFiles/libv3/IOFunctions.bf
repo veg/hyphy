@@ -602,6 +602,7 @@ function io.FormatLongStringToWidth(string, width) {
     words = regexp.Split(string, "[\\ \n]+");
     lines = {};
 
+
     current_line = "";
     words_in_current_line = 0;
     for (i = 0; i < Abs(words); i += 1) {
@@ -624,8 +625,8 @@ function io.FormatLongStringToWidth(string, width) {
     if (words_in_current_line) {
         lines + current_line;
     }
-
-    return Join("\n", lines);
+    
+    return Join("\n", utility.DictToArray (lines));
 }
 
 /**

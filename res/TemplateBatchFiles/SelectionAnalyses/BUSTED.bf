@@ -23,24 +23,17 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
 busted.analysis_description = {
 
-                               terms.io.info : "BUSTED (branch-site unrestricted statistical test of episodic diversification) uses a random effects branch-site model fitted  jointly to all or a subset of tree branches in order to test for alignment-wide evidence of episodic diversifying selection. Assuming there is evidence of positive selection (i.e. there is an omega > 1),  BUSTED will also perform a quick evidence-ratio style analysis to explore which individual sites may have been subject to selection. v2.0 adds support for synonymous rate variation, and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2).
+                               terms.io.info : "BUSTED (branch-site unrestricted statistical test of episodic diversification) uses a random effects branch-site model fitted  jointly to all or a subset of tree branches in order to test for alignment-wide evidence of episodic diversifying selection. Assuming there is evidence of positive selection (i.e. there is an omega > 1),  BUSTED will also perform a quick evidence-ratio style analysis to explore which individual sites may have been subject to selection.
                                
+Version 2.0 adds support for synonymous rate variation, and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2).
 Version 2.1 adds a grid search for the initial starting point.
-
 Version 2.2 changes the grid search to LHC, and adds an initial search phase to use adaptive Nedler-Mead. 
-
 Version 3.0 implements the option for branch-site variation in synonymous substitution rates. 
-
 Version 3.1 adds HMM auto-correlation option for SRV, and binds SRV distributions for multiple branch sets.
-
 Version 4.0 adds support for multiple hits (MH), ancestral state reconstruction saved to JSON, and profiling of branch-site level support for selection / multiple hits.
-
 Version 4.2 adds calculation of MH-attributable fractions of substitutions.
-
-Version 4.5 adds an 'error absorption' component 
-
-Version 4.6 adds support for MSS-type models
-
+Version 4.5 adds an 'error absorption' component. 
+Version 4.6 adds support for MSS-type models.
 Version 4.7 adds user configurable options for the error class.
 
 ",

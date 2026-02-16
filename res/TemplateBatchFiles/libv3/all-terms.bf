@@ -64,6 +64,7 @@ namespace terms{
     simulated      = "simulated";
     LRT            = "LRT";
     p_value        = "p-value";
+    q_value        = "q-value";
 
     branch_selection_attributes   = "Branch selection attributes";
     empirical_bayes_factor  = "BF";
@@ -157,6 +158,14 @@ namespace terms{
             return "Importance factor for property " + id + " component " + component;
         } else {
             return "Importance factor for property " + id;
+        }
+    }
+    
+    function omegaType  (id, type) {
+        if (Abs (type)) { 
+            return parameters.omega_ratio + " for " + type;
+        } else {
+            return parameters.omega_ratio;
         }
     }
 
