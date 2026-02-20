@@ -115,7 +115,7 @@ _String const kEmptyString, kPromptForFilePlaceholder("PROMPT_FOR_FILE"),
                     "\"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line "
                     "argument. This often resolves the issue, which is "
                     "indicative of numerical instability."),
-    kHyPhyVersion = _String("2.5.94"),
+    kHyPhyVersion = _String("2.5.95"),
 
     kNoneToken = "None", kNullToken = "null",
     kNoKWMatch = "__input_value_not_given__",
