@@ -13,6 +13,7 @@
 "MSS-GA", "[MSS-GA] Perform a Genetic Algorithm search model selection for a codon MSS model on a collection of alignments.","GA/MSS-selector-codon.bf";
 "MSS-GA-processor", "[MSS-GA-processor] Process results for a genetic algorithm codon MSS model search.","GA/processor-codon.bf";
 "BUSTED-PH","[BUSTED-PH] Test if episodic diversifying selection is associated with the set of designated (FG) branches using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).","SelectionAnalyses/BUSTED-PH.bf";
+"B-STILL","[B-STILL] Bayesian Significance Test of Invariant Low Likelihoods (FUBAR extension for identifying site-level evolutionary stasis).","SelectionAnalyses/B-STILL.bf";
 
 "","A collection of tools for evolutionary hypothesis testing coding-sequence data.","!Evolutionary Hypothesis Testing";
 "FMM", "Fit a model that permits double (and triple) instantaneous nucleotide substitutions","SelectionAnalyses/FitMultiModel.bf";
