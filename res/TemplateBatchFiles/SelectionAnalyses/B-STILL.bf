@@ -336,7 +336,7 @@ if (utility.Has (fubar.cache, terms.fubar.cache.grid, "Matrix") && utility.Has (
     }
     
     
-    fubar.single_sub_scale = "3*" + fubar.run_settings["radius-threshold"] + "*(" + Simplify (fubar.branch_length_expression,fubar.subs) + ")";
+    fubar.single_sub_scale = "3*(" + Simplify (fubar.branch_length_expression,fubar.subs) + ")";
     fubar.cache[terms.fubar.cache.conditionals] = fubar.ConvertToConditionals (fubar.conditionals.raw);
 
     fubar.cache[terms.fubar.cache.grid] = fubar.grid.matrix;
