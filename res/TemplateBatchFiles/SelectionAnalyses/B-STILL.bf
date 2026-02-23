@@ -161,6 +161,7 @@ console.log ( "> FUBAR will write cache and result files to _`fubar.path.cache`_
 
 if (utility.Has (fubar.cache, terms.fubar.cache.settings, "AssociativeList")) {
     fubar.run_settings = fubar.cache [terms.fubar.cache.settings];
+    fubar.RunPrompts ({"ebf" : TRUE, "radius-threshold" : TRUE});
 } else {
     fubar.cache = {};
     fubar.RunPrompts (fubar.prompts);
@@ -392,6 +393,7 @@ if (fubar.run_settings["method"] != terms.fubar.methods.VB0) {
                                                               fubar.cache[terms.fubar.cache.conditionals],
                                                               "fubar"
                                                               );
+                                                              
         io.WriteCacheToFile (fubar.path.cache, fubar.cache);
     }
 }
@@ -449,15 +451,19 @@ namespace fubar {
                      {"Prob[beta=0]", "Posterior probability of beta=0"}
                      {"Prob[alpha,beta~0]", "Posterior probability of alpha and beta within a radius of " + proximal_radius + " of 0"}
                      {"Prob[alpha<beta]", "Posterior probability of positive selection at a site"}
+                     {"PSRF", "Potential scale reduction factor - an MCMC mixing measure"}
+                     {"Neff", "Estimated effective sample site for Prob [alpha<beta]"}
                      {"EBF[alpha=beta=0]", "Empirical Bayes Factor for alpha=beta=0"}
                      {"EBF[alpha=0]", "Empirical Bayes Factor for alpha=0"}
                      {"EBF[beta=0]", "Empirical Bayes Factor for beta=0"}
                      {"EBF[alpha,beta~0]", "Empirical Bayes Factor for alpha and beta within a radius of " + proximal_radius + " of 0"}};
 
+    /*
     if (run_settings["method"] == ^"terms.fubar.methods.MH") {
         table_headers + {{"PSRF", "Potential scale reduction factor - an MCMC mixing measure"}};
         table_headers + {{"Neff", "Estimated effective sample site for Prob [alpha<beta]"}};
     }
+    */
 
     table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "P[a,b~0]", "EBF[a,b~0]"}};
 
@@ -577,10 +583,13 @@ namespace fubar {
         sites_in_partition = utility.Array1D (filter_info);
 
         partition_results    = {sites_in_partition, 14};
+        partition_posteriors = {};
 
         for (s = 0; s < sites_in_partition; s += 1) {
 
-            if (run_settings["method"] != utility.getGlobalValue ("terms.fubar.methods.VB0")) {
+             pp = posterior_mean_over_grid $ ((cache[utility.getGlobalValue("terms.fubar.cache.conditionals")])["conditionals"])[-1][i];
+             partition_posteriors [s] = Transpose (pp * (1/(+pp)));
+             if (run_settings["method"] != utility.getGlobalValue ("terms.fubar.methods.VB0")) {
                 partition_results[s][0] = ComputeRandNeff (
                     utility.Map (chain_iterator, "_value_", "((`&posterior_mean_alpha`)[_value_])[-1][`&i`]")
                 )[0];
@@ -649,7 +658,10 @@ namespace fubar {
             i+=1;
         }
         site_results [partition_index] = partition_results;
+        report.posteriors [partition_index] = partition_posteriors;
+
     }
+    
 
     if (report.sites_found == 0) {
         console.log ("----\n## B-STILL inferred no sites under proximal constraint at EBF >= " + run_settings["ebf"]);
@@ -662,6 +674,7 @@ namespace fubar {
 fubar.json [terms.fubar.cache.settings] = fubar.run_settings;
 fubar.json [terms.fit.MLE] = {terms.json.headers   : fubar.table_headers,
                                terms.json.content : fubar.site_results };
+fubar.json [terms.fubar.posterior] = fubar.report.posteriors;
 
 namespace fubar {
     grid_with_weights = {grid_points, 3};
