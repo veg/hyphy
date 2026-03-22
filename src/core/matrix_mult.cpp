@@ -32,33 +32,14 @@ extern "C" void cblas_dgemm(const enum CBLAS_ORDER __Order,
 void _hy_matrix_multiply_4x4(double *__restrict__ C, double *__restrict__ A,
                              double *__restrict__ B, int stride, bool add) {
 
-  float64x2x2_t C1, C2, C3, C4, B1;
-
-  auto handle_block = [&](float64x2_t a1, float64x2_t a2, float64x2_t a3,
-                          float64x2_t a4) -> void {
-    C1.val[0] = vmulq_f64(a1, B1.val[0]);
-    C1.val[1] = vmulq_f64(a1, B1.val[1]);
-    C2.val[0] = vmulq_f64(a2, B1.val[0]);
-    C2.val[1] = vmulq_f64(a2, B1.val[1]);
-    C3.val[0] = vmulq_f64(a3, B1.val[0]);
-    C3.val[1] = vmulq_f64(a3, B1.val[1]);
-    C4.val[0] = vmulq_f64(a4, B1.val[0]);
-    C4.val[1] = vmulq_f64(a4, B1.val[1]);
-  };
-
-  auto handle_block2 = [&](float64x2_t a1, float64x2_t a2, float64x2_t a3,
-                           float64x2_t a4) -> void {
-    C1.val[0] = vfmaq_f64(C1.val[0], a1, B1.val[0]);
-    C2.val[0] = vfmaq_f64(C2.val[0], a2, B1.val[0]);
-    C3.val[0] = vfmaq_f64(C3.val[0], a3, B1.val[0]);
-    C4.val[0] = vfmaq_f64(C4.val[0], a4, B1.val[0]);
-    C1.val[1] = vfmaq_f64(C1.val[1], a1, B1.val[1]);
-    C2.val[1] = vfmaq_f64(C2.val[1], a2, B1.val[1]);
-    C3.val[1] = vfmaq_f64(C3.val[1], a3, B1.val[1]);
-    C4.val[1] = vfmaq_f64(C4.val[1], a4, B1.val[1]);
-  };
-
   int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
+
+  float64x2x2_t B0 = vld1q_f64_x2(B);
+  float64x2x2_t B1 = vld1q_f64_x2(B + S1);
+  float64x2x2_t B2 = vld1q_f64_x2(B + S2);
+  float64x2x2_t B3 = vld1q_f64_x2(B + S3);
+
+  float64x2x2_t C0, C1, C2, C3;
 
   float64x2_t a_r0 = vld1q_f64(A);
   float64x2_t a_r1 = vld1q_f64(A + S1);
@@ -70,35 +51,85 @@ void _hy_matrix_multiply_4x4(double *__restrict__ C, double *__restrict__ A,
   float64x2_t a_r2_2 = vld1q_f64(A + S2 + 2);
   float64x2_t a_r3_2 = vld1q_f64(A + S3 + 2);
 
-  B1 = vld1q_f64_x2(B);
   if (add) {
-    C1 = vld1q_f64_x2(C);
-    C2 = vld1q_f64_x2(C + S1);
-    C3 = vld1q_f64_x2(C + S2);
-    C4 = vld1q_f64_x2(C + S3);
-    handle_block2(vdupq_laneq_f64(a_r0, 0), vdupq_laneq_f64(a_r1, 0),
-                  vdupq_laneq_f64(a_r2, 0), vdupq_laneq_f64(a_r3, 0));
+    C0 = vld1q_f64_x2(C);
+    C1 = vld1q_f64_x2(C + S1);
+    C2 = vld1q_f64_x2(C + S2);
+    C3 = vld1q_f64_x2(C + S3);
+
+    float64x2_t splat = vdupq_laneq_f64(a_r0, 0);
+    C0.val[0] = vfmaq_f64(C0.val[0], splat, B0.val[0]);
+    C0.val[1] = vfmaq_f64(C0.val[1], splat, B0.val[1]);
+    splat = vdupq_laneq_f64(a_r1, 0);
+    C1.val[0] = vfmaq_f64(C1.val[0], splat, B0.val[0]);
+    C1.val[1] = vfmaq_f64(C1.val[1], splat, B0.val[1]);
+    splat = vdupq_laneq_f64(a_r2, 0);
+    C2.val[0] = vfmaq_f64(C2.val[0], splat, B0.val[0]);
+    C2.val[1] = vfmaq_f64(C2.val[1], splat, B0.val[1]);
+    splat = vdupq_laneq_f64(a_r3, 0);
+    C3.val[0] = vfmaq_f64(C3.val[0], splat, B0.val[0]);
+    C3.val[1] = vfmaq_f64(C3.val[1], splat, B0.val[1]);
   } else {
-    handle_block(vdupq_laneq_f64(a_r0, 0), vdupq_laneq_f64(a_r1, 0),
-                 vdupq_laneq_f64(a_r2, 0), vdupq_laneq_f64(a_r3, 0));
+    float64x2_t splat = vdupq_laneq_f64(a_r0, 0);
+    C0.val[0] = vmulq_f64(splat, B0.val[0]);
+    C0.val[1] = vmulq_f64(splat, B0.val[1]);
+    splat = vdupq_laneq_f64(a_r1, 0);
+    C1.val[0] = vmulq_f64(splat, B0.val[0]);
+    C1.val[1] = vmulq_f64(splat, B0.val[1]);
+    splat = vdupq_laneq_f64(a_r2, 0);
+    C2.val[0] = vmulq_f64(splat, B0.val[0]);
+    C2.val[1] = vmulq_f64(splat, B0.val[1]);
+    splat = vdupq_laneq_f64(a_r3, 0);
+    C3.val[0] = vmulq_f64(splat, B0.val[0]);
+    C3.val[1] = vmulq_f64(splat, B0.val[1]);
   }
 
-  B1 = vld1q_f64_x2(B + S1);
-  handle_block2(vdupq_laneq_f64(a_r0, 1), vdupq_laneq_f64(a_r1, 1),
-                vdupq_laneq_f64(a_r2, 1), vdupq_laneq_f64(a_r3, 1));
+  // Second column of A * Second row of B
+  float64x2_t splat = vdupq_laneq_f64(a_r0, 1);
+  C0.val[0] = vfmaq_f64(C0.val[0], splat, B1.val[0]);
+  C0.val[1] = vfmaq_f64(C0.val[1], splat, B1.val[1]);
+  splat = vdupq_laneq_f64(a_r1, 1);
+  C1.val[0] = vfmaq_f64(C1.val[0], splat, B1.val[0]);
+  C1.val[1] = vfmaq_f64(C1.val[1], splat, B1.val[1]);
+  splat = vdupq_laneq_f64(a_r2, 1);
+  C2.val[0] = vfmaq_f64(C2.val[0], splat, B1.val[0]);
+  C2.val[1] = vfmaq_f64(C2.val[1], splat, B1.val[1]);
+  splat = vdupq_laneq_f64(a_r3, 1);
+  C3.val[0] = vfmaq_f64(C3.val[0], splat, B1.val[0]);
+  C3.val[1] = vfmaq_f64(C3.val[1], splat, B1.val[1]);
 
-  B1 = vld1q_f64_x2(B + S2);
-  handle_block2(vdupq_laneq_f64(a_r0_2, 0), vdupq_laneq_f64(a_r1_2, 0),
-                vdupq_laneq_f64(a_r2_2, 0), vdupq_laneq_f64(a_r3_2, 0));
+  // Third column of A * Third row of B
+  splat = vdupq_laneq_f64(a_r0_2, 0);
+  C0.val[0] = vfmaq_f64(C0.val[0], splat, B2.val[0]);
+  C0.val[1] = vfmaq_f64(C0.val[1], splat, B2.val[1]);
+  splat = vdupq_laneq_f64(a_r1_2, 0);
+  C1.val[0] = vfmaq_f64(C1.val[0], splat, B2.val[0]);
+  C1.val[1] = vfmaq_f64(C1.val[1], splat, B2.val[1]);
+  splat = vdupq_laneq_f64(a_r2_2, 0);
+  C2.val[0] = vfmaq_f64(C2.val[0], splat, B2.val[0]);
+  C2.val[1] = vfmaq_f64(C2.val[1], splat, B2.val[1]);
+  splat = vdupq_laneq_f64(a_r3_2, 0);
+  C3.val[0] = vfmaq_f64(C3.val[0], splat, B2.val[0]);
+  C3.val[1] = vfmaq_f64(C3.val[1], splat, B2.val[1]);
 
-  B1 = vld1q_f64_x2(B + S3);
-  handle_block2(vdupq_laneq_f64(a_r0_2, 1), vdupq_laneq_f64(a_r1_2, 1),
-                vdupq_laneq_f64(a_r2_2, 1), vdupq_laneq_f64(a_r3_2, 1));
+  // Fourth column of A * Fourth row of B
+  splat = vdupq_laneq_f64(a_r0_2, 1);
+  C0.val[0] = vfmaq_f64(C0.val[0], splat, B3.val[0]);
+  C0.val[1] = vfmaq_f64(C0.val[1], splat, B3.val[1]);
+  splat = vdupq_laneq_f64(a_r1_2, 1);
+  C1.val[0] = vfmaq_f64(C1.val[0], splat, B3.val[0]);
+  C1.val[1] = vfmaq_f64(C1.val[1], splat, B3.val[1]);
+  splat = vdupq_laneq_f64(a_r2_2, 1);
+  C2.val[0] = vfmaq_f64(C2.val[0], splat, B3.val[0]);
+  C2.val[1] = vfmaq_f64(C2.val[1], splat, B3.val[1]);
+  splat = vdupq_laneq_f64(a_r3_2, 1);
+  C3.val[0] = vfmaq_f64(C3.val[0], splat, B3.val[0]);
+  C3.val[1] = vfmaq_f64(C3.val[1], splat, B3.val[1]);
 
-  vst1q_f64_x2(C, C1);
-  vst1q_f64_x2(C + S1, C2);
-  vst1q_f64_x2(C + S2, C3);
-  vst1q_f64_x2(C + S3, C4);
+  vst1q_f64_x2(C, C0);
+  vst1q_f64_x2(C + S1, C1);
+  vst1q_f64_x2(C + S2, C2);
+  vst1q_f64_x2(C + S3, C3);
 }
 
 /**
@@ -284,112 +315,115 @@ void _hy_matrix_multiply_1x1x4(double *C, double *A, double *B, int) {
  */
 void _hy_matrix_multiply_4x2x4(double *C, double *A, double *B, int stride) {
 
-  float64x2_t A1, A2, A3, A4;
-  float64x2x2_t B1;
-  float64x2x2_t C1, C2, C3, C4;
+  int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
 
-  auto mult_block = [&]() -> void {
-    C1.val[0] = vfmaq_f64(C1.val[0], A1, B1.val[0]);
-    C1.val[1] = vfmaq_f64(C1.val[1], A1, B1.val[1]);
-    C2.val[0] = vfmaq_f64(C2.val[0], A2, B1.val[0]);
-    C2.val[1] = vfmaq_f64(C2.val[1], A2, B1.val[1]);
-    C3.val[0] = vfmaq_f64(C3.val[0], A3, B1.val[0]);
-    C3.val[1] = vfmaq_f64(C3.val[1], A3, B1.val[1]);
-    C4.val[0] = vfmaq_f64(C4.val[0], A4, B1.val[0]);
-    C4.val[1] = vfmaq_f64(C4.val[1], A4, B1.val[1]);
-  };
+  float64x2x2_t B0 = vld1q_f64_x2(B);
+  float64x2x2_t B1 = vld1q_f64_x2(B + S1);
 
-  int S1 = stride, S2 = stride << 1, S3 = stride + S2;
+  float64x2x2_t C0 = vld1q_f64_x2(C);
+  float64x2x2_t C1 = vld1q_f64_x2(C + S1);
+  float64x2x2_t C2 = vld1q_f64_x2(C + S2);
+  float64x2x2_t C3 = vld1q_f64_x2(C + S3);
 
-  A1 = vdupq_n_f64(A[0]);
-  A2 = vdupq_n_f64(A[S1]);
-  A3 = vdupq_n_f64(A[S2]);
-  A4 = vdupq_n_f64(A[S3]);
+  float64x2_t A_r0 = vld1q_f64(A);
+  float64x2_t A_r1 = vld1q_f64(A + S1);
+  float64x2_t A_r2 = vld1q_f64(A + S2);
+  float64x2_t A_r3 = vld1q_f64(A + S3);
 
-  B1 = vld1q_f64_x2(B);
+  // Column 0 of A * Row 0 of B
+  float64x2_t splat = vdupq_laneq_f64(A_r0, 0);
+  C0.val[0] = vfmaq_f64(C0.val[0], splat, B0.val[0]);
+  C0.val[1] = vfmaq_f64(C0.val[1], splat, B0.val[1]);
+  splat = vdupq_laneq_f64(A_r1, 0);
+  C1.val[0] = vfmaq_f64(C1.val[0], splat, B0.val[0]);
+  C1.val[1] = vfmaq_f64(C1.val[1], splat, B0.val[1]);
+  splat = vdupq_laneq_f64(A_r2, 0);
+  C2.val[0] = vfmaq_f64(C2.val[0], splat, B0.val[0]);
+  C2.val[1] = vfmaq_f64(C2.val[1], splat, B0.val[1]);
+  splat = vdupq_laneq_f64(A_r3, 0);
+  C3.val[0] = vfmaq_f64(C3.val[0], splat, B0.val[0]);
+  C3.val[1] = vfmaq_f64(C3.val[1], splat, B0.val[1]);
 
-  C1 = vld1q_f64_x2(C);
-  C2 = vld1q_f64_x2(C + S1);
-  C3 = vld1q_f64_x2(C + S2);
-  C4 = vld1q_f64_x2(C + S3);
+  // Column 1 of A * Row 1 of B
+  splat = vdupq_laneq_f64(A_r0, 1);
+  C0.val[0] = vfmaq_f64(C0.val[0], splat, B1.val[0]);
+  C0.val[1] = vfmaq_f64(C0.val[1], splat, B1.val[1]);
+  splat = vdupq_laneq_f64(A_r1, 1);
+  C1.val[0] = vfmaq_f64(C1.val[0], splat, B1.val[0]);
+  C1.val[1] = vfmaq_f64(C1.val[1], splat, B1.val[1]);
+  splat = vdupq_laneq_f64(A_r2, 1);
+  C2.val[0] = vfmaq_f64(C2.val[0], splat, B1.val[0]);
+  C2.val[1] = vfmaq_f64(C2.val[1], splat, B1.val[1]);
+  splat = vdupq_laneq_f64(A_r3, 1);
+  C3.val[0] = vfmaq_f64(C3.val[0], splat, B1.val[0]);
+  C3.val[1] = vfmaq_f64(C3.val[1], splat, B1.val[1]);
 
-  mult_block();
-
-  A1 = vdupq_n_f64(A[1]);
-  A2 = vdupq_n_f64(A[S1 + 1]);
-  A3 = vdupq_n_f64(A[S2 + 1]);
-  A4 = vdupq_n_f64(A[S3 + 1]);
-  B1 = vld1q_f64_x2(B + S1);
-
-  mult_block();
-
-  vst1q_f64_x2(C, C1);
-  vst1q_f64_x2(C + S1, C2);
-  vst1q_f64_x2(C + S2, C3);
-  vst1q_f64_x2(C + S3, C4);
+  vst1q_f64_x2(C, C0);
+  vst1q_f64_x2(C + S1, C1);
+  vst1q_f64_x2(C + S2, C2);
+  vst1q_f64_x2(C + S3, C3);
 }
 
 void _hy_matrix_multiply_4x4x2(double *C, double *A, double *B, int stride,
                                bool add) {
 
-  int S1 = stride, S2 = stride << 1, S3 = stride + S2;
+  int S1 = stride, S2 = stride << 1, S3 = S2 + stride;
 
-  float64x2x2_t A1, A2, A3, A4;
+  float64x2_t B0 = vld1q_f64(B);
+  float64x2_t B1 = vld1q_f64(B + S1);
+  float64x2_t B2 = vld1q_f64(B + S2);
+  float64x2_t B3 = vld1q_f64(B + S3);
 
-  float64x2_t B1 = vld1q_f64(B), B2 = vld1q_f64(B + S1);
-
-  float64x2_t C1, C2, C3, C4;
+  float64x2_t C0, C1, C2, C3;
 
   if (add) {
-    C1 = vld1q_f64(C);
-    C2 = vld1q_f64(C + S1);
-    C3 = vld1q_f64(C + S2);
-    C4 = vld1q_f64(C + S3);
+    C0 = vld1q_f64(C);
+    C1 = vld1q_f64(C + S1);
+    C2 = vld1q_f64(C + S2);
+    C3 = vld1q_f64(C + S3);
   }
 
-  A1 = vld2q_dup_f64(A);      // (A[0][0]x2, A[0][1]x2)
-  A2 = vld2q_dup_f64(A + S1); // (A[1][0]x2, A[1][1]x2)
-  A3 = vld2q_dup_f64(A + S2); // (A[2][0]x2, A[2][1]x2)
-  A4 = vld2q_dup_f64(A + S3); // (A[3][0]x2, A[3][1]x2)
+  float64x2x2_t A_r0 = vld2q_dup_f64(A);
+  float64x2x2_t A_r1 = vld2q_dup_f64(A + S1);
+  float64x2x2_t A_r2 = vld2q_dup_f64(A + S2);
+  float64x2x2_t A_r3 = vld2q_dup_f64(A + S3);
 
   if (add) {
-    C1 = vfmaq_f64(C1, A1.val[0], B1); // 00 += 00*00, 01 += 00*01
-    C2 = vfmaq_f64(C2, A2.val[0], B1); // 10 += 10*00, 11 += 10*01
-    C3 = vfmaq_f64(C3, A3.val[0], B1); // 20 += 20*00, 21 += 20*01
-    C4 = vfmaq_f64(C4, A4.val[0], B1); // 30 += 30*00, 31 += 30*01
+    C0 = vfmaq_f64(C0, A_r0.val[0], B0);
+    C1 = vfmaq_f64(C1, A_r1.val[0], B0);
+    C2 = vfmaq_f64(C2, A_r2.val[0], B0);
+    C3 = vfmaq_f64(C3, A_r3.val[0], B0);
   } else {
-    C1 = vmulq_f64(A1.val[0], B1); // 00 += 00*00, 01 += 00*01
-    C2 = vmulq_f64(A2.val[0], B1); // 10 += 10*00, 11 += 10*01
-    C3 = vmulq_f64(A3.val[0], B1); // 20 += 20*00, 21 += 20*01
-    C4 = vmulq_f64(A4.val[0], B1); // 30 += 30*00, 31 += 30*01
+    C0 = vmulq_f64(A_r0.val[0], B0);
+    C1 = vmulq_f64(A_r1.val[0], B0);
+    C2 = vmulq_f64(A_r2.val[0], B0);
+    C3 = vmulq_f64(A_r3.val[0], B0);
   }
 
-  C1 = vfmaq_f64(C1, A1.val[1], B2); // 00 += 01*10, 01 += 01*11
-  C2 = vfmaq_f64(C2, A2.val[1], B2); // 10 += 11*10, 11 += 11*11
-  C3 = vfmaq_f64(C3, A3.val[1], B2); // 20 += 21*10, 21 += 21*11
-  C4 = vfmaq_f64(C4, A4.val[1], B2); // 30 += 31*10, 31 += 31*11
+  C0 = vfmaq_f64(C0, A_r0.val[1], B1);
+  C1 = vfmaq_f64(C1, A_r1.val[1], B1);
+  C2 = vfmaq_f64(C2, A_r2.val[1], B1);
+  C3 = vfmaq_f64(C3, A_r3.val[1], B1);
 
-  B1 = vld1q_f64(B + S2);
-  B2 = vld1q_f64(B + S3);
-  A1 = vld2q_dup_f64(A + 2);      // (A[0][0]x2, A[0][1]x2)
-  A2 = vld2q_dup_f64(A + S1 + 2); // (A[1][0]x2, A[1][1]x2)
-  A3 = vld2q_dup_f64(A + S2 + 2); // (A[2][0]x2, A[2][1]x2)
-  A4 = vld2q_dup_f64(A + S3 + 2); // (A[3][0]x2, A[3][1]x2)
+  A_r0 = vld2q_dup_f64(A + 2);
+  A_r1 = vld2q_dup_f64(A + S1 + 2);
+  A_r2 = vld2q_dup_f64(A + S2 + 2);
+  A_r3 = vld2q_dup_f64(A + S3 + 2);
 
-  C1 = vfmaq_f64(C1, A1.val[0], B1); // 00 += 00*00, 01 += 00*01
-  C2 = vfmaq_f64(C2, A2.val[0], B1); // 10 += 10*00, 11 += 10*01
-  C3 = vfmaq_f64(C3, A3.val[0], B1); // 20 += 20*00, 21 += 20*01
-  C4 = vfmaq_f64(C4, A4.val[0], B1); // 30 += 30*00, 31 += 30*01
+  C0 = vfmaq_f64(C0, A_r0.val[0], B2);
+  C1 = vfmaq_f64(C1, A_r1.val[0], B2);
+  C2 = vfmaq_f64(C2, A_r2.val[0], B2);
+  C3 = vfmaq_f64(C3, A_r3.val[0], B2);
 
-  C1 = vfmaq_f64(C1, A1.val[1], B2); // 00 += 01*10, 01 += 01*11
-  C2 = vfmaq_f64(C2, A2.val[1], B2); // 10 += 11*10, 11 += 11*11
-  C3 = vfmaq_f64(C3, A3.val[1], B2); // 20 += 21*10, 21 += 21*11
-  C4 = vfmaq_f64(C4, A4.val[1], B2); // 30 += 31*10, 31 += 31*11
+  C0 = vfmaq_f64(C0, A_r0.val[1], B3);
+  C1 = vfmaq_f64(C1, A_r1.val[1], B3);
+  C2 = vfmaq_f64(C2, A_r2.val[1], B3);
+  C3 = vfmaq_f64(C3, A_r3.val[1], B3);
 
-  vst1q_f64(C, C1);
-  vst1q_f64(C + S1, C2);
-  vst1q_f64(C + S2, C3);
-  vst1q_f64(C + S3, C4);
+  vst1q_f64(C, C0);
+  vst1q_f64(C + S1, C1);
+  vst1q_f64(C + S2, C2);
+  vst1q_f64(C + S3, C3);
 }
 
 void _hy_matrix_multiply_2x4x2(double *C, double *A, double *B, int stride,

@@ -3614,7 +3614,91 @@ hyFloat _TheTree::ComputeLLWithBranchCache(_SimpleList &siteOrdering, long brID,
 
        ****/
     case 20UL: {
-      for (long siteID = siteFrom; siteID < siteTo; siteID++) {
+      long siteID = siteFrom;
+#ifdef _SLKP_USE_ARM_NEON
+      for (; siteID <= siteTo - 2; siteID += 2) {
+        float64x2_t bc_vector1[10] = {vld1q_f64(branchConditionals),
+                                      vld1q_f64(branchConditionals + 2UL),
+                                      vld1q_f64(branchConditionals + 4UL),
+                                      vld1q_f64(branchConditionals + 6UL),
+                                      vld1q_f64(branchConditionals + 8UL),
+                                      vld1q_f64(branchConditionals + 10UL),
+                                      vld1q_f64(branchConditionals + 12UL),
+                                      vld1q_f64(branchConditionals + 14UL),
+                                      vld1q_f64(branchConditionals + 16UL),
+                                      vld1q_f64(branchConditionals + 18UL)};
+
+        float64x2_t bc_vector2[10] = {vld1q_f64(branchConditionals + 20UL),
+                                      vld1q_f64(branchConditionals + 22UL),
+                                      vld1q_f64(branchConditionals + 24UL),
+                                      vld1q_f64(branchConditionals + 26UL),
+                                      vld1q_f64(branchConditionals + 28UL),
+                                      vld1q_f64(branchConditionals + 30UL),
+                                      vld1q_f64(branchConditionals + 32UL),
+                                      vld1q_f64(branchConditionals + 34UL),
+                                      vld1q_f64(branchConditionals + 36UL),
+                                      vld1q_f64(branchConditionals + 38UL)};
+
+        hyFloat const *tm = transitionMatrix;
+        float64x2_t acc_v1 = vdupq_n_f64(0.0);
+        float64x2_t acc_v2 = vdupq_n_f64(0.0);
+
+        for (unsigned long p = 0UL; p < 20UL; p++) {
+          float64x2_t weight1 = vdupq_n_f64(rootConditionals[p] * theProbs[p]);
+          float64x2_t weight2 =
+              vdupq_n_f64(rootConditionals[p + 20UL] * theProbs[p]);
+
+          float64x2_t row_vec0 = vld1q_f64(tm);
+          float64x2_t row_vec1 = vld1q_f64(tm + 2UL);
+          float64x2_t row_vec2 = vld1q_f64(tm + 4UL);
+          float64x2_t row_vec3 = vld1q_f64(tm + 6UL);
+          float64x2_t row_vec4 = vld1q_f64(tm + 8UL);
+          float64x2_t row_vec5 = vld1q_f64(tm + 10UL);
+          float64x2_t row_vec6 = vld1q_f64(tm + 12UL);
+          float64x2_t row_vec7 = vld1q_f64(tm + 14UL);
+          float64x2_t row_vec8 = vld1q_f64(tm + 16UL);
+          float64x2_t row_vec9 = vld1q_f64(tm + 18UL);
+
+          float64x2_t S1_1 = vmulq_f64(bc_vector1[0], row_vec0);
+          float64x2_t S1_2 = vmulq_f64(bc_vector2[0], row_vec0);
+          float64x2_t S2_1 = vmulq_f64(bc_vector1[1], row_vec1);
+          float64x2_t S2_2 = vmulq_f64(bc_vector2[1], row_vec1);
+
+          S1_1 = vfmaq_f64(S1_1, bc_vector1[2], row_vec2);
+          S1_2 = vfmaq_f64(S1_2, bc_vector2[2], row_vec2);
+          S2_1 = vfmaq_f64(S2_1, bc_vector1[3], row_vec3);
+          S2_2 = vfmaq_f64(S2_2, bc_vector2[3], row_vec3);
+          S1_1 = vfmaq_f64(S1_1, bc_vector1[4], row_vec4);
+          S1_2 = vfmaq_f64(S1_2, bc_vector2[4], row_vec4);
+          S2_1 = vfmaq_f64(S2_1, bc_vector1[5], row_vec5);
+          S2_2 = vfmaq_f64(S2_2, bc_vector2[5], row_vec5);
+          S1_1 = vfmaq_f64(S1_1, bc_vector1[6], row_vec6);
+          S1_2 = vfmaq_f64(S1_2, bc_vector2[6], row_vec6);
+          S2_1 = vfmaq_f64(S2_1, bc_vector1[7], row_vec7);
+          S2_2 = vfmaq_f64(S2_2, bc_vector2[7], row_vec7);
+          S1_1 = vfmaq_f64(S1_1, bc_vector1[8], row_vec8);
+          S1_2 = vfmaq_f64(S1_2, bc_vector2[8], row_vec8);
+          S2_1 = vfmaq_f64(S2_1, bc_vector1[9], row_vec9);
+          S2_2 = vfmaq_f64(S2_2, bc_vector2[9], row_vec9);
+
+          acc_v1 = vfmaq_f64(acc_v1, weight1, vaddq_f64(S1_1, S2_1));
+          acc_v2 = vfmaq_f64(acc_v2, weight2, vaddq_f64(S1_2, S2_2));
+          tm += 20UL;
+        }
+
+        bookkeeping(siteID,
+                    vgetq_lane_f64(acc_v1, 0) + vgetq_lane_f64(acc_v1, 1),
+                    correction, result);
+        bookkeeping(siteID + 1,
+                    vgetq_lane_f64(acc_v2, 0) + vgetq_lane_f64(acc_v2, 1),
+                    correction, result);
+
+        rootConditionals += 40UL;
+        branchConditionals += 40UL;
+      }
+#endif
+
+      for (; siteID < siteTo; siteID++) {
         hyFloat accumulator = 0.;
 #ifdef _SLKP_USE_AVX_INTRINSICS
         __m256d bc_vector[5] = {_mm256_loadu_pd(branchConditionals),
@@ -3662,8 +3746,10 @@ hyFloat _TheTree::ComputeLLWithBranchCache(_SimpleList &siteOrdering, long brID,
                                      vld1q_f64(branchConditionals + 18UL)};
 
         hyFloat const *tm = transitionMatrix;
+        float64x2_t acc_v = vdupq_n_f64(0.0);
 
         for (unsigned long p = 0UL; p < 20UL; p++, rootConditionals++) {
+          float64x2_t weight = vdupq_n_f64((*rootConditionals) * theProbs[p]);
 
           float64x2_t S1 = vmulq_f64(bc_vector[0], vld1q_f64(tm)),
                       S2 = vmulq_f64(bc_vector[1], vld1q_f64(tm + 2UL));
@@ -3677,10 +3763,10 @@ hyFloat _TheTree::ComputeLLWithBranchCache(_SimpleList &siteOrdering, long brID,
           S1 = vfmaq_f64(S1, bc_vector[8], vld1q_f64(tm + 16UL));
           S2 = vfmaq_f64(S2, bc_vector[9], vld1q_f64(tm + 18UL));
 
-          accumulator +=
-              *rootConditionals * theProbs[p] * _neon_sum_2(vaddq_f64(S1, S2));
+          acc_v = vfmaq_f64(acc_v, weight, vaddq_f64(S1, S2));
           tm += 20UL;
         }
+        accumulator = vgetq_lane_f64(acc_v, 0) + vgetq_lane_f64(acc_v, 1);
 #else  // _SLKP_USE_AVX_INTRINSICS
         unsigned long rmx = 0UL;
         for (unsigned long p = 0UL; p < 20UL; p++, rootConditionals++) {
@@ -3755,10 +3841,10 @@ hyFloat _TheTree::ComputeLLWithBranchCache(_SimpleList &siteOrdering, long brID,
                         matrix1 = vld1q_f64(transitionMatrix + rmx + 2),
                         matrix2 = vld1q_f64(transitionMatrix + rmx + 4);
 
-            branches0 =
-                vfmaq_f64(vmulq_f64(branches0, matrix0), branches1, matrix1);
-            branches1 = vfmaq_f64(sum128, branches2, matrix2);
-            sum128 = vaddq_f64(branches1, branches0);
+            branches0 = vmulq_f64(branches0, matrix0);
+            sum128 = vfmaq_f64(sum128, branches1, matrix1);
+            sum128 = vfmaq_f64(sum128, branches2, matrix2);
+            sum128 = vaddq_f64(sum128, branches0);
           }
           r2 = _neon_sum_2(sum128);
 

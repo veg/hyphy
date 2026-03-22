@@ -2677,7 +2677,9 @@ inline double _handle4x4_pruning_case_direct(double const *childVector,
                                              void *tMatrix,
                                              double *parentConditionals) {
 
-  float64x2x2_t *TM = (float64x2x2_t *)tMatrix;
+  float64x2x2_t TM[3] = {vld1q_f64_x2((hyFloat *)tMatrix),
+                         vld1q_f64_x2((hyFloat *)tMatrix + 4),
+                         vld1q_f64_x2((hyFloat *)tMatrix + 8)};
 
   float64x2_t c0 = vdupq_n_f64(childVector[0] - childVector[3]),
               c1 = vdupq_n_f64(childVector[1] - childVector[3]),
@@ -2688,16 +2690,15 @@ inline double _handle4x4_pruning_case_direct(double const *childVector,
 
   t[0] = vfmaq_f64(vmulq_f64(c1, TM[1].val[0]), c0, TM[0].val[0]);
   t[1] = vfmaq_f64(vmulq_f64(c1, TM[1].val[1]), c0, TM[0].val[1]);
-  t[2] = vaddq_f64(vmulq_f64(c2, TM[2].val[0]), c3);
-  t[3] = vaddq_f64(vmulq_f64(c2, TM[2].val[1]), c3);
+  t[2] = vfmaq_f64(c3, c2, TM[2].val[0]);
+  t[3] = vfmaq_f64(c3, c2, TM[2].val[1]);
 
-  t[0] = vmulq_f64(vld1q_f64(parentConditionals), vaddq_f64(t[0], t[2]));
-  vst1q_f64(parentConditionals, t[0]);
-  t[1] = vmulq_f64(vld1q_f64(parentConditionals + 2), vaddq_f64(t[1], t[3]));
-  vst1q_f64(parentConditionals + 2, t[1]);
-  return vaddvq_f64(vaddq_f64(t[0], t[1]));
-  // return (parentConditionals[0] + parentConditionals[1]) +
-  // (parentConditionals[2] + parentConditionals[3]);
+  float64x2x2_t pc_vec = vld1q_f64_x2(parentConditionals);
+  pc_vec.val[0] = vmulq_f64(pc_vec.val[0], vaddq_f64(t[0], t[2]));
+  pc_vec.val[1] = vmulq_f64(pc_vec.val[1], vaddq_f64(t[1], t[3]));
+  vst1q_f64_x2(parentConditionals, pc_vec);
+
+  return vaddvq_f64(vaddq_f64(pc_vec.val[0], pc_vec.val[1]));
 }
 
 void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
@@ -3198,7 +3199,7 @@ void _hy_mvp_blocked_4x4(double *C, double const *M, double const *V) {
 
 template <int D>
 void _hy_mvp_blocked(double *C, double const *M, double const *V) {
-  constexpr int B = 8;
+  const int B = 8;
   if (D >= B) {
     int const blocks = D >> 3;
     int const edge = blocks << 3;
