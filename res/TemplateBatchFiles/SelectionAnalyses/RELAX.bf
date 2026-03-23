@@ -1206,8 +1206,8 @@ function relax.FitMainTestPair (prompt) {
             DeleteObject (relax.alternative_model.fit.take2);
  
 			parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map ["relax.test"] , terms.relax.k), terms.relax.k_range);
-
-
+		} else {
+		    estimators.RestoreLFStateFromSnapshot(relax.alternative_model.fit[terms.likelihood_function], relax.take1_snapshot);
 		}
 	
 		relax.distribution_for_json = {relax.test_branches_name : utility.Map (utility.Range (relax.rate_classes, 0, 1),

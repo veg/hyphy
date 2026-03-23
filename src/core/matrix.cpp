@@ -4988,9 +4988,25 @@ bool _Matrix::IsMaxElement(hyFloat bench) {
     if (!theIndex || compressedIndex) {
 #ifdef _SLKP_USE_ARM_NEON
       long i = 0;
-      for (i = 0; i < ((lDim >> 1) << 1); i += 2) {
-        hyFloat t = vmaxvq_f64(vld1q_f64(theData + i));
-        if (t > bench || t < mBench) {
+      float64x2_t bench_v = vdupq_n_f64(bench);
+      float64x2_t mbench_v = vdupq_n_f64(mBench);
+      for (i = 0; i < ((lDim >> 2) << 2); i += 4) {
+        float64x2_t v1 = vld1q_f64(theData + i);
+        float64x2_t v2 = vld1q_f64(theData + i + 2);
+        uint64x2_t m1 =
+            vorrq_u64(vcgtq_f64(v1, bench_v), vcltq_f64(v1, mbench_v));
+        uint64x2_t m2 =
+            vorrq_u64(vcgtq_f64(v2, bench_v), vcltq_f64(v2, mbench_v));
+        uint64x2_t mall = vorrq_u64(m1, m2);
+        if (vgetq_lane_u64(mall, 0) || vgetq_lane_u64(mall, 1)) {
+          return true;
+        }
+      }
+      for (; i < ((lDim >> 1) << 1); i += 2) {
+        float64x2_t val = vld1q_f64(theData + i);
+        uint64x2_t mask =
+            vorrq_u64(vcgtq_f64(val, bench_v), vcltq_f64(val, mbench_v));
+        if (vgetq_lane_u64(mask, 0) || vgetq_lane_u64(mask, 1)) {
           return true;
         }
       }
@@ -5547,7 +5563,11 @@ _Matrix *_Matrix::Exponentiate(hyFloat scale_to, bool check_transition,
       RowAndColumnMax(max, t, stash);
       max *= t;
       if (max > .1) {
-        max = scale_to * sqrt(2. * max);
+        if (theIndex) {
+          max = scale_to * 2. * sqrt(max);
+        } else {
+          max = scale_to * 8. * sqrt(max);
+        }
         power2 = (long)((log(max) / _log2)) + 1L;
         max = exp(power2 * _log2);
         mmax = max;
