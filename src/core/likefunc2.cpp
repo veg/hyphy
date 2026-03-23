@@ -353,7 +353,12 @@ assignment of leaves
       return;
     }
   } else {
-    Compute(); // need to do this to populate rate matrices
+    if (Compute() == -INFINITY) {
+      HandleApplicationError(
+          _String("Failed to compute the likelihood function (likely boundary "
+                  "condition violations ") &
+          __PRETTY_FUNCTION__);
+    }
   }
 
   long siteOffset = 0,

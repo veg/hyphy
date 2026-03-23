@@ -1,4 +1,4 @@
-RequireVersion ("2.5.48");
+RequireVersion ("2.5.95");
 
 
 LoadFunctionLibrary("libv3/all-terms.bf"); 
@@ -22,10 +22,10 @@ utility.SetEnvVariable ("ACCEPT_ROOTED_TREES", TRUE);
 
 rer.analysis_description = {terms.io.info : 
 "Perform a relative branch length (RER) test on protein sequences",
-                               terms.io.version : "0.0.1",
+                               terms.io.version : "0.0.2",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
                                terms.io.contact : "spond@temple.edu",
-                               terms.io.requirements : "a protein alignment, a phylogenetic tree with relative branch lengths, and a list of designated branches to include in the test set"
+                               terms.io.requirements : "a protein alignment, a phylogenetic tree with relative branch lengths, and a list of designated branches to include in the test set; v 0.0.2 adds the option to only use internal nodes for labeling"
                               };
 
 io.DisplayAnalysisBanner (fitter.analysis_description);
@@ -43,6 +43,7 @@ namespace terms.rer {
     unconstrained = "Unconstrained";
     reference     = "Reference";
     strategy      = "labeling strategy";
+    internal_strategy = "internal labeling strategy";
     model         = "model";
     rv            = "rate variation";
     branch_level  = "branch level analysis"
@@ -77,7 +78,7 @@ io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + 
 
 alignments.StoreInJSON (rer.json,rer.alignment,None);
 
-io.CheckAssertion("Rows (rer.alignment[utility.getGlobalValue('terms.data.partitions')]) == 1", "RERConverge only works on a single partition dataset");
+io.CheckAssertion("Rows (rer.alignment[utility.getGlobalValue('terms.data.partitions')]) == 1", "MOLERATE only works on a single partition dataset");
 
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'MG94.json')",  rer.alignment [terms.data.file] + "molerate.json");
 
@@ -147,6 +148,7 @@ io.ReportProgressMessage ("", ">Retaining **" + rer.filter.species + "** sequenc
 
 KeywordArgument ("branches",             "Designated lineages to test");
 KeywordArgument ("labeling-strategy",    "Labeling strategy for internal nodes", "all-descendants");
+KeywordArgument ("internal-only",    "Label only internal nodes (exclude terminals)", "no");
 
 rer.branch_set = io.MultiSelectOptions (
     rer.select_branch_options,
@@ -166,7 +168,7 @@ for (k;in;rer.branch_set) {
 
 rer.branch_count = utility.Array1D (rer.branch_set);
 
-io.CheckAssertion("rer.branch_count > 0 && rer.branch_count < rer.filter.species", "RERConverge requires that both test and background partition be non-empty");
+io.CheckAssertion("rer.branch_count > 0 && rer.branch_count < rer.filter.species", "MOLERATE requires that both test and background partition be non-empty");
  
  
 io.ReportProgressMessage ("", ">Selected **" + rer.branch_count + "** tips as designated lineages: \`" + Join (", ", rer.branch_set) + "\`");
@@ -177,10 +179,18 @@ rer.labeling_option = io.SelectAnOption (
         "some-descendants" : "Label an internal node if an only if SOME of its descendants are labeled",
         "parsimony" : "Label internal nodes using parsimony",
         "none" : "Do not label any internal nodes"  
-    },
-"Labeling strategy for internal nodes");
+    }, "Labeling strategy for internal nodes");
 
 (rer.json [terms.json.analysis])[terms.rer.strategy] = rer.labeling_option;
+
+rer.internal_labeling_option = io.SelectAnOption (
+    {   
+        "no" : "Keep all labeled nodes in the foreground",
+        "yes" : "Exclude all leaves from the foreground, keep only internal nodes"  
+    }, "Label only internal nodes (exclude terminals)");
+
+(rer.json [terms.json.analysis])[terms.rer.internal_strategy] = rer.internal_labeling_option;
+
 
 Topology rer.T = rer.tree[terms.trees.newick_with_lengths];
 
@@ -210,9 +220,26 @@ rer.tree[terms.trees.model_map] * rer.branches;
 if (None != rer.labels) {
     rer.labels = rer.labels["labels"];
     io.ReportProgressMessage ("", ">Additionally labeled **" + utility.Array1D (rer.labels) + "** internal modes as designated lineages: \`" + Join (", ", Rows(rer.labels)) + "\`");
-    rer.tree[terms.trees.model_map] *  rer.labels;
-    rer.branches * rer.labels;
-} 
+    
+    if (rer.internal_labeling_option != 'no') {
+        io.ReportProgressMessage ("", ">Removing all leaf nodes from the designated lineages set");
+        rer.tree[terms.trees.model_map] =  rer.labels;
+        rer.branches = rer.labels;
+        
+        for (k; in; T) {
+            if (rer.branches / k == FALSE) {
+                rer.branches [k] = terms.rer.background;
+            }
+        }
+    
+    } else {
+        rer.tree[terms.trees.model_map] *  rer.labels;
+        rer.branches * rer.labels;
+    }
+    
+ } else {
+    io.CheckAssertion("rer.internal_labeling_option == 'no'", "MOLERATE cannot be applied to internal branches only because no internal branches have been selected");
+}
 
 trees.store_tree_information (rer.json, {"0" : rer.tree}, rer.tree[terms.trees.model_map]);
        
@@ -743,7 +770,7 @@ lfunction rer.array2dict (array) {
         dict[a&&1] = 1;
         N += 1;
     }
-    io.CheckAssertion("N == Abs (dict)", "RERConverge performs case-insensitive string matches; it seems that some of the tree labels cannot be resolved in a case-insensitive manner");
+    io.CheckAssertion("N == Abs (dict)", "MOLERATE performs case-insensitive string matches; it seems that some of the tree labels cannot be resolved in a case-insensitive manner");
     return dict;
 }
 
