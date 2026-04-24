@@ -860,6 +860,16 @@ void _Variable::MarkDone(void) {
 }
 
 //__________________________________________________________________________________
+
+void _Variable::MarkAsChanged(void) {
+  if (!varFormula && !(varValue && varValue->IsVariable())) {
+    if (!(varFlags & HY_VARIABLE_NOTSET)) {
+      varFlags = varFlags | HY_VARIABLE_CHANGED;
+    }
+  }
+}
+
+//__________________________________________________________________________________
 HBLObjectRef _Variable::ComputeReference(_MathObject const *context) const {
   _String reference_string(*GetName());
   reference_string = AppendContainerName(reference_string,

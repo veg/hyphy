@@ -555,6 +555,7 @@ public:
   }
   inline hyFloat &directIndex(long k) { return theData[k]; }
   long MatrixType(void) { return storageType; }
+  static void SetSparseThreshold(int t) { switchThreshold = t; }
 
   template <typename CALLBACK, typename EXTRACTOR>
   void ForEach(CALLBACK &&cbv, EXTRACTOR &&accessor) const {

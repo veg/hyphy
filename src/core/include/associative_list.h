@@ -146,11 +146,20 @@ public:
    */
   HBLObjectRef Random(HBLObjectRef, HBLObjectRef cache);
   /**
+   * @brief Retrieve the value stored in the path of this dictionary
+   * @param path The path of the element to access.
+   * @param cache An optional cache for the operation.
+   * @return The value associated with the path or null.
+   */
+
+  HBLObjectRef PathAccess(HBLObjectRef, HBLObjectRef cache);
+  /**
    * @brief Access an element by key.
    * @param key The key of the element to access.
    * @param cache An optional cache for the operation.
    * @return The value associated with the key.
    */
+
   HBLObjectRef MAccess(HBLObjectRef, HBLObjectRef cache);
 
   /**

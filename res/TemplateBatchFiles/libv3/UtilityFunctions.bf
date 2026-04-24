@@ -1161,6 +1161,16 @@ lfunction utility.GetVersion (long) {
     return _hpv;
 }
 
+lfunction utility.truthy (value) {
+    if (None == value) {
+        return 0;
+    }
+    if (value) {
+        return 1;
+    }
+    return 0;
+}
+
 
 function utility.json_store_key_value_pair(json, dict_key, key, value) {
     if (None == dict_key) {

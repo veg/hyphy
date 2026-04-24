@@ -180,6 +180,40 @@ HBLObjectRef _AssociativeList::MCoord(HBLObjectRef p, HBLObjectRef cache) {
 }
 
 //_____________________________________________________________________________________________
+HBLObjectRef _AssociativeList::PathAccess(HBLObjectRef path, HBLObjectRef) {
+  if (path->ObjectClass() == MATRIX) {
+    _Matrix *path_matrix = (_Matrix *)path;
+    if (path_matrix->IsAStringMatrix()) {
+      _List path_entries;
+      path_matrix->FillInList(path_entries);
+      long path_size = path_entries.countitems();
+      _AssociativeList *current_dict = this;
+      for (long i = 0; current_dict && i < path_size - 1L; i++) {
+        _String *current_key = (_String *)path_entries.GetItem(i);
+        current_dict = (_AssociativeList *)current_dict->GetByKey(
+            *current_key, ASSOCIATIVE_LIST);
+      }
+      if (path_size && current_dict) {
+        _String *current_key = (_String *)path_entries.GetItem(path_size - 1);
+        HBLObjectRef res = (_AssociativeList *)current_dict->GetByKey(
+            *current_key, HY_ANY_OBJECT);
+        if (res) {
+          res->AddAReference();
+          return res;
+        }
+      }
+    }
+  }
+
+  // return a null object by default
+  //  -- path does not exist
+  //  -- key is not a string
+  //  -- the value is actually "null"
+
+  return new _MathObject;
+}
+
+//_____________________________________________________________________________________________
 HBLObjectRef _AssociativeList::MAccess(HBLObjectRef p, HBLObjectRef cache) {
   long f;
 
@@ -859,6 +893,9 @@ HBLObjectRef _AssociativeList::ExecuteSingleOp(long opCode, _List *arguments,
       Merge(arg0);
       return _returnConstantOrUseCache(avl.countitems(), cache);
 
+    case HY_OP_CODE_IDIV: //
+      return PathAccess(arg0, cache);
+
     case HY_OP_CODE_SUB:
       DeleteByKey(arg0);
       return _returnConstantOrUseCache(avl.countitems(), cache);
@@ -882,13 +919,16 @@ HBLObjectRef _AssociativeList::ExecuteSingleOp(long opCode, _List *arguments,
     }
     _MathObject *arg1 = _extract_argument(arguments, 1UL, false);
 
-    switch (opCode) {        //  check operations with 1 or 2 arguments
-    case HY_OP_CODE_MACCESS: // MAccess
+    switch (opCode) { //  check operations with 1 or 2 arguments
+    case HY_OP_CODE_MACCESS: {
+      // MAccess
       if (arg1) {
         return MIterator(arg0, arg1, cache);
       } else {
         return MAccess(arg0, cache);
       }
+      break;
+    }
     }
   }
 
