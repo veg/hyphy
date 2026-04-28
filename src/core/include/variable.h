@@ -1,21 +1,21 @@
 /*
- 
+
  HyPhy - Hypothesis Testing Using Phylogenies.
- 
+
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
  Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
- 
+
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
  Martin Smith (martin.audacis@gmail.com)
- 
+
  Significant contributions from:
  Spencer V Muse (muse@stat.ncsu.edu)
  Simon DW Frost (sdf22@cam.ac.uk)
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the
  "Software"), to deal in the Software without restriction, including
@@ -23,10 +23,10 @@
  distribute, sublicense, and/or sell copies of the Software, and to
  permit persons to whom the Software is furnished to do so, subject to
  the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included
  in all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -34,185 +34,176 @@
  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- 
+
  */
 
-#ifndef     __VARIABLE__
-#define     __VARIABLE__
+#ifndef __VARIABLE__
+#define __VARIABLE__
 
+#include "avllist.h"
 #include "constant.h"
+#include "formula.h"
 #include "hy_strings.h"
 #include "list.h"
-#include "avllist.h"
 #include "operation.h"
-#include "formula.h"
 
 enum kVariableScope {
-    kVariableScopeLocal = 0,
-    kVariableScopeGlobal = 1,
-    kVariableScopeRegional = 2
+  kVariableScopeLocal = 0,
+  kVariableScopeGlobal = 1,
+  kVariableScopeRegional = 2
 };
 
 class _Variable : public _Constant {
 
-    friend class _Operation;
+  friend class _Operation;
 
 public:
+  /**
+   * @brief Construct a new _Variable object
+   */
+  _Variable(void);
+  /**
+   * @brief Construct a new _Variable object
+   *
+   * @param s The name of the variable
+   * @param isG Whether the variable is global
+   */
+  _Variable(_String const &, bool isG = false); // name
+  /**
+   * @brief Construct a new _Variable object
+   *
+   * @param s The name of the variable
+   * @param f The formula of the variable
+   * @param isG Whether the variable is global
+   */
+  _Variable(_String const &, _String const &,
+            bool isG = false); // name and formula
 
-    /**
-     * @brief Construct a new _Variable object
-     */
-    _Variable (void);
-    /**
-     * @brief Construct a new _Variable object
-     *
-     * @param s The name of the variable
-     * @param isG Whether the variable is global
-     */
-    _Variable (_String const&, bool isG = false); // name
-    /**
-     * @brief Construct a new _Variable object
-     *
-     * @param s The name of the variable
-     * @param f The formula of the variable
-     * @param isG Whether the variable is global
-     */
-    _Variable (_String const&, _String const&, bool isG = false); // name and formula
+  /**
+   * @brief Destroy the _Variable object
+   */
+  virtual ~_Variable(void);
 
-    /**
-     * @brief Destroy the _Variable object
-     */
-    virtual ~_Variable (void);
+  virtual void Initialize(bool = true);
+  virtual void Duplicate(BaseRefConst);
+  virtual BaseRef makeDynamic(void) const;
+  virtual BaseRef toStr(unsigned long = 0UL);
+  virtual void toFileStr(hyFile *, unsigned long = 0UL);
 
-    virtual   void          Initialize (bool = true);
-    virtual   void          Duplicate (BaseRefConst);
-    virtual   BaseRef       makeDynamic(void) const;
-    virtual   BaseRef       toStr (unsigned long = 0UL);
-    virtual    void         toFileStr (hyFile*, unsigned long = 0UL);
+  virtual void MarkDone(void);
+  virtual void MarkAsChanged(void);
 
-    virtual   void          MarkDone (void);
+  virtual HBLObjectRef Compute(void); // compute or return the value
+  HBLObjectRef ComputeMatchingType(long);
+  // return a value if the type is matched, otherwise nil
+  virtual bool IsVariable(void); //
+  virtual bool IsIndependent(void) {
+    return (varFormula && varFormula->theFormula.lLength)
+               ? false
+               : (varValue ? varValue->IsIndependent() : true);
+  }
+  virtual bool IsConstant(void);
+  // void        SetValue (HBLObjectRef, bool = true, bool = true); // set the
+  // value of the variable
+  void SetValue(HBLObjectRef, bool duplicate_value, bool do_checks,
+                _AVLList *keep_track_of_changes);
+  void SetValue(hyFloat); // set the value of the variable
+  void SetNumericValue(hyFloat);
+  void CheckAndSet(hyFloat, bool, _AVLList *keep_track_of_changed);
+  // set the value of the variable
+  // bool flag is used to indicate that out of bounds values should be rejected
 
-    virtual     HBLObjectRef   Compute (void);       // compute or return the value
-                HBLObjectRef   ComputeMatchingType (long);
-                // return a value if the type is matched, otherwise nil
-    virtual     bool        IsVariable (void); //
-    virtual     bool        IsIndependent (void) {
-        return (varFormula&&varFormula->theFormula.lLength)?
-               false:
-               (varValue?varValue->IsIndependent():true);
+  HBLObjectRef GetValue(void) {
+    return varValue; // get the value of the variable
+  }
+  void SetFormula(_Formula &); // set the variable to a new formula
+
+  void ClearValue(void) {
+    if (varValue) {
+      DeleteObject(varValue);
+      varValue = nil;
     }
-    virtual     bool        IsConstant (void);
-    //void        SetValue (HBLObjectRef, bool = true, bool = true); // set the value of the variable
-    void        SetValue (HBLObjectRef, bool duplicate_value, bool do_checks, _AVLList* keep_track_of_changes);
-    void        SetValue (hyFloat); // set the value of the variable
-    void        SetNumericValue (hyFloat);
-    void        CheckAndSet (hyFloat, bool, _AVLList* keep_track_of_changed);
-    // set the value of the variable
-    // bool flag is used to indicate that out of bounds values should be rejected
+  }
 
-    HBLObjectRef   GetValue (void) {
-        return varValue;   // get the value of the variable
-    }
-    void        SetFormula (_Formula&); // set the variable to a new formula
+  _Formula *get_constraint(void) { return varFormula; }
 
-    void   ClearValue (void) {
-        if (varValue) { DeleteObject (varValue); varValue = nil;}
-    }
+  void *operator new(size_t size);
+  void operator delete(void *p);
 
-    _Formula * get_constraint (void) {
-      return varFormula;
-    }
+  virtual bool HasChanged(bool = false, _AVLListX *cache = nil);
+  virtual void PreMarkChanged();
+  virtual void PostMarkChanged();
+  virtual bool IsGlobal(void) { return varFlags & HY_VARIABLE_GLOBAL; }
+  virtual bool IsCategory(void) { return false; }
 
-    
-    void *      operator new       (size_t size);
-    void        operator delete    (void * p);
+  virtual unsigned long ObjectClass(void) const;
 
-    virtual     bool        HasChanged      (bool = false, _AVLListX * cache = nil);
-    virtual     void        PreMarkChanged  ();
-    virtual     void        PostMarkChanged ();
-    virtual     bool        IsGlobal (void) {
-        return varFlags & HY_VARIABLE_GLOBAL;
-    }
-    virtual     bool        IsCategory (void) {
-        return false;
-    }
+  void SetIndex(long i) { theIndex = i; }
+  long get_index(void) const { return theIndex; }
+  virtual void ScanForVariables(_AVLList &l, bool globals = false,
+                                _AVLListX *tagger = nil, long weight = 0) const;
+  virtual bool IsContainer(void) { return false; }
 
-    virtual unsigned long        ObjectClass (void) const;
-    
-    void        SetIndex (long i) {
-        theIndex = i;
-    }
-    long        get_index (void) const {
-        return theIndex;
-    }
-    virtual void        ScanForVariables (_AVLList& l, bool globals = false, _AVLListX* tagger = nil, long weight = 0) const;
-    virtual     bool        IsContainer (void) {
-        return false;
-    }
+  void SetBounds(hyFloat lb, hyFloat ub);
+  void EnsureTheValueIsInBounds(void);
+  bool IsValueInBounds(hyFloat v) { return v >= lowerBound && v <= upperBound; }
 
-    void        SetBounds (hyFloat lb, hyFloat ub);
-    void        EnsureTheValueIsInBounds (void);
-    bool        IsValueInBounds (hyFloat v)
-                           { return v >= lowerBound && v <= upperBound; }
+  hyFloat GetLowerBound(void) { return lowerBound; }
+  hyFloat GetUpperBound(void) { return upperBound; }
 
-    hyFloat  GetLowerBound (void) {
-        return lowerBound;
-    }
-    hyFloat  GetUpperBound (void) {
-        return upperBound;
-    }
+  virtual void ClearConstraints(void);
+  virtual bool CheckFForDependence(long, bool = false);
+  virtual bool CheckFForDependence(_AVLList const &, bool = false);
+  virtual bool HasBeenInitialized(void) const {
+    return !(varFlags & HY_VARIABLE_NOTSET);
+  }
+  virtual void MarkModified(void) { varFlags = varFlags | HY_VARIABLE_CHANGED; }
+  virtual bool IsModified(void) const { return varFlags & HY_VARIABLE_CHANGED; }
+  virtual void ClearModified(void) {
+    if (varFlags & HY_VARIABLE_CHANGED)
+      varFlags -= HY_VARIABLE_CHANGED;
+  }
 
-    virtual     void        ClearConstraints    (void);
-    virtual     bool        CheckFForDependence (long, bool = false);
-    virtual     bool        CheckFForDependence (_AVLList const&, bool = false);
-    virtual     bool        HasBeenInitialized (void) const {return !(varFlags & HY_VARIABLE_NOTSET);}
-    virtual     void        MarkModified  (void) {varFlags = varFlags | HY_VARIABLE_CHANGED;}
-    virtual     bool        IsModified  (void) const {return varFlags & HY_VARIABLE_CHANGED;}
-    virtual     void        ClearModified  (void) {if (varFlags & HY_VARIABLE_CHANGED) varFlags -= HY_VARIABLE_CHANGED;}
-    
-    _String const     ContextFreeName                 (void) const;
-    _StringBuffer&    ContextFreeName                 (_StringBuffer&) const;
-    _String const    ParentObjectName                 (void) const;
- 
-    _String*    GetName                         (void) const{
-        return theName;
-    }
-    _String*    GetFormulaString        (_hyFormulaStringConversionMode mode, _List * match_names = nil) {
-        return varFormula?(_String*)varFormula->toStr(mode, match_names):new _String;
-    }
+  _String const ContextFreeName(void) const;
+  _StringBuffer &ContextFreeName(_StringBuffer &) const;
+  _String const ParentObjectName(void) const;
 
-    virtual     void        CompileListOfDependents (_SimpleList&);
-    HBLObjectRef   ComputeReference        (_MathObject const *) const;
+  _String *GetName(void) const { return theName; }
+  _String *GetFormulaString(_hyFormulaStringConversionMode mode,
+                            _List *match_names = nil) {
+    return varFormula ? (_String *)varFormula->toStr(mode, match_names)
+                      : new _String;
+  }
 
+  virtual void CompileListOfDependents(_SimpleList &);
+  HBLObjectRef ComputeReference(_MathObject const *) const;
 
-    friend      void        ResetVariables          (void);
-    //friend      _Variable*  LocateVar               (long);
-    friend      void        InsertVar               (_Variable*);
-    bool        has_been_set                        (void) const {return !(HY_VARIABLE_NOTSET & varFlags);}
+  friend void ResetVariables(void);
+  // friend      _Variable*  LocateVar               (long);
+  friend void InsertVar(_Variable *);
+  bool has_been_set(void) const { return !(HY_VARIABLE_NOTSET & varFlags); }
 
 public:
+  _String *theName;
 
-    _String*   theName;
+  HBLObjectRef varValue;
 
-    HBLObjectRef  varValue;
+  long theIndex; // index of this variable in the global variable pool
 
-    long       theIndex; // index of this variable in the global variable pool
+  // the class of this variable - i.e global, local, category or random
+  int varFlags;
 
-    // the class of this variable - i.e global, local, category or random
-    int       varFlags;
+  hyFloat lowerBound, upperBound;
+  // dynamic lower and upper bounds here
 
-    hyFloat lowerBound,
-               upperBound;
-    // dynamic lower and upper bounds here
-
-    _Formula*  varFormula;
-
+  _Formula *varFormula;
 };
 
-long    DereferenceVariable (long index, _MathObject const *  context, char reference_type);
-long    DereferenceString   (HBLObjectRef, _MathObject const * context, char reference_type);
-void    ResetDepComputedFlags (_SimpleList const& vars);
-_String const WrapInNamespace (_String const&, _String const*);
-
+long DereferenceVariable(long index, _MathObject const *context,
+                         char reference_type);
+long DereferenceString(HBLObjectRef, _MathObject const *context,
+                       char reference_type);
+void ResetDepComputedFlags(_SimpleList const &vars);
+_String const WrapInNamespace(_String const &, _String const *);
 
 #endif

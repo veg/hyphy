@@ -355,6 +355,7 @@ _String const accept_branch_lengths("ACCEPT_BRANCH_LENGTHS"),
     // controls verbosity level during optimization and other long-running
     // operations,
     enforce_constraint_violations("ENFORCE_CONSTRAINT_VIOLATIONS"),
+    sparse_threshold("DATA_STACK_SPARSE_THRESHOLD"),
     strict_alignment_validation_mode("STRICT_ALIGNMENT_VALIDATION_MODE");
 
 ;

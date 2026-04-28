@@ -277,7 +277,7 @@ void _matrix_kernel_multiply_by_compressed_sparse_T(
       // -------------------------------------------------
       // PART B: The Tail (Specialized for 60, 61, 62, 63...)
       // -------------------------------------------------
-      if constexpr (TAIL_SIZE > 0) {
+      if (TAIL_SIZE > 0) {
         constexpr int base = NUM_FULL_STRIPS * STRIP_SIZE;
         constexpr int vecs_needed = TAIL_SIZE / 2;
         constexpr bool has_scalar = (TAIL_SIZE % 2 != 0);
@@ -291,7 +291,7 @@ void _matrix_kernel_multiply_by_compressed_sparse_T(
         for (int k = 0; k < vecs_needed; k++) {
           acc[k] = vld1q_f64(res + base + (k * 2));
         }
-        if constexpr (has_scalar) {
+        if (has_scalar) {
           scalar_acc = res[base + TAIL_SIZE - 1];
         }
 
@@ -309,7 +309,7 @@ void _matrix_kernel_multiply_by_compressed_sparse_T(
 
           // Chunk 8 doubles (4 vectors) - heavily unrolled
           // For N=61, Tail=29. This runs 3 times (24 elements).
-          constexpr int chunks_of_8 = TAIL_SIZE / 8;
+          int chunks_of_8 = TAIL_SIZE / 8;
           for (int k = 0; k < chunks_of_8; ++k) {
             float64x2x4_t C = vld1q_f64_x4(secArg + base + d_offset);
             acc[vec_offset + 0] =
@@ -326,7 +326,7 @@ void _matrix_kernel_multiply_by_compressed_sparse_T(
 
           // Chunk 2 doubles (1 vector)
           // For N=61, remaining=5. This runs 2 times (4 elements).
-          constexpr int remaining_vectors = (TAIL_SIZE % 8) / 2;
+          int remaining_vectors = (TAIL_SIZE % 8) / 2;
           for (int k = 0; k < remaining_vectors; ++k) {
             float64x2_t C = vld1q_f64(secArg + base + d_offset);
             acc[vec_offset] = vfmaq_f64(acc[vec_offset], val_vec, C);
@@ -335,7 +335,7 @@ void _matrix_kernel_multiply_by_compressed_sparse_T(
           }
 
           // Scalar
-          if constexpr (has_scalar) {
+          if (has_scalar) {
             scalar_acc += val * secArg[base + TAIL_SIZE - 1];
           }
         }
@@ -344,7 +344,7 @@ void _matrix_kernel_multiply_by_compressed_sparse_T(
         for (int k = 0; k < vecs_needed; k++) {
           vst1q_f64(res + base + (k * 2), acc[k]);
         }
-        if constexpr (has_scalar) {
+        if (has_scalar) {
           res[base + TAIL_SIZE - 1] = scalar_acc;
         }
       }

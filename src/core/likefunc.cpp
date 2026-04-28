@@ -1411,10 +1411,11 @@ bool _LikelihoodFunction::IsIthParameterGlobal(long index) const {
 }
 
 //_______________________________________________________________________________________
-bool _LikelihoodFunction::CheckAndSetIthIndependent(long index, hyFloat p) {
+bool _LikelihoodFunction::CheckAndSetIthIndependent(long index, hyFloat p,
+                                                    bool force) {
   _Variable *v = (_Variable *)LocateVar(indexInd.get(index));
 
-  bool set;
+  bool set = force;
 
   if (parameterValuesAndRanges) {
     parameterValuesAndRanges->Store(index, 1, p);
@@ -1425,14 +1426,16 @@ bool _LikelihoodFunction::CheckAndSetIthIndependent(long index, hyFloat p) {
 
   hyFloat oldValue = v->Value();
 
-  if (p != INFINITY) {
-    if (p != 0.0) {
-      set = (fabs((oldValue - p) / p)) > kMachineEpsilon;
+  if (!set) {
+    if (p != INFINITY) {
+      if (p != 0.0) {
+        set = (fabs((oldValue - p) / p)) > kMachineEpsilon;
+      } else {
+        set = oldValue != p;
+      }
     } else {
-      set = oldValue != p;
+      set = true;
     }
-  } else {
-    set = true;
   }
 
   /*if (p < 0.) {
@@ -1460,12 +1463,12 @@ bool _LikelihoodFunction::CheckAndSetIthIndependent(long index, hyFloat p) {
 }
 
 //_______________________________________________________________________________________
-long _LikelihoodFunction::SetAllIndependent(_Matrix *v) {
+long _LikelihoodFunction::SetAllIndependent(_Matrix *v, bool force) {
   unsigned long upto = v->GetSize();
   long set_this_many = 0;
   upto = MIN(upto, indexInd.lLength);
   for (unsigned long k = 0; k < upto; k++) {
-    set_this_many += CheckAndSetIthIndependent(k, v->theData[k]);
+    set_this_many += CheckAndSetIthIndependent(k, v->theData[k], force);
   }
   return set_this_many;
 }
@@ -2067,6 +2070,9 @@ bool _LikelihoodFunction::SendOffToMPI(long index, void *request) {
 //_______________________________________________________________________________________
 
 bool _LikelihoodFunction::PreCompute(void) {
+
+  _Matrix::SetSparseThreshold(
+      hy_env::EnvVariableGetNumber(hy_env::sparse_threshold, 30.));
 
   bool validated_contstraints = true;
 
@@ -4730,16 +4736,21 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
     }
   }
 
+  // 20260424: SLKP force changes in all the independent variables for the first
+  // compute
   for (unsigned long i = 0UL; i < indexInd.lLength; i++) {
-    if (GetIthIndependentVar(i)->varFlags & HY_VARIABLE_CHANGED) {
-      variables_changed_during_last_compute->InsertNumber(
-          GetIthIndependentVar(i)->get_index());
-      // if (variables_changed_during_last_compute->InsertNumber
-      // (GetIthIndependentVar(i)->get_index()) >= 0)
-      //     printf ("Insert [before]
-      //     %s\n",GetIthIndependentName(i)->get_str());
-    }
+    GetIthIndependentVar(i)->MarkAsChanged();
+    variables_changed_during_last_compute->InsertNumber(
+        GetIthIndependentVar(i)->get_index());
   }
+  /*
+    for (unsigned long i = 0UL; i < indexInd.lLength; i++) {
+      if (GetIthIndependentVar(i)->varFlags & HY_VARIABLE_CHANGED) {
+        variables_changed_during_last_compute->InsertNumber(
+            GetIthIndependentVar(i)->get_index());
+      }
+    }
+  */
 
   _SimpleList untag;
   if (keepStartingPoint) {
@@ -4916,17 +4927,36 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                             &all_vars](_AssociativeList *init) -> hyFloat {
       // hy_env::EnvVariableSet ("UBER_VERBOSE_DEBUG", new _Constant(1.0),
       // false);
+
+      // for (int i = 0; i < this->indexInd.countitems(); i++) {
+      //     printf ("Variable %d = %s (%g)\n", i, this->GetIthIndependentName
+      //     (i)->get_str(), this->GetIthIndependent(i));
+      // }
+
+      /*_TheTree* first_tree = this->GetIthTree(0);
+      _TreeIterator ti(first_tree, _HY_TREE_TRAVERSAL_POSTORDER);
+
+      while (_CalcNode * cn = ti.Next()) {
+          _String cns ((_String*)cn->_VariableContainer::toStr(0));
+          cn->For
+      }*/
+
       for (AVLListXLIteratorKeyValue key_value : init->ListIterator()) {
         _Constant *var_value = (_Constant *)key_value.get_object();
         _String const *var_name = key_value.get_key();
         long vi = all_vars.FindLong(LocateVarByName(*var_name));
         if (vi >= 0) {
-          // printf ("Setting %d to %g\n", all_vars.GetXtra(vi),
-          // var_value->Value());
+          // printf ("Setting %s to %g\n", this->GetIthIndependentName
+          // (all_vars.GetXtra(vi))->get_str(),var_value->Value());
           this->SetIthIndependent(all_vars.GetXtra(vi), var_value->Value());
         }
       }
-      return this->Compute();
+
+      hyFloat result = this->Compute();
+      // printf ("\n%g\n", result);
+      // hy_env::EnvVariableSet ("UBER_VERBOSE_DEBUG", new _Constant(0.0),
+      // false);
+      return result;
     };
 
     for (AVLListXLIteratorKeyValue key_value : initial_grid->ListIterator()) {
@@ -8505,9 +8535,10 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
     function_values.Store(sorted_index, 0, new_value);
   };
 
-  auto set_point_and_compute = [this, &lf_evaluations](_Matrix &v) -> hyFloat {
+  auto set_point_and_compute =
+      [this, &lf_evaluations](_Matrix &v, bool force = false) -> hyFloat {
     lf_evaluations++;
-    SetAllIndependent(&v);
+    SetAllIndependent(&v, force);
     hyFloat ll = -Compute();
     return ll;
   };
@@ -8541,7 +8572,15 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
   GetAllIndependent(simplex[0]);
 
   // current FEASIBLE point
-  function_values.Store(0, 0, set_point_and_compute(simplex[0]));
+  hyFloat simplex_best = set_point_and_compute(simplex[0]);
+  function_values.Store(0, 0, simplex_best);
+
+  hyFloat simplex_check = set_point_and_compute(simplex[0], true);
+  if (fabs(simplex_check - simplex_best) > 0.00001) {
+    _TerminateAndDump(
+        _String("Failed to checkpoint likelihood value, cached ") &
+        _String(simplex_best) & ", force compute " & _String(simplex_check));
+  }
 
   if (verbosity_level > 100) {
     BufferToConsole("\n[SIMPLEX SETUP]");

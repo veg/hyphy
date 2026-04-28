@@ -360,7 +360,8 @@ public:
    * @return true if the value was set, false otherwise
    */
   bool CheckAndSetIthIndependent(
-      long, hyFloat); // set the value of i-th independent variable
+      long, hyFloat,
+      bool always_set = false); // set the value of i-th independent variable
   /**
    * @brief Check if the Ith parameter is global
    *
@@ -375,7 +376,7 @@ public:
    * @param m The matrix of independent variables
    * @return long The number of independent variables set
    */
-  long SetAllIndependent(_Matrix *);
+  long SetAllIndependent(_Matrix *, bool = false);
 
   /**
    * @brief Update an independent variable
