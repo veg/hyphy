@@ -1301,11 +1301,12 @@ bool ProcessNexusData(FileState &fState, long pos, hyFile *f,
         loopIterations++;
         long expected_sites_before_sequence = fState.totalSitesRead;
         ISelector(fState, *source, result);
-        if (fState.curSpecies > 0) {
+        if (fState.curSpecies > 0 && !fState.interleaved) {
           if (expected_sites_before_sequence < fState.totalSitesRead) {
+            _String *seq_name = result.GetSequenceName(fState.curSpecies);
             HandleAlignmentValidationError(
                 _String("Sequence ") & (long)(fState.curSpecies + 1) & " " &
-                result.GetSequenceName(fState.curSpecies)->Enquote('(', ')') &
+                (seq_name ? seq_name->Enquote('(', ')') : _String("(unknown)")) &
                 " is longer " &
                 _String((long)fState.totalSitesRead).Enquote('(', ')') &
                 " than the expected length based on prior sequences " &
