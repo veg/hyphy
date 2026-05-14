@@ -853,7 +853,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
                 estimators.RestoreLFStateFromSnapshot (lf_id, snapshot);
                 
               
-                if ((ignorable)[(^"fel.sxcaler_parameter_names")[v1n]] || (ignorable)[(^"fel.scaler_parameter_names")[v2n]]) {
+                if ((ignorable)[(^"fel.scaler_parameter_names")[v1n]] || (ignorable)[(^"fel.scaler_parameter_names")[v2n]]) {
                     //console.log (v1n + "|" + v2n + " is ignorable");
                     (pairwise[v1n + "|" + v2n]) = alternative;
                 } else {                

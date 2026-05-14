@@ -46,6 +46,7 @@
 
 #include "associative_list.h"
 #include "batchlan.h"
+#include "hbl_env.h"
 #include "likefunc.h"
 #include "matrix.h"
 #include "polynoml.h"
@@ -5537,6 +5538,11 @@ _Matrix *_Matrix::Exponentiate(hyFloat scale_to, bool check_transition,
                                _Matrix *existing_storage) {
   // find the maximal elements of the matrix
 
+  if (hy_env::EnvVariableGetNumber(hy_env::matrix_exponential_single_precision,
+                                   0.0) == 1.0) {
+    return ExponentiateSingle(scale_to, check_transition, existing_storage);
+  }
+
   try {
     if (!is_square()) {
       throw _String("Exponentiate is not defined for non-square matrices");
@@ -9963,4 +9969,162 @@ HBLObjectRef _returnMatrixOrUseCache(long nrow, long ncol, long type,
   }
   return new _Matrix(nrow, ncol, is_sparse,
                      type == _NUMERICAL_TYPE ? true : false);
+}
+
+_Matrix *_Matrix::ExponentiateSingle(hyFloat scale_to, bool check_transition,
+                                     _Matrix *existing_storage) {
+  try {
+    if (!is_square() || !is_dense() || is_polynomial() || precisionArg > 0) {
+      return Exponentiate(scale_to, check_transition, existing_storage);
+    }
+
+    long i, power2 = 0L;
+
+#ifndef _OPENMP
+    matrix_exp_count++;
+#endif
+
+    hyFloat max = 1.0, mmax = 1.0;
+    hyFloat *stash = (hyFloat *)alloca(sizeof(hyFloat) * hDim * (1 + vDim));
+
+    hyFloat t;
+    RowAndColumnMax(max, t, stash);
+    max *= t;
+    if (max > .1) {
+      max = scale_to * 8. * sqrt(max);
+      power2 = (long)((log(max) / _log2)) + 1L;
+      max = exp(power2 * _log2);
+      mmax = max;
+    } else {
+      power2 = 0;
+      mmax = 1.;
+    }
+
+    int D = hDim;
+    int L = lDim;
+
+    float *f_this = (float *)alloca(sizeof(float) * L);
+    float *f_res = (float *)alloca(sizeof(float) * L);
+    float *f_temp = (float *)alloca(sizeof(float) * L);
+    float *f_tempS = (float *)alloca(sizeof(float) * L);
+
+    for (i = 0; i < L; i++) {
+      f_this[i] = (float)theData[i];
+      f_res[i] = 0.0f;
+    }
+
+    float f_max = (float)max;
+    float f_mmax = (float)mmax;
+
+    // Initialize f_res to Identity or scaled this
+    if (power2 > 0 && f_max > 0.0f) {
+      float inv_max = 1.0f / f_max;
+      for (i = 0; i < L; i++)
+        f_res[i] = f_this[i] * inv_max;
+      for (i = 0; i < D; i++)
+        f_res[i * D + i] += 1.0f;
+    } else {
+      for (i = 0; i < D; i++)
+        f_res[i * D + i] = 1.0f;
+      if (f_max > 0.0f) {
+        for (i = 0; i < L; i++)
+          f_res[i] += f_this[i];
+      }
+    }
+
+    // Taylor series
+    for (i = 0; i < L; i++)
+      f_temp[i] = f_this[i];
+
+    float f_tMax =
+        (float)MAX(MinElement() * sqrt((hyFloat)hDim), truncPrecision);
+    float f_truncPrecision = (float)truncPrecision;
+
+    i = 2;
+    do {
+      _hy_matrix_multiply_NxN_float(f_tempS, f_temp, f_this, D, false);
+      // swap pointers
+      float *p = f_temp;
+      f_temp = f_tempS;
+      f_tempS = p;
+
+      float scale =
+          (i > 2) ? (1.0f / (f_mmax * i)) : (0.5f / (f_mmax * f_mmax));
+      for (int j = 0; j < L; j++) {
+        float val = f_temp[j] * scale;
+        f_res[j] += val;
+        f_temp[j] = val; // for next iteration
+      }
+      i++;
+
+      bool continue_loop = false;
+      float loop_threshold = f_tMax * f_truncPrecision * i;
+      for (int j = 0; j < L; j++) {
+        if (fabsf(f_temp[j]) > loop_threshold) {
+          continue_loop = true;
+          break;
+        }
+      }
+      if (!continue_loop)
+        break;
+      if (i > 100)
+        break; // safety
+    } while (true);
+
+    // Scaling and squaring
+    for (long s = 0; s < power2; s++) {
+      _hy_matrix_multiply_NxN_float(f_temp, f_res, f_res, D, false);
+
+      float maxDiff = 0.0f;
+      for (int j = 0; j < L; j++) {
+        float d = fabsf(f_res[j] - f_temp[j]);
+        if (d > maxDiff)
+          maxDiff = d;
+        f_res[j] = f_temp[j];
+      }
+
+      if (maxDiff < FLT_EPSILON * 1.e3f)
+        break;
+    }
+
+    _Matrix *result =
+        existing_storage ? existing_storage : new _Matrix(D, D, false, true);
+    for (i = 0; i < L; i++)
+      result->theData[i] = (double)f_res[i];
+
+    if (check_transition) {
+      // We can just call the populator on the double result
+      // This is safe and keeps logic in one place
+      // However, we need to replicate the verifier if we want to be exact
+      // For now, let's just use the same logic as Exponentiate
+
+      auto transition_verifier = [](_Matrix *result) -> bool {
+        for (long r = 0L; r < result->lDim; r += result->vDim + 1) {
+          if (result->theData[r] > 1.000001)
+            return false;
+        }
+        return true;
+      };
+
+      if (!transition_verifier(result)) {
+        return Exponentiate(scale_to, check_transition, existing_storage);
+      }
+
+      // Populate diagonal
+      for (long r = 0L; r < result->hDim; r++) {
+        hyFloat sum = 0.;
+        for (long c = result->hDim * r; c < result->hDim * r + result->hDim;
+             c++) {
+          if (c != r * result->vDim + r)
+            sum += result->theData[c];
+        }
+        result->theData[r * result->vDim + r] = 1. - sum;
+      }
+    }
+
+    return result;
+
+  } catch (...) {
+    return Exponentiate(scale_to, check_transition, existing_storage);
+  }
 }
