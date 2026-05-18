@@ -5703,14 +5703,15 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
             brackStep = 0.;
 
-            for (long k = 0L; k < stepsSoFar - 1; k++) {
+            long start_at = stepsSoFar > 11 ? stepsSoFar - 11 : 0;
+            for (long k = start_at; k < stepsSoFar - 1; k++) {
               previousParameterValue = vH->theData[k];
               lastParameterValue = vH->theData[k + 1];
               StoreIfGreater(brackStep,
                              fabs(lastParameterValue - previousParameterValue));
             }
 
-            brackStep = 2. * brackStep / (stepsSoFar - 1);
+            brackStep = 2. * brackStep / (stepsSoFar - 1 - start_at);
             if (CheckEqual(brackStep, 0.0)) {
               brackStep = MIN(0.001, precision * 0.001);
             }
@@ -8234,7 +8235,7 @@ void _LikelihoodFunction::LocateTheBump(long index, hyFloat gPrecision,
           BufferToConsole(buf);
         }
 
-        if (fabs(X - XM) <= brentPrec && outcome > 0) {
+        if (fabs(X - XM) <= brentPrec) {
           break;
         }
 
