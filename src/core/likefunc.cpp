@@ -5703,7 +5703,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
             brackStep = 0.;
 
-            long start_at = stepsSoFar > 11 ? stepsSoFar - 11 : 0;
+            long start_at = stepsSoFar > 7 ? stepsSoFar - 7 : 0;
             for (long k = start_at; k < stepsSoFar - 1; k++) {
               previousParameterValue = vH->theData[k];
               lastParameterValue = vH->theData[k + 1];
@@ -5712,6 +5712,17 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             }
 
             brackStep = 2. * brackStep / (stepsSoFar - 1 - start_at);
+
+            /*if (stepsSoFar >= 3) {
+                hyFloat d1 = vH->theData[stepsSoFar - 1] -
+            vH->theData[stepsSoFar - 2]; hyFloat d2 = vH->theData[stepsSoFar -
+            2] - vH->theData[stepsSoFar - 3]; if (d1 * d2 > 0) { // momentum
+                    brackStep *= GOLDEN_RATIO;
+                } else if (d1 * d2 < 0) { // oscillation
+                    brackStep *= GOLDEN_RATIO_R;
+                }
+            }*/
+
             if (CheckEqual(brackStep, 0.0)) {
               brackStep = MIN(0.001, precision * 0.001);
             }

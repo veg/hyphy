@@ -509,16 +509,22 @@ fel.bh.pv = {};
 
 fel.overall.index = fel.tests.key[0][3];
 utility.ForEachPair ((fel.site_results[0])[-1][fel.overall.index], "_idx_", "_value_", "fel.bh.pv[_idx_[0]]=_value_");
+fel.bh.pv.raw = fel.bh.pv;
 fel.bh.pv = math.BenjaminiHochbergFDR(fel.bh.pv);
+fel.bh.classifier = math.BenjaminiHochbergFDRClassifier(fel.bh.pv.raw , fel.q_value);
 fel.bh.count = {};
 
-utility.ForEachPair (fel.bh.pv, "_index_", "_value_", 
-'
-    if (fel.q_value >= _value_) {
-        fel.bh.count [1 + _index_] = _value_;
+for (_index_,_value_;in;fel.bh.classifier) {
+    if (_value_) {
+        fel.bh.count [1 + _index_] = {
+            0: fel.bh.pv[_index_],
+            1: fel.bh.pv.raw [_index_]
+        };
     }
-    (fel.site_results[0])[0+_index_][fel.overall.index+1] = _value_;
-');
+    (fel.site_results[0])[0+_index_][fel.overall.index+1] = fel.bh.pv[_index_];
+}
+
+
 
 for (fel.k = 0; fel.k < fel.report.test_count; fel.k += 1) {
     io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[fel.k] + "_ " + io.SingularOrPlural (fel.report.counts[fel.k], "site", "sites") + " with different _" + fel.tests.key[fel.k][0] +"_ dN/dS at p <= " + fel.p_value + "**");
@@ -529,27 +535,28 @@ io.ReportProgressMessageMD ("fel", "FDR", "### False discovery rate correction")
 if (utility.Array1D (fel.bh.count)) {
     io.ReportProgressMessageMD ("fel", "FDR", "There are " + utility.Array1D (fel.bh.count) + " sites where the overall p-value passes the False Discovery Rate threshold of " + fel.q_value);
     console.log ("");
-    fel.bh.count.mx = {Abs (fel.bh.count), 2};
+    fel.bh.count.mx = {Abs (fel.bh.count), 3};
     fel.i = 0;
     utility.ForEachPair (fel.bh.count, "_key_", "_value_", "
         fel.bh.count.mx[fel.i][0] = +_key_;
-        fel.bh.count.mx[fel.i][1] = +_value_;
+        fel.bh.count.mx[fel.i][1] = +_value_[0];
+        fel.bh.count.mx[fel.i][2] = +_value_[1];
         fel.i += 1;
 
     ");
 
     fel.bh.count.mx =  (fel.bh.count.mx%1);
 
-    fel.table_screen_output.qv  = {{"Codon", "q-value"}};
+    fel.table_screen_output.qv  = {{"Codon", "q-value", "Raw p-value"}};
     fel.table_output_options.qv = {terms.table_options.header : TRUE, terms.table_options.align : "center",
-                                terms.table_options.column_widths : { "0" : 15, "1" : 22}};
+                                terms.table_options.column_widths : { "0" : 15, "1" : 22, "2" : 22}};
 
     fprintf (stdout, io.FormatTableRow (fel.table_screen_output.qv,fel.table_output_options.qv));
     fel.table_output_options.qv[terms.table_options.header] = FALSE;
 
     for (fel.i = 0; fel.i < Rows (fel.bh.count.mx ); fel.i += 1) {
         fprintf (stdout, io.FormatTableRow (
-                {{Format (fel.bh.count.mx[fel.i][0],6,0), Format (fel.bh.count.mx[fel.i][1],16,10)}}
+                {{Format (fel.bh.count.mx[fel.i][0],6,0), Format (fel.bh.count.mx[fel.i][1],16,10),Format (fel.bh.count.mx[fel.i][2],16,10)}}
                 ,fel.table_output_options.qv));
     }
 
