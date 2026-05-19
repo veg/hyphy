@@ -683,7 +683,7 @@ lfunction model.codon.MG_REV_PROPERTIES.prompt_and_define (type, code) {
                 "Random-3" : "Three random properties (for null hypothesis testing)",
                 "Random-4" : "Four random properties (for null hypothesis testing)",
                 "Random-5" : "Five random properties (for null hypothesis testing)",
-                "CODON-ANTICODON", "Codon-anticodon energy pairings (codon level)",
+                "CODON-ANTICODON" : "Codon-anticodon energy pairings (codon level)",
                 "Custom":    "Load the set of properties from a file"
             }, 
             "The set of properties to use in the model");

@@ -153,7 +153,7 @@ extern const _String accept_rooted_trees, accept_branch_lengths,
     enforce_constraint_violations, tolerate_numerical_errors,
     tolerate_constraint_violation, number_threads, gzip_compression_level,
     tree_parser_namespace, global_kwargs, strict_alignment_validation_mode,
-    sparse_threshold;
+    sparse_threshold, matrix_exponential_single_precision;
 
 ;
 

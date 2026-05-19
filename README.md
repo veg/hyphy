@@ -65,6 +65,25 @@ Change your directory to the downloaded/cloned directory
 
 `make install`
 
+### Key CMake Configuration Flags
+
+You can customize the HyPhy build by passing flags to `cmake` using the `-D<FLAG>=<VALUE>` syntax.
+
+| Flag | Description | Default |
+| :--- | :--- | :--- |
+| `TARGET_NATIVE` | Optimize for the current host CPU (`-march=native`). | `OFF` |
+| `USE_SLURM_DETECTION` | Automatically detect the "least common denominator" CPU features across all nodes in a SLURM cluster. Highly recommended for cluster builds. | `OFF` |
+| `NOAVX` / `NOAVX2` | Disable AVX or AVX2 instruction sets. | `OFF` |
+| `NOSSE4` | Disable SSE4 instruction set. | `OFF` |
+| `NONEON` | Disable NEON (ARM) instruction set. | `OFF` |
+| `NOBLAS` | Disable BLAS linear algebra library support. | `OFF` |
+| `NOZLIB` | Disable ZLIB compression support. | `OFF` |
+| `INCLUDE_DEBUG_INFO` | Include debug symbols in the build. | `OFF` |
+| `USE_ASAN` | Enable Address Sanitizer for debugging. | `OFF` |
+| `USE_GCC_ANALYZER` | Enable GCC static analyzer. | `OFF` |
+| `RUN_CLANG_TIDY` | Run `clang-tidy` during compilation. | `OFF` |
+| `CODE_COVERAGE` | Enable code coverage instrumentation. | `OFF` |
+
 ## Additional Options for Building from Source
 
 #### Build Systems

@@ -22,6 +22,14 @@ extern "C" void cblas_dgemm(const enum CBLAS_ORDER __Order,
                             const double *__A, const int __lda,
                             const double *__B, const int __ldb,
                             const double __beta, double *__C, const int __ldc);
+
+extern "C" void cblas_sgemm(const enum CBLAS_ORDER __Order,
+                            const enum CBLAS_TRANSPOSE __TransA,
+                            const enum CBLAS_TRANSPOSE __TransB, const int __M,
+                            const int __N, const int __K, const float __alpha,
+                            const float *__A, const int __lda, const float *__B,
+                            const int __ldb, const float __beta, float *__C,
+                            const int __ldc);
 #endif
 
 //-----------------------------------------------------------------------------------------------------------------
@@ -3970,3 +3978,28 @@ void _hy_matrix_transpose_blocked(double *__restrict C, double *__restrict A,
 }
 
 // Matrix-Vector blocked
+
+void _hy_matrix_multiply_NxN_float(float *C, const float *A, const float *B,
+                                   int D, bool add) {
+
+#ifdef _SLKP_USE_APPLE_BLAS_2
+  if (D >= 16) {
+    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, D, D, D, 1.f, A, D,
+                B, D, add ? 1.f : 0.f, C, D);
+    return;
+  }
+#endif
+
+  for (int i = 0; i < D; i++) {
+    for (int k = 0; k < D; k++) {
+      float a_val = A[i * D + k];
+      for (int j = 0; j < D; j++) {
+        if (k == 0 && !add) {
+          C[i * D + j] = a_val * B[k * D + j];
+        } else {
+          C[i * D + j] += a_val * B[k * D + j];
+        }
+      }
+    }
+  }
+}

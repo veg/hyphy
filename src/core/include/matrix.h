@@ -359,8 +359,11 @@ public:
 
   _Matrix *Exponentiate(hyFloat scale_to = 0.5, bool check_transition = false,
                         _Matrix *write_here = nil); // exponent of a matrix
-  void Transpose(void);                             // transpose a matrix
-  _Matrix Gauss(void); // Gaussian Triangularization process
+  _Matrix *ExponentiateSingle(
+      hyFloat scale_to = 0.5, bool check_transition = false,
+      _Matrix *write_here = nil); // exponent of a matrix in single precision
+  void Transpose(void);           // transpose a matrix
+  _Matrix Gauss(void);            // Gaussian Triangularization process
   HBLObjectRef LUDecompose(void) const;
   HBLObjectRef CholeskyDecompose(void) const;
   // added by afyp July 6, 2009
@@ -764,6 +767,8 @@ void _hy_matrix_multiply_4x4(double *C, double *A, double *B, int stride,
  * @param D The dimension of the matrices
  */
 void _hy_matrix_multiply_NxN_blocked4(double *C, double *A, double *B, int D);
+void _hy_matrix_multiply_NxN_float(float *C, const float *A, const float *B,
+                                   int D, bool add);
 /**
  * @brief Transpose a matrix using a blocked algorithm
  *

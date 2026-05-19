@@ -3139,17 +3139,15 @@ END TREES;
 BEGIN HYPHY;
 
 	_testDescription 		= " fit the REV model to an HIV RT alignment with 3112 sequences and 873 nucleotides";
-	_expectedLL 			= -238637.9062651585;
+	_expectedLL 			= -238640.66;
 	ExecuteAFile 			("../Shared/TestInstrumentation.bf");
 	startTestTimer 			(_testDescription);
 
-global GT=0.1291683629933827;
-global CT=1.179909131778954;
-global CG=0.1277238529399713;
-global AT=0.0993031815400819;
-global AC=0.2150747397107211;
-
-PARAMETER_GROUPING = {"0" : {{"GT","AC","AT","CT","CG"}}};
+global GT=0.2;
+global CT=1;
+global CG=0.2;
+global AT=0.2;
+global AC=0.2;
 
 
 NucleotideMatrix={4,4};
@@ -9404,7 +9402,6 @@ DataSetFilter nucData = CreateFilter(ds,1,"0-872","5,741,2700,257,260,3027,3067,
 
 PARAMETER_GROUPING = {"0" : {{"CG","AC","AT","CT","GT"}}};
 
-VERBOSITY_LEVEL 			  		= 	1;
 OPTIMIZATION_METHOD					=   4;
 OPTIMIZATION_PROGRESS_QUANTUM 		= 	0.5;
 OPTIMIZATION_PROGRESS_STATUS  		= 	"OPTIMIZING THE LIKELIHOOD FUNCTION";
@@ -9412,7 +9409,8 @@ OPTIMIZATION_PROGRESS_TEMPLATE 		= 	"$1 $2 $3% $4 $5 $6";
 
 LikelihoodFunction nucLF = (nucData,givenTree);
 VERBOSITY_LEVEL = 1;
-//USE_LAST_RESULTS = 1;
+USE_LAST_RESULTS = 0;
+
 Optimize (res, nucLF);
 fprintf (stdout, nucLF);
 /* test epilogue */
