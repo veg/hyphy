@@ -15,28 +15,26 @@ def get_node_flags(nodes):
     if not nodes:
         return None
 
-    # Run grep on all nodes simultaneously to find CPU flags
-    # We use -w to specify nodes, and --ntasks-per-node=1 to ensure one task per node
-    # We join nodes with commas for -w
-    nodes_str = ",".join(nodes)
+    # Bypassing srun as requested. We assume cluster homogeneity and 
+    # use the local node's CPU flags as a proxy for the entire cluster.
     try:
-        # Use a small timeout to avoid hanging
-        cmd = ["srun", "-w", nodes_str, "--ntasks-per-node=1", "grep", "-m", "1", "flags", "/proc/cpuinfo"]
-        output = subprocess.check_output(cmd, text=True, stderr=subprocess.STDOUT)
+        flags = set()
+        with open("/proc/cpuinfo", "r") as f:
+            for line in f:
+                if line.startswith("flags") or line.startswith("Features"):
+                    parts = line.split(":", 1)
+                    if len(parts) >= 2:
+                        flags = set(parts[1].strip().split())
+                        break
         
-        node_flags = {}
-        for line in output.splitlines():
-            # Expected output format from srun: "node_name: flags : ..."
-            if ":" in line:
-                parts = line.split(":", 2)
-                if len(parts) >= 3:
-                    node_name = parts[0].strip()
-                    flags = set(parts[2].strip().split())
-                    node_flags[node_name] = flags
-        return node_flags
-    except subprocess.CalledProcessError as e:
-        print(f"Error running srun: {e.output}", file=sys.stderr)
-        return None
+        if flags:
+            # Return the same flags for all nodes
+            return {node: flags for node in nodes}
+            
+    except Exception as e:
+        print(f"Error reading local CPU flags: {e}", file=sys.stderr)
+    
+    return None
 
 def find_common_flags(node_flags):
     if not node_flags:
