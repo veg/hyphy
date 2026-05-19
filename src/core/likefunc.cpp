@@ -5439,6 +5439,9 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           break;
         }
 
+        bool trigger_cg = false;
+        _SimpleList *cg_list = nil;
+
         if (convergenceMode > 2) { // see if we need to do a gradient search
           if (hardLimitOnOptimizationValue < INFINITY &&
               timer.TimeSinceStart() > hardLimitOnOptimizationValue) {
@@ -5451,69 +5454,84 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                (loopCounter - last_gradient_search > 1 &&
                 lastConvergenceMode > 2)*/) &&
               (inCount < termFactor - 2) && !do_large_change_only) {
+            trigger_cg = true;
+          }
+        }
 
-            _Matrix bestMSoFar;
-            GetAllIndependent(bestMSoFar);
-            hyFloat prec = Minimum(diffs[0], diffs[1]),
-                    grad_precision = Maximum(
-                        precision, get_parameter_step(logLDeltaHistory, 5));
+        if (!trigger_cg && do_large_change_only &&
+            last_large_change.lLength >= 2 && last_large_change.lLength <= 16 &&
+            (loopCounter - last_gradient_search >= 3L)) {
+          trigger_cg = true;
+          cg_list = &last_large_change;
+        }
 
-            prec = Minimum(Maximum(prec, precision), 1.);
+        if (trigger_cg) {
+          _Matrix bestMSoFar;
+          GetAllIndependent(bestMSoFar);
+          hyFloat prec = Minimum(diffs[0], diffs[1]),
+                  grad_precision = Maximum(
+                      precision, get_parameter_step(logLDeltaHistory, 5));
 
-            if (gradientBlocks.nonempty()) {
-              for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
-                _SimpleList *this_block = (_SimpleList *)(gradientBlocks(b));
-                if (this_block->countitems() <= maxGradientBlockDimension) {
-                  maxSoFar = ConjugateGradientDescent(
-                      prec * pow(this_block->countitems(), -.25), bestMSoFar,
-                      true, kMaxGradientStepCount, this_block, maxSoFar,
-                      grad_precision);
-                }
-                // maxSoFar = ConjugateGradientDescent (prec,
-                // bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
+          prec = Minimum(Maximum(prec, precision), 1.);
 
-                //_variables_that_dont_change.Populate (indexInd.lLength, 0, 0);
-              }
-            } else {
-              if (indexInd.countitems() <= maxGradientBlockDimension) {
+          if (!cg_list && gradientBlocks.nonempty()) {
+            for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
+              _SimpleList *this_block = (_SimpleList *)(gradientBlocks(b));
+              if (this_block->countitems() <= maxGradientBlockDimension) {
                 maxSoFar = ConjugateGradientDescent(
-                    prec * pow(indexInd.lLength, -.25), bestMSoFar, true,
-                    kMaxGradientStepCount, nil, maxSoFar, grad_precision);
+                    prec * pow(this_block->countitems(), -.25), bestMSoFar,
+                    true, kMaxGradientStepCount, this_block, maxSoFar,
+                    grad_precision);
               }
+              // maxSoFar = ConjugateGradientDescent (prec,
+              // bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
+
               //_variables_that_dont_change.Populate (indexInd.lLength, 0, 0);
             }
+          } else {
+            if (cg_list || indexInd.countitems() <= maxGradientBlockDimension) {
+              maxSoFar = ConjugateGradientDescent(
+                  prec *
+                      pow(cg_list ? cg_list->lLength : indexInd.lLength, -.25),
+                  bestMSoFar, true, kMaxGradientStepCount, cg_list, maxSoFar,
+                  grad_precision);
+            }
+            //_variables_that_dont_change.Populate (indexInd.lLength, 0, 0);
+          }
 
+          if (!cg_list) {
             large_change.Clear();
             do_large_change_only = false;
-            for (unsigned long i = 0; i < indexInd.lLength; i++) {
-              hyFloat cv = GetIthIndependent(i);
-              if (!CheckEqual(bestMSoFar.get(i, 0), cv)) {
-                _variables_that_dont_change[i] = 0;
-              }
-              if (!CheckEqual(cv, GetIthIndependentBound(i, true)) &&
-                  !CheckEqual(cv, GetIthIndependentBound(i, false))) {
-                _variables_at_boundary[i] = 0;
-              }
-            }
-
-            //_variables_that_dont_change.Populate(indexInd.lLength, 0, 0);
-            //_variables_at_boundary.Populate(indexInd.lLength, 0, 0);
-            GetAllIndependent(bestMSoFar);
-            for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
-              ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
-            }
-
-            logLHistory.Store(maxSoFar);
-            if (logLHistory.get_used() > 1) {
-              logLDeltaHistory.Store(
-                  maxSoFar - logLHistory.theData[logLHistory.get_used() - 2]);
-            } else {
-              logLDeltaHistory.Store(0);
-            }
-
-            last_gradient_search = loopCounter;
-            convergenceMode = 0;
           }
+
+          for (unsigned long i = 0; i < indexInd.lLength; i++) {
+            hyFloat cv = GetIthIndependent(i);
+            if (!CheckEqual(bestMSoFar.get(i, 0), cv)) {
+              _variables_that_dont_change[i] = 0;
+            }
+            if (!CheckEqual(cv, GetIthIndependentBound(i, true)) &&
+                !CheckEqual(cv, GetIthIndependentBound(i, false))) {
+              _variables_at_boundary[i] = 0;
+            }
+          }
+
+          //_variables_that_dont_change.Populate(indexInd.lLength, 0, 0);
+          //_variables_at_boundary.Populate(indexInd.lLength, 0, 0);
+          GetAllIndependent(bestMSoFar);
+          for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
+            ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
+          }
+
+          logLHistory.Store(maxSoFar);
+          if (logLHistory.get_used() > 1) {
+            logLDeltaHistory.Store(
+                maxSoFar - logLHistory.theData[logLHistory.get_used() - 2]);
+          } else {
+            logLDeltaHistory.Store(0);
+          }
+
+          last_gradient_search = loopCounter;
+          convergenceMode = 0;
         }
       }
 
@@ -5703,7 +5721,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
             brackStep = 0.;
 
-            long start_at = stepsSoFar > 7 ? stepsSoFar - 7 : 0;
+            long start_at = stepsSoFar > 11 ? stepsSoFar - 11 : 0;
             for (long k = start_at; k < stepsSoFar - 1; k++) {
               previousParameterValue = vH->theData[k];
               lastParameterValue = vH->theData[k + 1];
@@ -5713,15 +5731,17 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
             brackStep = 2. * brackStep / (stepsSoFar - 1 - start_at);
 
-            /*if (stepsSoFar >= 3) {
-                hyFloat d1 = vH->theData[stepsSoFar - 1] -
-            vH->theData[stepsSoFar - 2]; hyFloat d2 = vH->theData[stepsSoFar -
-            2] - vH->theData[stepsSoFar - 3]; if (d1 * d2 > 0) { // momentum
-                    brackStep *= GOLDEN_RATIO;
-                } else if (d1 * d2 < 0) { // oscillation
-                    brackStep *= GOLDEN_RATIO_R;
-                }
-            }*/
+            if (stepsSoFar >= 3) {
+              hyFloat d1 =
+                  vH->theData[stepsSoFar - 1] - vH->theData[stepsSoFar - 2];
+              hyFloat d2 =
+                  vH->theData[stepsSoFar - 2] - vH->theData[stepsSoFar - 3];
+              if (d1 * d2 > 0) { // momentum
+                brackStep *= GOLDEN_RATIO;
+              } else if (d1 * d2 < 0) { // oscillation
+                brackStep *= GOLDEN_RATIO_R;
+              }
+            }
 
             if (CheckEqual(brackStep, 0.0)) {
               brackStep = MIN(0.001, precision * 0.001);
@@ -5789,10 +5809,10 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
           switch (convergenceMode) {
           case 2:
-            brentP = brentP * 0.5;
+            brentP = brentP * 0.25;
             break;
           case 3:
-            brentP = brentP * 0.125;
+            brentP = brentP * 0.1;
             break;
           }
 
