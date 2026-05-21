@@ -41,7 +41,6 @@ BEGIN HYPHY;
 /* end test preamble */
 
 OPTIMIZATION_PRECISION = 0.001;
-VERBOSITY_LEVEL        = -1;
 
 //LF_SMOOTHING_SCALER = 0.001;
 
@@ -661,7 +660,7 @@ DataSetFilter filteredData = CreateFilter(ds,3,"0-1319","4,5,7,6,1,0,2,3","TAA,T
 PARAMETER_GROUPING = {"0" : {{"R","AC","AT","CT"}}};
 LikelihoodFunction lf = (filteredData,givenTree);
 OPTIMIZATION_PRECISION     = 0.001;
-VERBOSITY_LEVEL	           = 0;
+//VERBOSITY_LEVEL	           = 0;
 OPTIMIZATION_METHOD		   = 4;
 USE_ADAPTIVE_VARIABLE_STEP = 1;
 

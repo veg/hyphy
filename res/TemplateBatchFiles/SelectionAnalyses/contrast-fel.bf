@@ -772,7 +772,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     
     Optimize (results, ^lf, {
                 "OPTIMIZATION_METHOD" : "nedler-mead", 
-                "OPTIMIZATION_PRECISION" : 1e-4,
+                "OPTIMIZATION_PRECISION" : 1e-3,
                 "OPTIMIZATION_START_GRID" : start.grid    
             }
            );
@@ -847,7 +847,10 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         }
     }
 
-    Optimize (results, ^lf, {"OPTIMIZATION_METHOD" : "coordinate-wise"});
+    Optimize (results, ^lf,  {
+                "OPTIMIZATION_METHOD" : "nedler-mead", 
+                "OPTIMIZATION_PRECISION" : 1e-3
+            });
     Null = estimators.ExtractMLEs (lf, model_mapping);
     Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
@@ -865,7 +868,10 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
                     (pairwise[v1n + "|" + v2n]) = alternative;
                 } else {                
                     parameters.SetConstraint ((^"fel.scaler_parameter_names")[v1n],(^"fel.scaler_parameter_names")[v2n], "");
-                    Optimize (results, ^lf, {"OPTIMIZATION_METHOD" : "coordinate-wise"});
+                    Optimize (results, ^lf, {
+                "OPTIMIZATION_METHOD" : "nedler-mead", 
+                "OPTIMIZATION_PRECISION" : 1e-3
+            });
                     pairwise[v1n + "|" + v2n] = estimators.ExtractMLEs (lf, model_mapping);
                     (pairwise[v1n + "|" + v2n])[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
                 }

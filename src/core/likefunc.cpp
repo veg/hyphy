@@ -5177,8 +5177,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       }
     }
 
-    long last_gradient_search = 0, last_relaxation_pass = -5;
-    hyFloat last_relaxation_yield = 0.0;
+    long last_gradient_search = 0;
+    bool last_dynamic_cg_productive = false;
 
     _Matrix variableImpact(
         _SimpleList(indexInd.lLength, (long)indexInd.lLength, -1), 1);
@@ -5455,7 +5455,17 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                (loopCounter - last_gradient_search > 1 &&
                 lastConvergenceMode > 2)*/) &&
               (inCount < termFactor - 2) && !do_large_change_only) {
-            trigger_cg = true;
+            if (gradientBlocks.nonempty()) {
+              for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
+                if (((_SimpleList *)gradientBlocks(b))->countitems() <=
+                    maxGradientBlockDimension) {
+                  trigger_cg = true;
+                  break;
+                }
+              }
+            } else if (indexInd.countitems() <= maxGradientBlockDimension) {
+              trigger_cg = true;
+            }
           }
         }
 
@@ -5534,6 +5544,151 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           last_gradient_search = loopCounter;
           convergenceMode = 0;
         }
+
+        // Dynamic CG block check
+        bool bypass_cooldown = last_dynamic_cg_productive;
+        if (inCount < 2 && convergenceMode > 1 &&
+            (bypass_cooldown || (loopCounter - last_gradient_search >= 4L)) &&
+            changes_history.lLength >= 8) {
+          unsigned long window = 8;
+          _SimpleList active_vars;
+          _List window_updates;
+          for (unsigned long k = 0; k < window; k++) {
+            window_updates << changes_history.GetItem(changes_history.lLength -
+                                                      1 - k);
+          }
+
+          hyFloat active_var_threshold = 1e-12;
+          for (unsigned long i = 0; i < indexInd.lLength; i++) {
+            hyFloat sum_sq = 0;
+            for (unsigned long k = 0; k < window; k++) {
+              hyFloat d = ((_Vector *)window_updates.GetItem(k))->theData[i];
+              sum_sq += d * d;
+            }
+            if (sum_sq > active_var_threshold) {
+              active_vars << i;
+            }
+          }
+
+          if (active_vars.lLength >= 2) {
+            _SimpleList components(active_vars.lLength, 0, 0);
+            for (unsigned long i = 0; i < active_vars.lLength; i++)
+              components[i] = i;
+
+            auto find = [&](unsigned long i,
+                            _SimpleList &comps) -> unsigned long {
+              while ((unsigned long)comps[i] != i) {
+                comps[i] = comps[comps[i]];
+                i = comps[i];
+              }
+              return i;
+            };
+
+            auto unite = [&](unsigned long i, unsigned long j,
+                             _SimpleList &comps) {
+              unsigned long root_i = find(i, comps);
+              unsigned long root_j = find(j, comps);
+              if (root_i != root_j)
+                comps[root_i] = root_j;
+            };
+
+            for (unsigned long i = 0; i < active_vars.lLength; i++) {
+              for (unsigned long j = i + 1; j < active_vars.lLength; j++) {
+                hyFloat dot = 0, n1 = 0, n2 = 0;
+                unsigned long idx_i = active_vars.list_data[i];
+                unsigned long idx_j = active_vars.list_data[j];
+
+                for (unsigned long k = 0; k < window; k++) {
+                  hyFloat d1 =
+                      ((_Vector *)window_updates.GetItem(k))->theData[idx_i];
+                  hyFloat d2 =
+                      ((_Vector *)window_updates.GetItem(k))->theData[idx_j];
+                  dot += d1 * d2;
+                  n1 += d1 * d1;
+                  n2 += d2 * d2;
+                }
+                if (n1 > 1e-20 && n2 > 1e-20) {
+                  hyFloat corr = dot / sqrt(n1 * n2);
+                  if (fabs(corr) > 0.85) {
+                    unite(i, j, components);
+                  }
+                }
+              }
+            }
+
+            bool made_progress = false;
+            last_dynamic_cg_productive =
+                false; // Reset to false by default before checking
+            for (unsigned long i = 0; i < active_vars.lLength; i++) {
+              if ((unsigned long)components[i] == i) { // Root of a component
+                _SimpleList group_list;
+                for (unsigned long j = 0; j < active_vars.lLength; j++) {
+                  if (find(j, components) == i) {
+                    group_list << active_vars.list_data[j];
+                  }
+                }
+
+                if (group_list.lLength >= 2 &&
+                    group_list.lLength <=
+                        (indexInd.lLength <= 100 ? 32L : 4L) &&
+                    group_list.lLength <= indexInd.lLength - 3L) {
+                  if (verbosity_level > 1) {
+                    snprintf(buffer, sizeof(buffer),
+                             "\n[DYNAMIC BLOCK] Triggering CG on group of %ld "
+                             "vars\n",
+                             group_list.lLength);
+                    BufferToConsole(buffer);
+                  }
+                  _Matrix bestMSoFar;
+                  GetAllIndependent(bestMSoFar);
+                  hyFloat old_max = maxSoFar;
+                  maxSoFar = ConjugateGradientDescent(
+                      precision, bestMSoFar, true, kMaxGradientStepCount,
+                      &group_list, maxSoFar, MAX(precision, diffs[0] * 0.1));
+                  last_gradient_search = loopCounter;
+                  if (maxSoFar - old_max > precision / termFactor) {
+                    made_progress = true;
+                    if (maxSoFar - old_max > precision * 5.0) {
+                      last_dynamic_cg_productive = true;
+                    }
+                    logLHistory.Store(maxSoFar);
+                    logLDeltaHistory.Store(maxSoFar - old_max);
+
+                    // Reset variables that dont change
+                    for (unsigned long var_idx = 0; var_idx < indexInd.lLength;
+                         var_idx++) {
+                      hyFloat cv = GetIthIndependent(var_idx);
+                      if (!CheckEqual(bestMSoFar.get(var_idx, 0), cv)) {
+                        _variables_that_dont_change[var_idx] = 0;
+                      }
+                      if (!CheckEqual(cv,
+                                      GetIthIndependentBound(var_idx, true)) &&
+                          !CheckEqual(cv,
+                                      GetIthIndependentBound(var_idx, false))) {
+                        _variables_at_boundary[var_idx] = 0;
+                      }
+                    }
+
+                    // Update step history
+                    GetAllIndependent(bestMSoFar);
+                    for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
+                      ((_Vector *)(*stepHistory)(k))
+                          ->Store(bestMSoFar.theData[k]);
+                    }
+                  }
+                  break;
+                }
+              }
+            }
+
+            if (made_progress) {
+              inCount = 0;
+              convergenceMode = 0;
+              large_change.Clear();
+              do_large_change_only = false;
+            }
+          }
+        }
       }
 
       // BufferToConsole ("\n####VI:\n");
@@ -5611,6 +5766,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       //**
 
       large_change.Clear();
+      variableImpact.PopulateConstantMatrix(0.0);
 
       // ObjectToConsole (&_variables_that_dont_change);
       // NLToConsole();
@@ -5664,20 +5820,19 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             continue;
           }
         }
-
         if (_variables_that_dont_change.get(current_index) > 1) {
-          if (convergenceMode <= 2 && inCount < termFactor - 1 /*&& _variables_that_dont_change.get(current_index) <= termFactor - 1*/) {
+          if (convergenceMode <= 2 && inCount < termFactor - 1 &&
+              !do_large_change_only) {
             averageChange2 += bestVal;
             if (is_global)
               _variables_that_dont_change[current_index] = 1;
             else
               _variables_that_dont_change[current_index]++;
-            /*printf ("\n[loop %ld] Skipping %s (%ld, %ld, %ld)\n",loopCounter,
-             GetIthIndependentVar(current_index)->GetName()->get_str(),
-             _variables_that_dont_change[current_index], inCount, termFactor
-             );*/
             continue;
           }
+        }
+
+        if (_variables_that_dont_change.get(current_index) > 1) {
           if (_variables_at_boundary.get(current_index) > 1) {
             if (inCount <= termFactor - 1) {
               _variables_that_dont_change[current_index]++;
@@ -5722,28 +5877,14 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
             brackStep = 0.;
 
-            long start_at = stepsSoFar > 11 ? stepsSoFar - 11 : 0;
-            for (long k = start_at; k < stepsSoFar - 1; k++) {
+            for (long k = 0L; k < stepsSoFar - 1; k++) {
               previousParameterValue = vH->theData[k];
               lastParameterValue = vH->theData[k + 1];
               StoreIfGreater(brackStep,
                              fabs(lastParameterValue - previousParameterValue));
             }
 
-            brackStep = 2. * brackStep / (stepsSoFar - 1 - start_at);
-
-            if (stepsSoFar >= 3) {
-              hyFloat d1 =
-                  vH->theData[stepsSoFar - 1] - vH->theData[stepsSoFar - 2];
-              hyFloat d2 =
-                  vH->theData[stepsSoFar - 2] - vH->theData[stepsSoFar - 3];
-              if (d1 * d2 > 0) { // momentum
-                brackStep *= GOLDEN_RATIO;
-              } else if (d1 * d2 < 0) { // oscillation
-                brackStep *= GOLDEN_RATIO_R;
-              }
-            }
-
+            brackStep = 2. * brackStep / (stepsSoFar - 1);
             if (CheckEqual(brackStep, 0.0)) {
               brackStep = MIN(0.001, precision * 0.001);
             }
@@ -5810,10 +5951,10 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
           switch (convergenceMode) {
           case 2:
-            brentP = brentP * 0.25;
+            brentP = brentP * 0.5;
             break;
           case 3:
-            brentP = brentP * 0.1;
+            brentP = brentP * 0.125;
             break;
           }
 
@@ -5832,13 +5973,13 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
         // (indexInd.countitems() - _variables_that_dont_change.countitems() +
         // 1);
 
+        variableImpact.theData[current_index] = ll_delta;
+
         // if (ll_delta > MAX (precision, ll_last)) {
         if (ll_delta > precision) {
           large_change << current_index;
           large_change_all_time[current_index]++;
         }
-
-        variableImpact.theData[current_index] = ll_delta;
 
         if ((maxSoFar - lastLogL) / lastLogL > kNonDecreaseBound) {
           _TerminateAndDump(
@@ -6009,152 +6150,6 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
         currentPrecision = 1e-6;
       } else if (currentPrecision > averageChange2) {
         currentPrecision = averageChange2;
-      }
-
-      if (iter_changes->AbsValue() > 0.5 * averageChange &&
-          (loopCounter - last_relaxation_pass >
-           (last_relaxation_yield > precision ? 1 : 3))) {
-        _Matrix current_values;
-        GetAllIndependent(current_values);
-        hyFloat old_maxSoFar = maxSoFar;
-
-        _Matrix targeted_changes(*iter_changes);
-        _SimpleList changed_indices;
-        for (unsigned long i = 0; i < indexInd.lLength; i++) {
-          if (fabs(iter_changes->theData[i]) > 1e-4) {
-            changed_indices << i;
-          } else {
-            targeted_changes.theData[i] = 0.0;
-          }
-        }
-
-        if (changed_indices.lLength >= 2 &&
-            (changed_indices.countitems() <= indexInd.countitems() / 8L ||
-             changed_indices.countitems() <= 32)) {
-          GradientLocateTheBump(currentPrecision, maxSoFar, current_values,
-                                targeted_changes);
-          if (maxSoFar > old_maxSoFar) {
-            last_relaxation_yield = maxSoFar - old_maxSoFar;
-            last_relaxation_pass = loopCounter;
-            if (verbosity_level > 1) {
-              snprintf(buffer, sizeof(buffer),
-                       "\n[RELAXATION STEP (%ld vars)] logL improvement: %g\n",
-                       changed_indices.lLength, last_relaxation_yield);
-              BufferToConsole(buffer);
-            }
-          } else {
-            last_relaxation_yield = 0.0;
-            maxSoFar = old_maxSoFar;
-          }
-        }
-      }
-
-      if (inCount < 2 && convergenceMode > 1 &&
-          (loopCounter - last_gradient_search >= 4L) &&
-          changes_history.lLength >= 8) {
-        unsigned long window = 8;
-        _SimpleList active_vars;
-        _List window_updates;
-        for (unsigned long k = 0; k < window; k++) {
-          window_updates << changes_history.GetItem(changes_history.lLength -
-                                                    1 - k);
-        }
-
-        for (unsigned long i = 0; i < indexInd.lLength; i++) {
-          hyFloat sum_sq = 0;
-          for (unsigned long k = 0; k < window; k++) {
-            hyFloat d = ((_Vector *)window_updates.GetItem(k))->theData[i];
-            sum_sq += d * d;
-          }
-          if (sum_sq > 1e-15) {
-            active_vars << i;
-          }
-        }
-
-        if (active_vars.lLength >= 2 && active_vars.lLength <= 32) {
-          _SimpleList components(active_vars.lLength, 0, 0);
-          for (unsigned long i = 0; i < active_vars.lLength; i++)
-            components[i] = i;
-
-          auto find = [&](unsigned long i,
-                          _SimpleList &comps) -> unsigned long {
-            while ((unsigned long)comps[i] != i) {
-              comps[i] = comps[comps[i]];
-              i = comps[i];
-            }
-            return i;
-          };
-
-          auto unite = [&](unsigned long i, unsigned long j,
-                           _SimpleList &comps) {
-            unsigned long root_i = find(i, comps);
-            unsigned long root_j = find(j, comps);
-            if (root_i != root_j)
-              comps[root_i] = root_j;
-          };
-
-          for (unsigned long i = 0; i < active_vars.lLength; i++) {
-            for (unsigned long j = i + 1; j < active_vars.lLength; j++) {
-              hyFloat dot = 0, n1 = 0, n2 = 0;
-              unsigned long idx_i = active_vars.list_data[i];
-              unsigned long idx_j = active_vars.list_data[j];
-
-              for (unsigned long k = 0; k < window; k++) {
-                hyFloat d1 =
-                    ((_Vector *)window_updates.GetItem(k))->theData[idx_i];
-                hyFloat d2 =
-                    ((_Vector *)window_updates.GetItem(k))->theData[idx_j];
-                dot += d1 * d2;
-                n1 += d1 * d1;
-                n2 += d2 * d2;
-              }
-              if (n1 > 1e-20 && n2 > 1e-20) {
-                hyFloat corr = dot / sqrt(n1 * n2);
-                if (fabs(corr) > 0.9) {
-                  unite(i, j, components);
-                }
-              }
-            }
-          }
-
-          bool made_progress = false;
-          for (unsigned long i = 0; i < active_vars.lLength; i++) {
-            if ((unsigned long)components[i] == i) { // Root of a component
-              _SimpleList group_list;
-              for (unsigned long j = 0; j < active_vars.lLength; j++) {
-                if (find(j, components) == i) {
-                  group_list << active_vars.list_data[j];
-                }
-              }
-
-              if (group_list.lLength >= 2) {
-                if (verbosity_level > 1) {
-                  snprintf(
-                      buffer, sizeof(buffer),
-                      "\n[DYNAMIC BLOCK] Triggering CG on group of %ld vars\n",
-                      group_list.lLength);
-                  BufferToConsole(buffer);
-                }
-                _Matrix bestMSoFar;
-                GetAllIndependent(bestMSoFar);
-                hyFloat old_max = maxSoFar;
-                maxSoFar = ConjugateGradientDescent(
-                    precision, bestMSoFar, true, kMaxGradientStepCount,
-                    &group_list, maxSoFar, MAX(precision, diffs[0] * 0.1));
-                if (maxSoFar - old_max > precision / termFactor) {
-                  made_progress = true;
-                  logLHistory.Store(maxSoFar);
-                  logLDeltaHistory.Store(maxSoFar - old_max);
-                }
-              }
-            }
-          }
-
-          if (made_progress) {
-            inCount = 0;
-            last_gradient_search = loopCounter;
-          }
-        }
       }
 
       if (custom_convergence_callback >= 0) {
@@ -8122,8 +8117,8 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
     if (outcome == (long)indexInd.countitems()) {
       reset = true;
     } else {
-      hyFloat U, V, W, X = middle, E = 0., FX, FW, FV, XM, R, Q, P, ETEMP,
-                       D = 0., FU;
+      hyFloat U, V, W, X = middle, E = 0., FX = -middleValue, FW, FV, XM, R, Q,
+                       P, ETEMP, D = 0., FU;
       // ObjectToConsole(&prior_parameter_values);
       //_Matrix current_best_vector (prior_parameter_values);
       // current_best_vector.AplusBx(gradient, middle);
@@ -8133,11 +8128,27 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
         maxSoFar = middleValue;
         bestVal = current_best_vector;
       }
-      W = .0;
-      V = .0;
-      FX = -middleValue;
-      FV = FX;
-      FW = FX;
+      if (!isnan(leftValue) && !isnan(rightValue) && !isinf(leftValue) &&
+          !isinf(rightValue)) {
+        hyFloat FL = -leftValue;
+        hyFloat FR = -rightValue;
+        if (FL < FR) {
+          W = left;
+          FW = FL;
+          V = right;
+          FV = FR;
+        } else {
+          W = right;
+          FW = FR;
+          V = left;
+          FV = FL;
+        }
+      } else {
+        W = .0;
+        V = .0;
+        FV = FX;
+        FW = FX;
+      }
       outcome = 0;
       while (outcome < 20) {
         // brentHistory.Store (-FX - initialValue);
@@ -8389,13 +8400,29 @@ void _LikelihoodFunction::LocateTheBump(long index, hyFloat gPrecision,
         // printf ("\nResetting brentPrec to %g\n", brentPrec, "\n");
       }
 
-      hyFloat U, V, W, X = middle, E = 0., FX, FW, FV, XM, R, Q, P, ETEMP,
-                       D = 0., FU;
-      W = middle;
-      V = middle;
-      FX = -middleValue;
-      FV = FX;
-      FW = FX;
+      hyFloat U, V, W, X = middle, E = 0., FX = -middleValue, FW, FV, XM, R, Q,
+                       P, ETEMP, D = 0., FU;
+      if (!isnan(leftValue) && !isnan(rightValue) && !isinf(leftValue) &&
+          !isinf(rightValue)) {
+        hyFloat FL = -leftValue;
+        hyFloat FR = -rightValue;
+        if (FL < FR) {
+          W = left;
+          FW = FL;
+          V = right;
+          FV = FR;
+        } else {
+          W = right;
+          FW = FR;
+          V = left;
+          FV = FL;
+        }
+      } else {
+        W = middle;
+        V = middle;
+        FV = FX;
+        FW = FX;
+      }
       outcome = 0;
 
       while (outcome < 20) {
