@@ -851,7 +851,8 @@ protected:
   //                                       hyFloat&, hyFloat&, hyFloat&, bool
   //                                       retry = false);
   void LocateTheBump(long, hyFloat, hyFloat &, hyFloat &, bool, hyFloat = -1.);
-  hyFloat GradientLocateTheBump(hyFloat, hyFloat &, _Matrix &, _Matrix &);
+  hyFloat GradientLocateTheBump(hyFloat, hyFloat &, _Matrix &, _Matrix &,
+                                hyFloat = 0.0);
   void GradientDescent(hyFloat &, _Matrix &);
   hyFloat ConjugateGradientDescent(hyFloat, _Matrix &, bool localOnly = false,
                                    unsigned long = 0x7fffffff,

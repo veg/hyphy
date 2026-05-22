@@ -42,6 +42,7 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#include <vector>
 
 #include "batchlan.h"
 #include "calcnode.h"
@@ -199,7 +200,6 @@ hyFloat myLog(hyFloat);
 hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
   long alterIndex = 0;
   hyFloat logL = -INFINITY;
-  // printf ("\nBenchmarkThreads %d\n", lf->GetThreadCount());
 
   long nt = (long)hy_env::EnvVariableGetNumber(hy_env::number_threads);
 
@@ -222,26 +222,50 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
   hyFloat cached_value = lf->GetIthIndependent(alterIndex),
           lb = lf->GetIthIndependentBound(alterIndex, true),
           range = (lf->GetIthIndependentBound(alterIndex, false) - lb) * 0.5,
-          nv;
-
-  // printf ("\n\n%g %g %g\n", lb, range, cached_value);
+          nv = 0.0;
 
 #ifdef _OPENMP
   lf->SetThreadCount(1);
 #endif
-  TimeDifference timer;
+
 #ifdef __HYPHYMPI__
   if (hy_mpi_node_rank == 0)
 #endif
   {
     nv = lb + range * genrand_real1();
-    lf->SetIthIndependent(alterIndex, lb + range * genrand_real1());
-    logL = lf->Compute();
   }
 
+  // Warm-up run for 1 thread
+  lf->SetIthIndependent(alterIndex, cached_value);
+  lf->Compute();
+  lf->SetIthIndependent(alterIndex, nv);
+  logL = lf->Compute();
+
+  // Measure 1 thread baseline (minimum of 3 runs to establish clean baseline)
+  double minDiff = INFINITY;
+  for (int run = 0; run < 3; run++) {
+    hyFloat target_value = (run % 2 == 0) ? cached_value : nv;
+    lf->SetIthIndependent(alterIndex, target_value);
+    TimeDifference timer;
+    lf->Compute();
+    double t = timer.TimeSinceStart();
+    if (t < minDiff) {
+      minDiff = t;
+    }
+  }
+
+  // Early exit for extremely fast likelihood evaluations (under 10
+  // microseconds) where multi-threading overhead dominates and benchmarking is
+  // unnecessary.
+  if (minDiff < 0.00001) {
+    lf->SetThreadCount(1);
+    lf->SetIthIndependent(alterIndex, cached_value);
+    return logL;
+  }
+
+  long bestTC = 1;
   bool reflush_conditionals = false;
 
-  hyFloat tdiff = timer.TimeSinceStart();
 #ifdef _OPENMP
 #ifdef __HYPHYMPI__
   if (hy_global::system_CPU_count > 1 && hy_mpi_node_rank == 0) {
@@ -249,45 +273,70 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
   if (hy_global::system_CPU_count > 1) {
 #endif
 
-    hyFloat minDiff = tdiff;
-    long bestTC = 1;
+    // Determine the number of trials based on baseline speed
+    long num_trials = 2;
+    if (minDiff < 0.002) { // < 2ms
+      num_trials = 5;
+    } else if (minDiff < 0.020) { // 2ms - 20ms
+      num_trials = 3;
+    }
 
     ReportWarning(_String("Benchmark for one thread (using ") &
                   lf->GetIthIndependentName(alterIndex)->Enquote() & "): " &
-                  tdiff);
+                  minDiff);
 
     for (long k = 2; k <= hy_global::system_CPU_count; k++) {
       reflush_conditionals = true;
       lf->SetThreadCount(k);
-      TimeDifference calculation_timer;
+
+      // Warm-up run for k threads to spin up OpenMP thread pool
       lf->SetIthIndependent(alterIndex, cached_value);
+      lf->Compute();
       lf->SetIthIndependent(alterIndex, nv);
       lf->Compute();
-      tdiff = calculation_timer.TimeSinceStart();
+
+      // Timed trials (take minimum)
+      double tdiff = INFINITY;
+      for (int run = 0; run < num_trials; run++) {
+        hyFloat target_value = (run % 2 == 0) ? cached_value : nv;
+        lf->SetIthIndependent(alterIndex, target_value);
+        TimeDifference calculation_timer;
+        lf->Compute();
+        double t = calculation_timer.TimeSinceStart();
+        if (t < tdiff) {
+          tdiff = t;
+        }
+      }
+
       ReportWarning(_String("Benchmark for ") & k & " threads: " & tdiff);
-      hyFloat expected_boost = k / (hyFloat)bestTC;
-      // printf("THREADS %d. Time %g. BEST THREADS %d. BEST TIME %g. RATIO "
-      //        "%g,FACTOR %g\n",
-      //        k, tdiff, bestTC, minDiff, minDiff / tdiff,
-      //        (1. + expected_boost) * 0.5);
-      if (tdiff * (1. + (1. - expected_boost) / 3.) < minDiff) {
+
+      // Scaling threshold logic: we require at least 15% improvement per thread
+      // doubling.
+      double threshold = 1.0 - 0.15 * (k - bestTC) / (double)bestTC;
+      if (threshold > 0.98)
+        threshold = 0.98; // Require at least 2% speedup
+      if (threshold < 0.75)
+        threshold = 0.75; // Cap required speedup at 25%
+
+      if (tdiff < minDiff * threshold) {
         minDiff = tdiff;
         bestTC = k;
       } else {
-        if (tdiff > minDiff && k <= hy_global::system_CPU_count / 2) {
+        // Tolerant break condition to avoid premature exit from noise
+        if (tdiff > minDiff * 1.10 && k <= hy_global::system_CPU_count / 2) {
           break;
         }
       }
     }
-    // bestTC = hy_global::system_CPU_count;
-    if (bestTC != lf->GetThreadCount()) {
-      lf->SetThreadCount(bestTC);
-    }
+
     ReportWarning(_String("Auto-benchmarked an optimal number (") & bestTC &
                   ") of threads.");
   }
-
 #endif
+
+  if (bestTC != lf->GetThreadCount()) {
+    lf->SetThreadCount(bestTC);
+  }
 
   lf->SetIthIndependent(alterIndex, cached_value);
   if (reflush_conditionals) {
@@ -295,8 +344,6 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
       lf->SetIthIndependent(i, lf->GetIthIndependent(i));
     }
   }
-
-  // printf ("\n\n%g %g\n", lf->GetIthIndependent(alterIndex), cached_value);
 
   return logL;
 }
@@ -5481,7 +5528,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           GetAllIndependent(bestMSoFar);
           hyFloat prec = Minimum(diffs[0], diffs[1]),
                   grad_precision = Maximum(
-                      precision, get_parameter_step(logLDeltaHistory, 5));
+                      precision, 0.1 * get_parameter_step(logLDeltaHistory, 5));
 
           prec = Minimum(Maximum(prec, precision), 1.);
 
@@ -5628,9 +5675,14 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                   }
                 }
 
+                unsigned long max_block_size = 32UL;
+                if (indexInd.lLength > 100) {
+                  max_block_size = MAX(
+                      8UL, MIN(32UL, 3200UL / (unsigned long)indexInd.lLength));
+                }
+
                 if (group_list.lLength >= 2 &&
-                    group_list.lLength <=
-                        (indexInd.lLength <= 100 ? 32L : 4L) &&
+                    group_list.lLength <= max_block_size &&
                     group_list.lLength <= indexInd.lLength - 3L) {
                   if (verbosity_level > 1) {
                     snprintf(buffer, sizeof(buffer),
@@ -5875,16 +5927,26 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                 }
             }*/
 
+            long history_window = 10L;
+            long start_k = stepsSoFar - 1 > history_window
+                               ? stepsSoFar - 1 - history_window
+                               : 0L;
+            long count = 0L;
             brackStep = 0.;
 
-            for (long k = 0L; k < stepsSoFar - 1; k++) {
+            for (long k = start_k; k < stepsSoFar - 1; k++) {
               previousParameterValue = vH->theData[k];
               lastParameterValue = vH->theData[k + 1];
               StoreIfGreater(brackStep,
                              fabs(lastParameterValue - previousParameterValue));
+              count++;
             }
 
-            brackStep = 2. * brackStep / (stepsSoFar - 1);
+            if (count > 0) {
+              brackStep = 2. * brackStep / count;
+            } else {
+              brackStep = MIN(0.001, precision * 0.001);
+            }
             if (CheckEqual(brackStep, 0.0)) {
               brackStep = MIN(0.001, precision * 0.001);
             }
@@ -5921,6 +5983,11 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           } else {
             brackStep = vH->theData[0];
             precisionStep = MAX(0.001, brackStep * 0.1);
+          }
+
+          if (convergenceMode == 1) {
+            precisionStep *= 1.5;
+            brackStep *= 1.5;
           }
         } else {
           if (is_global)
@@ -5975,8 +6042,12 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
         variableImpact.theData[current_index] = ll_delta;
 
-        // if (ll_delta > MAX (precision, ll_last)) {
-        if (ll_delta > precision) {
+        hyFloat large_change_threshold = precision;
+        if (logLHistory.get_used() > 2) {
+          large_change_threshold = MAX(precision, 0.001 * diffs[0]);
+        }
+
+        if (ll_delta > large_change_threshold) {
           large_change << current_index;
           large_change_all_time[current_index]++;
         }
@@ -7808,7 +7879,7 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
     current_direction = gradient * (1. / gradL);
     gradient = current_direction;
 
-    // current_direction = gradient;
+    hyFloat last_successful_step = 0.0;
 
     for (unsigned long index = 0;
          index < MAX(dim, 10) && index < iterationLimit;
@@ -7821,8 +7892,12 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
 
       hyFloat line_search_precision =
           localOnly ? step_precision : currentPrecision;
-      GradientLocateTheBump(line_search_precision, maxSoFar, bestVal,
-                            current_direction);
+      hyFloat step_taken =
+          GradientLocateTheBump(line_search_precision, maxSoFar, bestVal,
+                                current_direction, last_successful_step);
+      if (step_taken > 0.0) {
+        last_successful_step = step_taken;
+      }
 
       if (verbosity_level > 1) {
         snprintf(buffer, sizeof(buffer),
@@ -8039,16 +8114,21 @@ void _LikelihoodFunction::GradientDescent(hyFloat &gPrecision,
 hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
                                                    hyFloat &maxSoFar,
                                                    _Matrix &bestVal,
-                                                   _Matrix &gradient) {
+                                                   _Matrix &gradient,
+                                                   hyFloat initial_step) {
   DetermineLocalUpdatePolicy();
   hyFloat leftValue = maxSoFar, middleValue = maxSoFar, rightValue = maxSoFar,
           initialValue = maxSoFar, bp = MIN(gradient.AbsValue(), 1e4),
-          left = 0., right = 0., middle = 0.;
+          left = 0., right = 0., middle = 0., step_taken = 0.0;
 
-  if (bp > 10.) {
-    bp = gPrecision / bp;
+  if (initial_step > 0.0) {
+    bp = MAX(initial_step, gPrecision * 0.1);
   } else {
-    bp = gPrecision * 0.1;
+    if (bp > 10.) {
+      bp = gPrecision / bp;
+    } else {
+      bp = gPrecision * 0.1;
+    }
   }
   // ObjectToConsole(&bestVal);
 
@@ -8106,12 +8186,13 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
         maxSoFar = middleValue;
         bestVal = middle_vector;
         SetAllIndependent(&middle_vector);
+        FlushLocalUpdatePolicy();
+        return middle;
       } else {
         SetAllIndependent(&bestVal);
+        FlushLocalUpdatePolicy();
+        return 0.;
       }
-
-      FlushLocalUpdatePolicy();
-      return 0.;
     }
 
     if (outcome == (long)indexInd.countitems()) {
@@ -8127,6 +8208,7 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
       if (maxSoFar < middleValue) {
         maxSoFar = middleValue;
         bestVal = current_best_vector;
+        step_taken = middle;
       }
       if (!isnan(leftValue) && !isnan(rightValue) && !isinf(leftValue) &&
           !isinf(rightValue)) {
@@ -8309,6 +8391,7 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
           BufferToConsole(buf);
         }
         bestVal = current_best_vector;
+        step_taken = X;
       }
 
       if (maxSoFar < initialValue &&
@@ -8337,19 +8420,23 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
     if (verbosity_level > 1) {
       BufferToConsole("Line optimization unsuccessful\n");
     }
+    hyFloat chosen_step = middle;
     if (leftValue > middleValue) {
       middleValue = leftValue;
       middle_vector = left_vector;
+      chosen_step = left;
     }
     if (rightValue > middleValue) {
       middleValue = rightValue;
       middle_vector = right_vector;
+      chosen_step = right;
     }
 
     if (middleValue > maxSoFar) {
       SetAllIndependent(&middle_vector);
       maxSoFar = middleValue;
       reset = false;
+      step_taken = chosen_step;
     }
   }
 
@@ -8357,7 +8444,7 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
     SetAllIndependent(&bestVal);
 
   FlushLocalUpdatePolicy();
-  return 0.;
+  return step_taken;
 }
 
 //_______________________________________________________________________________________
