@@ -8247,7 +8247,7 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
           BufferToConsole(buf);
         }
 
-        hyFloat tol1 = fabs(X) * MIN(gPrecision, 1e-7) + kMachineEpsilon,
+        hyFloat tol1 = fabs(X) * MIN(gPrecision, 1e-4) + kMachineEpsilon,
                 tol2 = 2. * tol1;
 
         if (fabs(X - XM) < gPrecision && outcome > 0) {
@@ -8531,7 +8531,7 @@ void _LikelihoodFunction::LocateTheBump(long index, hyFloat gPrecision,
           break;
         }
 
-        hyFloat tol1 = fabs(X) * Minimum(brentPrec, 1e-7) + kMachineEpsilon,
+        hyFloat tol1 = fabs(X) * Minimum(brentPrec, 1e-4) + kMachineEpsilon,
                 tol2 = 2. * tol1;
 
         if (fabs(E) > tol1) {
