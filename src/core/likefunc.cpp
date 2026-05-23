@@ -78,6 +78,14 @@ extern _GrowingVector *_comparative_lf_debug_matrix;
 
 hyFloat BenchmarkThreads(_LikelihoodFunction *);
 
+namespace {
+struct DynamicBlockTracker {
+  std::vector<long> variables;
+  hyFloat max_logl_at_last_cg;
+  std::vector<hyFloat> values_at_last_cg;
+};
+} // namespace
+
 long siteEvalCount = 0;
 
 #ifdef MDSOCL
@@ -4277,9 +4285,9 @@ void _LikelihoodFunction::LoggerLogL(hyFloat logL) {
 
 //_______________________________________________________________________________________
 
-void _LikelihoodFunction::LoggerAddGradientPhase(hyFloat gradient_precision,
-                                                 hyFloat beta,
-                                                 hyFloat current_gradient) {
+void _LikelihoodFunction::LoggerAddGradientPhase(
+    hyFloat gradient_precision, hyFloat beta, hyFloat current_gradient,
+    long grad_compute_evals, long grad_descent_evals, long active_vars) {
   if (optimizatonHistory) {
     _AssociativeList *new_phase = new _AssociativeList;
     (*new_phase) <
@@ -4288,7 +4296,13 @@ void _LikelihoodFunction::LoggerAddGradientPhase(hyFloat gradient_precision,
                                     new _Constant(gradient_precision)} <
         _associative_list_key_value{"beta", new _Constant(beta)} <
         _associative_list_key_value{"current_gradient",
-                                    new _Constant(current_gradient)};
+                                    new _Constant(current_gradient)} <
+        _associative_list_key_value{"gradient compute evals",
+                                    new _Constant(grad_compute_evals)} <
+        _associative_list_key_value{"gradient descent evals",
+                                    new _Constant(grad_descent_evals)} <
+        _associative_list_key_value{"active variables",
+                                    new _Constant(active_vars)};
 
     *((_AssociativeList *)this->optimizatonHistory->GetByKey("Phases")) <
         _associative_list_key_value{nil, new_phase};
@@ -5047,6 +5061,105 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
   _Matrix variableValues;
   GetAllIndependent(variableValues);
 
+  std::vector<DynamicBlockTracker> dynamic_block_trackers;
+
+  auto should_skip_cg_for_group = [&](_SimpleList const *group) -> bool {
+    if (!group || group->lLength < 2)
+      return false;
+
+    long tracker_idx = -1;
+    for (unsigned long t = 0; t < dynamic_block_trackers.size(); t++) {
+      if (dynamic_block_trackers[t].variables.size() == group->lLength) {
+        bool match = true;
+        for (unsigned long k = 0; k < group->lLength; k++) {
+          if (dynamic_block_trackers[t].variables[k] != group->list_data[k]) {
+            match = false;
+            break;
+          }
+        }
+        if (match) {
+          tracker_idx = t;
+          break;
+        }
+      }
+    }
+
+    if (tracker_idx != -1) {
+      if (maxSoFar - dynamic_block_trackers[tracker_idx].max_logl_at_last_cg <
+          precision) {
+        // Check environmental drift of non-active parameters
+        hyFloat other_vars_movement = 0.0;
+        std::vector<bool> in_group(indexInd.lLength, false);
+        for (long var : dynamic_block_trackers[tracker_idx].variables) {
+          if (var >= 0 && var < (long)indexInd.lLength) {
+            in_group[var] = true;
+          }
+        }
+
+        if (dynamic_block_trackers[tracker_idx].values_at_last_cg.size() ==
+            indexInd.lLength) {
+          for (unsigned long v = 0; v < indexInd.lLength; v++) {
+            if (!in_group[v]) {
+              other_vars_movement = Maximum(
+                  other_vars_movement, fabs(GetIthIndependent(v) -
+                                            dynamic_block_trackers[tracker_idx]
+                                                .values_at_last_cg[v]));
+            }
+          }
+          if (other_vars_movement < precision) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  };
+
+  auto update_tracker_for_group = [&](_SimpleList const *group,
+                                      hyFloat current_max) {
+    if (!group || group->lLength < 2)
+      return;
+
+    long tracker_idx = -1;
+    for (unsigned long t = 0; t < dynamic_block_trackers.size(); t++) {
+      if (dynamic_block_trackers[t].variables.size() == group->lLength) {
+        bool match = true;
+        for (unsigned long k = 0; k < group->lLength; k++) {
+          if (dynamic_block_trackers[t].variables[k] != group->list_data[k]) {
+            match = false;
+            break;
+          }
+        }
+        if (match) {
+          tracker_idx = t;
+          break;
+        }
+      }
+    }
+
+    if (tracker_idx != -1) {
+      dynamic_block_trackers[tracker_idx].max_logl_at_last_cg = current_max;
+      dynamic_block_trackers[tracker_idx].values_at_last_cg.resize(
+          indexInd.lLength);
+      for (unsigned long v = 0; v < indexInd.lLength; v++) {
+        dynamic_block_trackers[tracker_idx].values_at_last_cg[v] =
+            GetIthIndependent(v);
+      }
+    } else {
+      DynamicBlockTracker new_tracker;
+      new_tracker.variables.reserve(group->lLength);
+      for (unsigned long k = 0; k < group->lLength; k++) {
+        new_tracker.variables.push_back(group->list_data[k]);
+      }
+      new_tracker.max_logl_at_last_cg = current_max;
+      new_tracker.values_at_last_cg.resize(indexInd.lLength);
+      for (unsigned long v = 0; v < indexInd.lLength; v++) {
+        new_tracker.values_at_last_cg[v] = GetIthIndependent(v);
+      }
+      dynamic_block_trackers.push_back(new_tracker);
+    }
+  };
+
   if (optimization_mode == kOptimizationHybrid ||
       optimization_mode == kOptimizationGradientDescent) { // gradient descent
     _Matrix bestSoFar;
@@ -5085,15 +5198,21 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             maxSoFar = ConjugateGradientDescent(
                 currentPrecision, bestSoFar, true, kMaxGradientStepCount,
                 this_block, maxSoFar, grad_precision);
+            update_tracker_for_group(this_block, maxSoFar);
           } else {
             // printf ("\n...Skipping a large gradient (or a trivial) block with
             // %ld variables\n", this_block->countitems());
           }
         }
       } else {
-        ConjugateGradientDescent(currentPrecision, bestSoFar, true,
-                                 kMaxGradientStepCount, nil, maxSoFar,
-                                 grad_precision);
+        maxSoFar = ConjugateGradientDescent(currentPrecision, bestSoFar, true,
+                                            kMaxGradientStepCount, nil,
+                                            maxSoFar, grad_precision);
+        _SimpleList all_vars;
+        for (unsigned long k = 0; k < indexInd.lLength; k++) {
+          all_vars << (long)k;
+        }
+        update_tracker_for_group(&all_vars, maxSoFar);
       }
     } else {
       hyFloat current_precision = MAX(1., precision);
@@ -5226,6 +5345,9 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
     long last_gradient_search = 0;
     bool last_dynamic_cg_productive = false;
+    hyFloat max_logl_at_last_dynamic_cg = -INFINITY;
+    bool last_cg_productive = true;
+    hyFloat max_logl_at_last_cg = -INFINITY;
 
     _Matrix variableImpact(
         _SimpleList(indexInd.lLength, (long)indexInd.lLength, -1), 1);
@@ -5502,16 +5624,27 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                (loopCounter - last_gradient_search > 1 &&
                 lastConvergenceMode > 2)*/) &&
               (inCount < termFactor - 2) && !do_large_change_only) {
-            if (gradientBlocks.nonempty()) {
-              for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
-                if (((_SimpleList *)gradientBlocks(b))->countitems() <=
-                    maxGradientBlockDimension) {
-                  trigger_cg = true;
-                  break;
-                }
+            bool skip_cg_due_to_unproductivity = false;
+            if (!last_cg_productive && max_logl_at_last_cg > -INFINITY) {
+              if (maxSoFar - max_logl_at_last_cg < 1e-5) {
+                skip_cg_due_to_unproductivity = true;
               }
-            } else if (indexInd.countitems() <= maxGradientBlockDimension) {
-              trigger_cg = true;
+            }
+            if (!skip_cg_due_to_unproductivity) {
+              if (gradientBlocks.nonempty()) {
+                for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
+                  if (((_SimpleList *)gradientBlocks(b))->countitems() <=
+                      maxGradientBlockDimension) {
+                    trigger_cg = true;
+                    break;
+                  }
+                }
+              } else if (indexInd.countitems() <= maxGradientBlockDimension) {
+                trigger_cg = true;
+              }
+            } else {
+              last_gradient_search = loopCounter;
+              convergenceMode = 0;
             }
           }
         }
@@ -5519,8 +5652,19 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
         if (!trigger_cg && do_large_change_only &&
             last_large_change.lLength >= 2 && last_large_change.lLength <= 16 &&
             (loopCounter - last_gradient_search >= 3L)) {
-          trigger_cg = true;
-          cg_list = &last_large_change;
+          bool skip_cg_due_to_unproductivity = false;
+          if (!last_cg_productive && max_logl_at_last_cg > -INFINITY) {
+            if (maxSoFar - max_logl_at_last_cg < 1e-5) {
+              skip_cg_due_to_unproductivity = true;
+            }
+          }
+          if (!skip_cg_due_to_unproductivity) {
+            trigger_cg = true;
+            cg_list = &last_large_change;
+          } else {
+            last_gradient_search = loopCounter;
+            convergenceMode = 0;
+          }
         }
 
         if (trigger_cg) {
@@ -5531,30 +5675,42 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                       precision, 0.1 * get_parameter_step(logLDeltaHistory, 5));
 
           prec = Minimum(Maximum(prec, precision), 1.);
+          hyFloat old_max = maxSoFar;
 
           if (!cg_list && gradientBlocks.nonempty()) {
             for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
               _SimpleList *this_block = (_SimpleList *)(gradientBlocks(b));
               if (this_block->countitems() <= maxGradientBlockDimension) {
+                if (should_skip_cg_for_group(this_block)) {
+                  continue;
+                }
                 maxSoFar = ConjugateGradientDescent(
                     prec * pow(this_block->countitems(), -.25), bestMSoFar,
                     true, kMaxGradientStepCount, this_block, maxSoFar,
-                    grad_precision);
+                    grad_precision, inCount >= termFactor - 2);
+                update_tracker_for_group(this_block, maxSoFar);
               }
-              // maxSoFar = ConjugateGradientDescent (prec,
-              // bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
-
-              //_variables_that_dont_change.Populate (indexInd.lLength, 0, 0);
             }
           } else {
-            if (cg_list || indexInd.countitems() <= maxGradientBlockDimension) {
-              maxSoFar = ConjugateGradientDescent(
-                  prec *
-                      pow(cg_list ? cg_list->lLength : indexInd.lLength, -.25),
-                  bestMSoFar, true, kMaxGradientStepCount, cg_list, maxSoFar,
-                  grad_precision);
+            _SimpleList const *target_group = cg_list;
+            _SimpleList all_vars;
+            if (!target_group) {
+              for (unsigned long k = 0; k < indexInd.lLength; k++) {
+                all_vars << (long)k;
+              }
+              target_group = &all_vars;
             }
-            //_variables_that_dont_change.Populate (indexInd.lLength, 0, 0);
+            if (!should_skip_cg_for_group(target_group)) {
+              if (cg_list ||
+                  indexInd.countitems() <= maxGradientBlockDimension) {
+                maxSoFar = ConjugateGradientDescent(
+                    prec * pow(cg_list ? cg_list->lLength : indexInd.lLength,
+                               -.25),
+                    bestMSoFar, true, kMaxGradientStepCount, cg_list, maxSoFar,
+                    grad_precision, inCount >= termFactor - 2);
+              }
+              update_tracker_for_group(target_group, maxSoFar);
+            }
           }
 
           if (!cg_list) {
@@ -5588,15 +5744,30 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             logLDeltaHistory.Store(0);
           }
 
+          if (maxSoFar - old_max > 1e-5) {
+            last_cg_productive = true;
+          } else {
+            last_cg_productive = false;
+          }
+          max_logl_at_last_cg = maxSoFar;
+
           last_gradient_search = loopCounter;
           convergenceMode = 0;
         }
 
         // Dynamic CG block check
         bool bypass_cooldown = last_dynamic_cg_productive;
-        if (inCount < 2 && convergenceMode > 1 &&
+        bool skip_dynamic_cg = false;
+        if (!last_dynamic_cg_productive &&
+            max_logl_at_last_dynamic_cg > -INFINITY) {
+          if (maxSoFar - max_logl_at_last_dynamic_cg < 1e-5) {
+            skip_dynamic_cg = true;
+          }
+        }
+        if (!skip_dynamic_cg && inCount < 2 && convergenceMode > 1 &&
             (bypass_cooldown || (loopCounter - last_gradient_search >= 4L)) &&
             changes_history.lLength >= 8) {
+          last_gradient_search = loopCounter; // Update cooldown immediately
           unsigned long window = 8;
           _SimpleList active_vars;
           _List window_updates;
@@ -5684,6 +5855,10 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                 if (group_list.lLength >= 2 &&
                     group_list.lLength <= max_block_size &&
                     group_list.lLength <= indexInd.lLength - 3L) {
+                  if (should_skip_cg_for_group(&group_list)) {
+                    continue;
+                  }
+
                   if (verbosity_level > 1) {
                     snprintf(buffer, sizeof(buffer),
                              "\n[DYNAMIC BLOCK] Triggering CG on group of %ld "
@@ -5696,8 +5871,12 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                   hyFloat old_max = maxSoFar;
                   maxSoFar = ConjugateGradientDescent(
                       precision, bestMSoFar, true, kMaxGradientStepCount,
-                      &group_list, maxSoFar, MAX(precision, diffs[0] * 0.1));
+                      &group_list, maxSoFar, MAX(precision, diffs[0] * 0.1),
+                      inCount >= termFactor - 2);
                   last_gradient_search = loopCounter;
+                  max_logl_at_last_dynamic_cg = maxSoFar;
+                  update_tracker_for_group(&group_list, maxSoFar);
+
                   if (maxSoFar - old_max > precision / termFactor) {
                     made_progress = true;
                     if (maxSoFar - old_max > precision * 5.0) {
@@ -5872,6 +6051,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             continue;
           }
         }
+
         if (_variables_that_dont_change.get(current_index) > 1) {
           if (convergenceMode <= 2 && inCount < termFactor - 1 &&
               !do_large_change_only) {
@@ -7799,11 +7979,13 @@ bool _LikelihoodFunction::SniffAround(_Matrix &values, hyFloat &bestSoFar,
 hyFloat _LikelihoodFunction::ConjugateGradientDescent(
     hyFloat step_precision, _Matrix &bestVal, bool localOnly,
     unsigned long iterationLimit, _SimpleList *only_these_parameters,
-    hyFloat check_value, hyFloat min_improvement_to_contuinue) {
+    hyFloat check_value, hyFloat min_improvement_to_contuinue,
+    bool is_final_pass) {
 
   hyFloat gradientStep = STD_GRAD_STEP, maxSoFar = Compute(),
           initial_value = maxSoFar,
           currentPrecision = localOnly ? step_precision : .01;
+  (void)is_final_pass;
 
   // printf ("\n\n_LikelihoodFunction::ConjugateGradientDescent ==> %d (%lg)\n",
   // usedCachedResults, maxSoFar);
@@ -7869,8 +8051,14 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
   _Matrix gradient(bestVal), current_direction, previous_direction,
       previous_gradient;
 
+  long active_vars = only_these_parameters
+                         ? only_these_parameters->countitems()
+                         : (indexInd.lLength - freeze.lLength);
+
+  long before_grad = likeFuncEvalCallCount;
   hyFloat gradL;
   ComputeGradient(gradient, gradientStep, bestVal, freeze, 1, false);
+  long current_grad_compute_evals = likeFuncEvalCallCount - before_grad;
 
   gradL = gradient.AbsValue();
 
@@ -7892,9 +8080,13 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
 
       hyFloat line_search_precision =
           localOnly ? step_precision : currentPrecision;
+
+      long before_search = likeFuncEvalCallCount;
       hyFloat step_taken =
           GradientLocateTheBump(line_search_precision, maxSoFar, bestVal,
                                 current_direction, last_successful_step);
+      long current_grad_descent_evals = likeFuncEvalCallCount - before_search;
+
       if (step_taken > 0.0) {
         last_successful_step = step_taken;
       }
@@ -7910,14 +8102,26 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
       // if (localOnly) {
       if (fabs(maxSoFar - current_maximum) <=
           MAX(step_precision, min_improvement_to_contuinue)) {
+        LoggerAddGradientPhase(line_search_precision, 0.0, 0.0,
+                               current_grad_compute_evals,
+                               current_grad_descent_evals, active_vars);
+        LoggerAllVariables();
+        LoggerLogL(maxSoFar);
         break;
       }
 
       previous_gradient = gradient;
+      long before_grad_next = likeFuncEvalCallCount;
       ComputeGradient(gradient, gradientStep, bestVal, freeze, 1, false);
+      long next_grad_compute_evals = likeFuncEvalCallCount - before_grad_next;
       // gradL = gradient.AbsValue();
 
       if (CheckEqual(gradL, 0.0)) {
+        LoggerAddGradientPhase(line_search_precision, 0.0, 0.0,
+                               current_grad_compute_evals,
+                               current_grad_descent_evals, active_vars);
+        LoggerAllVariables();
+        LoggerLogL(maxSoFar);
         break;
       } else {
         gradient *= 1. / gradL;
@@ -7926,13 +8130,6 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
       previous_direction = current_direction;
       hyFloat beta = 0., scalar_product = 0.;
 
-      // use Polak–Ribière direction
-      /*for (unsigned long i = 0UL; i < dim; i++) {
-          scalar_product += previous_gradient.theData[i] *
-      previous_gradient.theData[i]; beta += gradient.theData[i] * (
-      previous_gradient.theData[i] - gradient.theData[i]);
-      }*/
-
       // Dai–Yuan
       for (unsigned long i = 0UL; i < dim; i++) {
         scalar_product += gradient.theData[i] * gradient.theData[i];
@@ -7940,44 +8137,26 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
                 (gradient.theData[i] - previous_gradient.theData[i]);
       }
 
-      // use Polak–Ribière direction
-
-      /*for (unsigned long i = 0UL; i < dim; i++) {
-        scalar_product +=
-            previous_gradient.theData[i] * previous_gradient.theData[i];
-        beta += previous_gradient.theData[i] *
-                (gradient.theData[i] - previous_gradient.theData[i]);
-      }*/
-      // beta = -beta;
-
-      // Hestenes-Stiefel
-      /*
-       for (unsigned long i = 0UL; i < dim; i++) {
-         beta += gradient.theData[i] * ( gradient.theData[i] -
-       previous_gradient.theData[i]); scalar_product +=
-       previous_direction.theData[i] * ( gradient.theData[i] -
-       previous_gradient.theData[i]);
-       }
-       beta = -beta;
-      */
-
-      LoggerAddGradientPhase(line_search_precision, beta, scalar_product);
+      LoggerAddGradientPhase(line_search_precision, beta, scalar_product,
+                             current_grad_compute_evals,
+                             current_grad_descent_evals, active_vars);
       LoggerAllVariables();
       LoggerLogL(maxSoFar);
 
-      // beta /= scalar_product;
+      current_grad_compute_evals = next_grad_compute_evals;
+
       beta = MAX(beta, 0.0);
-      // previous_gradient = previous_direction;
-      // previous_gradient *= beta;
       current_direction = gradient;
       previous_gradient = previous_direction;
       previous_gradient *= beta;
       previous_direction = current_direction;
       current_direction = gradient + previous_gradient;
-      /*if ((index + 1) % 5) {
-          current_direction += previous_gradient;
-      }*/
     }
+  } else {
+    LoggerAddGradientPhase(step_precision, 0.0, 0.0, current_grad_compute_evals,
+                           0, active_vars);
+    LoggerAllVariables();
+    LoggerLogL(maxSoFar);
   }
 
   SetAllIndependent(&bestVal);
@@ -8210,27 +8389,10 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
         bestVal = current_best_vector;
         step_taken = middle;
       }
-      if (!isnan(leftValue) && !isnan(rightValue) && !isinf(leftValue) &&
-          !isinf(rightValue)) {
-        hyFloat FL = -leftValue;
-        hyFloat FR = -rightValue;
-        if (FL < FR) {
-          W = left;
-          FW = FL;
-          V = right;
-          FV = FR;
-        } else {
-          W = right;
-          FW = FR;
-          V = left;
-          FV = FL;
-        }
-      } else {
-        W = .0;
-        V = .0;
-        FV = FX;
-        FW = FX;
-      }
+      W = .0;
+      V = .0;
+      FV = FX;
+      FW = FX;
       outcome = 0;
       while (outcome < 20) {
         // brentHistory.Store (-FX - initialValue);
@@ -8247,7 +8409,7 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
           BufferToConsole(buf);
         }
 
-        hyFloat tol1 = fabs(X) * MIN(gPrecision, 1e-4) + kMachineEpsilon,
+        hyFloat tol1 = fabs(X) * MIN(gPrecision, 1e-7) + kMachineEpsilon,
                 tol2 = 2. * tol1;
 
         if (fabs(X - XM) < gPrecision && outcome > 0) {
@@ -8489,27 +8651,10 @@ void _LikelihoodFunction::LocateTheBump(long index, hyFloat gPrecision,
 
       hyFloat U, V, W, X = middle, E = 0., FX = -middleValue, FW, FV, XM, R, Q,
                        P, ETEMP, D = 0., FU;
-      if (!isnan(leftValue) && !isnan(rightValue) && !isinf(leftValue) &&
-          !isinf(rightValue)) {
-        hyFloat FL = -leftValue;
-        hyFloat FR = -rightValue;
-        if (FL < FR) {
-          W = left;
-          FW = FL;
-          V = right;
-          FV = FR;
-        } else {
-          W = right;
-          FW = FR;
-          V = left;
-          FV = FL;
-        }
-      } else {
-        W = middle;
-        V = middle;
-        FV = FX;
-        FW = FX;
-      }
+      W = middle;
+      V = middle;
+      FV = FX;
+      FW = FX;
       outcome = 0;
 
       while (outcome < 20) {
@@ -8531,7 +8676,7 @@ void _LikelihoodFunction::LocateTheBump(long index, hyFloat gPrecision,
           break;
         }
 
-        hyFloat tol1 = fabs(X) * Minimum(brentPrec, 1e-4) + kMachineEpsilon,
+        hyFloat tol1 = fabs(X) * Minimum(brentPrec, 1e-7) + kMachineEpsilon,
                 tol2 = 2. * tol1;
 
         if (fabs(E) > tol1) {

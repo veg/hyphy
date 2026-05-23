@@ -858,7 +858,8 @@ protected:
                                    unsigned long = 0x7fffffff,
                                    _SimpleList *only_these_parameters = nil,
                                    hyFloat check_lf = -INFINITY,
-                                   hyFloat min_improvement_to_continue = 0.);
+                                   hyFloat min_improvement_to_continue = 0.,
+                                   bool is_final_pass = false);
 
   hyFloat SetParametersAndCompute(long, hyFloat, _Matrix * = nil,
                                   _Matrix * = nil, bool skip_compute = false);
@@ -999,7 +1000,10 @@ protected:
 
   void LoggerLogL(hyFloat logL);
   void LoggerAddGradientPhase(hyFloat precision, hyFloat beta,
-                              hyFloat scalar_product);
+                              hyFloat scalar_product,
+                              long grad_compute_evals = 0,
+                              long grad_descent_evals = 0,
+                              long active_vars = 0);
   void LoggerAddCoordinatewisePhase(hyFloat shrinkage, char convergence_mode);
   void LoggerAllVariables();
   void LoggerSingleVariable(unsigned long index, hyFloat logL,
