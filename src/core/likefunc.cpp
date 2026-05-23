@@ -5246,7 +5246,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
   if (optimization_mode == kOptimizationCoordinateWise) {
 
-    bool forward = false;
+    bool forward = true;
 
     auto get_parameter_step = [](_Vector const &v, long steps = 4) -> hyFloat {
       hyFloat average = 0.;
