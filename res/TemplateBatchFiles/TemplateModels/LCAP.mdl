@@ -211,15 +211,16 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, freqs)
 	return freqs == 2;
 }
 
+LoadFunctionLibrary("libv3/IOFunctions.bf");
+KeywordArgument ("freq-type", "Choose a frequency parameterisation", "F3x4");
  ChoiceList (freqType,"Choose a frequency parameterisation",1,SKIP_NONE,
 			"F1x4","Empirical nucleotide frequencies",
 			"F3x4","Empirical position specific nucleotide frequencies",
 			"F61","Empirical codon frequencies",
 			"ML3x4","Maximum likelihood estimated position specific frequencies");
 
-
-fprintf						  (stdout, "\nModel string for nucleotide biases: (eg: 010010 for HKY85)");
-fscanf						  (stdin,"String",modelDesc);
+KeywordArgument ("rate-designation", "A 6 character model designation (e.g:010010 defines HKY85)", "010010");
+modelDesc = io.PromptUserForString("Model string for nucleotide biases: (eg: 010010 for HKY85)");
 
 
 MGCustomRateBiasTerms = {{"AC*","","AT*","CG*","CT*","GT*"}};	

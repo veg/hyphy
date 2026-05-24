@@ -244,11 +244,12 @@ if (modelType > 1)
 
 if (!SKIP_MODEL_PARAMETER_LIST)
 {
+	LoadFunctionLibrary("libv3/IOFunctions.bf");
+	KeywordArgument ("rate-designation", "A 6 character model designation (e.g:010010 defines HKY85)", "010010");
 	done = 0;
 	while (!done)
 	{
-		fprintf (stdout,"\nPlease enter a 6 character model designation (e.g:010010 defines HKY85):");
-		fscanf  (stdin,"String", modelDesc);
+		modelDesc = io.PromptUserForString("Please enter a 6 character model designation (e.g:010010 defines HKY85)");
 		if (Abs(modelDesc)==6)
 		{	
 			done = 1;

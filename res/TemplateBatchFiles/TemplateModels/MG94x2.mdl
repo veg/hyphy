@@ -291,6 +291,8 @@ sharedFlag 	   = 1;
 
 if (!SKIP_MODEL_PARAMETER_LIST)
 {
+	LoadFunctionLibrary("libv3/IOFunctions.bf");
+	KeywordArgument ("rate-variation", "Distribution Option", "Syn:Gamma, Non-syn:Gamma");
 	ChoiceList (modelChoice, "Distribution Option",1,SKIP_NONE,
 				"Syn:Gamma, Non-syn:Gamma",	 "Both syn and non-syn rates are drawn from the gamma distributions for all models.",
 				"Syn:Gamma, Non-syn:Inv+Gamma","Syn and non-syn rates are drawn from the gamma distributions for all models for PVRM and NSRV. For DVRM and LDVRM, syn rates are drawn from the gamma distribution, and non-syn rates - from Inv+Gamma.",
@@ -303,46 +305,38 @@ if (!SKIP_MODEL_PARAMETER_LIST)
 		return;
 	}
 
-	resp  = 0;
-	resp2 = 0;
+	KeywordArgument ("syn-rate-classes", "Number of synonymous rate classes (>=2)", "3");
+	resp = io.PromptUser("Number of synonymous rate classes (>=2)", 3, 2, 100, TRUE);
 
-	while (resp<2)
-	{
-		fprintf (stdout,"\nNumber of synonymous rate classes (>=2):");
-		fscanf  (stdin, "Number", resp);
-	}
+	KeywordArgument ("non-syn-rate-classes", "Number of non-synonymous rate classes (>=2)", "3");
+	resp2 = io.PromptUser("Number of non-synonymous rate classes (>=2)", 3, 2, 100, TRUE);
 
-	while (resp2<2)
-	{
-		fprintf (stdout,"\nNumber of non-synonymous rate classes (>=2):");
-		fscanf  (stdin, "Number", resp2);
-	}
-
+	base_path = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "2RatesAnalyses" + DIRECTORY_SEPARATOR;
 	if (modelChoice<2)
 	{
-		fscanf ("../2RatesAnalyses/gamma1.def","Raw",categDef1);
+		fscanf (base_path + "gamma1.def","Raw",categDef1);
 
 		if (modelChoice == 0)
 		{
-			fscanf ("../2RatesAnalyses/gamma2.def","Raw",categDef2);
+			fscanf (base_path + "gamma2.def","Raw",categDef2);
 		}
 		else
 		{
-			fscanf ("../2RatesAnalyses/gamma2+Inv.def","Raw",categDef2);
+			fscanf (base_path + "gamma2+Inv.def","Raw",categDef2);
 		}
 	}
 	else
 	{
 		correlationOn = (modelChoice>3);
-		fscanf ("2RatesAnalyses/discreteGenerator.bf","Raw",mi);
+		fscanf (base_path + "discreteGenerator.bf","Raw",mi);
 		ExecuteCommands (mi);
 	}
 
+	KeywordArgument ("rate-designation", "A 6 character model designation (e.g:010010 defines HKY85)", "010010");
 	done = 0;
 	while (!done)
 	{
-		fprintf (stdout,"\nPlease enter a 6 character model designation (e.g:010010 defines HKY85):");
-		fscanf  (stdin,"String", modelDesc);
+		modelDesc = io.PromptUserForString("Please enter a 6 character model designation (e.g:010010 defines HKY85)");
 		if (Abs(modelDesc)==6)
 		{	
 			done = 1;

@@ -20,6 +20,9 @@ LoadFunctionLibrary("libv3/tasks/alignments.bf");
 LoadFunctionLibrary("libv3/tasks/trees.bf");
 
 LoadFunctionLibrary("modules/io_functions.ibf");
+
+
+
 LoadFunctionLibrary("modules/selection_lib.ibf");
 LoadFunctionLibrary("libv3/models/codon/BS_REL.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
@@ -49,8 +52,9 @@ relax.analysis_description = {
                                                 Version 4.1 adds further support for multiple hit models.
                                                 Version 4.1.1 adds reporting for convergence diagnostics.
                                                 Version 4.5 adds support for multiple datasets for joint testing.
-                                                Version 4.6 adds support for branch- and site-level evidence ratio calculation.",
-                               terms.io.version : "4.6",
+                                                Version 4.6 adds support for branch- and site-level evidence ratio calculation.
+                                                Version 4.7 adds support for error-sink options to accommodate sequencing/alignment errors.",
+                               terms.io.version : "4.7",
                                terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
                                terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution g",
                                terms.io.contact : "spond@temple.edu",
@@ -309,6 +313,37 @@ if (relax.do_srv) {
     relax.synonymous_rate_classes = io.PromptUser ("The number omega rate classes to include in the model", relax.synonymous_rate_classes, 1, 10, TRUE);
 }  
 
+KeywordArgument ("error-sink",  "Include a rate class to capture misalignment artifacts", "No");
+
+relax.error_sink = io.SelectAnOption ({
+                                        {"No", "Standard dN/dS model (all rates are used for inference)"}
+                                        {"Yes", "The dN/dS model has an additional class (high dN/dS, low proportion), which 'absorbs' alignment errors"}
+                                  }, "[Advanced experimental setting] Include a rate class to capture misalignment artifacts") == "Yes";
+
+selection.io.json_store_setting  (relax.json, "error-sink", relax.error_sink);
+
+relax.positive_class_range = terms.range_1_100;
+relax.error_class_range = terms.range_high;
+relax.error_sink_weight = terms.range_small_fraction;
+relax.error_class_bound = 100;
+relax.error_class_weight = 0.01;
+
+if (relax.error_sink) {
+    assert (relax.do_bs_srv == FALSE, "Branch-site synonymous rate variation and error-sink together are not supported!");
+    relax.rate_classes += 1;
+    KeywordArgument ("error-sink-bound",  "[Advanced setting] Set the lower bound for error-class dN/dS", "100");
+    relax.error_class_bound = 
+     io.PromptUser ("[Advanced setting] Set the lower bound for error-class dN/dS", 100, 1, 1e6, FALSE);
+     
+    relax.positive_class_range [terms.upper_bound] = "" + relax.error_class_bound;
+    relax.error_class_range [terms.lower_bound] = "" + relax.error_class_bound;
+    KeywordArgument ("error-sink-weight",  "[Advanced setting] Set the maximum weight for error-class dN/dS", "0.01");
+    relax.error_class_weight = 
+     io.PromptUser ("[Advanced setting] Set the maximum weight for error-class dN/dS", 0.01, 1e-8, 1.0, FALSE);
+     
+    relax.error_sink_weight [terms.upper_bound] = "" + relax.error_class_weight;
+}
+
 selection.io.startTimer (relax.json [terms.json.timers], "Preliminary model fitting", 1);
 
 namespace_tag = "relax";
@@ -494,14 +529,29 @@ if (relax.model_set == "All") { // run all the models
 
         relax.distribution          = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
         relax.weight_multipliers    = parameters.helper.stick_breaking (utility.SwapKeysAndValues(utility.MatrixToDict(relax.distribution["weights"])),None);
-        relax.constrain_parameters   = parameters.ConstrainMeanOfSet(relax.distribution["rates"],relax.weight_multipliers,1,"relax");
+        if (relax.error_sink) {
+            relax.subset_rates = {relax.rate_classes - 1, 1};
+            relax.subset_weights = {};
+            relax.rates_matrix = relax.distribution["rates"];
+            for (relax.i = 0; relax.i < relax.rate_classes - 1; relax.i += 1) {
+                relax.subset_rates[relax.i] = relax.rates_matrix[relax.i + 1][0];
+                relax.subset_weights[relax.i] = relax.weight_multipliers[relax.i + 1];
+            }
+            relax.constrain_parameters = parameters.ConstrainMeanOfSet(relax.subset_rates, relax.subset_weights, "1 - " + relax.weight_multipliers[0], "relax");
+        } else {
+            relax.constrain_parameters = parameters.ConstrainMeanOfSet(relax.distribution["rates"], relax.weight_multipliers, 1, "relax");
+        }
  
         
         relax.i = 0;
         for (key, value; in; relax.constrain_parameters[terms.global]){
             model.generic.AddGlobal (relax.ge.bsrel_model, value, key);
             relax.i += 1;
-            if (relax.i < relax.rate_classes) {
+            relax.limit_index = relax.rate_classes;
+            if (relax.error_sink) {
+                relax.limit_index = relax.rate_classes - 1;
+            }
+            if (relax.i < relax.limit_index) {
                 parameters.SetRange (value, terms.range_almost_01);
             } else {
                 parameters.SetRange (value, terms.range_gte1);
@@ -510,12 +560,31 @@ if (relax.model_set == "All") { // run all the models
         }
         
         
-        relax.distribution["rates"] = Transpose (utility.Values (relax.constrain_parameters[terms.global]));
-        
-        for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
-            parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range_almost_01);
+        if (relax.error_sink) {
+            relax.error_sink_rate_param = relax.distribution["rates"][0];
+            relax.scaler_vals = utility.Values (relax.constrain_parameters[terms.global]);
+            relax.distribution["rates"] = {relax.rate_classes, 1};
+            relax.distribution["rates"][0] = relax.error_sink_rate_param;
+            for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
+                relax.distribution["rates"][relax.i] = relax.scaler_vals[relax.i - 1];
+            }
+        } else {
+            relax.distribution["rates"] = Transpose (utility.Values (relax.constrain_parameters[terms.global]));
         }
-        parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
+        
+        if (relax.error_sink) {
+             parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio, 1)), relax.error_class_range);
+             for (relax.i = 2; relax.i < relax.rate_classes; relax.i += 1) {
+                 parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio, relax.i)), terms.range_almost_01);
+             }
+             parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio, relax.rate_classes)), relax.positive_class_range);
+             parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), 1)), relax.error_sink_weight);
+        } else {
+             for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
+                 parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio, relax.i)), terms.range_almost_01);
+             }
+             parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio, relax.rate_classes)), terms.range_gte1);
+        }
         
         // constrain the mean of this distribution to 1
         
@@ -625,11 +694,16 @@ if (relax.model_set == "All") { // run all the models
 
         io.ReportProgressMessageMD("RELAX", "ge", "* " + selection.io.report_fit (relax.general_descriptive.fit, 9, relax.codon_data_info[terms.data.sample_size]));
         io.ReportProgressMessageMD("RELAX", "ge", "* The following baseline rate distribution for branch-site combinations was inferred");
-        relax.inferred_ge_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistributionFromFit (relax.ge.bsrel_model, relax.general_descriptive.fit)) % 0;
+        relax.inferred_ge_distribution_raw = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistributionFromFit (relax.ge.bsrel_model, relax.general_descriptive.fit));
+        relax.inferred_ge_distribution = relax.inferred_ge_distribution_raw % 0;
 
-        selection.io.report_dnds (relax.inferred_ge_distribution);
+        if (relax.error_sink) {
+            selection.io.report_dnds_with_sink (relax.inferred_ge_distribution, relax.inferred_ge_distribution_raw[0][0], relax.inferred_ge_distribution_raw[0][1]);
+        } else {
+            selection.io.report_dnds (relax.inferred_ge_distribution);
+        }
 
-        if (relax.rate_classes > 2) {
+        if (relax.error_sink == FALSE && relax.rate_classes > 2) {
             if (relax.inferred_ge_distribution[0][1] < 1e-5 || relax.inferred_ge_distribution[1][1] < 1e-5) {
                 io.ReportProgressMessageMD("RELAX", "ge", "\n ### Because some of the rate classes were collapsed to 0, the model is likely overparameterized. RELAX will reduce the number of site rate classes by one and repeat the fit now.\n----\n");
                 relax.rate_classes = relax.rate_classes - 1;
@@ -752,10 +826,19 @@ for (relax.k = 0; relax.k < relax.numbers_of_tested_groups; relax.k += 1) {
         
     
     
-	for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
-		parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range01);
+	if (relax.error_sink) {
+		parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.AddCategory (terms.parameters.omega_ratio,1)), relax.error_class_range);
+		for (relax.i = 2; relax.i < relax.rate_classes; relax.i += 1) {
+			parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range01);
+		}
+		parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), relax.positive_class_range);
+		parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), 1)), relax.error_sink_weight);
+	} else {
+		for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
+			parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range01);
+		}
+		parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
 	}
-	parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range_gte1);
 
     if (relax.k > 0) { // not the reference group
     	 parameters.DeclareGlobalWithRanges (relax.model_to_relax_parameter  [relax.model_nmsp], 1, 0, 50);
@@ -766,9 +849,17 @@ for (relax.k = 0; relax.k < relax.numbers_of_tested_groups; relax.k += 1) {
     	 } else {
     	 	model.generic.AddGlobal (relax.model_object_map[relax.model_nmsp], relax.model_to_relax_parameter  [relax.model_nmsp], terms.relax.k);
     	 }
-    	 relax.bound_weights * models.BindGlobalParameters ({"0" : relax.model_object_map[relax.reference_model_namespace], "1" : relax.model_object_map[relax.model_nmsp]}, terms.mixture.mixture_aux_weight + " for category");
+    	 relax.weight_pattern = "";
+    	 if (relax.error_sink) {
+    	     relax.weight_pattern = " ([2-9]|[1-9][0-9]+)";
+    	 }
+    	 relax.bound_weights * models.BindGlobalParameters ({"0" : relax.model_object_map[relax.reference_model_namespace], "1" : relax.model_object_map[relax.model_nmsp]}, terms.mixture.mixture_aux_weight + " for category" + relax.weight_pattern);
 		 models.BindGlobalParameters ({"0" : relax.model_object_map[relax.reference_model_namespace], "1" : relax.model_object_map[relax.model_nmsp]}, terms.nucleotideRate("[ACGT]","[ACGT]"));
-		 for (relax.i = 1; relax.i <= relax.rate_classes; relax.i += 1) {
+		 relax.start_idx = 1;
+		 if (relax.error_sink) {
+		     relax.start_idx = 2;
+		 }
+		 for (relax.i = relax.start_idx; relax.i <= relax.rate_classes; relax.i += 1) {
 			parameters.SetConstraint (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.AddCategory (terms.parameters.omega_ratio,relax.i)),
 									  model.generic.GetGlobalParameter (relax.model_object_map[relax.reference_model_namespace] , terms.AddCategory (terms.parameters.omega_ratio,relax.i)) + "^" + relax.model_to_relax_parameter  [relax.model_nmsp],
 									  terms.global);
@@ -869,17 +960,24 @@ if (relax.has_unclassified) {
         relax.filter_names,
         None);
 
-    for (relax.i = 1; relax.i < relax.rate_classes-1; relax.i += 1) {
-        parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range01);
+    if (relax.error_sink) {
+        parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,1)), relax.error_class_range);
+        for (relax.i = 2; relax.i < relax.rate_classes; relax.i += 1) {
+            parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range01);
+        }
+        parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), relax.positive_class_range);
+        parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), 1)), relax.error_sink_weight);
+    } else {
+        for (relax.i = 1; relax.i < relax.rate_classes-1; relax.i += 1) {
+            parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range01);
+        }
+        parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
     }
 
     if (relax.do_lhc) {
         relax.distribution_uc = models.codon.BS_REL.ExtractMixtureDistribution(relax.unclassified.bsrel_model);
         relax.init_grid_setup  (relax.distribution_uc);
     }
-    
-
-    parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
 
     relax.model_object_map ["relax.unclassified"] = relax.unclassified.bsrel_model;
     
@@ -1360,7 +1458,15 @@ function relax.FitMainTestPair (prompt) {
 															 "{terms.json.omega_ratio : relax.inferred_distribution [_index_][0],
 															   terms.json.proportion  : relax.inferred_distribution [_index_][1]}")};
 
-		relax.distribution_for_json   [relax.reference_branches_name] =   relax.distribution_for_json   [relax.test_branches_name];
+        if (relax.error_sink) {
+            relax.inferred_distribution_ref = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistributionFromFit (relax.model_object_map ["relax.reference"], relax.null_model.fit)) % 0;
+            relax.distribution_for_json [relax.reference_branches_name] = utility.Map (utility.Range (relax.rate_classes, 0, 1),
+                                                                 "_index_",
+                                                                 "{terms.json.omega_ratio : relax.inferred_distribution_ref [_index_][0],
+                                                                   terms.json.proportion  : relax.inferred_distribution_ref [_index_][1]}");
+        } else {
+		    relax.distribution_for_json   [relax.reference_branches_name] =   relax.distribution_for_json   [relax.test_branches_name];
+        }
 	} else {
 		relax.report_multi_class_rates (None, FALSE);
 	}
@@ -1623,9 +1729,13 @@ lfunction relax.BS_REL._GenerateRate.MH (fromChar, toChar, namespace, model_type
             if (model_type == utility.getGlobalValue("terms.global")) {
                 aa_rate = parameters.ApplyNameSpace(omega, namespace);
                 (p[model_type])[omega_term] = aa_rate;
-                utility.EnsureKey (p, utility.getGlobalValue("terms.local"));
-                 (p[utility.getGlobalValue("terms.local")])[utility.getGlobalValue ("terms.relax.k")] = "k";
-                 aa_rate += "^k";
+                if (^"relax.error_sink" && omega_term == terms.AddCategory(utility.getGlobalValue("terms.parameters.omega_ratio"), 1)) {
+                    // skip K constraint
+                } else {
+                    utility.EnsureKey (p, utility.getGlobalValue("terms.local"));
+                    (p[utility.getGlobalValue("terms.local")])[utility.getGlobalValue ("terms.relax.k")] = "k";
+                    aa_rate += "^k";
+                }
             } else {
                 aa_rate = beta;
                 (p[model_type])[beta_term] = aa_rate;
@@ -1707,9 +1817,13 @@ lfunction relax.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, _
             if (model_type == utility.getGlobalValue("terms.global")) {
                 aa_rate = parameters.ApplyNameSpace(omega, namespace);
                 (p[model_type])[omega_term] = aa_rate;
-                utility.EnsureKey (p, utility.getGlobalValue("terms.local"));
-                 (p[utility.getGlobalValue("terms.local")])[utility.getGlobalValue ("terms.relax.k")] = "k";
-                 aa_rate += "^k";
+                if (^"relax.error_sink" && omega_term == terms.AddCategory(utility.getGlobalValue("terms.parameters.omega_ratio"), 1)) {
+                    // skip K constraint
+                } else {
+                    utility.EnsureKey (p, utility.getGlobalValue("terms.local"));
+                    (p[utility.getGlobalValue("terms.local")])[utility.getGlobalValue ("terms.relax.k")] = "k";
+                    aa_rate += "^k";
+                }
             } else {
                 aa_rate = beta;
                 (p[model_type])[beta_term] = aa_rate;
@@ -1934,16 +2048,23 @@ lfunction relax.grid.MatrixToDict (grid) {
 function relax.init_grid_setup (omega_distro) {
     utility.ForEachPair (omega_distro[terms.parameters.rates], "_index_", "_name_", 
         '
-            if (_index_[0] < relax.rate_classes - 1) { // not the last rate
-                  relax.initial_ranges [_name_] = {
-                    terms.lower_bound : 0,
-                    terms.upper_bound : 1
-                };
-            }  else {
+            if (relax.error_sink && _index_[0] == 0) {
                 relax.initial_ranges [_name_] = {
-                    terms.lower_bound : 1,
-                    terms.upper_bound : 5
+                    terms.lower_bound : relax.error_class_bound,
+                    terms.upper_bound : relax.error_class_bound * 10
                 };
+            } else {
+                if (_index_[0] < relax.rate_classes - 1) { // not the last rate
+                      relax.initial_ranges [_name_] = {
+                        terms.lower_bound : 0,
+                        terms.upper_bound : 1
+                    };
+                }  else {
+                    relax.initial_ranges [_name_] = {
+                        terms.lower_bound : 1,
+                        terms.upper_bound : 5
+                    };
+                }
             }
         '
     );
@@ -1951,10 +2072,17 @@ function relax.init_grid_setup (omega_distro) {
 
     utility.ForEachPair (omega_distro[terms.parameters.weights], "_index_", "_name_", 
         '
-             relax.initial_ranges [_name_] = {
-                terms.lower_bound : 0,
-                terms.upper_bound : 1
-            };
+            if (relax.error_sink && _index_[0] == 0) {
+                 relax.initial_ranges [_name_] = {
+                    terms.lower_bound : 0,
+                    terms.upper_bound : relax.error_class_weight
+                };
+            } else {
+                 relax.initial_ranges [_name_] = {
+                    terms.lower_bound : 0,
+                    terms.upper_bound : 1
+                };
+            }
         '
     );
 
@@ -1992,9 +2120,26 @@ lfunction relax._renormalize (v, distro, mean) {
     parameters.SetValues (v);
     m = parameters.GetStickBreakingDistribution (^distro);
     d = Rows (m);
-    m = +(m[-1][0] $ m[-1][1]); // current mean
-    for (i = 0; i < d; i+=1) {
-        (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] / m * mean;
+    
+    if (^"relax.error_sink") {
+        w0 = m[0][1];
+        if (w0 < 1.0) {
+            bio_mean = 0;
+            for (i = 1; i < d; i += 1) {
+                bio_mean += m[i][0] * m[i][1];
+            }
+            if (bio_mean > 0) {
+                scaler = (mean * (1.0 - w0)) / bio_mean;
+                for (i = 1; i < d; i += 1) {
+                    (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] * scaler;
+                }
+            }
+        }
+    } else {
+        m = +(m[-1][0] $ m[-1][1]); // current mean
+        for (i = 0; i < d; i+=1) {
+            (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] / m * mean;
+        }
     }
     return v;
     
@@ -2007,54 +2152,87 @@ lfunction relax._renormalize_with_weights (v, distro, mean) {
 
     parameters.SetValues (v);
     m = parameters.GetStickBreakingDistribution (^distro);
-    //console.log (v);
-    //console.log (m);
-    //console.log (mean);
     d = Rows (m);
     mean = Max (mean, 1e-3);
     
-    over_one = m[d-1][0] * m[d-1][1];
-    
-    if (over_one >= mean*0.95) {
-       //console.log ("OVERAGE");
-       new_weight = mean * Random (0.9, 0.95) / m[d-1][0];
-       diff = (m[d-1][1] - new_weight)/(d-1);
-       for (k = 0; k < d-1; k += 1) {
-            m[k][1] += diff;
-       }
-       m[d-1][1] = new_weight;
-    }
-    
-    over_one = m[d-1][0] * m[d-1][1];
-    under_one = (+(m[-1][0] $ m[-1][1])) / (1-m[d-1][1]); // current mean
-    
-    for (i = 0; i < d-1; i+=1) {
-        m[i][0] = m[i][0] * mean / under_one;
-    }
-  
-    under_one = +(m[-1][0] $ m[-1][1]);
-    
-    if (under_one > 0) {
-        for (i = 0; i < d; i+=1) {
+    if (^"relax.error_sink") {
+        w0 = m[0][1];
+        m_bio = m[{{1, 0}}][{{d-1, 1}}];
+        d_bio = d - 1;
+        bio_mean = Max (mean * (1.0 - w0), 1e-3);
+        
+        over_one = m_bio[d_bio-1][0] * m_bio[d_bio-1][1];
+        if (over_one >= bio_mean*0.95) {
+           new_weight = bio_mean * Random (0.9, 0.95) / m_bio[d_bio-1][0];
+           diff = (m_bio[d_bio-1][1] - new_weight)/(d_bio-1);
+           for (k = 0; k < d_bio-1; k += 1) {
+                m_bio[k][1] += diff;
+           }
+           m_bio[d_bio-1][1] = new_weight;
+        }
+        
+        over_one = m_bio[d_bio-1][0] * m_bio[d_bio-1][1];
+        under_one = (+(m_bio[-1][0] $ m_bio[-1][1])) / (1.0 - w0 - m_bio[d_bio-1][1]);
+        
+        for (i = 0; i < d_bio-1; i+=1) {
+            m_bio[i][0] = m_bio[i][0] * bio_mean / under_one;
+        }
+      
+        under_one = +(m_bio[-1][0] $ m_bio[-1][1]);
+        if (under_one > 0) {
+            for (i = 0; i < d_bio; i+=1) {
+                m_bio[i][0] = m_bio[i][0] * bio_mean / under_one;
+            }
+        }
+        
+        m_bio = m_bio%0;
+        
+        weights_for_sb = m_bio[-1][1] / (1.0 - w0);
+        wts_bio = parameters.SetStickBreakingDistributionWeigths (weights_for_sb);
+        
+        (v[((^distro)["rates"])[0]])[^"terms.fit.MLE"] = m[0][0];
+        for (i = 1; i < d; i+=1) {
+            (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = m_bio[i-1][0];
+        }
+        (v[((^distro)["weights"])[0]])[^"terms.fit.MLE"] = w0;
+        for (i = 1; i < d-1; i+=1) {
+            (v[((^distro)["weights"])[i]])[^"terms.fit.MLE"] = wts_bio[i-1];
+        }
+    } else {
+        over_one = m[d-1][0] * m[d-1][1];
+        if (over_one >= mean*0.95) {
+           new_weight = mean * Random (0.9, 0.95) / m[d-1][0];
+           diff = (m[d-1][1] - new_weight)/(d-1);
+           for (k = 0; k < d-1; k += 1) {
+                m[k][1] += diff;
+           }
+           m[d-1][1] = new_weight;
+        }
+        
+        over_one = m[d-1][0] * m[d-1][1];
+        under_one = (+(m[-1][0] $ m[-1][1])) / (1-m[d-1][1]); // current mean
+        
+        for (i = 0; i < d-1; i+=1) {
             m[i][0] = m[i][0] * mean / under_one;
         }
+      
+        under_one = +(m[-1][0] $ m[-1][1]);
+        if (under_one > 0) {
+            for (i = 0; i < d; i+=1) {
+                m[i][0] = m[i][0] * mean / under_one;
+            }
+        }
+            
+        m = m%0;
+        wts = parameters.SetStickBreakingDistributionWeigths (m[-1][1]);
+     
+        for (i = 0; i < d; i+=1) {
+            (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = m[i][0];
+        }
+        for (i = 0; i < d-1; i+=1) {
+            (v[((^distro)["weights"])[i]])[^"terms.fit.MLE"] = wts[i];
+        }
     }
-        
-    m = m%0;
-    
-    wts = parameters.SetStickBreakingDistributionWeigths (m[-1][1]);
- 
-
-    for (i = 0; i < d; i+=1) {
-        (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = m[i][0];
-    }
-    for (i = 0; i < d-1; i+=1) {
-        (v[((^distro)["weights"])[i]])[^"terms.fit.MLE"] = wts[i];
-    }
-    
-    //console.log (v);
-
-    //assert (0);
     return v;
     
 }

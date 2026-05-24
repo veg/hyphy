@@ -4,6 +4,8 @@
 
 if (!SKIP_MODEL_PARAMETER_LIST)
 {
+	LoadFunctionLibrary("libv3/IOFunctions.bf");
+	KeywordArgument ("model-options", "Model options choice", "Fixed Rates", "Model Options");
 	ChoiceList (modelType,"Model Options",1,SKIP_NONE,
 				"Fixed Rates","Rates are fixed.",
 				"Rate variation","Branch lengths come from a user-chosen distribution, whose parameters are estimated.",
