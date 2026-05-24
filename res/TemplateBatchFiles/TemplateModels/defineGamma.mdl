@@ -59,25 +59,27 @@ function GaussLaguerreQuardature (n,alf) {
 
 /*_________________________________________________________________________________________________________________*/
 
+LoadFunctionLibrary("libv3/IOFunctions.bf");
+
 if (SKIP_DISTRIBUTION_CHOICE != 1)
 {
-
-ChoiceList (distribution,"Choose Distribution",1,SKIP_NONE,
-			/*0*/"Gamma","Gamma distribution with shape parameter alpha. Mean: alpha, variance: 1/alpha.",
-			/*1*/"Beta","Two-parameter beta distrubution. Mean: betaP/(betaQ+betaP), variance: betaP*betaQ/((betaP+betaQ)^2 (betaP+betaQ+1)).",
-			/*2*/"Normal(x>0)","Two-parameter normal distrubution restriced to x>0. Mean parameter: mu, variance parameter: sigma^2.",
-			/*3*/"Log normal","Unit mean log normal distribution with parameter sigma. Variance: 1/[exp(sigma^2)-1].",
-			/*4*/"Gamma+Inv","Gamma distribution with shape parameter alpha and mean 1/(1-P) and a zero rate class for invariable sites with weight P.",
-			/*5*/"Gamma Quadratures","Gamma distribution with shape parameter alpha. Mean: alpha, variance: 1/alpha. Discretized using Gauss-Laguerre quadratures, matching 2N-1 moments, with N = the number of rate classes.",
-			/*6*/"Inv Class","A mixture of point masses at 0 and 1, with proportions P and (1-P). Mean: (1-P), variance P(1-P). Parameters: P - the proportion of invariable sites.",
-			/*7*/"General Discrete","Unit mean general discrete.",
-			/*8*/"Beta-Gamma","Gamma distribution with shape parameter alpha partitioned by a beta distribution.",
-			/*9*/"Beta-Lognormal","Mean one log normal distribution with parameter sigma, partitioned by the beta. Variance: 1/[exp(sigma^2)-1].",
-			/*10*/"Normal(x>0) mod Beta","Normal (x>0) distribution with parameter sigma, partitioned by the beta. Mean parameter: mu, variance parameter: sigma^2.",
-			/*11*/"Beta-Uniform","Mean 1 piecewise uniform on [0,1] and [1,R] partitioned by the beta.",
-			/*12*/"Uniform","Mean 1 piecewise uniform on [0,1] and [1,R].",
-			/*13*/"Beta-(Gamma+Inv)","Mixture of gamma mod beta and an invariant class partitioned by the beta."
-			);
+	KeywordArgument ("rate-distribution", "Choose Distribution", "Gamma");
+	ChoiceList (distribution,"Choose Distribution",1,SKIP_NONE,
+				/*0*/"Gamma","Gamma distribution with shape parameter alpha. Mean: alpha, variance: 1/alpha.",
+				/*1*/"Beta","Two-parameter beta distrubution. Mean: betaP/(betaQ+betaP), variance: betaP*betaQ/((betaP+betaQ)^2 (betaP+betaQ+1)).",
+				/*2*/"Normal(x>0)","Two-parameter normal distrubution restriced to x>0. Mean parameter: mu, variance parameter: sigma^2.",
+				/*3*/"Log normal","Unit mean log normal distribution with parameter sigma. Variance: 1/[exp(sigma^2)-1].",
+				/*4*/"Gamma+Inv","Gamma distribution with shape parameter alpha and mean 1/(1-P) and a zero rate class for invariable sites with weight P.",
+				/*5*/"Gamma Quadratures","Gamma distribution with shape parameter alpha. Mean: alpha, variance: 1/alpha. Discretized using Gauss-Laguerre quadratures, matching 2N-1 moments, with N = the number of rate classes.",
+				/*6*/"Inv Class","A mixture of point masses at 0 and 1, with proportions P and (1-P). Mean: (1-P), variance P(1-P). Parameters: P - the proportion of invariable sites.",
+				/*7*/"General Discrete","Unit mean general discrete.",
+				/*8*/"Beta-Gamma","Gamma distribution with shape parameter alpha partitioned by a beta distribution.",
+				/*9*/"Beta-Lognormal","Mean one log normal distribution with parameter sigma, partitioned by the beta. Variance: 1/[exp(sigma^2)-1].",
+				/*10*/"Normal(x>0) mod Beta","Normal (x>0) distribution with parameter sigma, partitioned by the beta. Mean parameter: mu, variance parameter: sigma^2.",
+				/*11*/"Beta-Uniform","Mean 1 piecewise uniform on [0,1] and [1,R] partitioned by the beta.",
+				/*12*/"Uniform","Mean 1 piecewise uniform on [0,1] and [1,R].",
+				/*13*/"Beta-(Gamma+Inv)","Mixture of gamma mod beta and an invariant class partitioned by the beta."
+				);
 }
 
 if (distribution<0)
@@ -87,8 +89,8 @@ if (distribution<0)
 
 if (distribution!=6)
 {
-	fprintf (stdout,"\nHow many rate classes should we have?");
-	fscanf  (stdin,"Number", resp);
+	KeywordArgument ("rate-classes", "Number of rate classes", "4");
+	resp = io.PromptUser ("How many rate classes should we have?", 4, 2, 100, TRUE);
 }
 
 if (distribution==0)
