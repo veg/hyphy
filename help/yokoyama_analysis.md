@@ -1,6 +1,6 @@
 # Codon Substitution Analysis: Yokoyama Rhodopsin Dataset
 
-This report provides an interpretive comparison of ten different codon substitution model configurations fitted to the Yokoyama vertebrate rhodopsin dataset (`tests/data/yokoyama.rh1.cds.mod.1-990.nex`). 
+This report provides an interpretive comparison of eight different **global** codon substitution model configurations fitted to the Yokoyama vertebrate rhodopsin dataset (`tests/data/yokoyama.rh1.cds.mod.1-990.nex`). 
 
 The dataset consists of 36 sequences and 71 branches (990 nucleotides/330 codons in length).
 
@@ -12,7 +12,6 @@ The dataset consists of 36 sequences and 71 branches (990 nucleotides/330 codons
 - **HMM Rate Variation**: Modelling site-to-site rate variation via a Hidden Markov Model with 4 Gamma-distributed rate categories yields a massive improvement (delta AIC-c = -160.84 compared to the best model without site-to-site variation, LCAP).
 - **Autocorrelation**: The estimated HMM transition parameter lambda (0.284) indicates a strong positive correlation in evolutionary rates between adjacent codon sites, reflecting structural domains of rhodopsin.
 - **Custom bias matrix**: Specifying custom GTR-like nucleotide biases (e.g., HKY85-like `010010` bias in `MG94CUSTOM`) improves the fit dramatically compared to baseline MG94.
-- **Rate Heterogeneity across Branches**: Both `MG94 Local` and `GY94 Local` models show a massive improvement in likelihood over their Global counterparts, demonstrating that selection rates (dN/dS) vary significantly across different lineages in the vertebrate rhodopsin phylogeny.
 - **Selection Pressure**: All global selection estimates (ranging from 0.08 to 0.29) indicate that the rhodopsin gene is overall under strong purifying (selective) constraint.
 
 ---
@@ -28,8 +27,6 @@ Below is the summary table of the log-likelihood (logL), parameter count, inform
 | **ECM+F+OMEGA Global** | -13266.70 | 71 | 26675.40 | **26676.22** | 27203.40 | 4.378 | 0.292 |
 | **MG94CUSTOM Global** | -13425.62 | 72 | 26995.25 | **26996.09** | 27530.69 | 3.845 | 0.110 |
 | **GY94CUSTOMF3X4 Global**| -13500.36 | 72 | 27144.71 | **27145.55** | 27680.15 | 4.050 | 0.079 |
-| **GY94 Local** | -13466.35 | 141 | 27214.69 | **27217.92** | 28263.26 | 4.058 | *Variable per branch*|
-| **MG94 Local** | -13507.52 | 140 | 27295.05 | **27298.23** | 28336.18 | 3.947 | *Variable per branch*|
 | **GY94 Global** | -13626.35 | 72 | 27396.69 | **27397.54** | 27932.13 | 3.902 | 0.132 |
 | **MG94 Global** | -13667.31 | 71 | 27476.63 | **27477.45** | 28004.63 | 3.794 | 0.125 |
 | **MEC Global** | -15179.54 | 76 | 30511.08 | **30512.02** | 31076.27 | 2.936 | *N/A (WAG empirical)* |
@@ -65,16 +62,13 @@ Comparison of the total estimated tree lengths (expected substitutions per codon
 3. **ECM (Empirical Codon Model)**:
    The empirical transition matrix accounts for realistic substitution patterns and multi-nucleotide changes (double and triple mutations), which mechanistic models assume are impossible.
 
-### 4.2 Global vs. Local Models
-Fitting branch-specific selection parameters (`Local` models) improves the log-likelihood by **160 units** over `Global` models. This nested LRT comparison strongly rejects the null hypothesis of a uniform global selection pressure across the tree (p < 0.0001), indicating that different lineages of vertebrate rhodopsin have evolved under varying levels of selective constraint.
-
-### 4.3 dN/dS Estimates Divergence
+### 4.2 dN/dS Estimates Divergence
 The dN/dS values estimated under global models differ:
 - **GY94 Global** estimates omega = 0.132, whereas **MG94 Global** estimates R = 0.125.
 - **MG94CUSTOM w/HM** estimates a lower selection ratio of 0.087, showing that accounting for site-to-site rate variation prevents overestimation of selection by separating site-specific constraints.
 - **ECM+F+OMEGA** estimates a higher omega of 0.292 because the baseline empirical matrix already accounts for amino acid similarity.
 
-### 4.4 Tree Length Variations
+### 4.3 Tree Length Variations
 The total tree length (sum of branch lengths) represents the total expected substitutions per codon:
 - **MG94CUSTOM w/HM** estimates the longest tree (6.19), because accounting for rate variation increases tree length estimates due to high-rate variable sites.
 - Standard mechanistic models are highly consistent, estimating a tree length of ~3.8 to 4.0 expected substitutions per site.
