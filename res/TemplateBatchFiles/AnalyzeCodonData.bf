@@ -1,4 +1,4 @@
-RequireVersion("2.5.0");
+RequireVersion("2.5.99");
 
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
