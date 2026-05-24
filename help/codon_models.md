@@ -6,31 +6,31 @@ This document provides a comprehensive overview of the 23 standard codon substit
 
 ## 1. Mechanistic Models: MG94 vs. GY94
 
-Codon substitution models describe the evolutionary process of protein-coding DNA sequences. They are typically defined by a $61 \times 61$ rate matrix $Q$ (excluding stop codons under the selected genetic code). The two foundational formulations are **Muse-Gaut (1994)** and **Goldman-Yang (1994)**.
+Codon substitution models describe the evolutionary process of protein-coding DNA sequences. They are typically defined by a 61x61 rate matrix Q (excluding stop codons under the selected genetic code). The two foundational formulations are **Muse-Gaut (1994)** and **Goldman-Yang (1994)**.
 
 ### Muse-Gaut 94 (MG94)
-In the MG94 formulation, rate matrix entries are scaled by the frequency of the **target nucleotide** at the changing codon position. For a substitution from codon $i$ to codon $j$:
+In the MG94 formulation, rate matrix entries are scaled by the frequency of the target nucleotide at the changing codon position. For a substitution from codon i to codon j:
 
-$$q_{ij} = \begin{cases}
-\alpha \pi_{n_j}, & \text{if } i \to j \text{ is a synonymous transition/transversion} \\
-\beta \pi_{n_j}, & \text{if } i \to j \text{ is a non-synonymous transition/transversion} \\
-0, & \text{if } i \to j \text{ requires } \ge 2 \text{ nucleotide substitutions}
-\end{cases}$$
+```
+q_ij = alpha * pi_nj,  if i -> j is a synonymous transition/transversion
+q_ij = beta * pi_nj,   if i -> j is a non-synonymous transition/transversion
+q_ij = 0,              if i -> j requires 2 or more nucleotide substitutions
+```
 
-where $\alpha$ is the synonymous rate, $\beta$ is the non-synonymous rate, and $\pi_{n_j}$ is the frequency of the target nucleotide.
+where alpha is the synonymous rate, beta is the non-synonymous rate, and pi_nj is the frequency of the target nucleotide.
 
 ### Goldman-Yang 94 (GY94)
-In the GY94 formulation, rate matrix entries are scaled by the frequency of the **target codon** ($\pi_j$). Transitions are scaled by a transition/transversion ratio ($\kappa$):
+In the GY94 formulation, rate matrix entries are scaled by the frequency of the target codon (pi_j). Transitions are scaled by a transition/transversion ratio (kappa):
 
-$$q_{ij} = \begin{cases}
-\mu \pi_j, & \text{synonymous transversion} \\
-\mu \kappa \pi_j, & \text{synonymous transition} \\
-\mu \omega \pi_j, & \text{non-synonymous transversion} \\
-\mu \kappa \omega \pi_j, & \text{non-synonymous transition} \\
-0, & \ge 2 \text{ nucleotide substitutions}
-\end{cases}$$
+```
+q_ij = mu * pi_j,                 synonymous transversion
+q_ij = mu * kappa * pi_j,          synonymous transition
+q_ij = mu * omega * pi_j,          non-synonymous transversion
+q_ij = mu * kappa * omega * pi_j,  non-synonymous transition
+q_ij = 0,                         2 or more nucleotide substitutions
+```
 
-where $\omega = dN/dS$, $\kappa$ is the transition/transversion ratio, and $\pi_j$ is the target codon frequency.
+where omega = dN/dS, kappa is the transition/transversion ratio, and pi_j is the target codon frequency.
 
 ---
 
@@ -44,11 +44,11 @@ These models build on the nucleotide substitution background (e.g., GTR, HKY85) 
 
 | Model Name | Background Nucleotide Model | Frequency Parameterization | Description & Key Options |
 |:---|:---|:---|:---|
-| **MG94** | HKY85 / GTR | F3x4 / F1x4 | Standard Muse-Gaut 94 model with selection parameter $R = dN/dS$. |
-| **GY94** | HKY85 / GTR | F61 | Standard Goldman-Yang 94 model with transition/transversion ratio $\kappa$ and $dN/dS$ ratio $\omega$. |
+| **MG94** | HKY85 / GTR | F3x4 / F1x4 | Standard Muse-Gaut 94 model with selection parameter R = dN/dS. |
+| **GY94** | HKY85 / GTR | F61 | Standard Goldman-Yang 94 model with transition/transversion ratio kappa and dN/dS ratio omega. |
 | **MG94W9** | 9-parameter transition matrix | F3x4 | MG94 with separate exchange rates for transition/transversion classes. |
 | **GY94W9** | 9-parameter transition matrix | F61 | GY94 with separate exchange rates for transition/transversion classes. |
-| **MG94CUSTOM** | Custom (User-specified) | F3x4 | MG94 with custom GTR-like rate-designation string (e.g., `010010` for HKY85). |
+| **MG94CUSTOM** | Custom (User-specified) | F3x4 | MG94 with custom GTR-like rate-designation string (e.g., 010010 for HKY85). |
 | **GY94CUSTOMF3X4** | Custom (User-specified) | F3x4 | GY94 using position-specific nucleotide frequencies (F3x4) instead of full F61 frequencies. |
 | **MG94CUSTOMFREQS** | Custom (User-specified) | User-defined | MG94 with custom nucleotide rates and customizable frequency estimators. |
 | **MG94CUSTOMF1X4** | Custom (User-specified) | F1x4 | MG94 with a single set of nucleotide frequencies across all codon positions. |
@@ -68,7 +68,7 @@ Empirical codon models use substitution rates derived from large genomic databas
 |:---|:---|:---|
 | **ECM** | Unscaled | Fits the raw Empirical Codon Model (based on Kosiol et al. 2007). Prompted for:<br>- `multiple-substitutions` (`Yes`/`No` to allow double/triple changes) |
 | **ECM+F** | F61 | Empirical Codon Model scaled by target codon frequencies. |
-| **ECM+F+OMEGA** | F61 + $dN/dS$ | Scales empirical non-synonymous substitution rates by an estimated $dN/dS$ parameter ($\omega$). |
+| **ECM+F+OMEGA** | F61 + dN/dS | Scales empirical non-synonymous substitution rates by an estimated dN/dS parameter (omega). |
 | **ECM+MLFREQS** | ML-estimated | ECM with frequencies estimated via Maximum Likelihood. |
 | **ECM+F3X4** | F3x4 | ECM using position-specific nucleotide frequencies (F3x4). |
 
@@ -76,7 +76,7 @@ Empirical codon models use substitution rates derived from large genomic databas
 
 | Model Name | Model Class | Description & Key Options |
 |:---|:---|:---|
-| **LCAP** | Biophysical | **Linear Combination of Amino Acid Properties**. Parameterizes non-synonymous rates using physical property differences between amino acids (Chemical Composition, Polarity, Volume, Iso-electric point, and Hydropathy) with weights ($\alpha_0 \dots \alpha_4$) estimated from the data.<br>Options:<br>- `freq-type` (`F1x4`, `F3x4`, `F61`, `ML3x4`) |
+| **LCAP** | Biophysical | **Linear Combination of Amino Acid Properties**. Parameterizes non-synonymous rates using physical property differences between amino acids (Chemical Composition, Polarity, Volume, Iso-electric point, and Hydropathy) with weights (alpha_0 to alpha_4) estimated from the data.<br>Options:<br>- `freq-type` (`F1x4`, `F3x4`, `F61`, `ML3x4`) |
 | **MEC** | Mixed | **Mixed Empirical-Mechanistic model**. Combines site-specific mechanistic rates with empirical exchangeabilities to model protein evolution under positive selection.<br>Options:<br>- `aa-model` (e.g., `WAG`, `JTT`, `LG`, `Dayhoff`) |
 
 ### 2.5 Mechanistic Amino Acid & Empirical Exchangeability Models
