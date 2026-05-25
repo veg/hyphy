@@ -293,7 +293,15 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
                   lf->GetIthIndependentName(alterIndex)->Enquote() & "): " &
                   minDiff);
 
-    for (long k = 2; k <= hy_global::system_CPU_count; k++) {
+    std::vector<double> cached_times(hy_global::system_CPU_count + 1, -1.0);
+    cached_times[1] = minDiff;
+
+    auto evaluate_threads = [&](long k) -> double {
+      if (k < 1 || k > hy_global::system_CPU_count)
+        return INFINITY;
+      if (cached_times[k] >= 0.0)
+        return cached_times[k];
+
       reflush_conditionals = true;
       lf->SetThreadCount(k);
 
@@ -317,25 +325,22 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
       }
 
       ReportWarning(_String("Benchmark for ") & k & " threads: " & tdiff);
+      cached_times[k] = tdiff;
+      return tdiff;
+    };
 
-      // Scaling threshold logic: we require at least 15% improvement per thread
-      // doubling.
-      double threshold = 1.0 - 0.15 * (k - bestTC) / (double)bestTC;
-      if (threshold > 0.98)
-        threshold = 0.98; // Require at least 2% speedup
-      if (threshold < 0.75)
-        threshold = 0.75; // Cap required speedup at 25%
-
-      if (tdiff < minDiff * threshold) {
-        minDiff = tdiff;
-        bestTC = k;
+    long L = 1, R = hy_global::system_CPU_count;
+    while (L < R) {
+      long M = L + (R - L) / 2;
+      double tM = evaluate_threads(M);
+      double tM1 = evaluate_threads(M + 1);
+      if (tM1 < tM) {
+        L = M + 1;
       } else {
-        // Tolerant break condition to avoid premature exit from noise
-        if (tdiff > minDiff * 1.10 && k <= hy_global::system_CPU_count / 2) {
-          break;
-        }
+        R = M;
       }
     }
+    bestTC = L;
 
     ReportWarning(_String("Auto-benchmarked an optimal number (") & bestTC &
                   ") of threads.");
