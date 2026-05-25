@@ -584,7 +584,7 @@ lfunction selection.io.sitelist_matches_pattern (site_list, pattern, opt_in, off
     if (Type (pattern) != "String") {if (opt_in) return 0; return (1+site_list[0]);}
     for (i,s;in;site_list) {
         idx = "" + (1+(+s) + offset);
-        if (None != regexp.Find (pattern, "$" + idx + "|\\,"+ idx )) {
+        if (None != regexp.Find (pattern, "(^|\\,)" + idx + "(\\,|$)")) {
             return (1+(+s));
         }
     }

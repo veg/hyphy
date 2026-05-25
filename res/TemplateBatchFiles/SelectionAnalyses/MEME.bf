@@ -1664,6 +1664,15 @@ lfunction meme.store_results (node, result, arguments) {
 
         result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"terms.meme.fg_param_prefix" + ^"terms.parameters.synonymous_rate");
         
+        for (k, v; in; scalers['FG']) {
+            if (Type (v["scaler"]) == "String") {
+                val = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"terms.meme.fg_param_prefix" + k);
+                if (None != val) {
+                    ^(v["scaler"]) = val;
+                }
+            }
+        }
+
         rates = "";
         weights = "";
         for (is,w; in; scalers['OMEGA_DIST']) {
