@@ -329,18 +329,68 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
       return tdiff;
     };
 
-    long L = 1, R = hy_global::system_CPU_count;
-    while (L < R) {
-      long M = L + (R - L) / 2;
-      double tM = evaluate_threads(M);
-      double tM1 = evaluate_threads(M + 1);
-      if (tM1 < tM) {
-        L = M + 1;
+    std::vector<long> candidates;
+    candidates.push_back(1);
+    if (hy_global::system_CPU_count >= 2)
+      candidates.push_back(2);
+    if (hy_global::system_CPU_count >= 4)
+      candidates.push_back(4);
+    if (hy_global::system_CPU_count >= 8)
+      candidates.push_back(8);
+    if (hy_global::system_CPU_count >= 12)
+      candidates.push_back(12);
+    if (hy_global::system_CPU_count >= 16)
+      candidates.push_back(16);
+
+    for (long k = 20; k <= hy_global::system_CPU_count;) {
+      candidates.push_back(k);
+      if (k < 64) {
+        k += 4;
       } else {
-        R = M;
+        k += 8;
       }
     }
-    bestTC = L;
+    if (candidates.back() != hy_global::system_CPU_count) {
+      candidates.push_back(hy_global::system_CPU_count);
+    }
+
+    double bestTime = minDiff;
+    long consecutive_rejections = 0;
+
+    for (unsigned long i = 1; i < candidates.size(); i++) {
+      long k = candidates[i];
+      double tdiff = evaluate_threads(k);
+
+      bool accept = false;
+      double threshold = 1.0 - 0.15 * (k - bestTC) / (double)bestTC;
+      if (threshold > 0.98)
+        threshold = 0.98;
+      if (threshold < 0.75)
+        threshold = 0.75;
+
+      if (tdiff < bestTime * threshold) {
+        double min_efficiency = 0.40;
+        if (k > 16) {
+          min_efficiency = 0.52;
+        } else if (k > 4) {
+          min_efficiency = 0.46;
+        }
+        if (tdiff <= minDiff / (k * min_efficiency)) {
+          accept = true;
+        }
+      }
+
+      if (accept) {
+        bestTime = tdiff;
+        bestTC = k;
+        consecutive_rejections = 0;
+      } else {
+        consecutive_rejections++;
+        if (consecutive_rejections >= 3) {
+          break;
+        }
+      }
+    }
 
     ReportWarning(_String("Auto-benchmarked an optimal number (") & bestTC &
                   ") of threads.");

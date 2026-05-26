@@ -1412,7 +1412,6 @@ hyFloat mapParameterToInverval(hyFloat in, long const type, bool inverse) {
   case _hyphyIntervalMapSqueeze:
     if (inverse) {
       in = in / (1. - in);
-      // return in;
       return in * in;
     } else {
       in = sqrt(in);
@@ -1434,13 +1433,7 @@ hyFloat obtainDerivativeCorrection(hyFloat in, long const type) {
     break;
   }
   case _hyphyIntervalMapSqueeze:
-    return (1.) / ((1. - in) * (1. - in));
-    /*if (inverse) {
-        return in/(1.-in);
-    } else {
-        return in/(1.+in);
-    }*/
-
+    return (2.0 * in) / ((1.0 - in) * (1.0 - in) * (1.0 - in));
     break;
   }
   return 1.0;
