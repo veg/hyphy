@@ -546,7 +546,7 @@ meme.report.count = {{0}};
 
 
 
-meme.table_headers = {9 + meme.nrate_classes*2  + (meme.multi_hit == "Double") + 2*(meme.multi_hit == "Double+Triple"),2};
+meme.table_headers = {10 + meme.nrate_classes*2  + (meme.multi_hit == "Double") + 2*(meme.multi_hit == "Double+Triple"),2};
 
 meme.table_headers[0][0] = "&alpha;"; meme.table_headers[0][1] = "Synonymous substitution rate at a site";
 
@@ -570,6 +570,7 @@ meme.table_headers[meme.row_index][0] = "Total branch length"; meme.table_header
 
 meme.table_headers[meme.row_index][0] = "MEME LogL"; meme.table_headers[meme.row_index][1] = "Site Log-likelihood under the MEME model"; meme.row_index+=1;
 meme.table_headers[meme.row_index][0] = "FEL LogL"; meme.table_headers[meme.row_index][1] = "Site Log-likelihood under the FEL model"; meme.row_index+=1;
+meme.table_headers[meme.row_index][0] = "LRT MEME vs FEL"; meme.table_headers[meme.row_index][1] = "Likelihood ratio test statistic p-value for MEME vs FEL"; meme.row_index+=1;
  
 meme.table_headers[meme.row_index][0] = "FEL &alpha;"; meme.table_headers[meme.row_index][1] = "Synonymous substitution rate at a site under the FEL model";  meme.row_index+=1;
 meme.table_headers[meme.row_index][0] = "FEL &beta;"; meme.table_headers[meme.row_index][1] = "Non-synonymous substitution rate at a site under the FEL model";  meme.row_index+=1;
@@ -1700,9 +1701,9 @@ lfunction meme.store_results (node, result, arguments) {
         
         result_row [lrt_index] = lrt [utility.getGlobalValue("terms.LRT")];
         result_row [lrt_index+1] = lrt [utility.getGlobalValue("terms.p_value")];
-        result_row [lrt_index+4] = (result["fel"])[utility.getGlobalValue("terms.fit.log_likelihood")];
-        result_row [lrt_index+5] = (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")];
-        result_row [lrt_index+6] = 1-CChi2 (2*(result_row [lrt_index+5]-result_row [lrt_index+4]),2);
+        result_row [lrt_index+4] = (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")];
+        result_row [lrt_index+5] = (result["fel"])[utility.getGlobalValue("terms.fit.log_likelihood")];
+        result_row [lrt_index+6] = 1-CChi2 (2*(result_row [lrt_index+4]-result_row [lrt_index+5]),2);
 
         all_ebf = result[utility.getGlobalValue("terms.empirical_bayes_factor")];
         all_posterior = result[utility.getGlobalValue("terms.posterior")];

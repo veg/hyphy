@@ -1427,7 +1427,6 @@ hyFloat mapParameterToInverval(hyFloat in, long const type, bool inverse) {
 hyFloat obtainDerivativeCorrection(hyFloat in, long const type) {
   switch (type) {
   case _hyphyIntervalMapExpit: {
-    // return tan (M_PI * (in - 0.5));
     hyFloat d = tan(M_PI * (in - 0.5));
     return (1. + d * d) * M_PI;
     break;

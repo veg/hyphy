@@ -34,6 +34,7 @@
 "AD","Analyse nucleotide or aminoacid data with a variery of standard models using given tree.","AnalyzeNucProtData.bf";
 "ADN","Analyse di-nucleotide data with a variery of standard models using given tree.","AnalyzeDiNucData.bf";
 "AFD","Analyse nucleotide data with a variery of standard models using given tree, estimating equilibrium frequencies as parameters","AnalyzeNucDataFreq.bf";
+"FitModel","Fit one of the available codon models to the data, report fit results and model estimates.","SelectionAnalyses/FitModel.bf";
 
 "","Perform codon-based positive selection tests using the models of Kosakovsky Pond and Muse (2005).","!Codon Selection Analyses";
 "ANA","Run a selection analysis.","dNdSRateAnalysis.bf";

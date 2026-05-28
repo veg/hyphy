@@ -8,6 +8,7 @@
 /* end test preamble */
 
 modelLL    = {1,4};
+OPTIMIZATION_PRECISION = 0.001;
 
 runTimer = Time(1);
 
@@ -46,12 +47,12 @@ modelLL [2] = res[1][0];
 DeleteObject (lf);
 
 
-inputOptions["1"] = PATH_TO_CURRENT_BF+".."+DIRECTORY_SEPARATOR+"data"+DIRECTORY_SEPARATOR+"2.fas";
+inputOptions = {};
 inputOptions["0"] = "Universal";
-inputOptions["2"] = "MG94";
-inputOptions["3"] = "Local";
-inputOptions["4"] = inputOptions["6"];
-inputOptions["5"] = inputOptions["7"];
+inputOptions["1"] = PATH_TO_CURRENT_BF+".."+DIRECTORY_SEPARATOR+"data"+DIRECTORY_SEPARATOR+"2.fas";
+inputOptions["2"] = PATH_TO_CURRENT_BF+".."+DIRECTORY_SEPARATOR+"data"+DIRECTORY_SEPARATOR+"2.tree";
+inputOptions["3"] = "MG94";
+inputOptions["4"] = "Local";
 
 ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "AnalyzeCodonData.bf", inputOptions);
 
@@ -61,6 +62,7 @@ DeleteObject (lf);
 
 /* test epilogue */
 	timeMatrix = endTestTimer 				  (_testDescription);
+	fprintf (stdout, "\nExpected LL: ", expectedLL, "\nFitted LL: ", modelLL, "\nAbs Diff: ", Abs(expectedLL-modelLL), "\nThreshold: ", 2*OPTIMIZATION_PRECISION, "\n");
 	if (logTestResult (Abs (expectedLL-modelLL) < 2*OPTIMIZATION_PRECISION))
 	{
 		return timeMatrix;

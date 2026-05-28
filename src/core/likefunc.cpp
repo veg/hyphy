@@ -78,13 +78,24 @@ extern _GrowingVector *_comparative_lf_debug_matrix;
 
 hyFloat BenchmarkThreads(_LikelihoodFunction *);
 
-namespace {
-struct DynamicBlockTracker {
-  std::vector<long> variables;
-  hyFloat max_logl_at_last_cg;
-  std::vector<hyFloat> values_at_last_cg;
-};
-} // namespace
+// Removed duplicate DynamicBlockTracker definition to avoid ambiguity with
+// likefunc.h
+
+static hyFloat get_parameter_step(_Vector const &v, long steps = 4) {
+  hyFloat average = 0.;
+  long counter = steps;
+  for (long i = (long)v.get_used() - 1; i >= 0 && counter >= 0; i--) {
+    hyFloat hf = v.theData[i];
+    if (NonZero(hf)) {
+      average += fabs(hf);
+      counter--;
+    }
+  }
+  if (counter <= steps) {
+    return average / (steps - counter);
+  }
+  return 0.0;
+}
 
 long siteEvalCount = 0;
 
@@ -4736,8 +4747,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
     }
   }
 
-  hyFloat intermediateP, maxSoFar = -INFINITY, bestVal, currentPrecision = 0.1,
-                         percentDone = 0.0;
+  hyFloat intermediateP, maxSoFar = -INFINITY, bestVal, currentPrecision = 0.1;
 
   long evalsIn = likeFuncEvalCallCount, exponentiationsIn = matrix_exp_count;
 
@@ -5118,103 +5128,6 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
 
   std::vector<DynamicBlockTracker> dynamic_block_trackers;
 
-  auto should_skip_cg_for_group = [&](_SimpleList const *group) -> bool {
-    if (!group || group->lLength < 2)
-      return false;
-
-    long tracker_idx = -1;
-    for (unsigned long t = 0; t < dynamic_block_trackers.size(); t++) {
-      if (dynamic_block_trackers[t].variables.size() == group->lLength) {
-        bool match = true;
-        for (unsigned long k = 0; k < group->lLength; k++) {
-          if (dynamic_block_trackers[t].variables[k] != group->list_data[k]) {
-            match = false;
-            break;
-          }
-        }
-        if (match) {
-          tracker_idx = t;
-          break;
-        }
-      }
-    }
-
-    if (tracker_idx != -1) {
-      if (maxSoFar - dynamic_block_trackers[tracker_idx].max_logl_at_last_cg <
-          precision) {
-        // Check environmental drift of non-active parameters
-        hyFloat other_vars_movement = 0.0;
-        std::vector<bool> in_group(indexInd.lLength, false);
-        for (long var : dynamic_block_trackers[tracker_idx].variables) {
-          if (var >= 0 && var < (long)indexInd.lLength) {
-            in_group[var] = true;
-          }
-        }
-
-        if (dynamic_block_trackers[tracker_idx].values_at_last_cg.size() ==
-            indexInd.lLength) {
-          for (unsigned long v = 0; v < indexInd.lLength; v++) {
-            if (!in_group[v]) {
-              other_vars_movement = Maximum(
-                  other_vars_movement, fabs(GetIthIndependent(v) -
-                                            dynamic_block_trackers[tracker_idx]
-                                                .values_at_last_cg[v]));
-            }
-          }
-          if (other_vars_movement < precision) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-  };
-
-  auto update_tracker_for_group = [&](_SimpleList const *group,
-                                      hyFloat current_max) {
-    if (!group || group->lLength < 2)
-      return;
-
-    long tracker_idx = -1;
-    for (unsigned long t = 0; t < dynamic_block_trackers.size(); t++) {
-      if (dynamic_block_trackers[t].variables.size() == group->lLength) {
-        bool match = true;
-        for (unsigned long k = 0; k < group->lLength; k++) {
-          if (dynamic_block_trackers[t].variables[k] != group->list_data[k]) {
-            match = false;
-            break;
-          }
-        }
-        if (match) {
-          tracker_idx = t;
-          break;
-        }
-      }
-    }
-
-    if (tracker_idx != -1) {
-      dynamic_block_trackers[tracker_idx].max_logl_at_last_cg = current_max;
-      dynamic_block_trackers[tracker_idx].values_at_last_cg.resize(
-          indexInd.lLength);
-      for (unsigned long v = 0; v < indexInd.lLength; v++) {
-        dynamic_block_trackers[tracker_idx].values_at_last_cg[v] =
-            GetIthIndependent(v);
-      }
-    } else {
-      DynamicBlockTracker new_tracker;
-      new_tracker.variables.reserve(group->lLength);
-      for (unsigned long k = 0; k < group->lLength; k++) {
-        new_tracker.variables.push_back(group->list_data[k]);
-      }
-      new_tracker.max_logl_at_last_cg = current_max;
-      new_tracker.values_at_last_cg.resize(indexInd.lLength);
-      for (unsigned long v = 0; v < indexInd.lLength; v++) {
-        new_tracker.values_at_last_cg[v] = GetIthIndependent(v);
-      }
-      dynamic_block_trackers.push_back(new_tracker);
-    }
-  };
-
   if (optimization_mode == kOptimizationHybrid ||
       optimization_mode == kOptimizationGradientDescent) { // gradient descent
     _Matrix bestSoFar;
@@ -5232,34 +5145,54 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
     if (optimization_mode != kOptimizationGradientDescent) {
       // ConjugateGradientDescent (0.5, bestSoFar, true, 10);
 
-      hyFloat grad_precision;
-      if (maxSoFar > -INFINITY) {
-        grad_precision = MIN(1000., -maxSoFar * 0.001);
-      } else {
-        grad_precision = -0.001;
-      }
-
       if (gradientBlocks.nonempty()) {
-        for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
-          _SimpleList *this_block = (_SimpleList *)gradientBlocks(b);
-          if (this_block->countitems() > 1 &&
-              this_block->countitems() <= maxGradientBlockDimension) {
-            // printf ("\n...Performing a gradient pass on block with %ld
-            // variables\n", this_block->countitems()); this_block->Each([this,
-            // b] (long item, unsigned long) -> void {
-            //    printf ("Block %d, variable %s\n", b,
-            //    GetIthIndependentName(item)->get_str());
-            //});
-            maxSoFar = ConjugateGradientDescent(
-                currentPrecision, bestSoFar, true, kMaxGradientStepCount,
-                this_block, maxSoFar, grad_precision);
-            update_tracker_for_group(this_block, maxSoFar);
+        hyFloat improvement = 1.0;
+        unsigned long cg_passes = 0;
+        const unsigned long kMaxCGPasses = 10;
+
+        while (cg_passes < kMaxCGPasses) {
+          hyFloat logL_before_sweep = maxSoFar;
+          hyFloat grad_precision;
+          if (maxSoFar > -INFINITY) {
+            grad_precision = MIN(1000., -maxSoFar * 0.001);
           } else {
-            // printf ("\n...Skipping a large gradient (or a trivial) block with
-            // %ld variables\n", this_block->countitems());
+            grad_precision = -0.001;
+          }
+
+          for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
+            _SimpleList *this_block = (_SimpleList *)gradientBlocks(b);
+            if (this_block->countitems() > 1 &&
+                this_block->countitems() <= maxGradientBlockDimension) {
+              maxSoFar = ConjugateGradientDescent(
+                  currentPrecision, bestSoFar, true, kMaxGradientStepCount,
+                  this_block, maxSoFar, grad_precision);
+              update_tracker_for_group(this_block, dynamic_block_trackers,
+                                       maxSoFar);
+            }
+          }
+
+          improvement = maxSoFar - logL_before_sweep;
+          cg_passes++;
+
+          if (verbosity_level > 1) {
+            snprintf(buffer, sizeof(buffer),
+                     "\n[At Outset: CG Sweep %lu completed. LogL change = %g "
+                     "(target threshold = %g)]\n",
+                     cg_passes, improvement, currentPrecision);
+            BufferToConsole(buffer);
+          }
+
+          if (improvement <= currentPrecision) {
+            break;
           }
         }
       } else {
+        hyFloat grad_precision;
+        if (maxSoFar > -INFINITY) {
+          grad_precision = MIN(1000., -maxSoFar * 0.001);
+        } else {
+          grad_precision = -0.001;
+        }
         maxSoFar = ConjugateGradientDescent(currentPrecision, bestSoFar, true,
                                             kMaxGradientStepCount, nil,
                                             maxSoFar, grad_precision);
@@ -5267,7 +5200,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
         for (unsigned long k = 0; k < indexInd.lLength; k++) {
           all_vars << (long)k;
         }
-        update_tracker_for_group(&all_vars, maxSoFar);
+        update_tracker_for_group(&all_vars, dynamic_block_trackers, maxSoFar);
       }
     } else {
       hyFloat current_precision = MAX(1., precision);
@@ -5302,22 +5235,6 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
   if (optimization_mode == kOptimizationCoordinateWise) {
 
     bool forward = true;
-
-    auto get_parameter_step = [](_Vector const &v, long steps = 4) -> hyFloat {
-      hyFloat average = 0.;
-      long counter = steps;
-      for (long i = v.get_used() - 1; i >= 0 && counter >= 0; i--) {
-        hyFloat hf = v.theData[i];
-        if (NonZero(hf)) {
-          average += fabs(hf);
-          counter--;
-        }
-      }
-      if (counter <= steps) {
-        return average / (steps - counter);
-      }
-      return 0.0;
-    };
 
     hyFloat averageChange = 0, shrink_factor = -1.0, oldAverage = -1.0,
             stdFactor = 10., lastMaxValue, averageChange2 = 0.0,
@@ -5445,131 +5362,10 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
        * _HY_SLOW_CONVERGENCE_RATIO LL drop of each other)
        */
 
-      if (use_adaptive_step) {
-        convergenceMode = 0;
-        if (oldAverage < 0.0) {
-          shrink_factor = stdFactor;
-        } else {
-          shrink_factor =
-              MAX(GOLDEN_RATIO, MIN(stdFactor, oldAverage / averageChange));
-
-          long steps = logLHistory.get_used();
-          // printf ("\n\nDIFFS\n");
-          // ObjectToConsole (&logLHistory);
-          for (long k = 1; k <= MIN(5, steps - 1); k++) {
-            diffs[k - 1] = logLHistory.theData[steps - k] -
-                           logLHistory.theData[steps - k - 1];
-            // printf ("==> DIFFS %ld : %g\n", k, diffs[k-1]);
-          }
-          // printf ("\n");
-
-          if (steps > 2 && diffs[0] >= GOLDEN_RATIO * diffs[1]) {
-            convergenceMode = 1;
-          }
-
-          if (diffs[0] < precision * 0.1) {
-            convergenceMode = 3;
-          }
-
-          if (convergenceMode < 2) {
-            long changed_v = 0;
-            for (unsigned long i = 0; i < _variables_that_dont_change.lLength;
-                 i++) {
-              if (_variables_that_dont_change.get(i) == 0) {
-                changed_v++;
-              }
-            }
-            if (changed_v <= 1) {
-              convergenceMode = 3;
-            } else {
-              if (steps > 3) {
-                hyFloat average_change3 =
-                            get_parameter_step(logLDeltaHistory, 3),
-                        average_change5 =
-                            get_parameter_step(logLDeltaHistory, 5);
-
-                // printf ("\n===>\n %g %g %g\n\n", average_change3,
-                // average_change5, diffs[0]);
-                // ObjectToConsole(&logLDeltaHistory);
-                // ObjectToConsole(&logLHistory);
-
-                if (diffs[0] > 0. && diffs[1] > 0. && diffs[2] > 0.) {
-                  /*if ((diffs[0] / diffs[1] >= _HY_SLOW_CONVERGENCE_RATIO_INV
-                   || diffs[0] / diffs[1] <= _HY_SLOW_CONVERGENCE_RATIO) &&
-                   (diffs[1] / diffs[2] >= _HY_SLOW_CONVERGENCE_RATIO_INV ||
-                   diffs[1] / diffs[2] <= _HY_SLOW_CONVERGENCE_RATIO)) {*/
-                  if (average_change3 / diffs[0] >= 4.0) {
-                    convergenceMode = 2;
-                    if (steps > 4) {
-                      /*if (diffs[3] > 0.) {
-                       if (diffs[2] / diffs[3] >=
-                       _HY_SLOW_CONVERGENCE_RATIO_INV ||
-                       diffs[2] / diffs[3] <= _HY_SLOW_CONVERGENCE_RATIO) {
-                       convergenceMode = 3;
-                       }*/
-                      // if (average_change5 / MAX(diffs[0], diffs[1]) > 5.0)
-                      // {
-                      if (average_change5 / diffs[0] >= 8.0) {
-                        convergenceMode = 3;
-                      }
-                    }
-                  }
-                  if (convergenceMode < 2) {
-
-                    if (steps > 4 || lastConvergenceMode != 3) {
-                      hyFloat mind = ArrayMin(diffs, 5),
-                              maxd = ArrayMax(diffs, 5);
-
-                      if (mind > 0.) {
-                        if (mind < 10. * precision &&
-                            (maxd - mind) / mind < GOLDEN_RATIO) {
-                          convergenceMode = 3;
-                        }
-                      }
-                    }
-
-                    if (convergenceMode < 3) {
-                      hyFloat mind = ArrayMin(diffs, 3),
-                              maxd = ArrayMax(diffs, 3);
-
-                      if (mind > 0.) {
-                        if ((maxd - mind) / mind < 3.) {
-                          convergenceMode = 2;
-                        }
-                      }
-                    }
-                  }
-
-                } else {
-                  convergenceMode = 3;
-                }
-              }
-            }
-          }
-
-          // printf ("===>CONV MODE %d\n", convergenceMode);
-          //  ObjectToConsole (&_variables_that_dont_change); NLToConsole();
-          switch (convergenceMode) {
-          case 1:
-            shrink_factor = GOLDEN_RATIO_R;
-            break;
-          case 2:
-            shrink_factor = stdFactor;
-            break;
-          case 3:
-            shrink_factor = stdFactor * stdFactor;
-            break;
-            // default:
-            //   shrink_factor = 4.;
-          }
-        }
-      } else {
-        if (oldAverage < 0.0 || stdFactor * averageChange > oldAverage) {
-          shrink_factor = stdFactor;
-        } else {
-          shrink_factor = oldAverage / averageChange;
-        }
-      }
+      UpdateConvergenceMode(use_adaptive_step, oldAverage, averageChange,
+                            stdFactor, precision, logLHistory, logLDeltaHistory,
+                            lastConvergenceMode, _variables_that_dont_change,
+                            convergenceMode, shrink_factor, diffs);
 
       oldAverage = averageChange;
 
@@ -5664,390 +5460,40 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           break;
         }
 
-        bool trigger_cg = false;
-        _SimpleList *cg_list = nil;
-
-        if (convergenceMode > 2) { // see if we need to do a gradient search
-          if (hardLimitOnOptimizationValue < INFINITY &&
-              timer.TimeSinceStart() > hardLimitOnOptimizationValue) {
-            ReportWarning(_String("Optimization terminated before convergence "
-                                  "because the hard time limit was exceeded."));
-            break;
-          }
-
-          if ((loopCounter - last_gradient_search >= 3L /*||
-               (loopCounter - last_gradient_search > 1 &&
-                lastConvergenceMode > 2)*/) &&
-              (inCount < termFactor - 2) && !do_large_change_only) {
-            bool skip_cg_due_to_unproductivity = false;
-            if (!last_cg_productive && max_logl_at_last_cg > -INFINITY) {
-              if (maxSoFar - max_logl_at_last_cg < 1e-5) {
-                skip_cg_due_to_unproductivity = true;
-              }
-            }
-            if (!skip_cg_due_to_unproductivity) {
-              if (gradientBlocks.nonempty()) {
-                for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
-                  if (((_SimpleList *)gradientBlocks(b))->countitems() <=
-                      maxGradientBlockDimension) {
-                    trigger_cg = true;
-                    break;
-                  }
-                }
-              } else if (indexInd.countitems() <= maxGradientBlockDimension) {
-                trigger_cg = true;
-              }
-            } else {
-              last_gradient_search = loopCounter;
-              convergenceMode = 0;
-            }
-          }
+        bool should_break_from_cg = false;
+        ProcessStandardCGPass(
+            convergenceMode, last_gradient_search, do_large_change_only,
+            last_cg_productive, max_logl_at_last_cg, maxSoFar, large_change,
+            last_large_change, logLHistory, logLDeltaHistory,
+            _variables_that_dont_change, _variables_at_boundary, stepHistory,
+            diffs, hardLimitOnOptimizationValue, precision,
+            maxGradientBlockDimension, kMaxGradientStepCount,
+            dynamic_block_trackers, inCount, termFactor, loopCounter, timer,
+            should_break_from_cg);
+        if (should_break_from_cg) {
+          break;
         }
 
-        if (!trigger_cg && do_large_change_only &&
-            last_large_change.lLength >= 2 && last_large_change.lLength <= 16 &&
-            (loopCounter - last_gradient_search >= 3L)) {
-          bool skip_cg_due_to_unproductivity = false;
-          if (!last_cg_productive && max_logl_at_last_cg > -INFINITY) {
-            if (maxSoFar - max_logl_at_last_cg < 1e-5) {
-              skip_cg_due_to_unproductivity = true;
-            }
-          }
-          if (!skip_cg_due_to_unproductivity) {
-            trigger_cg = true;
-            cg_list = &last_large_change;
-          } else {
-            last_gradient_search = loopCounter;
-            convergenceMode = 0;
-          }
-        }
-
-        if (trigger_cg) {
-          _Matrix bestMSoFar;
-          GetAllIndependent(bestMSoFar);
-          hyFloat prec = Minimum(diffs[0], diffs[1]),
-                  grad_precision = Maximum(
-                      precision, 0.1 * get_parameter_step(logLDeltaHistory, 5));
-
-          prec = Minimum(Maximum(prec, precision), 1.);
-          hyFloat old_max = maxSoFar;
-
-          if (!cg_list && gradientBlocks.nonempty()) {
-            for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
-              _SimpleList *this_block = (_SimpleList *)(gradientBlocks(b));
-              if (this_block->countitems() <= maxGradientBlockDimension) {
-                if (should_skip_cg_for_group(this_block)) {
-                  continue;
-                }
-                maxSoFar = ConjugateGradientDescent(
-                    prec * pow(this_block->countitems(), -.25), bestMSoFar,
-                    true, kMaxGradientStepCount, this_block, maxSoFar,
-                    grad_precision, inCount >= termFactor - 2);
-                update_tracker_for_group(this_block, maxSoFar);
-              }
-            }
-          } else {
-            _SimpleList const *target_group = cg_list;
-            _SimpleList all_vars;
-            if (!target_group) {
-              for (unsigned long k = 0; k < indexInd.lLength; k++) {
-                all_vars << (long)k;
-              }
-              target_group = &all_vars;
-            }
-            if (!should_skip_cg_for_group(target_group)) {
-              if (cg_list ||
-                  indexInd.countitems() <= maxGradientBlockDimension) {
-                maxSoFar = ConjugateGradientDescent(
-                    prec * pow(cg_list ? cg_list->lLength : indexInd.lLength,
-                               -.25),
-                    bestMSoFar, true, kMaxGradientStepCount, cg_list, maxSoFar,
-                    grad_precision, inCount >= termFactor - 2);
-              }
-              update_tracker_for_group(target_group, maxSoFar);
-            }
-          }
-
-          if (!cg_list) {
-            large_change.Clear();
-            do_large_change_only = false;
-          }
-
-          for (unsigned long i = 0; i < indexInd.lLength; i++) {
-            hyFloat cv = GetIthIndependent(i);
-            if (!CheckEqual(bestMSoFar.get(i, 0), cv)) {
-              _variables_that_dont_change[i] = 0;
-            }
-            if (!CheckEqual(cv, GetIthIndependentBound(i, true)) &&
-                !CheckEqual(cv, GetIthIndependentBound(i, false))) {
-              _variables_at_boundary[i] = 0;
-            }
-          }
-
-          //_variables_that_dont_change.Populate(indexInd.lLength, 0, 0);
-          //_variables_at_boundary.Populate(indexInd.lLength, 0, 0);
-          GetAllIndependent(bestMSoFar);
-          for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
-            ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
-          }
-
-          logLHistory.Store(maxSoFar);
-          if (logLHistory.get_used() > 1) {
-            logLDeltaHistory.Store(
-                maxSoFar - logLHistory.theData[logLHistory.get_used() - 2]);
-          } else {
-            logLDeltaHistory.Store(0);
-          }
-
-          if (maxSoFar - old_max > 1e-5) {
-            last_cg_productive = true;
-          } else {
-            last_cg_productive = false;
-          }
-          max_logl_at_last_cg = maxSoFar;
-
-          last_gradient_search = loopCounter;
+        if (ExecuteDynamicConjugateGradient(
+                diffs, precision, inCount, termFactor, kMaxGradientStepCount,
+                convergenceMode, maxSoFar, last_gradient_search,
+                last_dynamic_cg_productive, max_logl_at_last_dynamic_cg,
+                changes_history, _variables_that_dont_change,
+                _variables_at_boundary, stepHistory, logLHistory,
+                logLDeltaHistory, loopCounter, dynamic_block_trackers)) {
+          inCount = 0;
           convergenceMode = 0;
-        }
-
-        // Dynamic CG block check
-        bool bypass_cooldown = last_dynamic_cg_productive;
-        bool skip_dynamic_cg = false;
-        if (!last_dynamic_cg_productive &&
-            max_logl_at_last_dynamic_cg > -INFINITY) {
-          if (maxSoFar - max_logl_at_last_dynamic_cg < 1e-5) {
-            skip_dynamic_cg = true;
-          }
-        }
-        if (!skip_dynamic_cg && inCount < 2 && convergenceMode > 1 &&
-            (bypass_cooldown || (loopCounter - last_gradient_search >= 4L)) &&
-            changes_history.lLength >= 8) {
-          last_gradient_search = loopCounter; // Update cooldown immediately
-          unsigned long window = 8;
-          _SimpleList active_vars;
-          _List window_updates;
-          for (unsigned long k = 0; k < window; k++) {
-            window_updates << changes_history.GetItem(changes_history.lLength -
-                                                      1 - k);
-          }
-
-          hyFloat active_var_threshold = 1e-12;
-          for (unsigned long i = 0; i < indexInd.lLength; i++) {
-            hyFloat sum_sq = 0;
-            for (unsigned long k = 0; k < window; k++) {
-              hyFloat d = ((_Vector *)window_updates.GetItem(k))->theData[i];
-              sum_sq += d * d;
-            }
-            if (sum_sq > active_var_threshold) {
-              active_vars << i;
-            }
-          }
-
-          if (active_vars.lLength >= 2) {
-            _SimpleList components(active_vars.lLength, 0, 0);
-            for (unsigned long i = 0; i < active_vars.lLength; i++)
-              components[i] = i;
-
-            auto find = [&](unsigned long i,
-                            _SimpleList &comps) -> unsigned long {
-              while ((unsigned long)comps[i] != i) {
-                comps[i] = comps[comps[i]];
-                i = comps[i];
-              }
-              return i;
-            };
-
-            auto unite = [&](unsigned long i, unsigned long j,
-                             _SimpleList &comps) {
-              unsigned long root_i = find(i, comps);
-              unsigned long root_j = find(j, comps);
-              if (root_i != root_j)
-                comps[root_i] = root_j;
-            };
-
-            for (unsigned long i = 0; i < active_vars.lLength; i++) {
-              for (unsigned long j = i + 1; j < active_vars.lLength; j++) {
-                hyFloat dot = 0, n1 = 0, n2 = 0;
-                unsigned long idx_i = active_vars.list_data[i];
-                unsigned long idx_j = active_vars.list_data[j];
-
-                for (unsigned long k = 0; k < window; k++) {
-                  hyFloat d1 =
-                      ((_Vector *)window_updates.GetItem(k))->theData[idx_i];
-                  hyFloat d2 =
-                      ((_Vector *)window_updates.GetItem(k))->theData[idx_j];
-                  dot += d1 * d2;
-                  n1 += d1 * d1;
-                  n2 += d2 * d2;
-                }
-                if (n1 > 1e-20 && n2 > 1e-20) {
-                  hyFloat corr = dot / sqrt(n1 * n2);
-                  if (fabs(corr) > 0.85) {
-                    unite(i, j, components);
-                  }
-                }
-              }
-            }
-
-            bool made_progress = false;
-            last_dynamic_cg_productive =
-                false; // Reset to false by default before checking
-            for (unsigned long i = 0; i < active_vars.lLength; i++) {
-              if ((unsigned long)components[i] == i) { // Root of a component
-                _SimpleList group_list;
-                for (unsigned long j = 0; j < active_vars.lLength; j++) {
-                  if (find(j, components) == i) {
-                    group_list << active_vars.list_data[j];
-                  }
-                }
-
-                unsigned long max_block_size = 32UL;
-                if (indexInd.lLength > 100) {
-                  max_block_size = MAX(
-                      8UL, MIN(32UL, 3200UL / (unsigned long)indexInd.lLength));
-                }
-
-                if (group_list.lLength >= 2 &&
-                    group_list.lLength <= max_block_size &&
-                    group_list.lLength <= indexInd.lLength - 3L) {
-                  if (should_skip_cg_for_group(&group_list)) {
-                    continue;
-                  }
-
-                  if (verbosity_level > 1) {
-                    snprintf(buffer, sizeof(buffer),
-                             "\n[DYNAMIC BLOCK] Triggering CG on group of %ld "
-                             "vars\n",
-                             group_list.lLength);
-                    BufferToConsole(buffer);
-                  }
-                  _Matrix bestMSoFar;
-                  GetAllIndependent(bestMSoFar);
-                  hyFloat old_max = maxSoFar;
-                  maxSoFar = ConjugateGradientDescent(
-                      precision, bestMSoFar, true, kMaxGradientStepCount,
-                      &group_list, maxSoFar, MAX(precision, diffs[0] * 0.1),
-                      inCount >= termFactor - 2);
-                  last_gradient_search = loopCounter;
-                  max_logl_at_last_dynamic_cg = maxSoFar;
-                  update_tracker_for_group(&group_list, maxSoFar);
-
-                  if (maxSoFar - old_max > precision / termFactor) {
-                    made_progress = true;
-                    if (maxSoFar - old_max > precision * 5.0) {
-                      last_dynamic_cg_productive = true;
-                    }
-                    logLHistory.Store(maxSoFar);
-                    logLDeltaHistory.Store(maxSoFar - old_max);
-
-                    // Reset variables that dont change
-                    for (unsigned long var_idx = 0; var_idx < indexInd.lLength;
-                         var_idx++) {
-                      hyFloat cv = GetIthIndependent(var_idx);
-                      if (!CheckEqual(bestMSoFar.get(var_idx, 0), cv)) {
-                        _variables_that_dont_change[var_idx] = 0;
-                      }
-                      if (!CheckEqual(cv,
-                                      GetIthIndependentBound(var_idx, true)) &&
-                          !CheckEqual(cv,
-                                      GetIthIndependentBound(var_idx, false))) {
-                        _variables_at_boundary[var_idx] = 0;
-                      }
-                    }
-
-                    // Update step history
-                    GetAllIndependent(bestMSoFar);
-                    for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
-                      ((_Vector *)(*stepHistory)(k))
-                          ->Store(bestMSoFar.theData[k]);
-                    }
-                  }
-                  break;
-                }
-              }
-            }
-
-            if (made_progress) {
-              inCount = 0;
-              convergenceMode = 0;
-              large_change.Clear();
-              do_large_change_only = false;
-            }
-          }
+          large_change.Clear();
+          do_large_change_only = false;
         }
       }
 
       // BufferToConsole ("\n####VI:\n");
       // ObjectToConsole (&variableImpact);
-      large_change.Sort();
-
-      if (!do_large_change_only) {
-        if (large_change.countitems() >= 2 &&
-            (large_change.countitems() <= indexInd.countitems() / 4L ||
-             large_change.countitems() <= 8)) {
-          // iterate only the variables that are changing a lot, until they stop
-          // changing
-          do_large_change_only = true;
-          last_large_change = large_change;
-        }
-      } else {
-        if (large_change.countitems() < 2) {
-          do_large_change_only = false;
-        } else {
-          unsigned long logLStep = logLDeltaHistory.get_used();
-          if (logLStep > 2 &&
-              ((logLDeltaHistory.theData[logLStep - 2] > 0. &&
-                logLDeltaHistory.theData[logLStep - 1] <=
-                    logLDeltaHistory.theData[logLStep - 2] * 0.5) ||
-               logLDeltaHistory.theData[logLStep - 1] < precision)) {
-            do_large_change_only = false;
-          } else {
-            last_large_change = large_change;
-          }
-        }
-      }
-
-      //** heuristics for iterating over "core" variables
-
-      if (!do_large_change_only) {
-        // see how many variables are unchanging
-        if (loopCounter - lastCore > coreInterval) {
-          _SimpleList core_candidates;
-          long cutoff = MAX(5, loopCounter / sqrt(indexInd.countitems()));
-          unsigned long unchanging = 0;
-          large_change_all_time.Each(
-              [&](long count, unsigned long idx) -> void {
-                if (count >= cutoff) {
-                  core_candidates << idx;
-                }
-                if (_variables_that_dont_change.get(idx)) {
-                  unchanging++;
-                }
-              });
-
-          if (core_candidates.countitems() >= 2 &&
-              unchanging >= core_candidates.countitems() * 2) {
-            last_large_change = core_candidates;
-            /*
-            printf ("\n\n$$$$$ CORE %ld/%ld # = %ld, interval = %ld\n\n",
-            lastCore, loopCounter, core_candidates.countitems(), coreInterval);
-            NLToConsole();
-            core_candidates.Each ([&](long vc, unsigned long ) -> void {
-                printf ("[CORE] %s (%ld)\n",
-            GetIthIndependentName(vc)->get_str(),
-            large_change_all_time.get(vc));
-            });
-            NLToConsole();
-            */
-
-            lastCore = loopCounter;
-            do_large_change_only = true;
-            for (unsigned long i = 0; i < last_large_change.countitems(); i++) {
-              _variables_that_dont_change[last_large_change.get(i)] = 0;
-            }
-          }
-        }
-      }
+      UpdateCoordinateHeuristics(
+          large_change, do_large_change_only, last_large_change,
+          logLDeltaHistory, precision, loopCounter, lastCore, coreInterval,
+          large_change_all_time, _variables_that_dont_change);
 
       //**
 
@@ -6400,107 +5846,15 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           _variables_that_dont_change[at_boundary.get(abi)]++;
       }
 
-      averageChange2 /= indexInd.lLength;
-      // mean of parameter values
-      averageChange /= (hyFloat)(indexInd.lLength - nc + 1);
-      // mean of change in parameter values during the last step
-
-      forward = true;
-      percentDone = progress_tracker.PushValue(maxSoFar);
-
-      if (verbosity_level == 1) {
-        UpdateOptimizationStatus(maxSoFar, percentDone, 1, true,
-                                 progressFileString);
-      }
-
-      logLHistory.Store(maxSoFar);
-      if (logLHistory.get_used() > 1) {
-        logLDeltaHistory.Store(maxSoFar -
-                               logLHistory.theData[logLHistory.get_used() - 2]);
-      } else {
-        logLDeltaHistory.Store(0);
-      }
-
-      loopCounter++;
-
-      if (verbosity_level > 1) {
-        snprintf(buffer, sizeof(buffer),
-                 "\nAverage Variable Change: %g, percent done: %g, "
-                 "shrink_factor: %g, oldAverage/averageChange: %g",
-                 averageChange, percentDone, shrink_factor,
-                 oldAverage / averageChange);
-        BufferToConsole(buffer);
-        snprintf(buffer, sizeof(buffer),
-                 "\nDiff: %g, Precision: %16.12g, termFactor: %ld",
-                 maxSoFar - lastMaxValue, precision, termFactor);
-        BufferToConsole(buffer);
-        snprintf(buffer, sizeof(buffer), "\nSmoothing term: %g", smoothingTerm);
-        BufferToConsole(buffer);
-        snprintf(buffer, sizeof(buffer), "\nExponential count: %ld",
-                 matrix_exp_count);
-        BufferToConsole(buffer);
-      }
-
-      _Matrix new_values;
-      GetAllIndependent(new_values);
-      _Vector *iter_changes = new _Vector(indexInd.lLength);
-      for (unsigned long i = 0; i < indexInd.lLength; i++) {
-        iter_changes->theData[i] =
-            new_values.theData[i] - old_values.theData[i];
-      }
-      changes_history < iter_changes;
-
-      currentPrecision = averageChange / shrink_factor;
-
-      if (currentPrecision < 1e-6) {
-        currentPrecision = 1e-6;
-      } else if (currentPrecision > averageChange2) {
-        currentPrecision = averageChange2;
-      }
-
-      if (custom_convergence_callback >= 0) {
-        _List arguments;
-        _AssociativeList *parameters = new _AssociativeList;
-
-        GetIndependentVars().Each([&](long, unsigned long i) -> void {
-          parameters->MStore(*GetIthIndependentName(i),
-                             new _Constant(GetIthIndependent(i, false)));
-        });
-        arguments < new _Constant(maxSoFar) < parameters;
-
-        HBLObjectRef convegence_check =
-            custom_convergence_callback_name->Call(&arguments, nil, nil);
-
-        if (convegence_check->Value() <= precision / termFactor) {
-          inCount++;
-        } else {
-          inCount = 0;
-        }
-        DeleteObject(convegence_check);
-      } else {
-        if (maxSoFar - lastMaxValue <= precision / termFactor) {
-          inCount++;
-        } else {
-          inCount = 0;
-        }
-      }
-
-      lastMaxValue = maxSoFar;
-
-      if (!use_adaptive_step) {
-        if (!skipCG && loopCounter && indexInd.lLength > 1 &&
-            ((((long)loopCounter) % indexInd.lLength) == 0)) {
-          _Matrix bestMSoFar;
-          GetAllIndependent(bestMSoFar);
-          maxSoFar = ConjugateGradientDescent(currentPrecision, bestMSoFar);
-          logLHistory.Store(maxSoFar);
-        }
-      }
-
-      if (hardLimitOnOptimizationValue < INFINITY &&
-          timer.TimeSinceStart() > hardLimitOnOptimizationValue) {
-        ReportWarning(_String("Optimization terminated before convergence "
-                              "because the hard time limit was exceeded."));
+      bool should_break_from_pass = false;
+      ProcessEndOfPassLogic(
+          maxSoFar, lastMaxValue, inCount, loopCounter, forward, averageChange2,
+          averageChange, shrink_factor, oldAverage, currentPrecision,
+          changes_history, logLHistory, logLDeltaHistory, nc, progress_tracker,
+          timer, old_values, precision, termFactor, use_adaptive_step, skipCG,
+          hardLimitOnOptimizationValue, should_break_from_pass,
+          custom_convergence_callback, custom_convergence_callback_name);
+      if (should_break_from_pass) {
         break;
       }
     } // optimization passes finish
@@ -7981,6 +7335,1018 @@ void _LikelihoodFunction::ComputeGradient(_Matrix &gradient,
     gradient *= 1. / funcValue;
   }
 }
+//_______________________________________________________________________________________
+
+void _LikelihoodFunction::UpdateConvergenceMode(
+    bool use_adaptive_step, hyFloat oldAverage, hyFloat averageChange,
+    hyFloat stdFactor, hyFloat opt_precision, _Vector &logLHistory,
+    _Vector &logLDeltaHistory, unsigned char lastConvergenceMode,
+    _SimpleList &variables_that_dont_change, unsigned char &convergenceMode,
+    hyFloat &shrink_factor, hyFloat *diffs) {
+  if (use_adaptive_step) {
+    convergenceMode = 0;
+    if (oldAverage < 0.0) {
+      shrink_factor = stdFactor;
+    } else {
+      shrink_factor =
+          MAX(GOLDEN_RATIO, MIN(stdFactor, oldAverage / averageChange));
+
+      long steps = logLHistory.get_used();
+      for (long k = 1; k <= MIN(5, steps - 1); k++) {
+        diffs[k - 1] =
+            logLHistory.theData[steps - k] - logLHistory.theData[steps - k - 1];
+      }
+
+      if (steps > 2 && diffs[0] >= GOLDEN_RATIO * diffs[1]) {
+        convergenceMode = 1;
+      }
+
+      if (diffs[0] < opt_precision * 0.1) {
+        convergenceMode = 3;
+      }
+
+      if (convergenceMode < 2) {
+        long changed_v = 0;
+        for (unsigned long i = 0; i < variables_that_dont_change.lLength; i++) {
+          if (variables_that_dont_change.get(i) == 0) {
+            changed_v++;
+          }
+        }
+        if (changed_v <= 1) {
+          convergenceMode = 3;
+        } else {
+          if (steps > 3) {
+            hyFloat average_change3 = get_parameter_step(logLDeltaHistory, 3),
+                    average_change5 = get_parameter_step(logLDeltaHistory, 5);
+
+            if (diffs[0] > 0. && diffs[1] > 0. && diffs[2] > 0.) {
+              if (average_change3 / diffs[0] >= 4.0) {
+                convergenceMode = 2;
+                if (steps > 4) {
+                  if (average_change5 / diffs[0] >= 8.0) {
+                    convergenceMode = 3;
+                  }
+                }
+              }
+              if (convergenceMode < 2) {
+                if (steps > 4 || lastConvergenceMode != 3) {
+                  hyFloat mind = ArrayMin(diffs, 5), maxd = ArrayMax(diffs, 5);
+
+                  if (mind > 0.) {
+                    if (mind < 10. * opt_precision &&
+                        (maxd - mind) / mind < GOLDEN_RATIO) {
+                      convergenceMode = 3;
+                    }
+                  }
+                }
+
+                if (convergenceMode < 3) {
+                  hyFloat mind = ArrayMin(diffs, 3), maxd = ArrayMax(diffs, 3);
+
+                  if (mind > 0.) {
+                    if ((maxd - mind) / mind < 3.) {
+                      convergenceMode = 2;
+                    }
+                  }
+                }
+              }
+
+            } else {
+              convergenceMode = 3;
+            }
+          }
+        }
+      }
+      switch (convergenceMode) {
+      case 1:
+        shrink_factor = GOLDEN_RATIO_R;
+        break;
+      case 2:
+        shrink_factor = stdFactor;
+        break;
+      case 3:
+        shrink_factor = stdFactor * stdFactor;
+        break;
+      }
+    }
+  } else {
+    if (oldAverage < 0.0 || stdFactor * averageChange > oldAverage) {
+      shrink_factor = stdFactor;
+    } else {
+      shrink_factor = oldAverage / averageChange;
+    }
+  }
+}
+
+//_______________________________________________________________________________________
+
+void _LikelihoodFunction::ProcessStandardCGPass(
+    unsigned char &convergenceMode, long &last_gradient_search,
+    bool &do_large_change_only, bool &last_cg_productive,
+    hyFloat &max_logl_at_last_cg, hyFloat &maxSoFar, _SimpleList &large_change,
+    _SimpleList &last_large_change, _Vector &logLHistory,
+    _Vector &logLDeltaHistory, _SimpleList &variables_that_dont_change,
+    _SimpleList &variables_at_boundary, _List *stepHistory,
+    hyFloat const *diffs, hyFloat hardLimitOnOptimizationValue,
+    hyFloat precision_target, unsigned long maxGradientBlockDimension,
+    unsigned long kMaxGradientStepCount,
+    std::vector<DynamicBlockTracker> &dynamic_block_trackers, long inCount,
+    long termFactor, long loopCounter, TimeDifference &timer,
+    bool &should_break) {
+  should_break = false;
+  bool trigger_cg = false;
+  _SimpleList *cg_list = nil;
+
+  if (convergenceMode > 2) { // see if we need to do a gradient search
+    if (hardLimitOnOptimizationValue < INFINITY &&
+        timer.TimeSinceStart() > hardLimitOnOptimizationValue) {
+      ReportWarning(_String("Optimization terminated before convergence "
+                            "because the hard time limit was exceeded."));
+      should_break = true;
+      return;
+    }
+
+    if ((loopCounter - last_gradient_search >= 3L) &&
+        (inCount < termFactor - 2) && !do_large_change_only) {
+      bool skip_cg_due_to_unproductivity = false;
+      if (!last_cg_productive && max_logl_at_last_cg > -INFINITY) {
+        if (maxSoFar - max_logl_at_last_cg < 1e-5) {
+          skip_cg_due_to_unproductivity = true;
+        }
+      }
+      if (!skip_cg_due_to_unproductivity) {
+        if (gradientBlocks.nonempty()) {
+          for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
+            if (((_SimpleList *)gradientBlocks(b))->countitems() <=
+                maxGradientBlockDimension) {
+              trigger_cg = true;
+              break;
+            }
+          }
+        } else if (indexInd.countitems() <= maxGradientBlockDimension) {
+          trigger_cg = true;
+        }
+      } else {
+        last_gradient_search = loopCounter;
+        convergenceMode = 0;
+      }
+    }
+  }
+
+  if (!trigger_cg && do_large_change_only && last_large_change.lLength >= 2 &&
+      last_large_change.lLength <= 16 &&
+      (loopCounter - last_gradient_search >= 3L)) {
+    bool skip_cg_due_to_unproductivity = false;
+    if (!last_cg_productive && max_logl_at_last_cg > -INFINITY) {
+      if (maxSoFar - max_logl_at_last_cg < 1e-5) {
+        skip_cg_due_to_unproductivity = true;
+      }
+    }
+    if (!skip_cg_due_to_unproductivity) {
+      trigger_cg = true;
+      cg_list = &last_large_change;
+    } else {
+      last_gradient_search = loopCounter;
+      convergenceMode = 0;
+    }
+  }
+
+  if (trigger_cg) {
+    _Matrix bestMSoFar;
+    GetAllIndependent(bestMSoFar);
+    hyFloat prec = Minimum(diffs[0], diffs[1]),
+            grad_precision =
+                Maximum(precision_target,
+                        0.1 * get_parameter_step(logLDeltaHistory, 5));
+
+    prec = Minimum(Maximum(prec, precision_target), 1.);
+    hyFloat old_max = maxSoFar;
+
+    if (!cg_list && gradientBlocks.nonempty()) {
+      for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
+        _SimpleList *this_block = (_SimpleList *)(gradientBlocks(b));
+        if (this_block->countitems() <= maxGradientBlockDimension) {
+          if (should_skip_cg_for_group(this_block, dynamic_block_trackers,
+                                       maxSoFar, precision_target)) {
+            continue;
+          }
+          maxSoFar = ConjugateGradientDescent(
+              prec * pow(this_block->countitems(), -.25), bestMSoFar, true,
+              kMaxGradientStepCount, this_block, maxSoFar, grad_precision,
+              inCount >= termFactor - 2);
+          update_tracker_for_group(this_block, dynamic_block_trackers,
+                                   maxSoFar);
+        }
+      }
+    } else {
+      _SimpleList const *target_group = cg_list;
+      _SimpleList all_vars;
+      if (!target_group) {
+        for (unsigned long k = 0; k < indexInd.lLength; k++) {
+          all_vars << (long)k;
+        }
+        target_group = &all_vars;
+      }
+      if (!should_skip_cg_for_group(target_group, dynamic_block_trackers,
+                                    maxSoFar, precision_target)) {
+        if (cg_list || indexInd.countitems() <= maxGradientBlockDimension) {
+          maxSoFar = ConjugateGradientDescent(
+              prec * pow(cg_list ? cg_list->lLength : indexInd.lLength, -.25),
+              bestMSoFar, true, kMaxGradientStepCount, cg_list, maxSoFar,
+              grad_precision, inCount >= termFactor - 2);
+        }
+        update_tracker_for_group(target_group, dynamic_block_trackers,
+                                 maxSoFar);
+      }
+    }
+
+    if (!cg_list) {
+      large_change.Clear();
+      do_large_change_only = false;
+    }
+
+    for (unsigned long i = 0; i < indexInd.lLength; i++) {
+      hyFloat cv = GetIthIndependent(i);
+      if (!CheckEqual(bestMSoFar.get(i, 0), cv)) {
+        variables_that_dont_change[i] = 0;
+      }
+      if (!CheckEqual(cv, GetIthIndependentBound(i, true)) &&
+          !CheckEqual(cv, GetIthIndependentBound(i, false))) {
+        variables_at_boundary[i] = 0;
+      }
+    }
+
+    GetAllIndependent(bestMSoFar);
+    for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
+      ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
+    }
+
+    logLHistory.Store(maxSoFar);
+    if (logLHistory.get_used() > 1) {
+      logLDeltaHistory.Store(maxSoFar -
+                             logLHistory.theData[logLHistory.get_used() - 2]);
+    } else {
+      logLDeltaHistory.Store(0);
+    }
+
+    if (maxSoFar - old_max > 1e-5) {
+      last_cg_productive = true;
+    } else {
+      last_cg_productive = false;
+    }
+    max_logl_at_last_cg = maxSoFar;
+
+    last_gradient_search = loopCounter;
+    convergenceMode = 0;
+  }
+}
+
+//_______________________________________________________________________________________
+
+void _LikelihoodFunction::ProcessEndOfPassLogic(
+    hyFloat &maxSoFar, hyFloat &lastMaxValue, long &inCount, long &loopCounter,
+    bool &forward, hyFloat &averageChange2, hyFloat &averageChange,
+    hyFloat shrink_factor, hyFloat oldAverage, hyFloat &currentPrecision,
+    _List &changes_history, _Vector &logLHistory, _Vector &logLDeltaHistory,
+    long nc, _OptimiztionProgress &progress_tracker, TimeDifference &timer,
+    _Matrix const &old_values, hyFloat precision_target, long termFactor,
+    bool use_adaptive_step, bool skipCG, hyFloat hardLimitOnOptimizationValue,
+    bool &should_break, long custom_convergence_callback,
+    _FString *custom_convergence_callback_name) {
+  should_break = false;
+  averageChange2 /= indexInd.lLength;
+  // mean of parameter values
+  averageChange /= (hyFloat)(indexInd.lLength - nc + 1);
+  // mean of change in parameter values during the last step
+
+  forward = true;
+  hyFloat percentDone = progress_tracker.PushValue(maxSoFar);
+
+  if (verbosity_level == 1) {
+    UpdateOptimizationStatus(maxSoFar, percentDone, 1, true,
+                             progressFileString);
+  }
+
+  logLHistory.Store(maxSoFar);
+  if (logLHistory.get_used() > 1) {
+    logLDeltaHistory.Store(maxSoFar -
+                           logLHistory.theData[logLHistory.get_used() - 2]);
+  } else {
+    logLDeltaHistory.Store(0);
+  }
+
+  loopCounter++;
+
+  if (verbosity_level > 1) {
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer),
+             "\nAverage Variable Change: %g, percent done: %g, "
+             "shrink_factor: %g, oldAverage/averageChange: %g",
+             averageChange, percentDone, shrink_factor,
+             oldAverage / averageChange);
+    BufferToConsole(buffer);
+    snprintf(buffer, sizeof(buffer),
+             "\nDiff: %g, Precision: %16.12g, termFactor: %ld",
+             maxSoFar - lastMaxValue, precision_target, termFactor);
+    BufferToConsole(buffer);
+    snprintf(buffer, sizeof(buffer), "\nSmoothing term: %g", smoothingTerm);
+    BufferToConsole(buffer);
+    snprintf(buffer, sizeof(buffer), "\nExponential count: %ld",
+             matrix_exp_count);
+    BufferToConsole(buffer);
+  }
+
+  _Matrix new_values;
+  GetAllIndependent(new_values);
+  _Vector *iter_changes = new _Vector(indexInd.lLength);
+  for (unsigned long i = 0; i < indexInd.lLength; i++) {
+    iter_changes->theData[i] = new_values.theData[i] - old_values.theData[i];
+  }
+  changes_history < iter_changes;
+
+  currentPrecision = averageChange / shrink_factor;
+
+  if (currentPrecision < 1e-6) {
+    currentPrecision = 1e-6;
+  } else if (currentPrecision > averageChange2) {
+    currentPrecision = averageChange2;
+  }
+
+  if (custom_convergence_callback >= 0) {
+    _List arguments;
+    _AssociativeList *parameters = new _AssociativeList;
+
+    GetIndependentVars().Each([&](long, unsigned long i) -> void {
+      parameters->MStore(*GetIthIndependentName(i),
+                         new _Constant(GetIthIndependent(i, false)));
+    });
+    arguments < new _Constant(maxSoFar) < parameters;
+
+    HBLObjectRef convegence_check =
+        custom_convergence_callback_name->Call(&arguments, nil, nil);
+
+    if (convegence_check->Value() <= precision_target / termFactor) {
+      inCount++;
+    } else {
+      inCount = 0;
+    }
+    DeleteObject(convegence_check);
+  } else {
+    if (maxSoFar - lastMaxValue <= precision_target / termFactor) {
+      inCount++;
+    } else {
+      inCount = 0;
+    }
+  }
+
+  lastMaxValue = maxSoFar;
+
+  if (!use_adaptive_step) {
+    if (!skipCG && loopCounter && indexInd.lLength > 1 &&
+        ((((long)loopCounter) % indexInd.lLength) == 0)) {
+      _Matrix bestMSoFar;
+      GetAllIndependent(bestMSoFar);
+      maxSoFar = ConjugateGradientDescent(currentPrecision, bestMSoFar);
+      logLHistory.Store(maxSoFar);
+    }
+  }
+
+  if (hardLimitOnOptimizationValue < INFINITY &&
+      timer.TimeSinceStart() > hardLimitOnOptimizationValue) {
+    ReportWarning(_String("Optimization terminated before convergence "
+                          "because the hard time limit was exceeded."));
+    should_break = true;
+  }
+}
+
+//_______________________________________________________________________________________
+
+bool _LikelihoodFunction::should_skip_cg_for_group(
+    _SimpleList const *group,
+    std::vector<DynamicBlockTracker> &dynamic_block_trackers, hyFloat maxSoFar,
+    hyFloat opt_precision) {
+  if (!group || group->lLength < 2)
+    return false;
+
+  long tracker_idx = -1;
+  for (unsigned long t = 0; t < dynamic_block_trackers.size(); t++) {
+    if (dynamic_block_trackers[t].variables.size() == group->lLength) {
+      bool match = true;
+      for (unsigned long k = 0; k < group->lLength; k++) {
+        if (dynamic_block_trackers[t].variables[k] != group->list_data[k]) {
+          match = false;
+          break;
+        }
+      }
+      if (match) {
+        tracker_idx = t;
+        break;
+      }
+    }
+  }
+
+  if (tracker_idx != -1) {
+    if (maxSoFar - dynamic_block_trackers[tracker_idx].max_logl_at_last_cg <
+        opt_precision) {
+      // Check environmental drift of non-active parameters
+      hyFloat other_vars_movement = 0.0;
+      std::vector<bool> in_group(indexInd.lLength, false);
+      for (long var : dynamic_block_trackers[tracker_idx].variables) {
+        if (var >= 0 && var < (long)indexInd.lLength) {
+          in_group[var] = true;
+        }
+      }
+
+      if (dynamic_block_trackers[tracker_idx].values_at_last_cg.size() ==
+          indexInd.lLength) {
+        for (unsigned long v = 0; v < indexInd.lLength; v++) {
+          if (!in_group[v]) {
+            other_vars_movement = Maximum(
+                other_vars_movement,
+                fabs(GetIthIndependent(v) -
+                     dynamic_block_trackers[tracker_idx].values_at_last_cg[v]));
+          }
+        }
+        if (other_vars_movement < opt_precision) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+//_______________________________________________________________________________________
+
+void _LikelihoodFunction::update_tracker_for_group(
+    _SimpleList const *group,
+    std::vector<DynamicBlockTracker> &dynamic_block_trackers,
+    hyFloat current_max) {
+  if (!group || group->lLength < 2)
+    return;
+
+  long tracker_idx = -1;
+  for (unsigned long t = 0; t < dynamic_block_trackers.size(); t++) {
+    if (dynamic_block_trackers[t].variables.size() == group->lLength) {
+      bool match = true;
+      for (unsigned long k = 0; k < group->lLength; k++) {
+        if (dynamic_block_trackers[t].variables[k] != group->list_data[k]) {
+          match = false;
+          break;
+        }
+      }
+      if (match) {
+        tracker_idx = t;
+        break;
+      }
+    }
+  }
+
+  if (tracker_idx != -1) {
+    dynamic_block_trackers[tracker_idx].max_logl_at_last_cg = current_max;
+    dynamic_block_trackers[tracker_idx].values_at_last_cg.resize(
+        indexInd.lLength);
+    for (unsigned long v = 0; v < indexInd.lLength; v++) {
+      dynamic_block_trackers[tracker_idx].values_at_last_cg[v] =
+          GetIthIndependent(v);
+    }
+  } else {
+    DynamicBlockTracker new_tracker;
+    new_tracker.variables.reserve(group->lLength);
+    for (unsigned long k = 0; k < group->lLength; k++) {
+      new_tracker.variables.push_back(group->list_data[k]);
+    }
+    new_tracker.max_logl_at_last_cg = current_max;
+    new_tracker.values_at_last_cg.resize(indexInd.lLength);
+    for (unsigned long v = 0; v < indexInd.lLength; v++) {
+      new_tracker.values_at_last_cg[v] = GetIthIndependent(v);
+    }
+    dynamic_block_trackers.push_back(new_tracker);
+  }
+}
+
+//_______________________________________________________________________________________
+
+bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
+    hyFloat *diffs, hyFloat opt_precision, long inCount, long termFactor,
+    unsigned long kMaxGradientStepCount, unsigned char &convergenceMode,
+    hyFloat &maxSoFar, long &last_gradient_search,
+    bool &last_dynamic_cg_productive, hyFloat &max_logl_at_last_dynamic_cg,
+    _List &changes_history, _SimpleList &variables_that_dont_change,
+    _SimpleList &variables_at_boundary, _List *stepHistory,
+    _Vector &logLHistory, _Vector &logLDeltaHistory, long &loopCounter,
+    std::vector<DynamicBlockTracker> &dynamic_block_trackers) {
+  // Dynamic CG block check
+  bool bypass_cooldown = last_dynamic_cg_productive;
+  bool skip_dynamic_cg = false;
+  if (!last_dynamic_cg_productive && max_logl_at_last_dynamic_cg > -INFINITY) {
+    if (maxSoFar - max_logl_at_last_dynamic_cg < 1e-5) {
+      skip_dynamic_cg = true;
+    }
+  }
+  if (!skip_dynamic_cg && inCount < 2 && convergenceMode > 1 &&
+      (bypass_cooldown || (loopCounter - last_gradient_search >= 4L)) &&
+      changes_history.lLength >= 8) {
+    last_gradient_search = loopCounter; // Update cooldown immediately
+    unsigned long window = 8;
+    _SimpleList active_vars;
+    _List window_updates;
+    for (unsigned long k = 0; k < window; k++) {
+      window_updates << changes_history.GetItem(changes_history.lLength - 1 -
+                                                k);
+    }
+
+    hyFloat active_var_threshold = 1e-12;
+    for (unsigned long i = 0; i < indexInd.lLength; i++) {
+      hyFloat sum_sq = 0;
+      for (unsigned long k = 0; k < window; k++) {
+        hyFloat d = ((_Vector *)window_updates.GetItem(k))->theData[i];
+        sum_sq += d * d;
+      }
+      if (sum_sq > active_var_threshold) {
+        active_vars << i;
+      }
+    }
+
+    if (active_vars.lLength >= 2) {
+      _SimpleList components(active_vars.lLength, 0, 0);
+      for (unsigned long i = 0; i < active_vars.lLength; i++)
+        components[i] = i;
+
+      auto find = [&](unsigned long i, _SimpleList &comps) -> unsigned long {
+        while ((unsigned long)comps[i] != i) {
+          comps[i] = comps[comps[i]];
+          i = comps[i];
+        }
+        return i;
+      };
+
+      auto unite = [&](unsigned long i, unsigned long j, _SimpleList &comps) {
+        unsigned long root_i = find(i, comps);
+        unsigned long root_j = find(j, comps);
+        if (root_i != root_j)
+          comps[root_i] = root_j;
+      };
+
+      for (unsigned long i = 0; i < active_vars.lLength; i++) {
+        for (unsigned long j = i + 1; j < active_vars.lLength; j++) {
+          hyFloat dot = 0, n1 = 0, n2 = 0;
+          unsigned long idx_i = active_vars.list_data[i];
+          unsigned long idx_j = active_vars.list_data[j];
+
+          for (unsigned long k = 0; k < window; k++) {
+            hyFloat d1 = ((_Vector *)window_updates.GetItem(k))->theData[idx_i];
+            hyFloat d2 = ((_Vector *)window_updates.GetItem(k))->theData[idx_j];
+            dot += d1 * d2;
+            n1 += d1 * d1;
+            n2 += d2 * d2;
+          }
+          if (n1 > 1e-20 && n2 > 1e-20) {
+            hyFloat corr = dot / sqrt(n1 * n2);
+            if (fabs(corr) > 0.85) {
+              unite(i, j, components);
+            }
+          }
+        }
+      }
+
+      bool made_progress = false;
+      last_dynamic_cg_productive =
+          false; // Reset to false by default before checking
+      char buffer[2048];
+      for (unsigned long i = 0; i < active_vars.lLength; i++) {
+        if ((unsigned long)components[i] == i) { // Root of a component
+          _SimpleList group_list;
+          for (unsigned long j = 0; j < active_vars.lLength; j++) {
+            if (find(j, components) == i) {
+              group_list << active_vars.list_data[j];
+            }
+          }
+
+          unsigned long max_block_size = 32UL;
+          if (indexInd.lLength > 100) {
+            max_block_size =
+                MAX(8UL, MIN(32UL, 3200UL / (unsigned long)indexInd.lLength));
+          }
+
+          if (group_list.lLength >= 2 && group_list.lLength <= max_block_size &&
+              group_list.lLength <= indexInd.lLength - 3L) {
+            if (should_skip_cg_for_group(&group_list, dynamic_block_trackers,
+                                         maxSoFar, opt_precision)) {
+              continue;
+            }
+
+            if (verbosity_level > 1) {
+              snprintf(buffer, sizeof(buffer),
+                       "\n[DYNAMIC BLOCK] Triggering CG on group of %ld "
+                       "vars\n",
+                       group_list.lLength);
+              BufferToConsole(buffer);
+            }
+            _Matrix bestMSoFar;
+            GetAllIndependent(bestMSoFar);
+            hyFloat old_max = maxSoFar;
+            maxSoFar = ConjugateGradientDescent(
+                opt_precision, bestMSoFar, true, kMaxGradientStepCount,
+                &group_list, maxSoFar, MAX(opt_precision, diffs[0] * 0.1),
+                inCount >= termFactor - 2);
+            last_gradient_search = loopCounter;
+            max_logl_at_last_dynamic_cg = maxSoFar;
+            update_tracker_for_group(&group_list, dynamic_block_trackers,
+                                     maxSoFar);
+
+            if (maxSoFar - old_max > opt_precision / termFactor) {
+              made_progress = true;
+              if (maxSoFar - old_max > opt_precision * 5.0) {
+                last_dynamic_cg_productive = true;
+              }
+              logLHistory.Store(maxSoFar);
+              logLDeltaHistory.Store(maxSoFar - old_max);
+
+              // Reset variables that dont change
+              for (unsigned long var_idx = 0; var_idx < indexInd.lLength;
+                   var_idx++) {
+                hyFloat cv = GetIthIndependent(var_idx);
+                if (!CheckEqual(bestMSoFar.get(var_idx, 0), cv)) {
+                  variables_that_dont_change[var_idx] = 0;
+                }
+                if (!CheckEqual(cv, GetIthIndependentBound(var_idx, true)) &&
+                    !CheckEqual(cv, GetIthIndependentBound(var_idx, false))) {
+                  variables_at_boundary[var_idx] = 0;
+                }
+              }
+
+              // Update step history
+              GetAllIndependent(bestMSoFar);
+              for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
+                ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      if (made_progress) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+//_______________________________________________________________________________________
+
+void _LikelihoodFunction::UpdateCoordinateHeuristics(
+    _SimpleList &large_change, bool &do_large_change_only,
+    _SimpleList &last_large_change, _Vector &logLDeltaHistory,
+    hyFloat opt_precision, long loopCounter, long &lastCore, long coreInterval,
+    _SimpleList &large_change_all_time,
+    _SimpleList &variables_that_dont_change) {
+  large_change.Sort();
+
+  if (!do_large_change_only) {
+    if (large_change.countitems() >= 2 &&
+        (large_change.countitems() <= indexInd.countitems() / 4L ||
+         large_change.countitems() <= 8)) {
+      // iterate only the variables that are changing a lot, until they stop
+      // changing
+      do_large_change_only = true;
+      last_large_change = large_change;
+    }
+  } else {
+    if (large_change.countitems() < 2) {
+      do_large_change_only = false;
+    } else {
+      unsigned long logLStep = logLDeltaHistory.get_used();
+      if (logLStep > 2 &&
+          ((logLDeltaHistory.theData[logLStep - 2] > 0. &&
+            logLDeltaHistory.theData[logLStep - 1] <=
+                logLDeltaHistory.theData[logLStep - 2] * 0.5) ||
+           logLDeltaHistory.theData[logLStep - 1] < opt_precision)) {
+        do_large_change_only = false;
+      } else {
+        last_large_change = large_change;
+      }
+    }
+  }
+
+  //** heuristics for iterating over "core" variables
+
+  if (!do_large_change_only) {
+    // see how many variables are unchanging
+    if (loopCounter - lastCore > coreInterval) {
+      _SimpleList core_candidates;
+      long cutoff = MAX(5, loopCounter / sqrt(indexInd.countitems()));
+      unsigned long unchanging = 0;
+      large_change_all_time.Each([&](long count, unsigned long idx) -> void {
+        if (count >= cutoff) {
+          core_candidates << idx;
+        }
+        if (variables_that_dont_change.get(idx)) {
+          unchanging++;
+        }
+      });
+
+      if (core_candidates.countitems() >= 2 &&
+          unchanging >= core_candidates.countitems() * 2) {
+        last_large_change = core_candidates;
+        lastCore = loopCounter;
+        do_large_change_only = true;
+        for (unsigned long i = 0; i < last_large_change.countitems(); i++) {
+          variables_that_dont_change[last_large_change.get(i)] = 0;
+        }
+      }
+    }
+  }
+}
+
+//_______________________________________________________________________________________
+
+_LikelihoodFunction::CoordinateStepResult
+_LikelihoodFunction::OptimizeSingleCoordinate(
+    unsigned long current_index, bool do_large_change_only,
+    _SimpleList &last_large_change, unsigned char convergenceMode, long inCount,
+    long termFactor, hyFloat shrink_factor, _List *stepHistory,
+    _List &changes_history, hyFloat const *diffs, hyFloat opt_precision,
+    hyFloat currentPrecision, hyFloat &maxSoFar, _SimpleList &large_change,
+    _SimpleList &large_change_all_time, _SimpleList &variables_that_dont_change,
+    _SimpleList &variables_at_boundary, _Matrix &variableValues,
+    _Matrix &variableImpact, _Vector &logLHistory, _SimpleList &nc2,
+    hyFloat &averageChange, hyFloat &averageChange2, double elapsed_time,
+    hyFloat hardLimitOnOptimizationValue, bool use_adaptive_step, bool go2Bound,
+    long loopCounter) {
+  if (hardLimitOnOptimizationValue < INFINITY &&
+      elapsed_time > hardLimitOnOptimizationValue) {
+    return kCoordinateStepBreak;
+  }
+
+  bool is_global = GetIthIndependentVar(current_index)->IsGlobal();
+
+#ifdef __HYPHYMPI__
+  if (hy_mpi_node_rank == 0)
+#endif
+    if (terminate_execution) {
+      return kCoordinateStepTerminate;
+    }
+
+  hyFloat bestVal = GetIthIndependent(current_index);
+
+  _Vector parameter_change_history;
+  for (unsigned long k = 0; k < changes_history.lLength; k++) {
+    _Vector *iter_changes = (_Vector *)changes_history(k);
+    parameter_change_history.Store(iter_changes->theData[current_index]);
+  }
+
+  hyFloat local_precision_step = get_parameter_step(parameter_change_history);
+
+  if (do_large_change_only) {
+    if (last_large_change.BinaryFind(current_index) < 0) {
+      averageChange2 += bestVal;
+      return kCoordinateStepContinue;
+    }
+  }
+
+  if (variables_that_dont_change.get(current_index) > 1) {
+    if (convergenceMode <= 2 && inCount < termFactor - 1 &&
+        !do_large_change_only) {
+      averageChange2 += bestVal;
+      if (is_global)
+        variables_that_dont_change[current_index] = 1;
+      else
+        variables_that_dont_change[current_index]++;
+      return kCoordinateStepContinue;
+    }
+  }
+
+  if (variables_that_dont_change.get(current_index) > 1) {
+    if (variables_at_boundary.get(current_index) > 1) {
+      if (inCount <= termFactor - 1) {
+        variables_that_dont_change[current_index]++;
+        return kCoordinateStepContinue;
+      }
+    }
+  }
+
+  _Vector *vH = nil;
+  hyFloat precisionStep = 0., brackStep;
+
+  if (use_adaptive_step) {
+    vH = (_Vector *)(*stepHistory)(current_index);
+    long stepsSoFar = vH->get_used();
+
+    if (stepsSoFar > 1) {
+      hyFloat lastParameterValue = vH->theData[stepsSoFar - 1],
+              previousParameterValue = vH->theData[stepsSoFar - 2];
+
+      long history_window = 10L;
+      long start_k = stepsSoFar - 1 > history_window
+                         ? stepsSoFar - 1 - history_window
+                         : 0L;
+      long count = 0L;
+      brackStep = 0.;
+
+      for (long k = start_k; k < stepsSoFar - 1; k++) {
+        previousParameterValue = vH->theData[k];
+        lastParameterValue = vH->theData[k + 1];
+        StoreIfGreater(brackStep,
+                       fabs(lastParameterValue - previousParameterValue));
+        count++;
+      }
+
+      if (count > 0) {
+        brackStep = 2. * brackStep / count;
+      } else {
+        brackStep = MIN(0.001, opt_precision * 0.001);
+      }
+      if (CheckEqual(brackStep, 0.0)) {
+        brackStep = MIN(0.001, opt_precision * 0.001);
+      }
+
+      precisionStep = 0.1 * brackStep;
+
+      if (inCount) {
+        precisionStep = lastParameterValue * opt_precision;
+      }
+
+      precisionStep = MAX(precisionStep, lastParameterValue * opt_precision);
+
+      if (precisionStep == 0.0) {
+        precisionStep = opt_precision;
+        brackStep = 2. * precisionStep;
+      } else {
+        brackStep *= 2.;
+      }
+
+      if (verbosity_level > 50) {
+        char buffer[2048];
+        snprintf(buffer, sizeof(buffer),
+                 "\n[BRACKET STEP: current = %g: previous = %g (diff = "
+                 "%g). bracket = %g, prec = %g]",
+                 lastParameterValue, previousParameterValue,
+                 lastParameterValue - previousParameterValue, brackStep,
+                 precisionStep);
+        BufferToConsole(buffer);
+      }
+
+    } else {
+      brackStep = vH->theData[0];
+      precisionStep = MAX(0.001, brackStep * 0.1);
+    }
+
+    if (convergenceMode == 1) {
+      precisionStep *= 1.5;
+      brackStep *= 1.5;
+    }
+  } else {
+    if (is_global)
+      brackStep =
+          pow(currentPrecision,
+              .5 + loopCounter / (indexInd.lLength *
+                                  (loopCounter / indexInd.lLength + 1)));
+    else {
+      brackStep = currentPrecision;
+    }
+  }
+
+  long brackStepSave = bracketFCount, oneDStepSave = oneDFCount,
+       matrixExpSave = matrix_exp_count;
+
+  hyFloat lastLogL = maxSoFar;
+
+  if (use_adaptive_step) {
+    hyFloat brentP = precisionStep * 0.5;
+
+    if (NonZero(local_precision_step)) {
+      brentP = local_precision_step / shrink_factor;
+    }
+
+    switch (convergenceMode) {
+    case 2:
+      brentP = brentP * 0.5;
+      break;
+    case 3:
+      brentP = brentP * 0.125;
+      break;
+    }
+
+    brentP = MAX(brentP, bestVal * opt_precision * 0.01);
+
+    LocateTheBump(current_index, precisionStep, maxSoFar, bestVal, go2Bound,
+                  brentP);
+
+  } else {
+    LocateTheBump(current_index, brackStep, maxSoFar, bestVal, go2Bound);
+  }
+
+  hyFloat ll_delta = maxSoFar - lastLogL;
+
+  variableImpact.theData[current_index] = ll_delta;
+
+  hyFloat large_change_threshold = opt_precision;
+  if (logLHistory.get_used() > 2) {
+    large_change_threshold = MAX(opt_precision, 0.001 * diffs[0]);
+  }
+
+  if (ll_delta > large_change_threshold) {
+    large_change << current_index;
+    large_change_all_time[current_index]++;
+  }
+
+  const hyFloat kNonDecreaseBound = kMachineEpsilon * PartitionLengths(1);
+  if ((maxSoFar - lastLogL) / lastLogL > kNonDecreaseBound) {
+    _TerminateAndDump(
+        _String("Worsened log-likelihood during coordinate descent from ") &
+        _String(lastLogL, "%18.16g") & "=>" & _String(maxSoFar, "%18.16g") &
+        ", diff = " & _String(lastLogL - maxSoFar, "%18.16g"));
+  }
+
+  hyFloat cj = GetIthIndependent(current_index), ch = fabs(bestVal - cj);
+
+  if (use_adaptive_step) {
+    if (cj != 0.) {
+      averageChange += fabs(ch / cj);
+    }
+
+    if (ll_delta <
+        opt_precision * 0.01) { // Link to overall optimization precision
+      variables_that_dont_change[current_index]++;
+    } else {
+      variables_that_dont_change[current_index] = 0;
+    }
+
+    if ((ch < precisionStep * 0.01) && inCount < termFactor - 1) {
+      nc2 << current_index;
+    }
+  } else {
+    averageChange += ch;
+    averageChange2 += cj;
+    if (ch < currentPrecision / indexInd.lLength) {
+      nc2 << current_index;
+    }
+  }
+
+  if (vH) {
+    vH->Store(cj);
+  }
+
+  variableValues[current_index] = ch;
+
+  if (verbosity_level > 5) {
+    char buffer[2048];
+    snprintf(buffer, sizeof(buffer),
+             "\nindex = %ld\tlog(L)/diff = %14.10g/%14.10g\t param value "
+             "= %10.6g ( "
+             "diff = %10.6g, bracket = %10.6g, precision %10.6g) EVALS: "
+             "%ld (BRACKET), %ld (BRENT) %ld (EXP) ",
+             current_index, maxSoFar, maxSoFar - lastLogL, cj, ch, brackStep,
+             precisionStep, bracketFCount - brackStepSave,
+             oneDFCount - oneDStepSave, matrix_exp_count - matrixExpSave);
+    BufferToConsole(buffer);
+    StringToConsole(*GetIthIndependentVar(current_index)->GetName());
+    BufferToConsole(
+        CheckEqual(GetIthIndependentBound(current_index, true), cj)
+            ? ("[Lower bound]")
+            : (CheckEqual(GetIthIndependentBound(current_index, false), cj)
+                   ? "[Upper bound]"
+                   : ""));
+  }
+
+  return kCoordinateStepNormal;
+}
+
+//_______________________________________________________________________________________
+
+void _LikelihoodFunction::UpdateBoundaryStatus(
+    _SimpleList &variables_that_dont_change, _SimpleList &variables_at_boundary,
+    unsigned long &nc) {
+  _SimpleList at_boundary;
+  nc = 0;
+
+  variables_that_dont_change.Each(
+      [this, &nc, &at_boundary,
+       &variables_at_boundary](long v, unsigned long i) -> void {
+        if (i >= 0) {
+          if (v > 0) {
+            nc++;
+          }
+          hyFloat cv = GetIthIndependent(i);
+          if (CheckEqual(cv, GetIthIndependentBound(i, true)) ||
+              CheckEqual(cv, GetIthIndependentBound(i, false))) {
+            at_boundary << i;
+            variables_at_boundary[i]++;
+          } else {
+            variables_at_boundary[i] = 0;
+          }
+        }
+      });
+
+  for (unsigned long abi = 0; abi < at_boundary.lLength; abi++) {
+    if (!variables_that_dont_change[at_boundary.get(abi)])
+      variables_that_dont_change[at_boundary.get(abi)]++;
+  }
+}
+
 //_______________________________________________________________________________________
 
 bool _LikelihoodFunction::SniffAround(_Matrix &values, hyFloat &bestSoFar,
