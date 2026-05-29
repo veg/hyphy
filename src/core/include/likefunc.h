@@ -874,13 +874,12 @@ protected:
                              unsigned char &convergenceMode,
                              hyFloat &shrink_factor, hyFloat *diffs);
 
-  void ProcessStandardCGPass(
+  bool ProcessStandardCGPass(
       unsigned char &convergenceMode, long &last_gradient_search,
       bool &do_large_change_only, bool &last_cg_productive,
       hyFloat &max_logl_at_last_cg, hyFloat &maxSoFar,
       _SimpleList &large_change, _SimpleList &last_large_change,
-      _Vector &logLHistory, _Vector &logLDeltaHistory,
-      _SimpleList &_variables_that_dont_change,
+      _Vector &logLDeltaHistory, _SimpleList &_variables_that_dont_change,
       _SimpleList &_variables_at_boundary, _List *stepHistory,
       hyFloat const *diffs,
 
@@ -947,8 +946,7 @@ protected:
       hyFloat &maxSoFar, long &last_gradient_search,
       bool &last_dynamic_cg_productive, hyFloat &max_logl_at_last_dynamic_cg,
       _List &changes_history, _SimpleList &variables_that_dont_change,
-      _SimpleList &variables_at_boundary, _List *stepHistory,
-      _Vector &logLHistory, _Vector &logLDeltaHistory, long &loopCounter,
+      _SimpleList &variables_at_boundary, _List *stepHistory, long &loopCounter,
       std::vector<DynamicBlockTracker> &dynamic_block_trackers);
 
   void UpdateCoordinateHeuristics(_SimpleList &large_change,
@@ -1177,7 +1175,7 @@ protected:
 
   _SimpleList theTrees, theDataFilters, theProbabilities, indexInd, indexDep,
       indexCat, *nonConstantDep, blockDependancies,
-      parameterTransformationFunction;
+      parameterTransformationFunction, independentVarCosts;
   /* 20110718: SLKP this list holds the index of the parameter interval mapping
      function used during optimization */
 

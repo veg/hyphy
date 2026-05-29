@@ -947,6 +947,7 @@ void _LikelihoodFunction::Clear(void) {
   theDataFilters.Clear();
   theProbabilities.Clear();
   indexInd.Clear();
+  independentVarCosts.Clear();
   indexDep.Clear();
   indexCat.Clear();
   blockDependancies.Clear();
@@ -1346,6 +1347,7 @@ void _LikelihoodFunction::Duplicate(
   theProbabilities.Duplicate(&lf->theProbabilities);
   theDataFilters.Duplicate(&lf->theDataFilters);
   indexInd.Duplicate(&lf->indexInd);
+  independentVarCosts.Duplicate(&lf->independentVarCosts);
   indexDep.Duplicate(&lf->indexDep);
   indexCat.Duplicate(&lf->indexCat);
   blockDependancies.Duplicate(&lf->blockDependancies);
@@ -1436,6 +1438,14 @@ hyFloat _LikelihoodFunction::GetIthIndependent(long index, bool map) const {
         ((_Constant *)LocateVar(indexInd.get(index))->Compute())->Value();
   }
   if (isnan(return_value)) {
+    if (parameterValuesAndRanges) {
+      for (unsigned long i = 0; i < indexInd.lLength; i++) {
+        fprintf(stderr, "DEBUG VAR %ld (%s): index 0 = %g, index 1 = %g\n", i,
+                LocateVar(indexInd.get(i))->GetName()->get_str(),
+                (*parameterValuesAndRanges)(i, 0),
+                (*parameterValuesAndRanges)(i, 1));
+      }
+    }
     HandleApplicationError(
         *GetIthIndependentName(index) &
         " evaluated to a NaN; this can cause all kinds of odd behavior "
@@ -4747,7 +4757,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
     }
   }
 
-  hyFloat intermediateP, maxSoFar = -INFINITY, bestVal, currentPrecision = 0.1;
+  hyFloat intermediateP, maxSoFar = -INFINITY, currentPrecision = 0.1;
 
   long evalsIn = likeFuncEvalCallCount, exponentiationsIn = matrix_exp_count;
 
@@ -4756,7 +4766,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
   hyFloat hardLimitOnOptimizationValue =
       hy_env::EnvVariableGetNumber(kOptimizationHardLimit, (hyFloat)INFINITY);
   unsigned long maxGradientBlockDimension = (long)hy_env::EnvVariableGetNumber(
-                    kMaxGradientDimension, 1000.),
+                    kMaxGradientDimension, 512.),
                 kMaxGradientStepCount =
                     (long)hy_env::EnvVariableGetNumber(kMaxGradientSteps, 20.);
 
@@ -5146,45 +5156,70 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       // ConjugateGradientDescent (0.5, bestSoFar, true, 10);
 
       if (gradientBlocks.nonempty()) {
-        hyFloat improvement = 1.0;
-        unsigned long cg_passes = 0;
-        const unsigned long kMaxCGPasses = 10;
+        unsigned long num_blocks = 0;
+        for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
+          _SimpleList *this_block = (_SimpleList *)gradientBlocks(b);
+          if (this_block->countitems() > 1 &&
+              this_block->countitems() <= maxGradientBlockDimension) {
+            num_blocks++;
+          }
+        }
 
-        while (cg_passes < kMaxCGPasses) {
-          hyFloat logL_before_sweep = maxSoFar;
+        if (num_blocks > 0) {
           hyFloat grad_precision;
           if (maxSoFar > -INFINITY) {
             grad_precision = MIN(1000., -maxSoFar * 0.001);
           } else {
-            grad_precision = -0.001;
+            grad_precision = -0.005;
           }
 
-          for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
-            _SimpleList *this_block = (_SimpleList *)gradientBlocks(b);
-            if (this_block->countitems() > 1 &&
-                this_block->countitems() <= maxGradientBlockDimension) {
-              maxSoFar = ConjugateGradientDescent(
-                  currentPrecision, bestSoFar, true, kMaxGradientStepCount,
-                  this_block, maxSoFar, grad_precision);
-              update_tracker_for_group(this_block, dynamic_block_trackers,
-                                       maxSoFar);
+          unsigned long pass = 0;
+          const unsigned long kMaxCGPasses = kMaxGradientStepCount;
+
+          while (pass < kMaxCGPasses) {
+            hyFloat logL_before_sweep = maxSoFar;
+
+            for (unsigned long b = 0; b < gradientBlocks.lLength; b++) {
+              _SimpleList *this_block = (_SimpleList *)gradientBlocks(b);
+              if (this_block->countitems() > 1 &&
+                  this_block->countitems() <= maxGradientBlockDimension) {
+
+                if (verbosity_level > 1) {
+                  snprintf(buffer, sizeof(buffer),
+                           "\nConjugate Gradient Pass for Block %lu (%ld "
+                           "parameters), precision %g\n",
+                           b, this_block->countitems(), currentPrecision);
+                  BufferToConsole(buffer);
+                }
+
+                maxSoFar = ConjugateGradientDescent(
+                    currentPrecision, bestSoFar, true, kMaxGradientStepCount,
+                    this_block, maxSoFar, grad_precision);
+
+                update_tracker_for_group(this_block, dynamic_block_trackers,
+                                         maxSoFar);
+              }
             }
-          }
 
-          improvement = maxSoFar - logL_before_sweep;
-          cg_passes++;
+            hyFloat sweep_improvement = maxSoFar - logL_before_sweep;
 
-          if (verbosity_level > 1) {
-            snprintf(buffer, sizeof(buffer),
-                     "\n[At Outset: CG Sweep %lu completed. LogL change = %g "
-                     "(target threshold = %g)]\n",
-                     cg_passes, improvement, currentPrecision);
-            BufferToConsole(buffer);
-          }
+            if (verbosity_level > 1) {
+              snprintf(buffer, sizeof(buffer),
+                       "\n[At Outset: CG Sweep %lu completed. LogL change = %g "
+                       "(target threshold = %g)]\n",
+                       pass + 1, sweep_improvement, currentPrecision);
+              BufferToConsole(buffer);
+            }
 
-          if (improvement <= currentPrecision) {
-            break;
+            if (sweep_improvement <= (grad_precision < 0.
+                                          ? maxSoFar * grad_precision
+                                          : grad_precision)) {
+              break;
+            }
+
+            pass++;
           }
+          SetAllIndependent(&bestSoFar);
         }
       } else {
         hyFloat grad_precision;
@@ -5241,8 +5276,6 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
             // currentPrecision2 = precision,
         doShuffle;
 
-    const hyFloat kNonDecreaseBound = kMachineEpsilon * PartitionLengths(1);
-
     long inCount = 0, termFactor, lfCount = likeFuncEvalCallCount,
          nan_counter = 0L, meCount = matrix_exp_count, loopCounter = 0,
          lastCore = 0;
@@ -5269,6 +5302,15 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
     bool use_adaptive_step = !CheckEqual(
         get_optimization_setting(kUseAdaptiveVariableStep, 1.0), 0.0);
 
+    _Matrix outset_changes(indexInd.lLength, 1, false, true);
+    for (unsigned long j = 0UL; j < indexInd.lLength; j++) {
+      hyFloat outset_change = fabs(variableValues[j] - GetIthIndependent(j));
+      averageChange += outset_change;
+      outset_changes[j] = outset_change;
+    }
+
+    GetAllIndependent(variableValues);
+
     if (use_adaptive_step) {
       stepHistory = new _List;
       for (unsigned long j = 0UL; j < indexInd.lLength; j++) {
@@ -5277,6 +5319,16 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
         stepHistory->AppendNewInstance(varHistory);
       }
     }
+
+    for (unsigned long j = 0UL; j < indexInd.lLength; j++) {
+      variableValues[j] = outset_changes[j];
+    }
+
+    if (averageChange == 0.0) {
+      averageChange = currentPrecision;
+    }
+
+    currentPrecision = precision > .1 ? precision : .1;
 
     if (indexInd.lLength < 8) {
       stdFactor = 8.0;
@@ -5287,16 +5339,6 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
     } else {
       stdFactor = GOLDEN_RATIO;
     }
-
-    for (unsigned long j = 0UL; j < indexInd.lLength; j++) {
-      averageChange += fabs(variableValues[j] - GetIthIndependent(j));
-    }
-
-    if (averageChange == 0.0) {
-      averageChange = currentPrecision;
-    }
-
-    currentPrecision = precision > .1 ? precision : .1;
 
     termFactor = (long)stdFactor + 1;
     if ((termFactor << 1) > (long)indexInd.lLength) {
@@ -5460,31 +5502,79 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           break;
         }
 
+        bool cg_ran = false;
         bool should_break_from_cg = false;
-        ProcessStandardCGPass(
+        cg_ran = ProcessStandardCGPass(
             convergenceMode, last_gradient_search, do_large_change_only,
             last_cg_productive, max_logl_at_last_cg, maxSoFar, large_change,
-            last_large_change, logLHistory, logLDeltaHistory,
-            _variables_that_dont_change, _variables_at_boundary, stepHistory,
-            diffs, hardLimitOnOptimizationValue, precision,
-            maxGradientBlockDimension, kMaxGradientStepCount,
-            dynamic_block_trackers, inCount, termFactor, loopCounter, timer,
-            should_break_from_cg);
+            last_large_change, logLDeltaHistory, _variables_that_dont_change,
+            _variables_at_boundary, stepHistory, diffs,
+            hardLimitOnOptimizationValue, precision, maxGradientBlockDimension,
+            kMaxGradientStepCount, dynamic_block_trackers, inCount, termFactor,
+            loopCounter, timer, should_break_from_cg);
         if (should_break_from_cg) {
           break;
         }
 
-        if (ExecuteDynamicConjugateGradient(
-                diffs, precision, inCount, termFactor, kMaxGradientStepCount,
-                convergenceMode, maxSoFar, last_gradient_search,
-                last_dynamic_cg_productive, max_logl_at_last_dynamic_cg,
-                changes_history, _variables_that_dont_change,
-                _variables_at_boundary, stepHistory, logLHistory,
-                logLDeltaHistory, loopCounter, dynamic_block_trackers)) {
-          inCount = 0;
-          convergenceMode = 0;
-          large_change.Clear();
-          do_large_change_only = false;
+        if (!cg_ran) {
+          cg_ran = ExecuteDynamicConjugateGradient(
+              diffs, precision, inCount, termFactor, kMaxGradientStepCount,
+              convergenceMode, maxSoFar, last_gradient_search,
+              last_dynamic_cg_productive, max_logl_at_last_dynamic_cg,
+              changes_history, _variables_that_dont_change,
+              _variables_at_boundary, stepHistory, loopCounter,
+              dynamic_block_trackers);
+          if (cg_ran) {
+            inCount = 0;
+            convergenceMode = 0;
+            large_change.Clear();
+            do_large_change_only = false;
+          }
+        }
+
+        if (cg_ran) {
+          for (unsigned long i = 0UL; i < indexInd.lLength; i++) {
+            hyFloat cv = GetIthIndependent(i);
+            if (!CheckEqual(old_values.theData[i], cv)) {
+              _variables_that_dont_change[i] = 0;
+            } else {
+              _variables_that_dont_change[i]++;
+            }
+          }
+
+          unsigned long nc = 0;
+          UpdateBoundaryStatus(_variables_that_dont_change,
+                               _variables_at_boundary, nc);
+
+          _Matrix new_values;
+          GetAllIndependent(new_values);
+          averageChange = 0.0;
+          averageChange2 = 0.0;
+          for (unsigned long i = 0UL; i < indexInd.lLength; i++) {
+            hyFloat ch = fabs(new_values.theData[i] - old_values.theData[i]);
+            averageChange2 += new_values.theData[i];
+            if (use_adaptive_step) {
+              if (new_values.theData[i] != 0.0) {
+                averageChange += ch / fabs(new_values.theData[i]);
+              }
+            } else {
+              averageChange += ch;
+            }
+          }
+
+          bool should_break_from_pass = false;
+          ProcessEndOfPassLogic(
+              maxSoFar, lastMaxValue, inCount, loopCounter, forward,
+              averageChange2, averageChange, shrink_factor, oldAverage,
+              currentPrecision, changes_history, logLHistory, logLDeltaHistory,
+              nc, progress_tracker, timer, old_values, precision, termFactor,
+              use_adaptive_step, skipCG, hardLimitOnOptimizationValue,
+              should_break_from_pass, custom_convergence_callback,
+              custom_convergence_callback_name);
+          if (should_break_from_pass) {
+            break;
+          }
+          continue;
         }
       }
 
@@ -5511,297 +5601,27 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
            forward ? (jjj < (long)indexInd.lLength) : jjj >= 0;
            forward ? jjj++ : jjj--) {
 
-        if (hardLimitOnOptimizationValue < INFINITY &&
-            timer.TimeSinceStart() > hardLimitOnOptimizationValue) {
-          break;
-        }
-
         unsigned long current_index =
             doShuffle > 0.1 ? shuffledOrder.list_data[jjj] : jjj;
 
-        bool is_global = GetIthIndependentVar(current_index)->IsGlobal();
+        CoordinateStepResult step_res = OptimizeSingleCoordinate(
+            current_index, do_large_change_only, last_large_change,
+            convergenceMode, inCount, termFactor, shrink_factor, stepHistory,
+            changes_history, diffs, precision, currentPrecision, maxSoFar,
+            large_change, large_change_all_time, _variables_that_dont_change,
+            _variables_at_boundary, variableValues, variableImpact, logLHistory,
+            nc2, averageChange, averageChange2, timer.TimeSinceStart(),
+            hardLimitOnOptimizationValue, use_adaptive_step, go2Bound,
+            loopCounter);
 
-#ifdef __HYPHYMPI__
-        if (hy_mpi_node_rank == 0)
-#endif
-          if (terminate_execution) {
-            CleanUpOptimize();
-            return new _Matrix(1, 1, false, true);
-          }
-
-        bestVal = GetIthIndependent(current_index);
-
-        _Vector parameter_change_history;
-        for (unsigned long k = 0; k < changes_history.lLength; k++) {
-          _Vector *iter_changes = (_Vector *)changes_history(k);
-          parameter_change_history.Store(iter_changes->theData[current_index]);
+        if (step_res == kCoordinateStepBreak) {
+          break;
+        } else if (step_res == kCoordinateStepTerminate) {
+          CleanUpOptimize();
+          return new _Matrix(1, 1, false, true);
+        } else if (step_res == kCoordinateStepContinue) {
+          continue;
         }
-
-        hyFloat local_precision_step =
-            get_parameter_step(parameter_change_history);
-
-        // StringToConsole (GetIthIndependentName (current_index)->get_str());
-        // ObjectToConsole (&parameter_change_history);
-        // printf ("\n%g\n", local_precision_step);
-        // NLToConsole     ();
-
-        if (do_large_change_only) {
-          if (last_large_change.BinaryFind(current_index) < 0) {
-            // printf ("\nLARGE CHANGE ONLY\n");
-            averageChange2 += bestVal;
-            continue;
-          }
-        }
-
-        if (_variables_that_dont_change.get(current_index) > 1) {
-          if (convergenceMode <= 2 && inCount < termFactor - 1 &&
-              !do_large_change_only) {
-            averageChange2 += bestVal;
-            if (is_global)
-              _variables_that_dont_change[current_index] = 1;
-            else
-              _variables_that_dont_change[current_index]++;
-            continue;
-          }
-        }
-
-        if (_variables_that_dont_change.get(current_index) > 1) {
-          if (_variables_at_boundary.get(current_index) > 1) {
-            if (inCount <= termFactor - 1) {
-              _variables_that_dont_change[current_index]++;
-              continue;
-            }
-          }
-        }
-
-        _Vector *vH = nil;
-        hyFloat precisionStep = 0., brackStep;
-
-        if (use_adaptive_step) {
-
-          vH = (_Vector *)(*stepHistory)(current_index);
-          // hyFloat    suggestedPrecision  =
-          // currentPrecision*(1.+198./(1.+exp(sqrt(loopCounter))));
-
-          long stepsSoFar = vH->get_used();
-
-          if (stepsSoFar > 1) {
-            hyFloat lastParameterValue = vH->theData[stepsSoFar - 1],
-                    previousParameterValue = vH->theData[stepsSoFar - 2];
-
-            // stepScale   = 0.25;
-
-            /*brackStep     = fabs(lastParameterValue-previousParameterValue);
-
-            if (CheckEqual (brackStep, 0.0)) {
-                long k = Maximum(stepsSoFar-3L,0L);
-
-                for (; k && brackStep == 0.0; k--) {
-                    previousParameterValue          = vH->theData[k],
-                    lastParameterValue              = vH->theData[k+1];
-                    brackStep                       =
-            fabs(lastParameterValue-previousParameterValue);
-                }
-
-                if (k == 0) {
-                    brackStep = MIN(0.001,precision*0.001);
-                }
-            }*/
-
-            long history_window = 10L;
-            long start_k = stepsSoFar - 1 > history_window
-                               ? stepsSoFar - 1 - history_window
-                               : 0L;
-            long count = 0L;
-            brackStep = 0.;
-
-            for (long k = start_k; k < stepsSoFar - 1; k++) {
-              previousParameterValue = vH->theData[k];
-              lastParameterValue = vH->theData[k + 1];
-              StoreIfGreater(brackStep,
-                             fabs(lastParameterValue - previousParameterValue));
-              count++;
-            }
-
-            if (count > 0) {
-              brackStep = 2. * brackStep / count;
-            } else {
-              brackStep = MIN(0.001, precision * 0.001);
-            }
-            if (CheckEqual(brackStep, 0.0)) {
-              brackStep = MIN(0.001, precision * 0.001);
-            }
-
-            // precisionStep = brackStep*stepScale;
-            precisionStep = 0.1 * brackStep;
-
-            if (inCount) {
-              precisionStep = lastParameterValue * precision;
-            }
-
-            precisionStep = MAX(precisionStep, lastParameterValue * precision);
-
-            if (precisionStep == 0.0) {
-              precisionStep = precision;
-              brackStep = 2. * precisionStep;
-            } else {
-              brackStep *= 2.;
-            }
-            // if (IsIthParameterGlobal (j))
-            //   precisionStep *= 2.0;
-
-            if (verbosity_level > 50) {
-              snprintf(buffer, sizeof(buffer),
-                       "\n[BRACKET STEP: current = %g: previous = %g (diff = "
-                       "%g). bracket = %g, prec = %g]",
-                       lastParameterValue, previousParameterValue,
-                       lastParameterValue - previousParameterValue, brackStep,
-                       precisionStep);
-
-              BufferToConsole(buffer);
-            }
-
-          } else {
-            brackStep = vH->theData[0];
-            precisionStep = MAX(0.001, brackStep * 0.1);
-          }
-
-          if (convergenceMode == 1) {
-            precisionStep *= 1.5;
-            brackStep *= 1.5;
-          }
-        } else {
-          if (is_global)
-            brackStep = pow(
-                currentPrecision /**(bestVal>1.?pow(e,long(log(bestVal))):1.)*/,
-                .5 + loopCounter / (indexInd.lLength *
-                                    (loopCounter / indexInd.lLength + 1)));
-          else {
-            brackStep = currentPrecision;
-          }
-        }
-
-        long brackStepSave = bracketFCount, oneDStepSave = oneDFCount,
-             matrixExpSave = matrix_exp_count;
-
-        hyFloat lastLogL = maxSoFar;
-
-        // verbosity_level = 101;
-        if (use_adaptive_step) {
-          hyFloat brentP = precisionStep * 0.5;
-
-          if (NonZero(local_precision_step)) {
-            // printf ("%s %g %g\n",
-            // GetIthIndependentName(current_index)->get_str(), precisionStep,
-            // local_precision_step);
-            brentP = local_precision_step / shrink_factor;
-          }
-
-          switch (convergenceMode) {
-          case 2:
-            brentP = brentP * 0.5;
-            break;
-          case 3:
-            brentP = brentP * 0.125;
-            break;
-          }
-
-          brentP = MAX(brentP, bestVal * precision * 0.01);
-
-          LocateTheBump(current_index, precisionStep, maxSoFar, bestVal,
-                        go2Bound, brentP);
-
-        } else {
-          LocateTheBump(current_index, brackStep, maxSoFar, bestVal, go2Bound);
-        }
-
-        hyFloat ll_delta = maxSoFar - lastLogL;
-        // ll_last = (logLDeltaHistory.get_used () > 0 ?
-        // logLDeltaHistory.get_direct (logLDeltaHistory.get_used ()-1) : 0.)/
-        // (indexInd.countitems() - _variables_that_dont_change.countitems() +
-        // 1);
-
-        variableImpact.theData[current_index] = ll_delta;
-
-        hyFloat large_change_threshold = precision;
-        if (logLHistory.get_used() > 2) {
-          large_change_threshold = MAX(precision, 0.001 * diffs[0]);
-        }
-
-        if (ll_delta > large_change_threshold) {
-          large_change << current_index;
-          large_change_all_time[current_index]++;
-        }
-
-        if ((maxSoFar - lastLogL) / lastLogL > kNonDecreaseBound) {
-          _TerminateAndDump(
-              _String(
-                  "Worsened log-likelihood during coordinate descent from ") &
-              _String(lastLogL, "%18.16g") & "=>" &
-              _String(maxSoFar, "%18.16g") & ", diff = " &
-              _String(lastLogL - maxSoFar, "%18.16g"));
-        }
-
-        hyFloat cj = GetIthIndependent(current_index), ch = fabs(bestVal - cj);
-
-        if (use_adaptive_step) {
-          if (cj != 0.) {
-            averageChange += fabs(ch / cj);
-          }
-          // printf ("VAR %d change %g (%g, %d)\n", current_index, ch,
-          // precisionStep*0.01, inCount);
-
-          if (ll_delta <
-              precision * 0.01) { // Link to overall optimization precision
-            _variables_that_dont_change[current_index]++;
-          } else {
-            _variables_that_dont_change[current_index] = 0;
-          }
-
-          if ((ch < precisionStep * 0.01 /*|| lastLogL - maxSoFar < 1e-6*/) &&
-              inCount < termFactor - 1) {
-            nc2 << current_index;
-          }
-        } else {
-          averageChange += ch;
-          averageChange2 += cj;
-          if (ch < currentPrecision / indexInd.lLength) {
-            nc2 << current_index;
-          }
-        }
-
-        if (vH) {
-          vH->Store(cj);
-        }
-
-        variableValues[current_index] = ch;
-
-        if (verbosity_level > 5) {
-          snprintf(buffer, sizeof(buffer),
-                   "\nindex = %ld\tlog(L)/diff = %14.10g/%14.10g\t param value "
-                   "= %10.6g ( "
-                   "diff = %10.6g, bracket = %10.6g, precision %10.6g) EVALS: "
-                   "%ld (BRACKET), %ld (BRENT) %ld (EXP) ",
-                   current_index, maxSoFar, maxSoFar - lastLogL, cj, ch,
-                   brackStep, precisionStep, bracketFCount - brackStepSave,
-                   oneDFCount - oneDStepSave, matrix_exp_count - matrixExpSave);
-          BufferToConsole(buffer);
-          StringToConsole(*GetIthIndependentVar(current_index)->GetName());
-          BufferToConsole(
-              CheckEqual(GetIthIndependentBound(current_index, true), cj)
-                  ? ("[Lower bound]")
-                  : (CheckEqual(GetIthIndependentBound(current_index, false),
-                                cj)
-                         ? "[Upper bound]"
-                         : ""));
-
-        }
-#if defined __UNIX__ && !defined __HEADLESS__ && !defined __HYPHYQT__ &&       \
-    !defined __HYPHY_GTK__
-        else if (verbosity_level == 1) {
-          UpdateOptimizationStatus(maxSoFar, -1, 1, true, progressFileString);
-        }
-#endif
       }
 
       if (!forward || doShuffle > 0.1) {
@@ -7440,15 +7260,15 @@ void _LikelihoodFunction::UpdateConvergenceMode(
 
 //_______________________________________________________________________________________
 
-void _LikelihoodFunction::ProcessStandardCGPass(
+bool _LikelihoodFunction::ProcessStandardCGPass(
     unsigned char &convergenceMode, long &last_gradient_search,
     bool &do_large_change_only, bool &last_cg_productive,
     hyFloat &max_logl_at_last_cg, hyFloat &maxSoFar, _SimpleList &large_change,
-    _SimpleList &last_large_change, _Vector &logLHistory,
-    _Vector &logLDeltaHistory, _SimpleList &variables_that_dont_change,
-    _SimpleList &variables_at_boundary, _List *stepHistory,
-    hyFloat const *diffs, hyFloat hardLimitOnOptimizationValue,
-    hyFloat precision_target, unsigned long maxGradientBlockDimension,
+    _SimpleList &last_large_change, _Vector &logLDeltaHistory,
+    _SimpleList &variables_that_dont_change, _SimpleList &variables_at_boundary,
+    _List *stepHistory, hyFloat const *diffs,
+    hyFloat hardLimitOnOptimizationValue, hyFloat precision_target,
+    unsigned long maxGradientBlockDimension,
     unsigned long kMaxGradientStepCount,
     std::vector<DynamicBlockTracker> &dynamic_block_trackers, long inCount,
     long termFactor, long loopCounter, TimeDifference &timer,
@@ -7463,7 +7283,7 @@ void _LikelihoodFunction::ProcessStandardCGPass(
       ReportWarning(_String("Optimization terminated before convergence "
                             "because the hard time limit was exceeded."));
       should_break = true;
-      return;
+      return true;
     }
 
     if ((loopCounter - last_gradient_search >= 3L) &&
@@ -7581,14 +7401,6 @@ void _LikelihoodFunction::ProcessStandardCGPass(
       ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
     }
 
-    logLHistory.Store(maxSoFar);
-    if (logLHistory.get_used() > 1) {
-      logLDeltaHistory.Store(maxSoFar -
-                             logLHistory.theData[logLHistory.get_used() - 2]);
-    } else {
-      logLDeltaHistory.Store(0);
-    }
-
     if (maxSoFar - old_max > 1e-5) {
       last_cg_productive = true;
     } else {
@@ -7599,6 +7411,7 @@ void _LikelihoodFunction::ProcessStandardCGPass(
     last_gradient_search = loopCounter;
     convergenceMode = 0;
   }
+  return trigger_cg;
 }
 
 //_______________________________________________________________________________________
@@ -7833,8 +7646,7 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
     hyFloat &maxSoFar, long &last_gradient_search,
     bool &last_dynamic_cg_productive, hyFloat &max_logl_at_last_dynamic_cg,
     _List &changes_history, _SimpleList &variables_that_dont_change,
-    _SimpleList &variables_at_boundary, _List *stepHistory,
-    _Vector &logLHistory, _Vector &logLDeltaHistory, long &loopCounter,
+    _SimpleList &variables_at_boundary, _List *stepHistory, long &loopCounter,
     std::vector<DynamicBlockTracker> &dynamic_block_trackers) {
   // Dynamic CG block check
   bool bypass_cooldown = last_dynamic_cg_productive;
@@ -7960,8 +7772,6 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
               if (maxSoFar - old_max > opt_precision * 5.0) {
                 last_dynamic_cg_productive = true;
               }
-              logLHistory.Store(maxSoFar);
-              logLDeltaHistory.Store(maxSoFar - old_max);
 
               // Reset variables that dont change
               for (unsigned long var_idx = 0; var_idx < indexInd.lLength;
@@ -8128,6 +7938,16 @@ _LikelihoodFunction::OptimizeSingleCoordinate(
     }
   }
 
+  hyFloat cost_scale = 1.0;
+  if (independentVarCosts.lLength > current_index) {
+    long var_cost = independentVarCosts.list_data[current_index];
+    if (var_cost <= 1) {
+      cost_scale = 0.01; // branch-local: 100x tighter
+    } else if (var_cost <= 5) {
+      cost_scale = 0.1; // small local: 10x tighter
+    }
+  }
+
   _Vector *vH = nil;
   hyFloat precisionStep = 0., brackStep;
 
@@ -8169,7 +7989,8 @@ _LikelihoodFunction::OptimizeSingleCoordinate(
         precisionStep = lastParameterValue * opt_precision;
       }
 
-      precisionStep = MAX(precisionStep, lastParameterValue * opt_precision);
+      precisionStep =
+          MAX(precisionStep, lastParameterValue * opt_precision * cost_scale);
 
       if (precisionStep == 0.0) {
         precisionStep = opt_precision;
@@ -8190,8 +8011,11 @@ _LikelihoodFunction::OptimizeSingleCoordinate(
       }
 
     } else {
-      brackStep = vH->theData[0];
-      precisionStep = MAX(0.001, brackStep * 0.1);
+      brackStep = variableValues.theData[current_index];
+      if (brackStep <= 0.0) {
+        brackStep = vH->theData[0];
+      }
+      precisionStep = MAX(opt_precision * 0.01 * cost_scale, brackStep * 0.1);
     }
 
     if (convergenceMode == 1) {
@@ -8230,13 +8054,97 @@ _LikelihoodFunction::OptimizeSingleCoordinate(
       break;
     }
 
-    brentP = MAX(brentP, bestVal * opt_precision * 0.01);
+    bool is_branch_local = !GetIthIndependentVar(current_index)->IsGlobal();
+    if (is_branch_local && variable_to_node_map) {
+      long var_id = indexInd.list_data[current_index];
+      for (unsigned long p = 0; p < theTrees.lLength; p++) {
+        if (p < variable_to_node_map->countitems()) {
+          _AVLListX *vntmp = (_AVLListX *)variable_to_node_map->GetItem(p, 1);
+          if (vntmp) {
+            if (vntmp->Find((BaseRef)var_id) >= 0) {
+              long node_index =
+                  vntmp->FindAndGetXtra((BaseRefConst)var_id, -1L);
+              if (node_index < 0) {
+                is_branch_local = false;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (is_branch_local) {
+      brentP = brentP * 0.1 * cost_scale;
+      brentP = MAX(brentP, fabs(bestVal) * opt_precision * 0.0001 * cost_scale);
+    } else {
+      hyFloat lower_bound = GetIthIndependentBound(current_index, true);
+      hyFloat upper_bound = GetIthIndependentBound(current_index, false);
+      hyFloat dist_to_lower = bestVal - lower_bound;
+      hyFloat dist_to_upper = upper_bound - bestVal;
+      if (loopCounter < 4) {
+        brentP = brentP * 3.0 * cost_scale;
+        hyFloat floor_val = fabs(bestVal) * opt_precision * 0.05 * cost_scale;
+        if (dist_to_lower > 0.0) {
+          floor_val = MIN(floor_val, dist_to_lower * 0.5);
+        } else {
+          floor_val = 0.0;
+        }
+        if (dist_to_upper > 0.0) {
+          floor_val = MIN(floor_val, dist_to_upper * 0.5);
+        } else {
+          floor_val = 0.0;
+        }
+        brentP = MAX(brentP, floor_val);
+      } else {
+        brentP = brentP * 1.0 * cost_scale;
+        hyFloat floor_val = fabs(bestVal) * opt_precision * 0.001 * cost_scale;
+        if (dist_to_lower > 0.0) {
+          floor_val = MIN(floor_val, dist_to_lower * 0.5);
+        } else {
+          floor_val = 0.0;
+        }
+        if (dist_to_upper > 0.0) {
+          floor_val = MIN(floor_val, dist_to_upper * 0.5);
+        } else {
+          floor_val = 0.0;
+        }
+        brentP = MAX(brentP, floor_val);
+      }
+    }
 
     LocateTheBump(current_index, precisionStep, maxSoFar, bestVal, go2Bound,
                   brentP);
 
   } else {
-    LocateTheBump(current_index, brackStep, maxSoFar, bestVal, go2Bound);
+    bool is_branch_local = !GetIthIndependentVar(current_index)->IsGlobal();
+    if (is_branch_local && variable_to_node_map) {
+      long var_id = indexInd.list_data[current_index];
+      for (unsigned long p = 0; p < theTrees.lLength; p++) {
+        if (p < variable_to_node_map->countitems()) {
+          _AVLListX *vntmp = (_AVLListX *)variable_to_node_map->GetItem(p, 1);
+          if (vntmp) {
+            if (vntmp->Find((BaseRef)var_id) >= 0) {
+              long node_index =
+                  vntmp->FindAndGetXtra((BaseRefConst)var_id, -1L);
+              if (node_index < 0) {
+                is_branch_local = false;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    hyFloat brentP = -1.0;
+    if (is_branch_local) {
+      brentP = brackStep * 0.1 * cost_scale;
+    } else {
+      brentP = brackStep * cost_scale;
+    }
+    LocateTheBump(current_index, brackStep, maxSoFar, bestVal, go2Bound,
+                  brentP);
   }
 
   hyFloat ll_delta = maxSoFar - lastLogL;
@@ -8458,23 +8366,24 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
     freeze.Subtract(all, *only_these_parameters);
   }
 
+  long active_vars = only_these_parameters
+                         ? only_these_parameters->countitems()
+                         : (indexInd.lLength - freeze.lLength);
+
   char buffer[1024];
 
   if (verbosity_level > 1) {
     snprintf(buffer, sizeof(buffer),
-             "\nConjugate Gradient Pass %d, precision %g, gradient step %g, "
+             "\nConjugate Gradient Pass %d (%ld parameters), precision %g, "
+             "gradient step %g, "
              "max so far %20.18g\n",
-             0, step_precision, gradientStep, maxSoFar);
+             0, active_vars, step_precision, gradientStep, maxSoFar);
     BufferToConsole(buffer);
   }
 
   const unsigned long dim = bestVal.GetHDim() * bestVal.GetVDim();
   _Matrix gradient(bestVal), current_direction, previous_direction,
       previous_gradient;
-
-  long active_vars = only_these_parameters
-                         ? only_these_parameters->countitems()
-                         : (indexInd.lLength - freeze.lLength);
 
   long before_grad = likeFuncEvalCallCount;
   hyFloat gradL;
@@ -8514,10 +8423,11 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
 
       if (verbosity_level > 1) {
         snprintf(buffer, sizeof(buffer),
-                 "Conjugate Gradient Pass %ld, precision %g, gradient step %g, "
+                 "Conjugate Gradient Pass %ld (%ld parameters), precision %g, "
+                 "gradient step %g, "
                  "max so far %20.18g, min improvement %15.12g\n",
-                 index + 1, line_search_precision, gradientStep, maxSoFar,
-                 min_improvement_to_contuinue);
+                 index + 1, active_vars, line_search_precision, gradientStep,
+                 maxSoFar, min_improvement_to_contuinue);
         BufferToConsole(buffer);
       }
       // if (localOnly) {
@@ -8717,6 +8627,20 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
                                                    _Matrix &gradient,
                                                    hyFloat initial_step) {
   DetermineLocalUpdatePolicy();
+  if (isnan(maxSoFar)) {
+    FlushLocalUpdatePolicy();
+    return 0.;
+  }
+  if (isnan(initial_step)) {
+    initial_step = 0.0;
+  }
+  for (unsigned long i = 0; i < indexInd.lLength; i++) {
+    if (isnan(bestVal.theData[i]) || isnan(gradient.theData[i])) {
+      FlushLocalUpdatePolicy();
+      return 0.;
+    }
+  }
+
   hyFloat leftValue = maxSoFar, middleValue = maxSoFar, rightValue = maxSoFar,
           initialValue = maxSoFar, bp = MIN(gradient.AbsValue(), 1e4),
           left = 0., right = 0., middle = 0., step_taken = 0.0;
@@ -8744,7 +8668,14 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
   long outcome = Bracket(-1, left, middle, right, leftValue, middleValue,
                          rightValue, bp, true, &gradient);
 
-  if (middleValue < initialValue) {
+  if (outcome != -1) {
+    if (isnan(left) || isnan(middle) || isnan(right) || isnan(leftValue) ||
+        isnan(middleValue) || isnan(rightValue)) {
+      outcome = -1;
+    }
+  }
+
+  if (outcome == -1 || isnan(middleValue) || middleValue < initialValue) {
     SetAllIndependent(&bestVal);
     FlushLocalUpdatePolicy();
     return 0.;
@@ -8868,8 +8799,14 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
           D = GOLDEN_RATIO_C * E;
         }
         U = fabs(D) >= tol1 ? X + D : X + (D > 0. ? tol1 : -tol1);
+        if (isnan(U) || isinf(U)) {
+          break;
+        }
         FU =
             -SetParametersAndCompute(-1, U, &prior_parameter_values, &gradient);
+        if (isnan(FU)) {
+          FU = INFINITY;
+        }
         if (verbosity_level > 50) {
           char buf[1024];
           snprintf(buf, 1024,
@@ -8948,33 +8885,51 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
       }
       middleValue = -FX;
       // brentHistory.Store (0.);
-      if (middleValue < maxSoFar) {
+      bool current_best_vector_has_nan = false;
+      for (unsigned long i = 0; i < indexInd.lLength; i++) {
+        if (isnan(current_best_vector.theData[i])) {
+          current_best_vector_has_nan = true;
+          break;
+        }
+      }
+
+      if (isnan(middleValue) || middleValue < maxSoFar ||
+          current_best_vector_has_nan) {
         if (verbosity_level > 50) {
           char buf[1024];
-          snprintf(buf, 1024,
-                   "\n\t[_LikelihoodFunction::GradientLocateTheBump RESETTING "
-                   "THE VALUE (worse log likelihood obtained; current value "
-                   "%20.16g, best value %20.16g) ]\n\n",
-                   middleValue, maxSoFar);
+          snprintf(
+              buf, 1024,
+              "\n\t[_LikelihoodFunction::GradientLocateTheBump RESETTING "
+              "THE VALUE (worse log likelihood obtained or NaN; current value "
+              "%20.16g, best value %20.16g) ]\n\n",
+              middleValue, maxSoFar);
           BufferToConsole(buf);
         }
         SetAllIndependent(&bestVal);
-        maxSoFar = middleValue;
+        if (!isnan(middleValue)) {
+          maxSoFar = middleValue;
+        }
       } else {
         SetAllIndependent(&current_best_vector);
 
         maxSoFar = Compute();
-        if (verbosity_level > 50) {
-          char buf[1024];
-          snprintf(buf, 1024,
-                   "\n\t[_LikelihoodFunction::GradientLocateTheBump moving "
-                   "parameter value (should trigger LL update) %15.12g ||L2|| "
-                   "move ]\n\n",
-                   (current_best_vector - bestVal).AbsValue());
-          BufferToConsole(buf);
+        if (isnan(maxSoFar)) {
+          SetAllIndependent(&bestVal);
+          maxSoFar = initialValue;
+        } else {
+          if (verbosity_level > 50) {
+            char buf[1024];
+            snprintf(
+                buf, 1024,
+                "\n\t[_LikelihoodFunction::GradientLocateTheBump moving "
+                "parameter value (should trigger LL update) %15.12g ||L2|| "
+                "move ]\n\n",
+                (current_best_vector - bestVal).AbsValue());
+            BufferToConsole(buf);
+          }
+          bestVal = current_best_vector;
+          step_taken = X;
         }
-        bestVal = current_best_vector;
-        step_taken = X;
       }
 
       if (maxSoFar < initialValue &&
@@ -9004,27 +8959,54 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
       BufferToConsole("Line optimization unsuccessful\n");
     }
     hyFloat chosen_step = middle;
-    if (leftValue > middleValue) {
-      middleValue = leftValue;
+
+    // Safety check for NaN values
+    hyFloat valid_leftValue = isnan(leftValue) ? -INFINITY : leftValue;
+    hyFloat valid_middleValue = isnan(middleValue) ? -INFINITY : middleValue;
+    hyFloat valid_rightValue = isnan(rightValue) ? -INFINITY : rightValue;
+
+    bool left_ok = !isnan(left) && !isnan(leftValue);
+    bool middle_ok = !isnan(middle) && !isnan(middleValue);
+    bool right_ok = !isnan(right) && !isnan(rightValue);
+
+    if (left_ok && (!middle_ok || valid_leftValue > valid_middleValue)) {
+      valid_middleValue = valid_leftValue;
       middle_vector = left_vector;
       chosen_step = left;
+      middle_ok = true;
     }
-    if (rightValue > middleValue) {
-      middleValue = rightValue;
+    if (right_ok && (!middle_ok || valid_rightValue > valid_middleValue)) {
+      valid_middleValue = valid_rightValue;
       middle_vector = right_vector;
       chosen_step = right;
+      middle_ok = true;
     }
 
-    if (middleValue > maxSoFar) {
-      SetAllIndependent(&middle_vector);
-      maxSoFar = middleValue;
-      reset = false;
-      step_taken = chosen_step;
+    if (middle_ok && valid_middleValue > maxSoFar) {
+      // Check if middle_vector has NaN
+      bool middle_vector_has_nan = false;
+      for (unsigned long i = 0; i < indexInd.lLength; i++) {
+        if (isnan(middle_vector.theData[i])) {
+          middle_vector_has_nan = true;
+          break;
+        }
+      }
+      if (!middle_vector_has_nan) {
+        SetAllIndependent(&middle_vector);
+        maxSoFar = valid_middleValue;
+        reset = false;
+        step_taken = chosen_step;
+      }
     }
   }
 
   if (reset)
     SetAllIndependent(&bestVal);
+
+  if (isnan(maxSoFar)) {
+    SetAllIndependent(&bestVal);
+    maxSoFar = initialValue;
+  }
 
   FlushLocalUpdatePolicy();
   return step_taken;
@@ -9035,6 +9017,10 @@ hyFloat _LikelihoodFunction::GradientLocateTheBump(hyFloat gPrecision,
 void _LikelihoodFunction::LocateTheBump(long index, hyFloat gPrecision,
                                         hyFloat &maxSoFar, hyFloat &bestVal,
                                         bool go2Bound, hyFloat bracketSetting) {
+  if (isnan(bestVal) || isnan(maxSoFar)) {
+    return;
+  }
+
   hyFloat left = -INFINITY, right = -INFINITY, middle = bestVal,
           leftValue = NAN, middleValue = maxSoFar, rightValue = NAN,
           bp = 4. * gPrecision,
@@ -9052,6 +9038,13 @@ void _LikelihoodFunction::LocateTheBump(long index, hyFloat gPrecision,
   long outcome = Bracket(index, left, middle, right, leftValue, middleValue,
                          rightValue, bp, go2Bound);
   unsigned long bracket_step_count = likeFuncEvalCallCount - inCount;
+
+  if (outcome != -1) {
+    if (isnan(left) || isnan(middle) || isnan(right) || isnan(leftValue) ||
+        isnan(middleValue) || isnan(rightValue)) {
+      outcome = -1;
+    }
+  }
 
   if (outcome != -1) { // successfull bracket
 
@@ -9128,10 +9121,16 @@ void _LikelihoodFunction::LocateTheBump(long index, hyFloat gPrecision,
         }
 
         U = fabs(D) >= tol1 ? X + D : X + (D > 0. ? tol1 : -tol1);
+        if (isnan(U) || isinf(U)) {
+          break;
+        }
 
         // U = X + D;
         SetIthIndependent(index, U);
         FU = -Compute();
+        if (isnan(FU)) {
+          FU = INFINITY;
+        }
 
         if (verbosity_level > 50) {
           char buf[1024];
@@ -9205,7 +9204,7 @@ void _LikelihoodFunction::LocateTheBump(long index, hyFloat gPrecision,
       middleValue = -FX;
       middle = X;
 
-      if (middleValue < maxSoFar) {
+      if (isnan(middleValue) || middleValue < maxSoFar) {
         if (verbosity_level > 50) {
           char buf[1024];
           snprintf(buf, 1024,
@@ -9259,6 +9258,8 @@ void _LikelihoodFunction::LocateTheBump(long index, hyFloat gPrecision,
         maxSoFar = middleValue;
       }
     }
+  } else {
+    SetIthIndependent(index, bestVal);
   }
 
   /*if (CheckEqual (GetIthIndependent(index) - originalValue, 0.)) {
@@ -9269,7 +9270,7 @@ void _LikelihoodFunction::LocateTheBump(long index, hyFloat gPrecision,
   }*/
 
   if (index >= 0) {
-    if (isnan(left) || isnan(right)) {
+    if (outcome != -1 && (isnan(left) || isnan(right))) {
       char buf[1024];
       snprintf(buf, 1024,
                "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) NAN left "
@@ -13434,6 +13435,16 @@ void _LikelihoodFunction::RankVariables(_AVLListX *tagger) {
   }
 
   SortLists(&varRank, &indexInd);
+  independentVarCosts.Clear();
+  for (unsigned long k = 0; k < indexInd.lLength; k++) {
+    if (tagger) {
+      independentVarCosts << -varRank.list_data[k];
+    } else {
+      independentVarCosts << (LocateVar(indexInd.list_data[k])->IsGlobal()
+                                  ? 10000
+                                  : 1);
+    }
+  }
   gradientBlocks.Clear();
 
   /*
