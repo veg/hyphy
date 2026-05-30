@@ -7783,21 +7783,8 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
               bool use_simplex =
                   (group_list.lLength <= 4) || (loopCounter % 2 == 0);
 
-              bool is_mtdna = false;
-              long gc_id = LocateVarByName(_String("_Genetic_Code_ID"));
-              if (gc_id >= 0) {
-                _Variable *v = FetchVar(gc_id);
-                HBLObjectRef val = v->GetValue();
-                if (val && val->ObjectClass() == STRING) {
-                  _String code_name = ((_FString *)val)->get_str();
-                  if (code_name.Find("mtDNA") != kNotFound ||
-                      code_name.Find("mtdna") != kNotFound) {
-                    is_mtdna = true;
-                  }
-                }
-              }
-
-              if (is_mtdna) {
+              if (hy_env::EnvVariableGetNumber("FORCE_DYNAMIC_SIMPLEX", 0.0) !=
+                  0.0) {
                 use_simplex = true;
               }
 
