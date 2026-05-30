@@ -7389,10 +7389,8 @@ bool _LikelihoodFunction::ProcessStandardCGPass(
       }
     }
 
-    if (!cg_list) {
-      large_change.Clear();
-      do_large_change_only = false;
-    }
+    large_change.Clear();
+    do_large_change_only = false;
 
     for (unsigned long i = 0; i < indexInd.lLength; i++) {
       hyFloat cv = GetIthIndependent(i);
@@ -8018,8 +8016,7 @@ _LikelihoodFunction::OptimizeSingleCoordinate(
   }
 
   if (variables_that_dont_change.get(current_index) > 1) {
-    if (convergenceMode <= 2 && inCount < termFactor - 1 &&
-        !do_large_change_only) {
+    if (convergenceMode <= 2 && inCount < termFactor - 1) {
       averageChange2 += bestVal;
       if (is_global) {
         if (last_large_change.lLength > 0) {
