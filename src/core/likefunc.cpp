@@ -8257,7 +8257,7 @@ _LikelihoodFunction::OptimizeSingleCoordinate(
   variableImpact.theData[current_index] = ll_delta;
 
   hyFloat large_change_threshold = opt_precision;
-  if (logLHistory.get_used() > 2) {
+  if (logLHistory.get_used() > 2 && diffs[0] > 0.1) {
     large_change_threshold = MAX(opt_precision, 0.001 * diffs[0]);
   }
 
