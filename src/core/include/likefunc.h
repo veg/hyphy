@@ -472,11 +472,13 @@ public:
    * @param precision The precision of the optimization
    * @param max_iterations The maximum number of iterations
    * @param max_evals The maximum number of evaluations
+   * @param only_these_parameters The subset of parameters to optimize
    * @return hyFloat The result of the optimization
    */
   hyFloat SimplexMethod(hyFloat &precision,
                         unsigned long max_iterations = 100000UL,
-                        unsigned long max_evals = 0xFFFFFF);
+                        unsigned long max_evals = 0xFFFFFF,
+                        _SimpleList *only_these_parameters = nil);
   /**
    * @brief Anneal the likelihood function
    *

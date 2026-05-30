@@ -5516,15 +5516,17 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           break;
         }
 
+        bool dynamic_cg_ran = false;
         if (!cg_ran) {
-          cg_ran = ExecuteDynamicConjugateGradient(
+          dynamic_cg_ran = ExecuteDynamicConjugateGradient(
               diffs, precision, inCount, termFactor, kMaxGradientStepCount,
               convergenceMode, maxSoFar, last_gradient_search,
               last_dynamic_cg_productive, max_logl_at_last_dynamic_cg,
               changes_history, _variables_that_dont_change,
               _variables_at_boundary, stepHistory, loopCounter,
               dynamic_block_trackers);
-          if (cg_ran) {
+          if (dynamic_cg_ran) {
+            cg_ran = true;
             inCount = 0;
             convergenceMode = 0;
             large_change.Clear();
@@ -5536,7 +5538,14 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
           for (unsigned long i = 0UL; i < indexInd.lLength; i++) {
             hyFloat cv = GetIthIndependent(i);
             if (!CheckEqual(old_values.theData[i], cv)) {
-              _variables_that_dont_change[i] = 0;
+              if (dynamic_cg_ran) {
+                bool is_global = FetchVar(indexInd.list_data[i])->IsGlobal();
+                long skip_limit =
+                    (convergenceMode == 3) ? (is_global ? 1000000L : 8L) : 2L;
+                _variables_that_dont_change[i] = skip_limit;
+              } else {
+                _variables_that_dont_change[i] = 0;
+              }
             } else {
               _variables_that_dont_change[i]++;
             }
@@ -7656,7 +7665,7 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
       skip_dynamic_cg = true;
     }
   }
-  if (!skip_dynamic_cg && inCount < 2 && convergenceMode > 1 &&
+  if (!skip_dynamic_cg && convergenceMode > 1 &&
       (bypass_cooldown || (loopCounter - last_gradient_search >= 4L)) &&
       changes_history.lLength >= 8) {
     last_gradient_search = loopCounter; // Update cooldown immediately
@@ -7726,73 +7735,164 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
       last_dynamic_cg_productive =
           false; // Reset to false by default before checking
       char buffer[2048];
+
+      bool has_large_group = false;
       for (unsigned long i = 0; i < active_vars.lLength; i++) {
-        if ((unsigned long)components[i] == i) { // Root of a component
+        if ((unsigned long)components[i] == i) {
           _SimpleList group_list;
           for (unsigned long j = 0; j < active_vars.lLength; j++) {
             if (find(j, components) == i) {
               group_list << active_vars.list_data[j];
             }
           }
-
-          unsigned long max_block_size = 32UL;
-          if (indexInd.lLength > 100) {
-            max_block_size =
-                MAX(8UL, MIN(32UL, 3200UL / (unsigned long)indexInd.lLength));
-          }
-
-          if (group_list.lLength >= 2 && group_list.lLength <= max_block_size &&
-              group_list.lLength <= indexInd.lLength - 3L) {
-            if (should_skip_cg_for_group(&group_list, dynamic_block_trackers,
-                                         maxSoFar, opt_precision)) {
-              continue;
-            }
-
-            if (verbosity_level > 1) {
-              snprintf(buffer, sizeof(buffer),
-                       "\n[DYNAMIC BLOCK] Triggering CG on group of %ld "
-                       "vars\n",
-                       group_list.lLength);
-              BufferToConsole(buffer);
-            }
-            _Matrix bestMSoFar;
-            GetAllIndependent(bestMSoFar);
-            hyFloat old_max = maxSoFar;
-            maxSoFar = ConjugateGradientDescent(
-                opt_precision, bestMSoFar, true, kMaxGradientStepCount,
-                &group_list, maxSoFar, MAX(opt_precision, diffs[0] * 0.1),
-                inCount >= termFactor - 2);
-            last_gradient_search = loopCounter;
-            max_logl_at_last_dynamic_cg = maxSoFar;
-            update_tracker_for_group(&group_list, dynamic_block_trackers,
-                                     maxSoFar);
-
-            if (maxSoFar - old_max > opt_precision / termFactor) {
-              made_progress = true;
-              if (maxSoFar - old_max > opt_precision * 5.0) {
-                last_dynamic_cg_productive = true;
-              }
-
-              // Reset variables that dont change
-              for (unsigned long var_idx = 0; var_idx < indexInd.lLength;
-                   var_idx++) {
-                hyFloat cv = GetIthIndependent(var_idx);
-                if (!CheckEqual(bestMSoFar.get(var_idx, 0), cv)) {
-                  variables_that_dont_change[var_idx] = 0;
-                }
-                if (!CheckEqual(cv, GetIthIndependentBound(var_idx, true)) &&
-                    !CheckEqual(cv, GetIthIndependentBound(var_idx, false))) {
-                  variables_at_boundary[var_idx] = 0;
-                }
-              }
-
-              // Update step history
-              GetAllIndependent(bestMSoFar);
-              for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
-                ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
-              }
-            }
+          if (group_list.lLength >= 2) {
+            has_large_group = true;
             break;
+          }
+        }
+      }
+
+      if (has_large_group) {
+        for (unsigned long i = 0; i < active_vars.lLength; i++) {
+          if ((unsigned long)components[i] == i) { // Root of a component
+            _SimpleList group_list;
+            for (unsigned long j = 0; j < active_vars.lLength; j++) {
+              if (find(j, components) == i) {
+                group_list << active_vars.list_data[j];
+              }
+            }
+
+            unsigned long max_block_size = 32UL;
+            if (indexInd.lLength > 100) {
+              max_block_size =
+                  MAX(8UL, MIN(32UL, 3200UL / (unsigned long)indexInd.lLength));
+            }
+
+            if (group_list.lLength >= 2 &&
+                group_list.lLength <= max_block_size &&
+                group_list.lLength <= indexInd.lLength - 3L) {
+              if (should_skip_cg_for_group(&group_list, dynamic_block_trackers,
+                                           maxSoFar, opt_precision)) {
+                continue;
+              }
+
+              _Matrix bestMSoFar;
+              GetAllIndependent(bestMSoFar);
+              hyFloat old_max = maxSoFar;
+
+              bool use_simplex =
+                  (group_list.lLength <= 4) || (loopCounter % 2 == 0);
+
+              if (use_simplex) {
+                if (verbosity_level > 1) {
+                  snprintf(buffer, sizeof(buffer),
+                           "\n[DYNAMIC SIMPLEX] In place of CG. Triggering "
+                           "Simplex on group of %ld vars\n",
+                           group_list.lLength);
+                  BufferToConsole(buffer);
+                }
+                maxSoFar =
+                    SimplexMethod(opt_precision, 20 + 5 * group_list.lLength,
+                                  100 + 20 * group_list.lLength, &group_list);
+              } else {
+                if (verbosity_level > 1) {
+                  snprintf(
+                      buffer, sizeof(buffer),
+                      "\n[DYNAMIC BLOCK] Triggering CG on group of %ld vars\n",
+                      group_list.lLength);
+                  BufferToConsole(buffer);
+                }
+                maxSoFar = ConjugateGradientDescent(
+                    opt_precision, bestMSoFar, true, kMaxGradientStepCount,
+                    &group_list, maxSoFar, MAX(opt_precision, diffs[0] * 0.1),
+                    inCount >= termFactor - 2);
+              }
+
+              last_gradient_search = loopCounter;
+              max_logl_at_last_dynamic_cg = maxSoFar;
+              update_tracker_for_group(&group_list, dynamic_block_trackers,
+                                       maxSoFar);
+
+              if (maxSoFar - old_max > opt_precision / termFactor) {
+                made_progress = true;
+                if (maxSoFar - old_max > opt_precision * 5.0) {
+                  last_dynamic_cg_productive = true;
+                }
+
+                // Reset variables that dont change
+                for (unsigned long var_idx = 0; var_idx < indexInd.lLength;
+                     var_idx++) {
+                  hyFloat cv = GetIthIndependent(var_idx);
+                  if (!CheckEqual(bestMSoFar.get(var_idx, 0), cv)) {
+                    bool is_global =
+                        FetchVar(indexInd.list_data[var_idx])->IsGlobal();
+                    long skip_limit = (convergenceMode == 3)
+                                          ? (is_global ? 1000000L : 8L)
+                                          : 2L;
+                    variables_that_dont_change[var_idx] = skip_limit;
+                  }
+                  if (!CheckEqual(cv, GetIthIndependentBound(var_idx, true)) &&
+                      !CheckEqual(cv, GetIthIndependentBound(var_idx, false))) {
+                    variables_at_boundary[var_idx] = 0;
+                  }
+                }
+
+                // Update step history
+                GetAllIndependent(bestMSoFar);
+                for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
+                  ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
+                }
+              }
+              break;
+            }
+          }
+        }
+      } else {
+        if (active_vars.lLength >= 2 && active_vars.lLength <= 6) {
+          if (verbosity_level > 1) {
+            snprintf(buffer, sizeof(buffer),
+                     "\n[DYNAMIC SIMPLEX] No covariation. Triggering Simplex "
+                     "on %ld active vars\n",
+                     active_vars.lLength);
+            BufferToConsole(buffer);
+          }
+          _Matrix bestMSoFar;
+          GetAllIndependent(bestMSoFar);
+          hyFloat old_max = maxSoFar;
+          maxSoFar =
+              SimplexMethod(opt_precision, 20 + 5 * active_vars.lLength,
+                            100 + 20 * active_vars.lLength, &active_vars);
+          last_gradient_search = loopCounter;
+          max_logl_at_last_dynamic_cg = maxSoFar;
+
+          if (maxSoFar - old_max > opt_precision / termFactor) {
+            made_progress = true;
+            if (maxSoFar - old_max > opt_precision * 5.0) {
+              last_dynamic_cg_productive = true;
+            }
+
+            // Reset variables that dont change
+            for (unsigned long var_idx = 0; var_idx < indexInd.lLength;
+                 var_idx++) {
+              hyFloat cv = GetIthIndependent(var_idx);
+              if (!CheckEqual(bestMSoFar.get(var_idx, 0), cv)) {
+                bool is_global =
+                    FetchVar(indexInd.list_data[var_idx])->IsGlobal();
+                long skip_limit =
+                    (convergenceMode == 3) ? (is_global ? 1000000L : 8L) : 2L;
+                variables_that_dont_change[var_idx] = skip_limit;
+              }
+              if (!CheckEqual(cv, GetIthIndependentBound(var_idx, true)) &&
+                  !CheckEqual(cv, GetIthIndependentBound(var_idx, false))) {
+                variables_at_boundary[var_idx] = 0;
+              }
+            }
+
+            // Update step history
+            GetAllIndependent(bestMSoFar);
+            for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
+              ((_Vector *)(*stepHistory)(k))->Store(bestMSoFar.theData[k]);
+            }
           }
         }
       }
@@ -7921,10 +8021,15 @@ _LikelihoodFunction::OptimizeSingleCoordinate(
     if (convergenceMode <= 2 && inCount < termFactor - 1 &&
         !do_large_change_only) {
       averageChange2 += bestVal;
-      if (is_global)
-        variables_that_dont_change[current_index] = 1;
-      else
+      if (is_global) {
+        if (last_large_change.lLength > 0) {
+          variables_that_dont_change[current_index] = 1;
+        } else {
+          variables_that_dont_change[current_index]++;
+        }
+      } else {
         variables_that_dont_change[current_index]++;
+      }
       return kCoordinateStepContinue;
     }
   }
@@ -9336,7 +9441,8 @@ hyFloat _LikelihoodFunction::replaceAPoint(_Matrix &m, long row, _Matrix &p,
 //_______________________________________________________________________________________
 hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
                                            unsigned long iterations,
-                                           unsigned long max_evaluations) {
+                                           unsigned long max_evaluations,
+                                           _SimpleList *only_these_parameters) {
 
 #define DEFAULT_STEP 0.05
 #define DEFAULT_STEP_OFF_BOUND 0.00025
@@ -9357,29 +9463,30 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
   _OptimiztionProgress progress_tracker;
 
   long N = indexInd.countitems();
+  long M = only_these_parameters ? only_these_parameters->countitems() : N;
   unsigned long lf_evaluations = 0;
 
-  hyFloat N_inv = 1. / N;
+  hyFloat M_inv = 1. / M;
   hyFloat simplex_alpha = 1.0;
   hyFloat simplex_beta, simplex_gamma, simplex_delta;
 
-  if (N <= 5) {
+  if (M <= 5) {
     // Aggressive parameters for low dimensions
     simplex_beta = 2.;
     simplex_gamma = 0.25;
     simplex_delta = 0.25;
   } else {
     // Adaptive parameters for high dimensions (Gao & Han)
-    simplex_beta = 1.0 + 2.0 * N_inv;
-    simplex_gamma = 0.75 - 0.5 * N_inv;
-    simplex_delta = 1.0 - N_inv;
+    simplex_beta = 1.0 + 2.0 * M_inv;
+    simplex_gamma = 0.75 - 0.5 * M_inv;
+    simplex_delta = 1.0 - M_inv;
   }
 
   _Constant zero(0.);
 
   // allocate the points of the simplex + scratch
-  std::vector<_Matrix> simplex(N + 1);
-  _Matrix centroid(N, 1, false, true), function_values(N + 1, 2, false, true);
+  std::vector<_Matrix> simplex(M + 1);
+  _Matrix centroid(N, 1, false, true), function_values(M + 1, 2, false, true);
 
   // pre-allocate working matrices to avoid reallocation in the loop
   _Matrix new_point(N, 1, false, true), t(N, 1, false, true),
@@ -9421,7 +9528,7 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
 
   auto echo_simplex_values = [=](_Matrix &function_values) -> void {
     char buffer[512];
-    for (long i = 0; i <= N; i++) {
+    for (long i = 0; i <= M; i++) {
       snprintf(buffer, 512,
                "\n\tSimple point %ld => %15.12g (map to point %ld)", i,
                function_values(i, 0), (long)function_values(i, 1));
@@ -9446,32 +9553,37 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
     BufferToConsole("\n[SIMPLEX SETUP]");
     echo_values(simplex[0], function_values(0, 0));
   }
-  for (long i = 0L; i < N; i++) {
+  for (long i = 0L; i < M; i++) {
     simplex[i + 1] = simplex[0];
 
-    hyFloat ith_coordinate = GetIthIndependent(i),
-            lb = GetIthIndependentBound(i, true),
-            ub = GetIthIndependentBound(i, false);
+    long actual_index =
+        only_these_parameters ? only_these_parameters->list_data[i] : i;
+
+    hyFloat ith_coordinate = GetIthIndependent(actual_index),
+            lb = GetIthIndependentBound(actual_index, true),
+            ub = GetIthIndependentBound(actual_index, false);
 
     if (verbosity_level > 100) {
       char buffer[512];
       snprintf(buffer, 512,
                "\n\tVariable %s, coordinate %ld, value %g, range [%g, %g]",
-               GetIthIndependentName(i)->get_str(), i, ith_coordinate, lb, ub);
+               GetIthIndependentName(actual_index)->get_str(), actual_index,
+               ith_coordinate, lb, ub);
       BufferToConsole(buffer);
     }
     if (CheckEqual(ith_coordinate, lb)) {
-      simplex[i + 1][i] += MIN(DEFAULT_STEP_OFF_BOUND, (ub - lb) * 0.5);
+      simplex[i + 1][actual_index] +=
+          MIN(DEFAULT_STEP_OFF_BOUND, (ub - lb) * 0.5);
     } else {
       hyFloat x_step = NonZero(ith_coordinate) ? ith_coordinate * DEFAULT_STEP
                                                : DEFAULT_STEP;
       if (ub - ith_coordinate > x_step) {
-        simplex[i + 1][i] += x_step;
+        simplex[i + 1][actual_index] += x_step;
       } else {
         if (ub - ith_coordinate > ith_coordinate - lb) {
-          simplex[i + 1][i] += (ub - ith_coordinate) * 0.5;
+          simplex[i + 1][actual_index] += (ub - ith_coordinate) * 0.5;
         } else {
-          simplex[i + 1][i] -= (ith_coordinate - lb) * 0.5;
+          simplex[i + 1][actual_index] -= (ith_coordinate - lb) * 0.5;
         }
       }
     }
@@ -9484,7 +9596,7 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
   }
 
   // initialize sum_matrix for O(N) centroid updates
-  for (long i = 0L; i <= N; i++) {
+  for (long i = 0L; i <= M; i++) {
     sum_matrix += simplex[i];
   }
 
@@ -9499,11 +9611,11 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
        it_count++) {
     /** compute the centroid of all EXCEPT the WORST point **/
 
-    long worst_index = (long)function_values(N, 1);
+    long worst_index = (long)function_values(M, 1);
     // Optimized centroid calculation
     centroid = sum_matrix;
     centroid -= simplex[worst_index];
-    centroid *= N_inv;
+    centroid *= M_inv;
 
     /** reflection
      x[r] = ¯x +α(¯x −x[n+1]).
@@ -9519,7 +9631,7 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
     if (verbosity_level > 100) {
       char buffer[512];
       snprintf(buffer, 512, "\n>Simplex iteration %ld [D=%ld]", (it_count + 1),
-               N);
+               M);
       BufferToConsole(buffer);
       echo_values(new_point, trial_value);
     }
@@ -9527,15 +9639,15 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
     bool do_shrink = false;
 
     if (trial_value >= function_values(0, 0) &&
-        trial_value < function_values(N - 1, 0)) {
+        trial_value < function_values(M - 1, 0)) {
       // accept the reflection
       if (verbosity_level > 100) {
         char buffer[512];
         snprintf(buffer, 512, "\nACCEPT REFLECTION replace point %ld\n",
-                 (long)function_values(N, 1));
+                 (long)function_values(M, 1));
         BufferToConsole(buffer);
       }
-      replace_point(new_point, trial_value, (long)function_values(N, 1), N);
+      replace_point(new_point, trial_value, (long)function_values(M, 1), M);
     } else {
       if (trial_value < function_values(0, 0)) { // try expansion
         // x[e] = ¯x +β(x[r] − ¯x)
@@ -9555,17 +9667,17 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
           if (verbosity_level > 100) {
             BufferToConsole("\nACCEPT EXPANSION");
           }
-          replace_point(expansion, expansion_value, (long)function_values(N, 1),
-                        N);
+          replace_point(expansion, expansion_value, (long)function_values(M, 1),
+                        M);
         } else {
           if (verbosity_level > 100) {
             BufferToConsole("\nREJECT EXPANSION, ACCEPT REFLECTION");
           }
-          replace_point(new_point, trial_value, (long)function_values(N, 1), N);
+          replace_point(new_point, trial_value, (long)function_values(M, 1), M);
         }
       } else {
         // if (trial_value >= function_values (N,0)) {
-        long worst_try_index = (long)function_values(N, 1);
+        long worst_try_index = (long)function_values(M, 1);
         if (verbosity_level > 100) {
           BufferToConsole("\nTRYING CONTRACTION");
         }
@@ -9577,7 +9689,7 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
         temp_value -= simplex[worst_try_index];
         temp_value *= simplex_gamma;
         bool inside = false;
-        if (trial_value >= function_values(N, 0)) { // INSIDE
+        if (trial_value >= function_values(M, 0)) { // INSIDE
           if (verbosity_level > 100) {
             BufferToConsole("\nINSIDE contraction");
           }
@@ -9600,15 +9712,15 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
           char buffer[512];
           snprintf(buffer, 512,
                    "\n\tContraction value = %g (relected = %g, worst = %g)",
-                   contraction_value, trial_value, function_values(N, 0));
+                   contraction_value, trial_value, function_values(M, 0));
         }
-        if ((inside && contraction_value < function_values(N, 0)) ||
+        if ((inside && contraction_value < function_values(M, 0)) ||
             (!inside && contraction_value < trial_value)) {
 
           if (verbosity_level > 100) {
             BufferToConsole("\nACCEPT contraction");
           }
-          replace_point(cv, contraction_value, worst_try_index, N);
+          replace_point(cv, contraction_value, worst_try_index, M);
         } else {
           if (verbosity_level > 100) {
             BufferToConsole("\nREJECT contraction");
@@ -9627,7 +9739,7 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
       bool collapsed = false;
 
       // x[i] = x[1] + δ(x[i] − x[1]).
-      for (long i = 1L; i <= N; i++) {
+      for (long i = 1L; i <= M; i++) {
         long idx = (long)function_values(i, 1);
 
         sum_matrix -= simplex[idx];
@@ -9661,14 +9773,14 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
     }
 
     hyFloat mean = 0.0, variance = 0.0;
-    for (long k = 0; k <= N; k++) {
+    for (long k = 0; k <= M; k++) {
       mean += function_values(k, 0);
     }
-    mean /= (N + 1);
-    for (long k = 0; k <= N; k++) {
+    mean /= (M + 1);
+    for (long k = 0; k <= M; k++) {
       variance += SQR(function_values(k, 0) - mean);
     }
-    variance /= N;
+    variance /= M;
     hyFloat std_dev = sqrt(variance);
 
     if (verbosity_level == 1) {
@@ -9683,7 +9795,7 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
                  "Simplex iteration %10ld [N=%5ld]; current max %12.6g, "
                  "current value "
                  "std.dev %12.6g [precision %g]\n",
-                 it_count, N, -function_values(0, 0), std_dev, gPrecision);
+                 it_count, M, -function_values(0, 0), std_dev, gPrecision);
         BufferToConsole(buffer);
       }
     }
@@ -9693,8 +9805,8 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
     }
 
 #ifdef NEDLER_MEAD_DEBUG
-    for (long i = 0; i < N; i++) {
-      for (long j = i + 1L; j <= N; j++) {
+    for (long i = 0; i < M; i++) {
+      for (long j = i + 1L; j <= M; j++) {
         if (simplex[i].Equal(&simplex[j])) {
           printf("COLLAPSED SIMPLEX %ld == %ld\n\n", i, j);
           exit(1);
@@ -9708,19 +9820,7 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
 #endif
   }
 
-  /*
-      BufferToConsole("\n$$$$$\nFunction values\n");
-      ObjectToConsole(&function_values);
-      BufferToConsole("\nBest point\n");
-      ObjectToConsole(&simplex[(long)function_values(0,1)]);
-  */
-
   long best_idx = (long)function_values(0, 1);
-
-  /*for (long i = 0; i < simplex[best_idx].GetHDim(); i++) {
-      fprintf (stdout, "%d %s %g\n", i, GetIthIndependentName(i)->get_str(),
-  simplex[best_idx][i]);
-  }*/
 
   hyFloat final_logL = -set_point_and_compute(simplex[best_idx]);
 

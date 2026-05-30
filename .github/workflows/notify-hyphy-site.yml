@@ -1,0 +1,32 @@
+name: Notify hyphy-site of release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to notify (e.g., 2.5.78)'
+        required: false
+        type: string
+
+jobs:
+  notify-site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send repository dispatch to veg/hyphy-site
+        run: |
+          curl -H "Accept: application/vnd.github.everest-preview+json" \
+               -H "Authorization: token ${{ secrets.HYPHY_SITE_DISPATCH_TOKEN }}" \
+               --request POST \
+               --data "{\"event_type\": \"hyphy-release\", \"client_payload\": { \"version\": \"${{ steps.version.outputs.VERSION }}\" }}" \
+               https://api.github.com/repos/veg/hyphy-site/dispatches
