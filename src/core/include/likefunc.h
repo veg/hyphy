@@ -902,7 +902,7 @@ protected:
       _Matrix const &old_values, hyFloat precision, long termFactor,
       bool use_adaptive_step, bool skipCG, hyFloat hardLimitOnOptimizationValue,
       bool &should_break, long custom_convergence_callback,
-      _FString *custom_convergence_callback_name);
+      _FString *custom_convergence_callback_name, bool is_cg_pass = false);
 
   enum CGTriggerResult {
     kCGTriggerNone = 0,
@@ -951,14 +951,12 @@ protected:
       _SimpleList &variables_at_boundary, _List *stepHistory, long &loopCounter,
       std::vector<DynamicBlockTracker> &dynamic_block_trackers);
 
-  void UpdateCoordinateHeuristics(_SimpleList &large_change,
-                                  bool &do_large_change_only,
-                                  _SimpleList &last_large_change,
-                                  _Vector &logLDeltaHistory,
-                                  hyFloat opt_precision, long loopCounter,
-                                  long &lastCore, long coreInterval,
-                                  _SimpleList &large_change_all_time,
-                                  _SimpleList &variables_that_dont_change);
+  void UpdateCoordinateHeuristics(
+      _SimpleList &large_change, bool &do_large_change_only,
+      _SimpleList &last_large_change, _Vector &logLDeltaHistory,
+      hyFloat opt_precision, long loopCounter, long &lastCore,
+      long coreInterval, _SimpleList &large_change_all_time,
+      _SimpleList &variables_that_dont_change, _Matrix const &variableImpact);
 
   enum CoordinateStepResult {
     kCoordinateStepNormal = 0,

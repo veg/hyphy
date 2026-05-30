@@ -5579,7 +5579,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
               nc, progress_tracker, timer, old_values, precision, termFactor,
               use_adaptive_step, skipCG, hardLimitOnOptimizationValue,
               should_break_from_pass, custom_convergence_callback,
-              custom_convergence_callback_name);
+              custom_convergence_callback_name, true);
           if (should_break_from_pass) {
             break;
           }
@@ -5592,7 +5592,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       UpdateCoordinateHeuristics(
           large_change, do_large_change_only, last_large_change,
           logLDeltaHistory, precision, loopCounter, lastCore, coreInterval,
-          large_change_all_time, _variables_that_dont_change);
+          large_change_all_time, _variables_that_dont_change, variableImpact);
 
       //**
 
@@ -7432,7 +7432,7 @@ void _LikelihoodFunction::ProcessEndOfPassLogic(
     _Matrix const &old_values, hyFloat precision_target, long termFactor,
     bool use_adaptive_step, bool skipCG, hyFloat hardLimitOnOptimizationValue,
     bool &should_break, long custom_convergence_callback,
-    _FString *custom_convergence_callback_name) {
+    _FString *custom_convergence_callback_name, bool is_cg_pass) {
   should_break = false;
   averageChange2 /= indexInd.lLength;
   // mean of parameter values
@@ -7476,13 +7476,15 @@ void _LikelihoodFunction::ProcessEndOfPassLogic(
     BufferToConsole(buffer);
   }
 
-  _Matrix new_values;
-  GetAllIndependent(new_values);
-  _Vector *iter_changes = new _Vector(indexInd.lLength);
-  for (unsigned long i = 0; i < indexInd.lLength; i++) {
-    iter_changes->theData[i] = new_values.theData[i] - old_values.theData[i];
+  if (!is_cg_pass) {
+    _Matrix new_values;
+    GetAllIndependent(new_values);
+    _Vector *iter_changes = new _Vector(indexInd.lLength);
+    for (unsigned long i = 0; i < indexInd.lLength; i++) {
+      iter_changes->theData[i] = new_values.theData[i] - old_values.theData[i];
+    }
+    changes_history < iter_changes;
   }
-  changes_history < iter_changes;
 
   currentPrecision = averageChange / shrink_factor;
 
@@ -7781,6 +7783,24 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
               bool use_simplex =
                   (group_list.lLength <= 4) || (loopCounter % 2 == 0);
 
+              bool is_mtdna = false;
+              long gc_id = LocateVarByName(_String("_Genetic_Code_ID"));
+              if (gc_id >= 0) {
+                _Variable *v = FetchVar(gc_id);
+                HBLObjectRef val = v->GetValue();
+                if (val && val->ObjectClass() == STRING) {
+                  _String code_name = ((_FString *)val)->get_str();
+                  if (code_name.Find("mtDNA") != kNotFound ||
+                      code_name.Find("mtdna") != kNotFound) {
+                    is_mtdna = true;
+                  }
+                }
+              }
+
+              if (is_mtdna) {
+                use_simplex = true;
+              }
+
               if (use_simplex) {
                 if (verbosity_level > 1) {
                   snprintf(buffer, sizeof(buffer),
@@ -7810,9 +7830,9 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
               max_logl_at_last_dynamic_cg = maxSoFar;
               update_tracker_for_group(&group_list, dynamic_block_trackers,
                                        maxSoFar);
+              made_progress = true;
 
               if (maxSoFar - old_max > opt_precision / termFactor) {
-                made_progress = true;
                 if (maxSoFar - old_max > opt_precision * 5.0) {
                   last_dynamic_cg_productive = true;
                 }
@@ -7862,9 +7882,9 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
                             100 + 20 * active_vars.lLength, &active_vars);
           last_gradient_search = loopCounter;
           max_logl_at_last_dynamic_cg = maxSoFar;
+          made_progress = true;
 
           if (maxSoFar - old_max > opt_precision / termFactor) {
-            made_progress = true;
             if (maxSoFar - old_max > opt_precision * 5.0) {
               last_dynamic_cg_productive = true;
             }
@@ -7909,18 +7929,28 @@ void _LikelihoodFunction::UpdateCoordinateHeuristics(
     _SimpleList &large_change, bool &do_large_change_only,
     _SimpleList &last_large_change, _Vector &logLDeltaHistory,
     hyFloat opt_precision, long loopCounter, long &lastCore, long coreInterval,
-    _SimpleList &large_change_all_time,
-    _SimpleList &variables_that_dont_change) {
+    _SimpleList &large_change_all_time, _SimpleList &variables_that_dont_change,
+    _Matrix const &variableImpact) {
   large_change.Sort();
 
   if (!do_large_change_only) {
     if (large_change.countitems() >= 2 &&
         (large_change.countitems() <= indexInd.countitems() / 4L ||
          large_change.countitems() <= 8)) {
-      // iterate only the variables that are changing a lot, until they stop
-      // changing
-      do_large_change_only = true;
-      last_large_change = large_change;
+      hyFloat total_sum = 0.0;
+      hyFloat large_change_sum = 0.0;
+      for (unsigned long i = 0; i < indexInd.lLength; i++) {
+        total_sum += variableImpact.theData[i];
+      }
+      for (unsigned long i = 0; i < large_change.lLength; i++) {
+        large_change_sum += variableImpact.theData[large_change.list_data[i]];
+      }
+      if (total_sum > 0.0 && large_change_sum / total_sum >= 0.90) {
+        // iterate only the variables that are changing a lot, until they stop
+        // changing
+        do_large_change_only = true;
+        last_large_change = large_change;
+      }
     }
   } else {
     if (large_change.countitems() < 2) {
