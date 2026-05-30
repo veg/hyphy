@@ -46,6 +46,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "matrix.h"
 #include "tree.h"
 #include "vector.h"
+#include <vector>
+
+class TimeDifference;
+
+struct DynamicBlockTracker {
+  std::vector<long> variables;
+  hyFloat max_logl_at_last_cg;
+  std::vector<hyFloat> values_at_last_cg;
+};
 
 // #define   NUMERICAL_INFINITY          INFINITY
 
@@ -138,6 +147,8 @@ enum _LikelihoodFunctionCountType {
   kLFCountDependentVariables,
   kLFCountCategoryVariables
 };
+
+class _OptimiztionProgress;
 
 //_______________________________________________________________________________________
 
@@ -461,11 +472,13 @@ public:
    * @param precision The precision of the optimization
    * @param max_iterations The maximum number of iterations
    * @param max_evals The maximum number of evaluations
+   * @param only_these_parameters The subset of parameters to optimize
    * @return hyFloat The result of the optimization
    */
   hyFloat SimplexMethod(hyFloat &precision,
                         unsigned long max_iterations = 100000UL,
-                        unsigned long max_evals = 0xFFFFFF);
+                        unsigned long max_evals = 0xFFFFFF,
+                        _SimpleList *only_these_parameters = nil);
   /**
    * @brief Anneal the likelihood function
    *
@@ -851,13 +864,131 @@ protected:
   //                                       hyFloat&, hyFloat&, hyFloat&, bool
   //                                       retry = false);
   void LocateTheBump(long, hyFloat, hyFloat &, hyFloat &, bool, hyFloat = -1.);
-  hyFloat GradientLocateTheBump(hyFloat, hyFloat &, _Matrix &, _Matrix &);
+  hyFloat GradientLocateTheBump(hyFloat, hyFloat &, _Matrix &, _Matrix &,
+                                hyFloat = 0.0);
+
+  void UpdateConvergenceMode(bool use_adaptive_step, hyFloat oldAverage,
+                             hyFloat averageChange, hyFloat stdFactor,
+                             hyFloat opt_precision, _Vector &logLHistory,
+                             _Vector &logLDeltaHistory,
+                             unsigned char lastConvergenceMode,
+                             _SimpleList &variables_that_dont_change,
+                             unsigned char &convergenceMode,
+                             hyFloat &shrink_factor, hyFloat *diffs);
+
+  bool ProcessStandardCGPass(
+      unsigned char &convergenceMode, long &last_gradient_search,
+      bool &do_large_change_only, bool &last_cg_productive,
+      hyFloat &max_logl_at_last_cg, hyFloat &maxSoFar,
+      _SimpleList &large_change, _SimpleList &last_large_change,
+      _Vector &logLDeltaHistory, _SimpleList &_variables_that_dont_change,
+      _SimpleList &_variables_at_boundary, _List *stepHistory,
+      hyFloat const *diffs,
+
+      hyFloat hardLimitOnOptimizationValue, hyFloat precision,
+      unsigned long maxGradientBlockDimension,
+      unsigned long kMaxGradientStepCount,
+      std::vector<DynamicBlockTracker> &dynamic_block_trackers, long inCount,
+      long termFactor, long loopCounter, TimeDifference &timer,
+      bool &should_break);
+
+  void ProcessEndOfPassLogic(
+      hyFloat &maxSoFar, hyFloat &lastMaxValue, long &inCount,
+      long &loopCounter, bool &forward, hyFloat &averageChange2,
+      hyFloat &averageChange, hyFloat shrink_factor, hyFloat oldAverage,
+      hyFloat &currentPrecision, _List &changes_history, _Vector &logLHistory,
+      _Vector &logLDeltaHistory, long nc,
+      _OptimiztionProgress &progress_tracker, TimeDifference &timer,
+      _Matrix const &old_values, hyFloat precision, long termFactor,
+      bool use_adaptive_step, bool skipCG, hyFloat hardLimitOnOptimizationValue,
+      bool &should_break, long custom_convergence_callback,
+      _FString *custom_convergence_callback_name, bool is_cg_pass = false);
+
+  enum CGTriggerResult {
+    kCGTriggerNone = 0,
+    kCGTriggerActive,
+    kCGTriggerTerminate
+  };
+
+  CGTriggerResult EvaluateCGTriggerCondition(
+      double elapsed_time, hyFloat hardLimitOnOptimizationValue,
+      long loopCounter, long &last_gradient_search, long inCount,
+      long termFactor, bool do_large_change_only, bool last_cg_productive,
+      hyFloat max_logl_at_last_cg, hyFloat maxSoFar,
+      unsigned long maxGradientBlockDimension, unsigned char &convergenceMode,
+      _SimpleList &last_large_change, _SimpleList *&cg_list);
+
+  bool should_skip_cg_for_group(
+      _SimpleList const *group,
+      std::vector<DynamicBlockTracker> &dynamic_block_trackers,
+      hyFloat maxSoFar, hyFloat opt_precision);
+
+  void update_tracker_for_group(
+      _SimpleList const *group,
+      std::vector<DynamicBlockTracker> &dynamic_block_trackers,
+      hyFloat current_max);
+
+  void ExecuteConjugateGradient(
+      _SimpleList *cg_list, hyFloat *diffs, hyFloat opt_precision, long inCount,
+      long termFactor, unsigned long maxGradientBlockDimension,
+      unsigned long kMaxGradientStepCount, hyFloat &maxSoFar,
+      bool &do_large_change_only, _SimpleList &large_change,
+      _SimpleList &variables_that_dont_change,
+      _SimpleList &variables_at_boundary, _List *stepHistory,
+      _Vector &logLHistory, _Vector &logLDeltaHistory, bool &last_cg_productive,
+      hyFloat &max_logl_at_last_cg, long &last_gradient_search,
+      unsigned char &convergenceMode, hyFloat &lastMaxValue,
+      hyFloat &percentDone, _OptimiztionProgress &progress_tracker,
+      _String const *progress_file_string, long &loopCounter,
+      std::vector<DynamicBlockTracker> &dynamic_block_trackers);
+
+  bool ExecuteDynamicConjugateGradient(
+      hyFloat *diffs, hyFloat opt_precision, long inCount, long termFactor,
+      unsigned long kMaxGradientStepCount, unsigned char &convergenceMode,
+      hyFloat &maxSoFar, long &last_gradient_search,
+      bool &last_dynamic_cg_productive, hyFloat &max_logl_at_last_dynamic_cg,
+      _List &changes_history, _SimpleList &variables_that_dont_change,
+      _SimpleList &variables_at_boundary, _List *stepHistory, long &loopCounter,
+      std::vector<DynamicBlockTracker> &dynamic_block_trackers);
+
+  void UpdateCoordinateHeuristics(
+      _SimpleList &large_change, bool &do_large_change_only,
+      _SimpleList &last_large_change, _Vector &logLDeltaHistory,
+      hyFloat opt_precision, long loopCounter, long &lastCore,
+      long coreInterval, _SimpleList &large_change_all_time,
+      _SimpleList &variables_that_dont_change, _Matrix const &variableImpact);
+
+  enum CoordinateStepResult {
+    kCoordinateStepNormal = 0,
+    kCoordinateStepContinue,
+    kCoordinateStepBreak,
+    kCoordinateStepTerminate
+  };
+
+  CoordinateStepResult OptimizeSingleCoordinate(
+      unsigned long current_index, bool do_large_change_only,
+      _SimpleList &last_large_change, unsigned char convergenceMode,
+      long inCount, long termFactor, hyFloat shrink_factor, _List *stepHistory,
+      _List &changes_history, hyFloat const *diffs, hyFloat opt_precision,
+      hyFloat currentPrecision, hyFloat &maxSoFar, _SimpleList &large_change,
+      _SimpleList &large_change_all_time,
+      _SimpleList &variables_that_dont_change,
+      _SimpleList &variables_at_boundary, _Matrix &variableValues,
+      _Matrix &variableImpact, _Vector &logLHistory, _SimpleList &nc2,
+      hyFloat &averageChange, hyFloat &averageChange2, double elapsed_time,
+      hyFloat hardLimitOnOptimizationValue, bool use_adaptive_step,
+      bool go2Bound, long loopCounter);
+
+  void UpdateBoundaryStatus(_SimpleList &variables_that_dont_change,
+                            _SimpleList &variables_at_boundary,
+                            unsigned long &nc);
   void GradientDescent(hyFloat &, _Matrix &);
   hyFloat ConjugateGradientDescent(hyFloat, _Matrix &, bool localOnly = false,
                                    unsigned long = 0x7fffffff,
                                    _SimpleList *only_these_parameters = nil,
                                    hyFloat check_lf = -INFINITY,
-                                   hyFloat min_improvement_to_continue = 0.);
+                                   hyFloat min_improvement_to_continue = 0.,
+                                   bool is_final_pass = false);
 
   hyFloat SetParametersAndCompute(long, hyFloat, _Matrix * = nil,
                                   _Matrix * = nil, bool skip_compute = false);
@@ -998,7 +1129,10 @@ protected:
 
   void LoggerLogL(hyFloat logL);
   void LoggerAddGradientPhase(hyFloat precision, hyFloat beta,
-                              hyFloat scalar_product);
+                              hyFloat scalar_product,
+                              long grad_compute_evals = 0,
+                              long grad_descent_evals = 0,
+                              long active_vars = 0);
   void LoggerAddCoordinatewisePhase(hyFloat shrinkage, char convergence_mode);
   void LoggerAllVariables();
   void LoggerSingleVariable(unsigned long index, hyFloat logL,
@@ -1041,7 +1175,7 @@ protected:
 
   _SimpleList theTrees, theDataFilters, theProbabilities, indexInd, indexDep,
       indexCat, *nonConstantDep, blockDependancies,
-      parameterTransformationFunction;
+      parameterTransformationFunction, independentVarCosts;
   /* 20110718: SLKP this list holds the index of the parameter interval mapping
      function used during optimization */
 

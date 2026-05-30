@@ -86,10 +86,11 @@ function PopulateModelMatrix (ModelMatrixName& )
 	return 1;
 }
 
-fprintf ( stdout, "\n\nAllow multiple substitutions between codons? (Y/N)" );
-fscanf ( stdin, "String", msubs );
+LoadFunctionLibrary("libv3/IOFunctions.bf");
+KeywordArgument ("multiple-substitutions", "Allow multiple substitutions between codons?", "Yes");
+msubs = io.PromptUserForString("Allow multiple substitutions between codons? (Y/N)");
 
-if ( ( msubs == "Y" ) || ( msubs == "y" )  ) {
+if ( ( msubs == "Y" ) || ( msubs == "y" ) || ( msubs == "Yes" ) || ( msubs == "yes" )  ) {
 	incFileName = HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "TemplateModels" + DIRECTORY_SEPARATOR + "EmpiricalCodon" + DIRECTORY_SEPARATOR + "KHG_ECMu";
 }
 else {

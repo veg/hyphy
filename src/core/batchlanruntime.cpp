@@ -2873,8 +2873,16 @@ bool _ElementaryCommand::HandleSelectTemplateModel(
               });
 
           if (model_id == kNotFound) {
-            throw(option.Enquote() &
-                  " is not a valid model (with input redirect)");
+            _String valid_models = "Choose one of: ";
+            for (long m = 0; m < (long)matching_models.lLength; m++) {
+              if (m > 0) {
+                valid_models = valid_models & ", ";
+              }
+              valid_models =
+                  valid_models &
+                  *(_String *)templateModelList.GetItem(matching_models(m), 0);
+            }
+            throw(option.Enquote() & " is not a valid model. " & valid_models);
           }
 
           need_to_prompt_user = false;

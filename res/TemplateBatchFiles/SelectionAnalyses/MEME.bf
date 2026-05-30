@@ -546,7 +546,7 @@ meme.report.count = {{0}};
 
 
 
-meme.table_headers = {9 + meme.nrate_classes*2  + (meme.multi_hit == "Double") + 2*(meme.multi_hit == "Double+Triple"),2};
+meme.table_headers = {10 + meme.nrate_classes*2  + (meme.multi_hit == "Double") + 2*(meme.multi_hit == "Double+Triple"),2};
 
 meme.table_headers[0][0] = "&alpha;"; meme.table_headers[0][1] = "Synonymous substitution rate at a site";
 
@@ -570,6 +570,7 @@ meme.table_headers[meme.row_index][0] = "Total branch length"; meme.table_header
 
 meme.table_headers[meme.row_index][0] = "MEME LogL"; meme.table_headers[meme.row_index][1] = "Site Log-likelihood under the MEME model"; meme.row_index+=1;
 meme.table_headers[meme.row_index][0] = "FEL LogL"; meme.table_headers[meme.row_index][1] = "Site Log-likelihood under the FEL model"; meme.row_index+=1;
+meme.table_headers[meme.row_index][0] = "LRT MEME vs FEL"; meme.table_headers[meme.row_index][1] = "Likelihood ratio test statistic p-value for MEME vs FEL"; meme.row_index+=1;
  
 meme.table_headers[meme.row_index][0] = "FEL &alpha;"; meme.table_headers[meme.row_index][1] = "Synonymous substitution rate at a site under the FEL model";  meme.row_index+=1;
 meme.table_headers[meme.row_index][0] = "FEL &beta;"; meme.table_headers[meme.row_index][1] = "Non-synonymous substitution rate at a site under the FEL model";  meme.row_index+=1;
@@ -993,10 +994,10 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     //utility.SetEnvVariable ("VERBOSITY_LEVEL", 110);
     
     Optimize (results, ^lf_fel
-        , {"OPTIMIZATION_METHOD" : "nedler-mead", OPTIMIZATION_PRECISION: 0.01}
+        , {"OPTIMIZATION_METHOD" : "nedler-mead", OPTIMIZATION_PRECISION: 1e-4}
     );
     
-    Optimize (results, ^lf_fel, {"OPTIMIZATION_METHOD" : "coordinate-wise"});
+    //Optimize (results, ^lf_fel, {"OPTIMIZATION_METHOD" : "coordinate-wise"});
         
     fel = estimators.ExtractMLEsOptions (lf_fel, model_mapping, {^"terms.globals_only" : TRUE});
     fel[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
@@ -1434,7 +1435,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         }
 
         ^rate.fel.beta_fg := ^rate.fel.alpha;
-        Optimize (results, ^lf_bsrel, {"OPTIMIZATION_METHOD" : "coordinate-wise"});
+        Optimize (results, ^lf_bsrel, {"OPTIMIZATION_METHOD" : "nedler-mead"});
 
         if (sim_mode) {
             return lrt - 2*results[1][0];
@@ -1664,6 +1665,15 @@ lfunction meme.store_results (node, result, arguments) {
 
         result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"terms.meme.fg_param_prefix" + ^"terms.parameters.synonymous_rate");
         
+        for (k, v; in; scalers['FG']) {
+            if (Type (v["scaler"]) == "String") {
+                val = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"terms.meme.fg_param_prefix" + k);
+                if (None != val) {
+                    ^(v["scaler"]) = val;
+                }
+            }
+        }
+
         rates = "";
         weights = "";
         for (is,w; in; scalers['OMEGA_DIST']) {
@@ -1691,9 +1701,9 @@ lfunction meme.store_results (node, result, arguments) {
         
         result_row [lrt_index] = lrt [utility.getGlobalValue("terms.LRT")];
         result_row [lrt_index+1] = lrt [utility.getGlobalValue("terms.p_value")];
-        result_row [lrt_index+4] = (result["fel"])[utility.getGlobalValue("terms.fit.log_likelihood")];
-        result_row [lrt_index+5] = (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")];
-        result_row [lrt_index+6] = 1-CChi2 (2*(result_row [lrt_index+5]-result_row [lrt_index+4]),2);
+        result_row [lrt_index+4] = (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")];
+        result_row [lrt_index+5] = (result["fel"])[utility.getGlobalValue("terms.fit.log_likelihood")];
+        result_row [lrt_index+6] = 1-CChi2 (2*(result_row [lrt_index+4]-result_row [lrt_index+5]),2);
 
         all_ebf = result[utility.getGlobalValue("terms.empirical_bayes_factor")];
         all_posterior = result[utility.getGlobalValue("terms.posterior")];

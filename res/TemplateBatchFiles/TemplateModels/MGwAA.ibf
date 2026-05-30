@@ -13,6 +13,8 @@ AminoAcidClasses = {{"Default","Single non-synonymous rate class. All changes ar
 				    
 /* END ADD NEW RATE CLASS MATRICES HERE */			    
 
+LoadFunctionLibrary("libv3/IOFunctions.bf");
+KeywordArgument ("aa-model-type", "Amino Acid Class Model", "Default");
 ChoiceList	(aaModelType,"Amino Acid Class Model",1,SKIP_NONE,AminoAcidClasses);
 
 if (aaModelType < 0)

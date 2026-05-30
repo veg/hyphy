@@ -283,6 +283,45 @@ lfunction selection.io.report_dnds_with_sink (distribution, sink_rate, sink_weig
 
 lfunction selection.io.report_dnds (distribution) {
 
+    relax_sink = FALSE;
+    vars = utility.DefinedVariablesMatchingRegex("^relax\\.error_sink$");
+    if (Rows (vars) > 0) {
+        relax_sink = ^"relax.error_sink";
+    }
+
+    busted_sink = FALSE;
+    vars_busted = utility.DefinedVariablesMatchingRegex("^busted\\.error_sink$");
+    if (Rows (vars_busted) > 0) {
+        busted_sink = ^"busted.error_sink";
+    }
+
+    if (relax_sink || busted_sink) {
+        rates = Rows (distribution);
+        sink_idx = 0;
+        max_rate = distribution[0][0];
+        for (i = 1; i < rates; i += 1) {
+            if (distribution[i][0] > max_rate) {
+                max_rate = distribution[i][0];
+                sink_idx = i;
+            }
+        }
+        error_bound = 100;
+        if (relax_sink) {
+            vars_bound = utility.DefinedVariablesMatchingRegex("^relax\\.error_class_bound$");
+            if (Rows (vars_bound) > 0) {
+                error_bound = ^"relax.error_class_bound";
+            }
+        } else {
+            vars_bound = utility.DefinedVariablesMatchingRegex("^busted\\.error_class_bound$");
+            if (Rows (vars_bound) > 0) {
+                error_bound = ^"busted.error_class_bound";
+            }
+        }
+        if (max_rate >= error_bound) {
+            return selection.io.report_dnds_with_sink (distribution, max_rate, distribution[sink_idx][1]);
+        }
+    }
+
     // TODO remove hardcoding
     settings = {"header" : TRUE, "column-widths": {
             "0": 35,
@@ -545,7 +584,7 @@ lfunction selection.io.sitelist_matches_pattern (site_list, pattern, opt_in, off
     if (Type (pattern) != "String") {if (opt_in) return 0; return (1+site_list[0]);}
     for (i,s;in;site_list) {
         idx = "" + (1+(+s) + offset);
-        if (None != regexp.Find (pattern, "$" + idx + "|\\,"+ idx )) {
+        if (None != regexp.Find (pattern, "(^|\\,)" + idx + "(\\,|$)")) {
             return (1+(+s));
         }
     }

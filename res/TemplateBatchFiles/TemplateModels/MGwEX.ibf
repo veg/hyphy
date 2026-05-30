@@ -7,6 +7,8 @@ AminoAcidClasses = {{"EX.dat","Stoltzfus and Yampolsky exhangeability acceptance
 				    
 /* END ADD NEW RATE CLASS MATRICES HERE */			    
 
+LoadFunctionLibrary("libv3/IOFunctions.bf");
+KeywordArgument ("aa-model-type", "Amino Acid Class Model", "EX.dat");
 ChoiceList	(aaModelType,"Amino Acid Class Model",1,SKIP_NONE,AminoAcidClasses);
 
 if (aaModelType < 0)

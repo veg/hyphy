@@ -728,7 +728,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     Optimize (results, ^lf
         , {
             "OPTIMIZATION_METHOD" : "nedler-mead", 
-            "OPTIMIZATION_PRECISION" : 1e-4,
+            "OPTIMIZATION_PRECISION" : 1e-3,
             "OPTIMIZATION_START_GRID" : start.grid             
            }
     );
@@ -780,8 +780,8 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
  
     Optimize (results, ^lf, {
             //"OPTIMIZATION_METHOD" : "coordinate-wise" 
-            //"OPTIMIZATION_METHOD" : "nedler-mead", 
-            //"OPTIMIZATION_PRECISION" : 1e-5
+            "OPTIMIZATION_METHOD" : "nedler-mead", 
+            "OPTIMIZATION_PRECISION" : 1e-3
      });
 
  

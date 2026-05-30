@@ -385,3 +385,27 @@ add_test(CONTRAST-FEL hyphy tests/hbltests/libv3/CFEL.wbf)
 add_test(FADE hyphy tests/hbltests/libv3/FADE.wbf)
 add_test(NAME GARD COMMAND hyphy tests/hbltests/libv3/GARD.wbf "ENV=TOLERATE_NUMERICAL_ERRORS=1;")
 add_test(ABSREL hyphy tests/hbltests/libv3/ABSREL.wbf)
+
+set_tests_properties(
+    UNIT-TESTS
+    CODON
+    PROTEIN
+    MTCODON
+    ALGAE
+    CILIATES
+    SLAC
+    SLAC-PARTITIONED
+    FEL
+    MEME
+    MEME-PARTITIONED
+    BUSTED
+    BUSTED-SRV
+    RELAX
+    FUBAR
+    BGM
+    CONTRAST-FEL
+    FADE
+    GARD
+    ABSREL
+    PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+)
