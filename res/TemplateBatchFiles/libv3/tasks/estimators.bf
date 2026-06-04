@@ -822,14 +822,19 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         //console.log (run_options [utility.getGlobalValue("terms.search_grid")]);
         //console.log (grid_results);
         
-        if (utility.Has (run_options, utility.getGlobalValue("terms.search_restarts"),"Number")) {
+        restarts = 0;
+        if (utility.Has (run_options, utility.getGlobalValue("terms.search_restarts"), "Number")) {
             restarts = run_options[utility.getGlobalValue("terms.search_restarts")];
-            if (restarts > 1) {
-                grid_results    = utility.DictToSortedArray (grid_results);
-                can_do_restarts = {};
-                for (i = 1; i <= restarts; i += 1) {
-                    can_do_restarts + (run_options [utility.getGlobalValue("terms.search_grid")])[grid_results[Rows(grid_results)-i][1]];
-                }
+        } else {
+            if (utility.Has (run_options, utility.getGlobalValue("terms.search_restarts"), "String")) {
+                restarts = 0 + run_options[utility.getGlobalValue("terms.search_restarts")];
+            }
+        }
+        if (restarts > 1) {
+            grid_results    = utility.DictToSortedArray (grid_results);
+            can_do_restarts = {};
+            for (i = 1; i <= restarts; i += 1) {
+                can_do_restarts + (run_options [utility.getGlobalValue("terms.search_grid")])[grid_results[Rows(grid_results)-i][1]];
             }
         }
         if (null == can_do_restarts) {
@@ -852,41 +857,101 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 101);
     //console.log (run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
     
-    if (Type (can_do_restarts) == "AssociativeList") {
-        io.ReportProgressBar("", "Working on crude initial optimizations");
-        bestlog    = -1e100;
-        for (i = 0; i < Abs (can_do_restarts); i += 1) {
-  
-            parameters.SetValues (can_do_restarts[i]);        
-            ^"estimators._global_do_not_set" = can_do_restarts[i];
+    use_custom_simplex_init = FALSE;
+    if (utility.Has (run_options, utility.getGlobalValue("terms.custom_simplex_init"), "String")) {
+        if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"), "AssociativeList")) {
+            if (restarts > 1) {
+                use_custom_simplex_init = TRUE;
+            }
+        }
+    }
 
+    if (use_custom_simplex_init) {
+        io.ReportProgressBar("", "Working on crude initial optimizations");
+        if (utility.Has (run_options, utility.getGlobalValue("terms.run_options.optimization_settings"), "AssociativeList")) {
+             opt_settings = run_options[utility.getGlobalValue("terms.run_options.optimization_settings")];
+        } else {
+             opt_settings = {};
+        }
+        
+        num_grid_points = Rows(grid_results);
+        grid_values = {};
+        for (i = 1; i <= num_grid_points; i += 1) {
+            grid_idx = grid_results[num_grid_points - i][1];
+            grid_values + {
+                "point": (run_options [utility.getGlobalValue("terms.search_grid")])[grid_idx],
+                "logL": grid_results[num_grid_points - i][0]
+            };
+        }
+        
+        custom_init_fn = run_options[utility.getGlobalValue("terms.custom_simplex_init")];
+        
+        bestlog = -1e100;
+        for (r = 0; r < restarts; r += 1) {
+            opt_settings = {};
+            if (utility.Has (run_options, utility.getGlobalValue("terms.run_options.optimization_settings"), "AssociativeList")) {
+                orig_settings = run_options[utility.getGlobalValue("terms.run_options.optimization_settings")];
+                for (key, val; in; orig_settings) {
+                    opt_settings[key] = val;
+                }
+            }
+            
+            Call (custom_init_fn, grid_values, r, opt_settings);
+            
+            idx = r % num_grid_points;
+            key = "" + idx;
+            grid_entry = grid_values[key];
+            start_point = grid_entry["point"];
+            
+            parameters.SetValues (start_point);        
+            ^"estimators._global_do_not_set" = start_point;
             estimators.ApplyExistingEstimatesOverride (&likelihoodFunction, model_objects, initial_values,  run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
             ^"estimators._global_do_not_set" = {};
-            if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
-                 Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
-            } else {
-                Optimize (mles, likelihoodFunction);
-            }
-            if (mles[1][0] > bestlog) {
 
-                //console.log ("\n\n**BEST LOG**\n\n");
+            Optimize (mles, likelihoodFunction, opt_settings);
+            
+            if (mles[1][0] > bestlog) {
                 bestlog = mles[1][0];
                 results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
                 results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
             }
-            io.ReportProgressBar("", "Starting point " + (i+1) + "/" + Abs (can_do_restarts) + ". Best LogL = " + bestlog);
-            
+            io.ReportProgressBar("", "Starting point " + (r+1) + "/" + restarts + ". Best LogL = " + bestlog);
         }
         io.ClearProgressBar();
     } else {
+        if (Type (can_do_restarts) == "AssociativeList") {
+            io.ReportProgressBar("", "Working on crude initial optimizations");
+            bestlog    = -1e100;
+            for (i = 0; i < Abs (can_do_restarts); i += 1) {
+      
+                parameters.SetValues (can_do_restarts[i]);        
+                ^"estimators._global_do_not_set" = can_do_restarts[i];
 
-        if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
-            Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+                estimators.ApplyExistingEstimatesOverride (&likelihoodFunction, model_objects, initial_values,  run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
+                ^"estimators._global_do_not_set" = {};
+                if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
+                     Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+                } else {
+                    Optimize (mles, likelihoodFunction);
+                }
+                if (mles[1][0] > bestlog) {
+                    bestlog = mles[1][0];
+                    results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
+                    results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
+                }
+                io.ReportProgressBar("", "Starting point " + (i+1) + "/" + Abs (can_do_restarts) + ". Best LogL = " + bestlog);
+                
+            }
+            io.ClearProgressBar();
         } else {
-            Optimize (mles, likelihoodFunction);
+            if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
+                Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+            } else {
+                Optimize (mles, likelihoodFunction);
+            }
+            results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
+            results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
         }
-        results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
-        results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
     }
     
 
@@ -1520,7 +1585,10 @@ lfunction estimators.LHC (ranges, samples) {
         for (v = 0; v < var_count; v += 1) {
             entry [var_names[v]] = {};
             (entry [var_names[v]])[^"terms.id"] = var_names[v];
-            (entry [var_names[v]])[^"terms.fit.MLE"] = var_def[v][0] + (var_samplers[v])[i] * var_def[v][1];
+            val = var_def[v][0] + ((var_samplers[v])[i] + Random(0,1)) * var_def[v][1];
+            ub = (ranges[var_names[v]])[^"terms.upper_bound"];
+            if (val > ub) { val = ub; }
+            (entry [var_names[v]])[^"terms.fit.MLE"] = val;
         }
         result + entry;
     }

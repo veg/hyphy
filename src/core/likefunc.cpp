@@ -5197,7 +5197,7 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
                     this_block, maxSoFar, grad_precision);
 
                 update_tracker_for_group(this_block, dynamic_block_trackers,
-                                         maxSoFar);
+                                         maxSoFar, -2L);
               }
             }
 
@@ -5235,7 +5235,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
         for (unsigned long k = 0; k < indexInd.lLength; k++) {
           all_vars << (long)k;
         }
-        update_tracker_for_group(&all_vars, dynamic_block_trackers, maxSoFar);
+        update_tracker_for_group(&all_vars, dynamic_block_trackers, maxSoFar,
+                                 -2L);
       }
     } else {
       hyFloat current_precision = MAX(1., precision);
@@ -5407,7 +5408,8 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
       UpdateConvergenceMode(use_adaptive_step, oldAverage, averageChange,
                             stdFactor, precision, logLHistory, logLDeltaHistory,
                             lastConvergenceMode, _variables_that_dont_change,
-                            convergenceMode, shrink_factor, diffs);
+                            convergenceMode, shrink_factor, diffs,
+                            do_large_change_only);
 
       oldAverage = averageChange;
 
@@ -5709,10 +5711,12 @@ _Matrix *_LikelihoodFunction::Optimize(_AssociativeList const *options) {
     NLToConsole();*/
 
   } else if (optimization_mode == kOptimizationNedlerMead) {
+    _AssociativeList *initial_vertices =
+        get_optimization_setting_dict("SIMPLEX_INITIAL_VERTICES");
     SimplexMethod(
         precision,
         (unsigned long)get_optimization_setting(kMaximumIterations, 10000000),
-        (unsigned long)maxItersPerVar);
+        (unsigned long)maxItersPerVar, nil, nil, initial_vertices);
   }
 
   if (keepOptimizationLog) {
@@ -7171,7 +7175,7 @@ void _LikelihoodFunction::UpdateConvergenceMode(
     hyFloat stdFactor, hyFloat opt_precision, _Vector &logLHistory,
     _Vector &logLDeltaHistory, unsigned char lastConvergenceMode,
     _SimpleList &variables_that_dont_change, unsigned char &convergenceMode,
-    hyFloat &shrink_factor, hyFloat *diffs) {
+    hyFloat &shrink_factor, hyFloat *diffs, bool do_large_change_only) {
   if (use_adaptive_step) {
     convergenceMode = 0;
     if (oldAverage < 0.0) {
@@ -7201,7 +7205,7 @@ void _LikelihoodFunction::UpdateConvergenceMode(
             changed_v++;
           }
         }
-        if (changed_v <= 1) {
+        if (changed_v <= 1 && !do_large_change_only) {
           convergenceMode = 3;
         } else {
           if (steps > 3) {
@@ -7325,18 +7329,29 @@ bool _LikelihoodFunction::ProcessStandardCGPass(
   if (!trigger_cg && do_large_change_only && last_large_change.lLength >= 2 &&
       last_large_change.lLength <= 16 &&
       (loopCounter - last_gradient_search >= 3L)) {
-    bool skip_cg_due_to_unproductivity = false;
-    if (!last_cg_productive && max_logl_at_last_cg > -INFINITY) {
-      if (maxSoFar - max_logl_at_last_cg < 1e-5) {
-        skip_cg_due_to_unproductivity = true;
+    bool defer_cg = false;
+    if (logLDeltaHistory.get_used() > 2) {
+      long logLStep = logLDeltaHistory.get_used();
+      hyFloat last_imp = logLDeltaHistory.theData[logLStep - 1];
+      hyFloat prev_imp = logLDeltaHistory.theData[logLStep - 2];
+      if (last_imp >= prev_imp * 0.75 && last_imp >= precision_target) {
+        defer_cg = true;
       }
     }
-    if (!skip_cg_due_to_unproductivity) {
-      trigger_cg = true;
-      cg_list = &last_large_change;
-    } else {
-      last_gradient_search = loopCounter;
-      convergenceMode = 0;
+    if (!defer_cg) {
+      bool skip_cg_due_to_unproductivity = false;
+      if (!last_cg_productive && max_logl_at_last_cg > -INFINITY) {
+        if (maxSoFar - max_logl_at_last_cg < 1e-5) {
+          skip_cg_due_to_unproductivity = true;
+        }
+      }
+      if (!skip_cg_due_to_unproductivity) {
+        trigger_cg = true;
+        cg_list = &last_large_change;
+      } else {
+        last_gradient_search = loopCounter;
+        convergenceMode = 0;
+      }
     }
   }
 
@@ -7356,15 +7371,16 @@ bool _LikelihoodFunction::ProcessStandardCGPass(
         _SimpleList *this_block = (_SimpleList *)(gradientBlocks(b));
         if (this_block->countitems() <= maxGradientBlockDimension) {
           if (should_skip_cg_for_group(this_block, dynamic_block_trackers,
-                                       maxSoFar, precision_target)) {
+                                       maxSoFar, precision_target,
+                                       loopCounter)) {
             continue;
           }
           maxSoFar = ConjugateGradientDescent(
               prec * pow(this_block->countitems(), -.25), bestMSoFar, true,
               kMaxGradientStepCount, this_block, maxSoFar, grad_precision,
               inCount >= termFactor - 2);
-          update_tracker_for_group(this_block, dynamic_block_trackers,
-                                   maxSoFar);
+          update_tracker_for_group(this_block, dynamic_block_trackers, maxSoFar,
+                                   loopCounter);
         }
       }
     } else {
@@ -7377,15 +7393,15 @@ bool _LikelihoodFunction::ProcessStandardCGPass(
         target_group = &all_vars;
       }
       if (!should_skip_cg_for_group(target_group, dynamic_block_trackers,
-                                    maxSoFar, precision_target)) {
+                                    maxSoFar, precision_target, loopCounter)) {
         if (cg_list || indexInd.countitems() <= maxGradientBlockDimension) {
           maxSoFar = ConjugateGradientDescent(
               prec * pow(cg_list ? cg_list->lLength : indexInd.lLength, -.25),
               bestMSoFar, true, kMaxGradientStepCount, cg_list, maxSoFar,
               grad_precision, inCount >= termFactor - 2);
         }
-        update_tracker_for_group(target_group, dynamic_block_trackers,
-                                 maxSoFar);
+        update_tracker_for_group(target_group, dynamic_block_trackers, maxSoFar,
+                                 loopCounter);
       }
     }
 
@@ -7546,7 +7562,7 @@ void _LikelihoodFunction::ProcessEndOfPassLogic(
 bool _LikelihoodFunction::should_skip_cg_for_group(
     _SimpleList const *group,
     std::vector<DynamicBlockTracker> &dynamic_block_trackers, hyFloat maxSoFar,
-    hyFloat opt_precision) {
+    hyFloat opt_precision, long loopCounter) {
   if (!group || group->lLength < 2)
     return false;
 
@@ -7568,6 +7584,11 @@ bool _LikelihoodFunction::should_skip_cg_for_group(
   }
 
   if (tracker_idx != -1) {
+    if (loopCounter -
+            dynamic_block_trackers[tracker_idx].last_triggered_iteration <=
+        1) {
+      return true;
+    }
     if (maxSoFar - dynamic_block_trackers[tracker_idx].max_logl_at_last_cg <
         opt_precision) {
       // Check environmental drift of non-active parameters
@@ -7603,7 +7624,7 @@ bool _LikelihoodFunction::should_skip_cg_for_group(
 void _LikelihoodFunction::update_tracker_for_group(
     _SimpleList const *group,
     std::vector<DynamicBlockTracker> &dynamic_block_trackers,
-    hyFloat current_max) {
+    hyFloat current_max, long loopCounter) {
   if (!group || group->lLength < 2)
     return;
 
@@ -7626,6 +7647,7 @@ void _LikelihoodFunction::update_tracker_for_group(
 
   if (tracker_idx != -1) {
     dynamic_block_trackers[tracker_idx].max_logl_at_last_cg = current_max;
+    dynamic_block_trackers[tracker_idx].last_triggered_iteration = loopCounter;
     dynamic_block_trackers[tracker_idx].values_at_last_cg.resize(
         indexInd.lLength);
     for (unsigned long v = 0; v < indexInd.lLength; v++) {
@@ -7639,6 +7661,7 @@ void _LikelihoodFunction::update_tracker_for_group(
       new_tracker.variables.push_back(group->list_data[k]);
     }
     new_tracker.max_logl_at_last_cg = current_max;
+    new_tracker.last_triggered_iteration = loopCounter;
     new_tracker.values_at_last_cg.resize(indexInd.lLength);
     for (unsigned long v = 0; v < indexInd.lLength; v++) {
       new_tracker.values_at_last_cg[v] = GetIthIndependent(v);
@@ -7772,7 +7795,8 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
                 group_list.lLength <= max_block_size &&
                 group_list.lLength <= indexInd.lLength - 3L) {
               if (should_skip_cg_for_group(&group_list, dynamic_block_trackers,
-                                           maxSoFar, opt_precision)) {
+                                           maxSoFar, opt_precision,
+                                           loopCounter)) {
                 continue;
               }
 
@@ -7781,7 +7805,8 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
               hyFloat old_max = maxSoFar;
 
               bool use_simplex =
-                  (group_list.lLength <= 4) || (loopCounter % 2 == 0);
+                  (group_list.lLength <= 5) &&
+                  ((group_list.lLength <= 4) || (loopCounter % 2 == 0));
 
               if (hy_env::EnvVariableGetNumber("FORCE_DYNAMIC_SIMPLEX", 0.0) !=
                   0.0) {
@@ -7796,9 +7821,9 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
                            group_list.lLength);
                   BufferToConsole(buffer);
                 }
-                maxSoFar =
-                    SimplexMethod(opt_precision, 20 + 5 * group_list.lLength,
-                                  100 + 20 * group_list.lLength, &group_list);
+                maxSoFar = SimplexMethod(
+                    opt_precision, 20 + 5 * group_list.lLength,
+                    100 + 20 * group_list.lLength, &group_list, stepHistory);
               } else {
                 if (verbosity_level > 1) {
                   snprintf(
@@ -7816,7 +7841,7 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
               last_gradient_search = loopCounter;
               max_logl_at_last_dynamic_cg = maxSoFar;
               update_tracker_for_group(&group_list, dynamic_block_trackers,
-                                       maxSoFar);
+                                       maxSoFar, loopCounter);
               made_progress = true;
 
               if (maxSoFar - old_max > opt_precision / termFactor) {
@@ -7854,26 +7879,31 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
         }
       } else {
         if (active_vars.lLength >= 2 && active_vars.lLength <= 6) {
-          if (verbosity_level > 1) {
-            snprintf(buffer, sizeof(buffer),
-                     "\n[DYNAMIC SIMPLEX] No covariation. Triggering Simplex "
-                     "on %ld active vars\n",
-                     active_vars.lLength);
-            BufferToConsole(buffer);
-          }
-          _Matrix bestMSoFar;
-          GetAllIndependent(bestMSoFar);
-          hyFloat old_max = maxSoFar;
-          maxSoFar =
-              SimplexMethod(opt_precision, 20 + 5 * active_vars.lLength,
-                            100 + 20 * active_vars.lLength, &active_vars);
-          last_gradient_search = loopCounter;
-          max_logl_at_last_dynamic_cg = maxSoFar;
-          made_progress = true;
+          if (!should_skip_cg_for_group(&active_vars, dynamic_block_trackers,
+                                        maxSoFar, opt_precision, loopCounter)) {
+            if (verbosity_level > 1) {
+              snprintf(buffer, sizeof(buffer),
+                       "\n[DYNAMIC SIMPLEX] No covariation. Triggering Simplex "
+                       "on %ld active vars\n",
+                       active_vars.lLength);
+              BufferToConsole(buffer);
+            }
+            _Matrix bestMSoFar;
+            GetAllIndependent(bestMSoFar);
+            hyFloat old_max = maxSoFar;
+            maxSoFar = SimplexMethod(
+                opt_precision, 20 + 5 * active_vars.lLength,
+                100 + 20 * active_vars.lLength, &active_vars, stepHistory);
+            last_gradient_search = loopCounter;
+            max_logl_at_last_dynamic_cg = maxSoFar;
+            update_tracker_for_group(&active_vars, dynamic_block_trackers,
+                                     maxSoFar, loopCounter);
+            made_progress = true;
 
-          if (maxSoFar - old_max > opt_precision / termFactor) {
-            if (maxSoFar - old_max > opt_precision * 5.0) {
-              last_dynamic_cg_productive = true;
+            if (maxSoFar - old_max > opt_precision / termFactor) {
+              if (maxSoFar - old_max > opt_precision * 5.0) {
+                last_dynamic_cg_productive = true;
+              }
             }
 
             // Reset variables that dont change
@@ -7892,7 +7922,6 @@ bool _LikelihoodFunction::ExecuteDynamicConjugateGradient(
                 variables_at_boundary[var_idx] = 0;
               }
             }
-
             // Update step history
             GetAllIndependent(bestMSoFar);
             for (unsigned long k = 0UL; k < indexInd.lLength; k++) {
@@ -9456,7 +9485,9 @@ hyFloat _LikelihoodFunction::replaceAPoint(_Matrix &m, long row, _Matrix &p,
 hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
                                            unsigned long iterations,
                                            unsigned long max_evaluations,
-                                           _SimpleList *only_these_parameters) {
+                                           _SimpleList *only_these_parameters,
+                                           _List *stepHistory,
+                                           _AssociativeList *initial_vertices) {
 
 #define DEFAULT_STEP 0.05
 #define DEFAULT_STEP_OFF_BOUND 0.00025
@@ -9552,9 +9583,54 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
 
   GetAllIndependent(simplex[0]);
 
-  // current FEASIBLE point
-  hyFloat simplex_best = set_point_and_compute(simplex[0]);
-  function_values.Store(0, 0, simplex_best);
+  long V = 0;
+  if (initial_vertices) {
+    _SimpleList _sl;
+    _AVLListX all_vars(&_sl);
+    GetIndependentVars().Each([&all_vars](long v, unsigned long i) -> void {
+      all_vars.Insert((BaseRef)v, i, false, false);
+    });
+
+    for (AVLListXLIteratorKeyValue key_value :
+         initial_vertices->ListIterator()) {
+      _MathObject *obj = (_MathObject *)key_value.get_object();
+      if (obj && obj->ObjectClass() == ASSOCIATIVE_LIST) {
+        _AssociativeList *point_dict = (_AssociativeList *)obj;
+        if (V <= M) {
+          if (V > 0) {
+            simplex[V] = simplex[0];
+          }
+          for (AVLListXLIteratorKeyValue var_kv : point_dict->ListIterator()) {
+            _MathObject *var_obj = (_MathObject *)var_kv.get_object();
+            if (var_obj && var_obj->ObjectClass() == NUMBER) {
+              _Constant *var_value = (_Constant *)var_obj;
+              _String const *var_name = var_kv.get_key();
+              long vi = all_vars.FindLong(LocateVarByName(*var_name));
+              if (vi >= 0) {
+                simplex[V][all_vars.GetXtra(vi)] = var_value->Value();
+              }
+            }
+          }
+          if (V == 0) {
+            SetAllIndependent(&simplex[0], true);
+          }
+          function_values.Store(V, 0, set_point_and_compute(simplex[V]));
+          function_values.Store(V, 1, V);
+          V++;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
+  if (V == 0) {
+    hyFloat simplex_best = set_point_and_compute(simplex[0]);
+    function_values.Store(0, 0, simplex_best);
+    V = 1;
+  }
+
+  hyFloat simplex_best = function_values(0, 0);
 
   hyFloat simplex_check = set_point_and_compute(simplex[0], true);
   if (fabs(simplex_check - simplex_best) > 0.00001) {
@@ -9567,7 +9643,7 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
     BufferToConsole("\n[SIMPLEX SETUP]");
     echo_values(simplex[0], function_values(0, 0));
   }
-  for (long i = 0L; i < M; i++) {
+  for (long i = V - 1; i < M; i++) {
     simplex[i + 1] = simplex[0];
 
     long actual_index =
@@ -9585,19 +9661,65 @@ hyFloat _LikelihoodFunction::SimplexMethod(hyFloat &gPrecision,
                ith_coordinate, lb, ub);
       BufferToConsole(buffer);
     }
-    if (CheckEqual(ith_coordinate, lb)) {
-      simplex[i + 1][actual_index] +=
-          MIN(DEFAULT_STEP_OFF_BOUND, (ub - lb) * 0.5);
-    } else {
-      hyFloat x_step = NonZero(ith_coordinate) ? ith_coordinate * DEFAULT_STEP
-                                               : DEFAULT_STEP;
-      if (ub - ith_coordinate > x_step) {
-        simplex[i + 1][actual_index] += x_step;
+    hyFloat x_step = 0.0;
+    if (stepHistory && actual_index < (long)stepHistory->lLength) {
+      _Vector *vH = (_Vector *)(*stepHistory)(actual_index);
+      if (vH && vH->get_used() > 1) {
+        long stepsSoFar = vH->get_used();
+        long history_window = 10L;
+        long start_k = stepsSoFar - 1 > history_window
+                           ? stepsSoFar - 1 - history_window
+                           : 0L;
+        long count = 0L;
+        hyFloat mean_diff = 0.0;
+        for (long k = start_k; k < stepsSoFar - 1; k++) {
+          mean_diff += fabs(vH->theData[k + 1] - vH->theData[k]);
+          count++;
+        }
+        if (count > 0 && mean_diff > 0.0) {
+          x_step = mean_diff / count;
+        }
+      }
+    }
+
+    if (x_step > 0.0) {
+      if (x_step < gPrecision) {
+        x_step = gPrecision;
+      }
+      hyFloat range = ub - lb;
+      if (CheckEqual(ith_coordinate, lb)) {
+        simplex[i + 1][actual_index] += MIN(x_step, range * 0.5);
+      } else if (CheckEqual(ith_coordinate, ub)) {
+        simplex[i + 1][actual_index] -= MIN(x_step, range * 0.5);
       } else {
-        if (ub - ith_coordinate > ith_coordinate - lb) {
-          simplex[i + 1][actual_index] += (ub - ith_coordinate) * 0.5;
+        if (ub - ith_coordinate > x_step) {
+          simplex[i + 1][actual_index] += x_step;
+        } else if (ith_coordinate - lb > x_step) {
+          simplex[i + 1][actual_index] -= x_step;
         } else {
-          simplex[i + 1][actual_index] -= (ith_coordinate - lb) * 0.5;
+          if (ub - ith_coordinate > ith_coordinate - lb) {
+            simplex[i + 1][actual_index] += (ub - ith_coordinate) * 0.5;
+          } else {
+            simplex[i + 1][actual_index] -= (ith_coordinate - lb) * 0.5;
+          }
+        }
+      }
+    } else {
+      if (CheckEqual(ith_coordinate, lb)) {
+        simplex[i + 1][actual_index] +=
+            MIN(DEFAULT_STEP_OFF_BOUND, (ub - lb) * 0.5);
+      } else {
+        hyFloat x_step_default = NonZero(ith_coordinate)
+                                     ? ith_coordinate * DEFAULT_STEP
+                                     : DEFAULT_STEP;
+        if (ub - ith_coordinate > x_step_default) {
+          simplex[i + 1][actual_index] += x_step_default;
+        } else {
+          if (ub - ith_coordinate > ith_coordinate - lb) {
+            simplex[i + 1][actual_index] += (ub - ith_coordinate) * 0.5;
+          } else {
+            simplex[i + 1][actual_index] -= (ith_coordinate - lb) * 0.5;
+          }
         }
       }
     }
