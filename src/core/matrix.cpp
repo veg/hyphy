@@ -4063,6 +4063,107 @@ void _Matrix::Multiply(_Matrix &storage, hyFloat c)
 
 //_____________________________________________________________________________________________
 
+void _Matrix::ScaleAndAdd(_Matrix &result, hyFloat scale) {
+  if (is_numeric()) {
+    hyFloat *destination = result.theData;
+    hyFloat *source = theData;
+
+    if (theIndex) {
+      for (long k = 0L; k < lDim; k++) {
+        long idx = theIndex[k];
+        if (idx != -1) {
+          source[k] *= scale;
+          destination[idx] += source[k];
+        }
+      }
+    } else {
+#ifdef _SLKP_USE_AVX_INTRINSICS
+      __m256d scale_vec = _mm256_set1_pd(scale);
+      long lDimM16 = lDim >> 4 << 4;
+      long k = 0L;
+
+#if defined _SLKP_USE_FMA3_INTRINSICS
+      for (; k < lDimM16; k += 16) {
+        __m256d s0 = _mm256_loadu_pd(source + k);
+        __m256d s1 = _mm256_loadu_pd(source + k + 4);
+        __m256d s2 = _mm256_loadu_pd(source + k + 8);
+        __m256d s3 = _mm256_loadu_pd(source + k + 12);
+
+        __m256d d0 = _mm256_loadu_pd(destination + k);
+        __m256d d1 = _mm256_loadu_pd(destination + k + 4);
+        __m256d d2 = _mm256_loadu_pd(destination + k + 8);
+        __m256d d3 = _mm256_loadu_pd(destination + k + 12);
+
+        __m256d val0 = _mm256_mul_pd(s0, scale_vec);
+        __m256d val1 = _mm256_mul_pd(s1, scale_vec);
+        __m256d val2 = _mm256_mul_pd(s2, scale_vec);
+        __m256d val3 = _mm256_mul_pd(s3, scale_vec);
+
+        __m256d new_d0 = _mm256_fmadd_pd(s0, scale_vec, d0);
+        __m256d new_d1 = _mm256_fmadd_pd(s1, scale_vec, d1);
+        __m256d new_d2 = _mm256_fmadd_pd(s2, scale_vec, d2);
+        __m256d new_d3 = _mm256_fmadd_pd(s3, scale_vec, d3);
+
+        _mm256_storeu_pd(source + k, val0);
+        _mm256_storeu_pd(source + k + 4, val1);
+        _mm256_storeu_pd(source + k + 8, val2);
+        _mm256_storeu_pd(source + k + 12, val3);
+
+        _mm256_storeu_pd(destination + k, new_d0);
+        _mm256_storeu_pd(destination + k + 4, new_d1);
+        _mm256_storeu_pd(destination + k + 8, new_d2);
+        _mm256_storeu_pd(destination + k + 12, new_d3);
+      }
+#else
+      for (; k < lDimM16; k += 16) {
+        __m256d s0 = _mm256_loadu_pd(source + k);
+        __m256d s1 = _mm256_loadu_pd(source + k + 4);
+        __m256d s2 = _mm256_loadu_pd(source + k + 8);
+        __m256d s3 = _mm256_loadu_pd(source + k + 12);
+
+        __m256d d0 = _mm256_loadu_pd(destination + k);
+        __m256d d1 = _mm256_loadu_pd(destination + k + 4);
+        __m256d d2 = _mm256_loadu_pd(destination + k + 8);
+        __m256d d3 = _mm256_loadu_pd(destination + k + 12);
+
+        __m256d val0 = _mm256_mul_pd(s0, scale_vec);
+        __m256d val1 = _mm256_mul_pd(s1, scale_vec);
+        __m256d val2 = _mm256_mul_pd(s2, scale_vec);
+        __m256d val3 = _mm256_mul_pd(s3, scale_vec);
+
+        __m256d new_d0 = _mm256_add_pd(d0, val0);
+        __m256d new_d1 = _mm256_add_pd(d1, val1);
+        __m256d new_d2 = _mm256_add_pd(d2, val2);
+        __m256d new_d3 = _mm256_add_pd(d3, val3);
+
+        _mm256_storeu_pd(source + k, val0);
+        _mm256_storeu_pd(source + k + 4, val1);
+        _mm256_storeu_pd(source + k + 8, val2);
+        _mm256_storeu_pd(source + k + 12, val3);
+
+        _mm256_storeu_pd(destination + k, new_d0);
+        _mm256_storeu_pd(destination + k + 4, new_d1);
+        _mm256_storeu_pd(destination + k + 8, new_d2);
+        _mm256_storeu_pd(destination + k + 12, new_d3);
+      }
+#endif
+
+      for (; k < lDim; k++) {
+        source[k] *= scale;
+        destination[k] += source[k];
+      }
+#else
+      for (long k = 0L; k < lDim; k++) {
+        source[k] *= scale;
+        destination[k] += source[k];
+      }
+#endif
+    }
+  }
+}
+
+//_____________________________________________________________________________________________
+
 void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
 // multiplication operation on matrices
 // internal function
@@ -5703,12 +5804,13 @@ _Matrix *_Matrix::Exponentiate(hyFloat scale_to, bool check_transition,
         do {
           temp.MultbyS(*this, false, &tempS, nil);
           // after this call, temp and tempS are gonna swap pointers to theData
+          hyFloat scale;
           if (i > 2) {
-            temp *= 1.0 / (mmax * i);
+            scale = 1.0 / (mmax * i);
           } else {
-            temp *= 0.5 / (mmax * mmax);
+            scale = 0.5 / (mmax * mmax);
           }
-          (*result) += temp;
+          temp.ScaleAndAdd(*result, scale);
           i++;
           /*
           #ifndef _OPENMP
@@ -5738,12 +5840,13 @@ _Matrix *_Matrix::Exponentiate(hyFloat scale_to, bool check_transition,
         _Matrix tempS(hDim, vDim, false, temp.storageType);
         do {
           temp.MultbyS(*this, theIndex != nil, &tempS, stash);
+          hyFloat scale;
           if (i > 2) {
-            temp *= 1.0 / (mmax * i);
+            scale = 1.0 / (mmax * i);
           } else {
-            temp *= 1.0 / (mmax * mmax * i);
+            scale = 1.0 / (mmax * mmax * i);
           }
-          (*result) += temp;
+          temp.ScaleAndAdd(*result, scale);
           i++;
           /*
               #ifndef _OPENMP
