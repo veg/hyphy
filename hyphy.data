@@ -11187,11 +11187,10 @@ KeywordArgument ("code", "Which genetic code should be used", "Universal", "Choo
 KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy", null, "Select a coding sequence alignment file");
 KeywordArgument ("use-tree", "Use tree in data file if present", "Yes", "Use tree in data file if present");
 KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
-KeywordArgument ("model", "Model template abbreviation", "MG94", "Select a standard model");
 
 // Initialize analysis description and json results
 acd.analysis_description = {
-    terms.io.info: "This analysis fits standard codon model templates to codon alignment data.",
+    terms.io.info: "This analysis fits a wide range of codon substitution models to a codon alignment. Supported models include mechanistic options (MG94, GY94) crossed with arbitrary nucleotide substitution models, empirical codon models (ECM, MEC), acceptance bias models (MG94wEX), and property-based models (LCAP). It supports multiple frequency estimators (F1x4, F3x4, CF3x4, F61, positional 9-frequency), branch length options (independent estimation or proportional to input trees), and parameterizations (local or global rates). Rate variation across sites can be modeled using a variety of continuous and discrete distributions (including Gamma, Beta, Log-normal, and General Discrete) optionally coupled with spatial autocorrelation via a Hidden Markov Model (HMM).",
     terms.io.version: "2.0",
     terms.io.authors: "Sergei L Kosakovsky Pond",
     terms.io.contact: "spond@temple.edu",
@@ -11212,31 +11211,23 @@ acd.json = {
 };
 json = acd.json;
 
+_Genetic_Code = None;
+GeneticCodeExclusions = None;
+
 namespace acd {
     #include "SelectionAnalyses/modules/shared-load-file.bf";
 }
 
 namespace acd {
     function load_file (prefix) {
-        settings = None;
-        multiple_files = FALSE;
-        blb = 1.0;
-
-        if (Type (prefix) == "AssociativeList") {
-            multiple_files  = prefix [utility.getGlobalValue("terms.multiple_files")];
-            settings        = prefix [utility.getGlobalValue("terms.settings")];
-            blb             = prefix [utility.getGlobalValue("terms.data.blb_subsample")];
-            prefix          = prefix [utility.getGlobalValue("terms.prefix")];
-        }
-
         datasets = prefix+".codon_data";
         codon_data_info = alignments.PromptForGeneticCodeAndAlignment(datasets, prefix+".codon_filter");
         
         // Check use-tree option
-        if (IS_TREE_PRESENT_IN_DATA) {
+        if (utility.GetEnvVariable("IS_TREE_PRESENT_IN_DATA")) {
             use_tree = io.SelectAnOption ({"Yes": "Use tree in data file if present", "No": "Do not use tree in data file"}, "Use tree in data file if present");
             if (use_tree == "No") {
-                IS_TREE_PRESENT_IN_DATA = 0;
+                utility.SetEnvVariable("IS_TREE_PRESENT_IN_DATA", FALSE);
             }
         }
         
@@ -11264,155 +11255,154 @@ namespace acd {
 
 namespace acd {
     load_file ("acd");
-}
 
-acd_partition_tree_info = acd.partitions_and_trees["0"];
-tree_info = acd_partition_tree_info[terms.data.tree];
-abs_branch_lengths = Abs(tree_info[terms.branch_length]);
+    partition_tree_info = partitions_and_trees["0"];
+    tree_info = partition_tree_info[^"terms.data.tree"];
+    abs_branch_lengths = Abs(tree_info[^"terms.branch_length"]);
 
-if (abs_branch_lengths == 0) {
-    tree_string = tree_info[terms.trees.newick];
-} else {
-    tree_string = tree_info[terms.trees.newick_with_lengths];
-}
-
-// Define global variables for legacy models
-_Genetic_Code = acd.codon_data_info[terms.code];
-GeneticCodeExclusions = acd.codon_data_info[terms.stop_codons];
-
-// Define filteredData for legacy templates
-DataSetFilter filteredData = CreateFilter(acd.codon_data, 3, "", "", GeneticCodeExclusions);
-
-SelectTemplateModel(filteredData);
-
-// Branch lengths choice
-KeywordArgument ("branch-lengths", "Branch lengths scaling", "Estimate", "Branch Lengths");
-ChoiceList (branchLengths, "Branch Lengths", 1, SKIP_NONE,
-                           "Estimate", "Estimate branch lengths by ML",
-                           "Proportional to input tree", "Branch lengths are proportional to those in input tree");
-
-if (branchLengths < 0) {
-    return;
-}
-
-// Define the tree using the Newick string loaded from the library
-treeString = tree_string;
-Tree givenTree = treeString;
-
-if (branchLengths == 1) {
-    global treeScaler = 1;
-    ReplicateConstraint ("this1.?.?:=treeScaler*this2.?.?__", givenTree, givenTree);
-}
-
-LikelihoodFunction lf = (filteredData, givenTree);
-Optimize (res, lf);
-
-// Print Markdown output
-fprintf (stdout, "\n### Analysis Description\n\n");
-fprintf (stdout, acd.analysis_description[terms.io.info], "\n\n");
-
-fprintf (stdout, "### Model Fit Summary\n\n");
-acd.table_options = {
-    terms.table_options.header: TRUE,
-    terms.table_options.minimum_column_width: 25,
-    terms.table_options.align: "center"
-};
-fprintf (stdout, io.FormatTableRow({"0": "Statistic", "1": "Value"}, acd.table_options));
-acd.table_options[terms.table_options.header] = FALSE;
-
-log_l = Format(res[1][0], 8, 4);
-params = Format(res[1][1], 0, 0);
-n = acd.codon_data_info[terms.data.sample_size];
-k = res[1][1];
-aic = Format(2 * k - 2 * res[1][0], 8, 4);
-if (n > k + 1) {
-    aicc_val = 2 * k - 2 * res[1][0] + 2 * k * (k + 1) / (n - k - 1);
-} else {
-    aicc_val = 2 * k - 2 * res[1][0];
-}
-aicc = Format(aicc_val, 8, 4);
-bic = Format(k * Log(n) - 2 * res[1][0], 8, 4);
-
-fprintf (stdout, io.FormatTableRow({"0": "Log Likelihood", "1": log_l}, acd.table_options));
-fprintf (stdout, io.FormatTableRow({"0": "Estimated Parameters", "1": params}, acd.table_options));
-fprintf (stdout, io.FormatTableRow({"0": "AIC", "1": aic}, acd.table_options));
-fprintf (stdout, io.FormatTableRow({"0": "AIC-c", "1": aicc}, acd.table_options));
-fprintf (stdout, io.FormatTableRow({"0": "BIC", "1": bic}, acd.table_options));
-
-GetString(lf_info, lf, -1);
-
-fprintf (stdout, "\n### Global Parameter Estimates\n\n");
-acd.global_table_options = {
-    terms.table_options.header: TRUE,
-    terms.table_options.minimum_column_width: 16,
-    terms.table_options.align: "center"
-};
-fprintf (stdout, io.FormatTableRow({"0": "Parameter", "1": "Estimate"}, acd.global_table_options));
-acd.global_table_options[terms.table_options.header] = FALSE;
-
-globals = lf_info["Global Independent"];
-global_params = {};
-for (k = 0; k < Columns(globals); k = k + 1) {
-    global_params[globals[k]] = Eval(globals[k]);
-    val = Format(Eval(globals[k]), 8, 6);
-    fprintf (stdout, io.FormatTableRow({"0": globals[k], "1": val}, acd.global_table_options));
-}
-
-fprintf (stdout, "\n### Branch Lengths\n\n");
-acd.branch_table_options = {
-    terms.table_options.header: TRUE,
-    terms.table_options.minimum_column_width: 16,
-    terms.table_options.align: "center"
-};
-fprintf (stdout, io.FormatTableRow({"0": "Branch", "1": "Length"}, acd.branch_table_options));
-acd.branch_table_options[terms.table_options.header] = FALSE;
-
-branch_names = BranchName(givenTree, -1);
-for (k = 0; k < Columns(branch_names) - 1; k = k + 1) {
-    val = Format(BranchLength(givenTree, branch_names[k]), 8, 6);
-    fprintf (stdout, io.FormatTableRow({"0": branch_names[k], "1": val}, acd.branch_table_options));
-}
-
-local_params = {};
-locals = lf_info["Local Independent"];
-for (k = 0; k < Columns(locals); k = k + 1) {
-    local_params[locals[k]] = Eval(locals[k]);
-}
-
-// Build final JSON
-acd.json = {
-    terms.json.analysis: acd.analysis_description,
-    terms.json.input: {
-        terms.data.file: acd.codon_data_info[terms.data.file],
-        terms.data.sequences: acd.codon_data_info[terms.data.sequences],
-        terms.data.sites: acd.codon_data_info[terms.data.sites],
-        terms.json.genetic_code: acd.codon_data_info[terms.id]
-    },
-    terms.json.fits: {
-        terms.json.model: {
-            terms.json.log_likelihood: res[1][0],
-            terms.json.parameters: res[1][1],
-            terms.json.AIC: 2 * res[1][1] - 2 * res[1][0],
-            terms.json.AICc: aicc_val,
-            terms.json.BIC: res[1][1] * Log(acd.codon_data_info[terms.data.sample_size]) - 2 * res[1][0],
-            terms.json.global_parameters: global_params,
-            terms.json.local_parameters: local_params
-        }
-    },
-    terms.json.trees: {
-        "0": Format(givenTree, 1, 1)
+    if (abs_branch_lengths == 0) {
+        tree_string = tree_info[^"terms.trees.newick"];
+    } else {
+        tree_string = tree_info[^"terms.trees.newick_with_lengths"];
     }
-};
 
-KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + '.json')", acd.codon_data_info [terms.json.json], "Save the resulting JSON to this file");
-output_path = io.PromptUserForFilePath("Save the resulting JSON to this file");
+    // Define global variables for legacy models
+    ^"_Genetic_Code" = codon_data_info[^"terms.code"];
+    ^"GeneticCodeExclusions" = codon_data_info[^"terms.stop_codons"];
 
-io.SpoolJSON (acd.json, output_path);
+    // Branch lengths choice
+    KeywordArgument ("branch-lengths", "Branch lengths scaling", "Estimate", "Branch Lengths");
+    branchLengthsOption = io.SelectAnOption ({
+        "Estimate": "Estimate branch lengths by ML",
+        "Proportional to input tree": "Branch lengths are proportional to those in input tree"
+    }, "Branch Lengths");
+    // Define filteredData in the global namespace so template model works correctly
+    DataSetFilter ^"filteredData" = CreateFilter(codon_data, 3, "", "", ^"GeneticCodeExclusions");
+    KeywordArgument ("model", "Model template abbreviation", "MG94");
+    SelectTemplateModel(^"filteredData");
 
-GetString (sendMeBack, lf, -1);
-sendMeBack["LogL"] = res[1][0];
-sendMeBack["NP"]   = res[1][1];
-return sendMeBack;
+    Tree givenTree = tree_string;
+
+    if (branchLengthsOption == "Proportional to input tree") {
+        global treeScaler = 1;
+        ReplicateConstraint ("this1.?.?:=treeScaler*this2.?.?__", givenTree, givenTree);
+    }
+
+    vectorOfFrequencies = ^"vectorOfFrequencies";
+    MG94 = ^"MG94";
+
+    LikelihoodFunction lf = (^"filteredData", givenTree);
+    Optimize (res, lf);
+
+    // Print Markdown output
+    fprintf (stdout, "\n### Analysis Description\n\n");
+    fprintf (stdout, analysis_description[^"terms.io.info"], "\n\n");
+
+    fprintf (stdout, "### Model Fit Summary\n\n");
+    table_options = {
+        ^"terms.table_options.header": TRUE,
+        ^"terms.table_options.minimum_column_width": 25,
+        ^"terms.table_options.align": "center"
+    };
+    fprintf (stdout, io.FormatTableRow({"0": "Statistic", "1": "Value"}, table_options));
+    table_options[^"terms.table_options.header"] = FALSE;
+
+    log_l = Format(res[1][0], 8, 4);
+    params = Format(res[1][1], 0, 0);
+    n = codon_data_info[^"terms.data.sample_size"];
+    k = res[1][1];
+    aic = Format(2 * k - 2 * res[1][0], 8, 4);
+    if (n > k + 1) {
+        aicc_val = 2 * k - 2 * res[1][0] + 2 * k * (k + 1) / (n - k - 1);
+    } else {
+        aicc_val = 2 * k - 2 * res[1][0];
+    }
+    aicc = Format(aicc_val, 8, 4);
+    bic = Format(k * Log(n) - 2 * res[1][0], 8, 4);
+
+    fprintf (stdout, io.FormatTableRow({"0": "Log Likelihood", "1": log_l}, table_options));
+    fprintf (stdout, io.FormatTableRow({"0": "Estimated Parameters", "1": params}, table_options));
+    fprintf (stdout, io.FormatTableRow({"0": "AIC", "1": aic}, table_options));
+    fprintf (stdout, io.FormatTableRow({"0": "AIC-c", "1": aicc}, table_options));
+    fprintf (stdout, io.FormatTableRow({"0": "BIC", "1": bic}, table_options));
+
+    GetString(lf_info, lf, -1);
+
+    fprintf (stdout, "\n### Global Parameter Estimates\n\n");
+    global_table_options = {
+        ^"terms.table_options.header": TRUE,
+        ^"terms.table_options.minimum_column_width": 16,
+        ^"terms.table_options.align": "center"
+    };
+    fprintf (stdout, io.FormatTableRow({"0": "Parameter", "1": "Estimate"}, global_table_options));
+    global_table_options[^"terms.table_options.header"] = FALSE;
+
+    globals = lf_info["Global Independent"];
+    global_params = {};
+    for (k = 0; k < Columns(globals); k = k + 1) {
+        global_params[globals[k]] = Eval(globals[k]);
+        val = Format(Eval(globals[k]), 8, 6);
+        fprintf (stdout, io.FormatTableRow({"0": globals[k], "1": val}, global_table_options));
+    }
+
+    fprintf (stdout, "\n### Branch Lengths\n\n");
+    branch_table_options = {
+        ^"terms.table_options.header": TRUE,
+        ^"terms.table_options.minimum_column_width": 16,
+        ^"terms.table_options.align": "center"
+    };
+    fprintf (stdout, io.FormatTableRow({"0": "Branch", "1": "Length"}, branch_table_options));
+    branch_table_options[^"terms.table_options.header"] = FALSE;
+
+    branch_names = BranchName(givenTree, -1);
+    for (k = 0; k < Columns(branch_names) - 1; k = k + 1) {
+        val = Format(BranchLength(givenTree, branch_names[k]), 8, 6);
+        fprintf (stdout, io.FormatTableRow({"0": branch_names[k], "1": val}, branch_table_options));
+    }
+
+    local_params = {};
+    locals = lf_info["Local Independent"];
+    for (k = 0; k < Columns(locals); k = k + 1) {
+        local_params[locals[k]] = Eval(locals[k]);
+    }
+
+    // Build final JSON
+    json = {
+        ^"terms.json.analysis": analysis_description,
+        ^"terms.json.input": {
+            ^"terms.data.file": codon_data_info[^"terms.data.file"],
+            ^"terms.data.sequences": codon_data_info[^"terms.data.sequences"],
+            ^"terms.data.sites": codon_data_info[^"terms.data.sites"],
+            ^"terms.json.genetic_code": codon_data_info[^"terms.id"]
+        },
+        ^"terms.json.fits": {
+            ^"terms.json.model": {
+                ^"terms.json.log_likelihood": res[1][0],
+                ^"terms.json.parameters": res[1][1],
+                ^"terms.json.AIC": 2 * res[1][1] - 2 * res[1][0],
+                ^"terms.json.AICc": aicc_val,
+                ^"terms.json.BIC": res[1][1] * Log(codon_data_info[^"terms.data.sample_size"]) - 2 * res[1][0],
+                ^"terms.json.global_parameters": global_params,
+                ^"terms.json.local_parameters": local_params
+            }
+        },
+        ^"terms.json.trees": {
+            "0": Format(givenTree, 1, 1)
+        }
+    };
+
+    KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + '.ACD.json')", codon_data_info[^"terms.data.file"] + ".ACD.json", "Save the resulting JSON to this file");
+    output_path = io.PromptUserForFilePath("Save the resulting JSON to this file");
+
+    io.SpoolJSON (json, output_path);
+
+    GetString (sendMeBack_val, lf, -1);
+    sendMeBack_val["LogL"] = res[1][0];
+    sendMeBack_val["NP"]   = res[1][1];
+    sendMeBack = sendMeBack_val;
+}
+
+return acd.sendMeBack;
 RequireVersion("2.5.99");
 
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
@@ -11593,7 +11583,7 @@ adn.global_table_options[terms.table_options.header] = FALSE;
 
 globals = lfInfo["Global Independent"];
 global_params = {};
-for (k = 0; k < Columns(globals); k = k + 1) {
+for (k = 0; k < Columns(globals); k += 1) {
     global_params[globals[k]] = Eval(globals[k]);
     val = Format(Eval(globals[k]), 8, 6);
     fprintf (stdout, io.FormatTableRow({"0": globals[k], "1": val}, adn.global_table_options));
@@ -11609,14 +11599,14 @@ fprintf (stdout, io.FormatTableRow({"0": "Branch", "1": "Length"}, adn.branch_ta
 adn.branch_table_options[terms.table_options.header] = FALSE;
 
 branch_names = BranchName(givenTree, -1);
-for (k = 0; k < Columns(branch_names) - 1; k = k + 1) {
+for (k = 0; k < Columns(branch_names) - 1; k += 1) {
     val = Format(BranchLength(givenTree, branch_names[k]), 8, 6);
     fprintf (stdout, io.FormatTableRow({"0": branch_names[k], "1": val}, adn.branch_table_options));
 }
 
 local_params = {};
 locals = lfInfo["Local Independent"];
-for (k = 0; k < Columns(locals); k = k + 1) {
+for (k = 0; k < Columns(locals); k += 1) {
     local_params[locals[k]] = Eval(locals[k]);
 }
 
@@ -11866,7 +11856,7 @@ afd.global_table_options[terms.table_options.header] = FALSE;
 
 globals = lfInfo["Global Independent"];
 global_params = {};
-for (k = 0; k < Columns(globals); k = k + 1) {
+for (k = 0; k < Columns(globals); k += 1) {
     global_params[globals[k]] = Eval(globals[k]);
     val = Format(Eval(globals[k]), 8, 6);
     fprintf (stdout, io.FormatTableRow({"0": globals[k], "1": val}, afd.global_table_options));
@@ -11882,7 +11872,7 @@ fprintf (stdout, io.FormatTableRow({"0": "Branch", "1": "Length"}, afd.branch_ta
 afd.branch_table_options[terms.table_options.header] = FALSE;
 
 branch_names = BranchName(givenTree, -1);
-for (k = 0; k < Columns(branch_names) - 1; k = k + 1) {
+for (k = 0; k < Columns(branch_names) - 1; k += 1) {
     val = Format(BranchLength(givenTree, branch_names[k]), 8, 6);
     fprintf (stdout, io.FormatTableRow({"0": branch_names[k], "1": val}, afd.branch_table_options));
 }
@@ -11899,7 +11889,7 @@ afd.freq_table_options[terms.table_options.header] = FALSE;
 HarvestFrequencies (obsFreq, filteredData, 1, 1, 1);
 nucs = {{"A", "C", "G", "T"}};
 freq_results = {};
-for (k = 0; k < 4; k = k + 1) {
+for (k = 0; k < 4; k += 1) {
     est_val = vectorOfFrequencies[k];
     obs_val = obsFreq[k];
     freq_results[nucs[k]] = {"estimated": est_val, "observed": obs_val};
@@ -11908,7 +11898,7 @@ for (k = 0; k < 4; k = k + 1) {
 
 local_params = {};
 locals = lfInfo["Local Independent"];
-for (k = 0; k < Columns(locals); k = k + 1) {
+for (k = 0; k < Columns(locals); k += 1) {
     local_params[locals[k]] = Eval(locals[k]);
 }
 
@@ -12138,7 +12128,7 @@ ad.global_table_options[terms.table_options.header] = FALSE;
 
 globals = lfInfo["Global Independent"];
 global_params = {};
-for (k = 0; k < Columns(globals); k = k + 1) {
+for (k = 0; k < Columns(globals); k += 1) {
     global_params[globals[k]] = Eval(globals[k]);
     val = Format(Eval(globals[k]), 8, 6);
     fprintf (stdout, io.FormatTableRow({"0": globals[k], "1": val}, ad.global_table_options));
@@ -12154,14 +12144,14 @@ fprintf (stdout, io.FormatTableRow({"0": "Branch", "1": "Length"}, ad.branch_tab
 ad.branch_table_options[terms.table_options.header] = FALSE;
 
 branch_names = BranchName(givenTree, -1);
-for (k = 0; k < Columns(branch_names) - 1; k = k + 1) {
+for (k = 0; k < Columns(branch_names) - 1; k += 1) {
     val = Format(BranchLength(givenTree, branch_names[k]), 8, 6);
     fprintf (stdout, io.FormatTableRow({"0": branch_names[k], "1": val}, ad.branch_table_options));
 }
 
 local_params = {};
 locals = lfInfo["Local Independent"];
-for (k = 0; k < Columns(locals); k = k + 1) {
+for (k = 0; k < Columns(locals); k += 1) {
     local_params[locals[k]] = Eval(locals[k]);
 }
 
@@ -14589,6 +14579,10 @@ filteringOption = io.SelectAnOption ({"No/No" :  "Keep all sequences and sites",
                                                                   "Yes/Yes" :  "Filter duplicate sequences and sites with nothing but gaps",
                                                                   "Disallow stops" : "Filter duplicate sequences and all sequences that have stop codons"},"Filter duplicates/gaps?");
 
+cln.filter_duplicates = (filteringOption == "Yes/No" || filteringOption == "Yes/Yes" || filteringOption == "Disallow stops");
+cln.filter_gaps       = (filteringOption == "No/Yes" || filteringOption == "Yes/Yes");
+cln.disallow_stops    = (filteringOption == "Disallow stops");
+
 
 KeywordArgument ("output", "Write the resulting alignment to");
 
@@ -14690,7 +14684,7 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex += 1) {
             stopCodonCount  += 1;
         }
         
-        if (filteringOption % 2) {
+        if (cln.filter_gaps) {
             if (haveInfoAtSites[siteIndex] == 0) {
                 if (siteInfo1[0]+siteInfo2[0] > 0) {
                     haveInfoAtSites[siteIndex] = 1;
@@ -14700,7 +14694,7 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex += 1) {
     }
     
     if (stopCodonCount > 0) {
-        if (filterinOption == 4) {
+        if (cln.disallow_stops) {
          continue;
         }
         fprintf (stdout, "\nSequence ", sequenceNames[sequenceIndex], ":");
@@ -14725,7 +14719,7 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex += 1) {
     
     
     
-    if (filteringOption >= 2) {
+    if (cln.filter_duplicates) {
         if (duplicateChecker[sequenceData[sequenceIndex]] == 0) {
             duplicateChecker[sequenceData[sequenceIndex]] = 1;
             notDuplicate[sequenceIndex] = 1;
@@ -14739,7 +14733,7 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex += 1) {
 
 filterSites = 0;
 
-if (filteringOption%2) {
+if (cln.filter_gaps) {
     filterSites = Abs(haveInfoAtSites)<all64.unique_sites;
 	doSomething = doSomething || filterSites;
 }
@@ -44132,7 +44126,7 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
 */
 
   
-busted.nm.precision = Max (-0.0001*busted.final_partitioned_mg_results[terms.fit.log_likelihood],0.5);
+busted.nm.precision = Max (-0.001*busted.final_partitioned_mg_results[terms.fit.log_likelihood],1.0);
 
 debug.checkpoint = utility.GetEnvVariable ("DEBUG_CHECKPOINT");
 
@@ -44300,11 +44294,13 @@ while (!busted.converged) {
                             {
                                 "OPTIMIZATION_METHOD" : "nedler-mead",
                                 "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
-                                "OPTIMIZATION_PRECISION" : busted.nm.precision
+                                "OPTIMIZATION_PRECISION" : busted.nm.precision,
+                                "LF_GRID_EXPONENTIATION_PRECISION" : 1e-8
                             } ,
                                                      
                         terms.search_grid     : busted.initial_grid,
-                        terms.search_restarts : busted.N.initial_guesses
+                        terms.search_restarts : busted.N.initial_guesses,
+                        terms.custom_simplex_init : "busted.custom_simplex_init"
                                                 
                 });
                 
@@ -44335,11 +44331,13 @@ while (!busted.converged) {
                             {
                                 "OPTIMIZATION_METHOD" : "nedler-mead",
                                 "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
-                                "OPTIMIZATION_PRECISION" : busted.nm.precision
+                                "OPTIMIZATION_PRECISION" : busted.nm.precision,
+                                "LF_GRID_EXPONENTIATION_PRECISION" : 1e-8
                             } ,
                                                      
                         terms.search_grid     : busted.initial_grid,
-                        terms.search_restarts : busted.N.initial_guesses
+                        terms.search_restarts : busted.N.initial_guesses,
+                        terms.custom_simplex_init : "busted.custom_simplex_init"
                     }
                 );
                 
@@ -45232,6 +45230,41 @@ function busted.report_srv_fit (compute_sites) {
             }
         }
     }
+}
+
+//------------------------------------------------------------------------------
+
+lfunction busted.custom_simplex_init (grid_values, restart_index, opt_settings) {
+    simplex_vertices = {};
+    first_grid_val = grid_values["0"];
+    first_point = first_grid_val["point"];
+    num_vars = Abs (first_point);
+    num_grid_points = Abs (grid_values);
+    
+    for (offset = 0; offset < num_vars; offset += 1) {
+        idx = (restart_index + offset) % num_grid_points;
+        key = "" + idx;
+        grid_entry = grid_values[key];
+        point = grid_entry["point"];
+        
+        new_point = {};
+        point_keys = Rows(point);
+        for (p = 0; p < Columns(point_keys); p += 1) {
+            pk = point_keys[p];
+            val_obj = point[pk];
+            if (Type(val_obj) == "AssociativeList") {
+                if (val_obj["MLE"] != null) {
+                    new_point[pk] = val_obj["MLE"];
+                } else {
+                    new_point[pk] = val_obj["Value"];
+                }
+            } else {
+                new_point[pk] = val_obj;
+            }
+        }
+        simplex_vertices[offset] = new_point;
+    }
+    opt_settings["SIMPLEX_INITIAL_VERTICES"] = simplex_vertices;
 }RequireVersion ("2.13.20141101");
 
 _BSREL_timers  = {5,1};
@@ -48109,7 +48142,8 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         , {
             "OPTIMIZATION_METHOD" : "nedler-mead", 
             "OPTIMIZATION_PRECISION" : 1e-3,
-            "OPTIMIZATION_START_GRID" : start.grid             
+            "OPTIMIZATION_START_GRID" : start.grid,
+            "LF_GRID_EXPONENTIATION_PRECISION" : 1e-8
            }
     );
     
@@ -51577,7 +51611,8 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
                       
     Optimize (results, ^lf_bsrel, {
             "OPTIMIZATION_METHOD" : "nedler-mead",
-            "OPTIMIZATION_START_GRID" : initial_guess_grid
+            "OPTIMIZATION_START_GRID" : initial_guess_grid,
+            "LF_GRID_EXPONENTIATION_PRECISION" : 1e-8
             //,"OPTIMIZATION_PRECISION" : 1e-5,
         });
  
@@ -54407,6 +54442,7 @@ if (relax.model_set == "All") { // run all the models
              
                     terms.search_grid : relax.initial_grid,
                     terms.search_restarts : relax.N.initial_guesses,
+                    terms.custom_simplex_init : "relax.custom_simplex_init",
                     terms.run_options.optimization_log : relax.optimization_log_file (".GE-1-log.json")
                 }
             );
@@ -54920,7 +54956,8 @@ function relax.FitMainTestPair (prompt) {
                                             } ,
                                  
                                         terms.search_grid : relax.initial_grid,
-                                        terms.search_restarts : relax.N.initial_guesses
+                                        terms.search_restarts : relax.N.initial_guesses,
+                                        terms.custom_simplex_init : "relax.custom_simplex_init"
                         
                                     }
         );
@@ -56044,6 +56081,41 @@ lfunction relax.report_multi_hit (model_fit, json, l1, l2) {
             json[^'terms.parameters.triple_hit_rate'] = double_rates;            
         }       
     }
+}
+
+//------------------------------------------------------------------------------
+
+lfunction relax.custom_simplex_init (grid_values, restart_index, opt_settings) {
+    simplex_vertices = {};
+    first_grid_val = grid_values["0"];
+    first_point = first_grid_val["point"];
+    num_vars = Abs (first_point);
+    num_grid_points = Abs (grid_values);
+    
+    for (offset = 0; offset < num_vars; offset += 1) {
+        idx = (restart_index + offset) % num_grid_points;
+        key = "" + idx;
+        grid_entry = grid_values[key];
+        point = grid_entry["point"];
+        
+        new_point = {};
+        point_keys = Rows(point);
+        for (p = 0; p < Columns(point_keys); p += 1) {
+            pk = point_keys[p];
+            val_obj = point[pk];
+            if (Type(val_obj) == "AssociativeList") {
+                if (val_obj["MLE"] != null) {
+                    new_point[pk] = val_obj["MLE"];
+                } else {
+                    new_point[pk] = val_obj["Value"];
+                }
+            } else {
+                new_point[pk] = val_obj;
+            }
+        }
+        simplex_vertices[offset] = new_point;
+    }
+    opt_settings["SIMPLEX_INITIAL_VERTICES"] = simplex_vertices;
 }RequireVersion("2.3");
 
 
@@ -62621,8 +62693,8 @@ function store_tree_information () {
         */
 
 
-    t = (partitions_and_trees["0"])[utility.getGlobalValue("terms.data.tree")];
-    abs_branch_lengths = Abs(t[utility.getGlobalValue("terms.branch_length")]);
+    shared_load_file_tree_info = (partitions_and_trees["0"])[utility.getGlobalValue("terms.data.tree")];
+    abs_branch_lengths = Abs(shared_load_file_tree_info[utility.getGlobalValue("terms.branch_length")]);
 
     if (abs_branch_lengths == 0){
         selection.io.json_store_key_value_pair (json,
@@ -106620,986 +106692,986 @@ function checkASample (whichRate)
 	}
 	return 0;
 }
-ModelMatrixDimension = 0;
+RequireVersion("2.5.99");
 
-baselineOutput   = "";
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/IOFunctions.bf");
+LoadFunctionLibrary("libv3/stats.bf");
+LoadFunctionLibrary("libv3/tasks/alignments.bf");
+LoadFunctionLibrary("libv3/tasks/estimators.bf");
+LoadFunctionLibrary("libv3/tasks/trees.bf");
+LoadFunctionLibrary("SelectionAnalyses/modules/io_functions.ibf");
 
-/*---------------------------------------------------------------------------------------------------------------------------------------------------*/
+KeywordArgument ("code", "Which genetic code should be used", "Universal", "Choose Genetic Code");
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy", null, "Select a coding sequence alignment file");
+KeywordArgument ("use-tree", "Use tree in data file if present", "Yes", "Use tree in data file if present");
+KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
 
-function computeExpSubWeights (dum)
-{
-	rateTypeWeights     = {6,2};
-	rateTypeWeightsGY94 = {6,2};
-		
-	hshift = 0;
+_Genetic_Code = None;
+GeneticCodeExclusions = None;
 
-	for (h=0; h<64; h=h+1)
-	{
-		if (_Genetic_Code[h]==10) 
-		{
-			continue; 
-		}
-		for (h=0; h<64; h=h+1)
-		{
-			if (_Genetic_Code[h]==10) 
-			{
-				hshift = hshift+1;
-				continue; 
-			}
-			vshift = hshift;
-			for (v = h+1; v<64; v=v+1)
-			{
-				diff = v-h;
-				if (_Genetic_Code[v]==10) 
-				{
-					vshift = vshift+1;
-					continue; 
-				}
-				nucPosInCodon = 2;
-				if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
-				{
-					if (h$4==v$4)
-					{
-						transition = v%4;
-						transition2= h%4;
-					}
-					else
-					{
-						if(diff%16==0)
-						{
-							transition = v$16;
-							transition2= h$16;
-							nucPosInCodon = 0;
-						}
-						else
-						{
-							transition = v%16$4;
-							transition2= h%16$4;
-							nucPosInCodon = 1;
-						}
-					}
-					
-					mxIndex = 0;
-					if (transition<transition2)
-					{
-						t1 = transition;
-						t2 = transition2;
-					}
-					else
-					{
-						t1 = transition2;
-						t2 = transition;
-					}
-					
-					if (t1 == 0)
-					{
-						mxIndex = t2-1;
-					}
-					else
-					{
-						if (t1 == 1)
-						{
-							mxIndex = 1+t2;
-						}
-						else
-						{
-							mxIndex = 5;
-						}
-					}
-					
-					t1 = (_Genetic_Code[0][h]!=_Genetic_Code[0][v]);
-					rateTypeWeights[mxIndex][t1] = rateTypeWeights[mxIndex][t1]+
-												   vectorOfFrequencies[h-hshift]*observedFreq[transition][nucPosInCodon]+
-												   vectorOfFrequencies[v-vshift]*observedFreq[transition2][nucPosInCodon];
-					rateTypeWeightsGY94[mxIndex][t1] = rateTypeWeightsGY94[mxIndex][t1]+
-												   2*vectorOfFrequencies[h-hshift]*vectorOfFrequencies[v-vshift];
-				}
-		   }
-	    }		
-	}
-	return 0;		
+namespace dnds {
+    #include "SelectionAnalyses/modules/shared-load-file.bf";
 }
 
-/*---------------------------------------------------------------------------------------------------------------------------------------------------*/
+namespace dnds {
+    ModelMatrixDimension = 0;
+    baselineOutput   = "";
 
-function echoCatVar (distrInfo)
-{
-	DD = Columns(distrInfo);
-	EE = 0.0;
-	sampleVar = 0.0;
-	for (k=0; k<DD; k=k+1)
-	{
-		EE = distrInfo[0][k]*distrInfo[1][k]+EE;
-		sampleVar = sampleVar+distrInfo[0][k]*distrInfo[0][k]*distrInfo[1][k];
-	}
-		
-	sampleVar = sampleVar-EE*EE;
-	
-	fprintf  (distribOutput,"\n\n------------------------------------------------\n\nSample mean = ",EE, " (sample variance = ",sampleVar,")\n");
-	for (k=0; k<DD; k=k+1)
-	{
-		fprintf (distribOutput,"\nRate[",Format(k,0,0),"]=",Format(distrInfo[0][k],12,8), " (weight=", 
-						  Format(distrInfo[1][k],9,7),")");
-	}
-	return EE;
-}
+    dnds.json = {
+        terms.json.analysis: {},
+        terms.json.fits: {},
+        terms.json.timers: {}
+    };
+    json = dnds.json;
 
-/*---------------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function echoRatio (distrInfo, distrInfo2)
-{
-	D1 = Columns(distrInfo);
-	D2 = Columns(distrInfo2);
-		
-	ratioInfo = {3,D1*D2};
-	
-	for (k=0; k<D1; k=k+1)
-	{
-		EE = k*D2;
-		for (k2 = 0; k2<D2; k2=k2+1)
-		{
-			ratioInfo [0][EE+k2] = distrInfo[0][k]/distrInfo2[0][k2];
-			ratioInfo [1][EE+k2] = distrInfo[1][k]*distrInfo2[1][k2];
-			ratioInfo [2][EE+k2] = k2*D1+k;
-		}
-	}
-	
-	done = 0;
-	EE = D1*D2;
-	while (!done)
-	{
-		done = 1;
-		for (k=1; k<EE; k=k+1)
-		{
-			if (ratioInfo [0][k] < ratioInfo[0][k-1])
-			{
-				DD = ratioInfo [0][k];
-				ratioInfo [0][k] = ratioInfo [0][k-1];
-				ratioInfo [0][k-1] = DD;
-				DD = ratioInfo [1][k];
-				ratioInfo [1][k] = ratioInfo [1][k-1];
-				ratioInfo [1][k-1] = DD;
-				DD = ratioInfo [2][k];
-				ratioInfo [2][k] = ratioInfo [2][k-1];
-				ratioInfo [2][k-1] = DD;
-				done = 0;
-			}
-		}
-	}
-	return echoCatVar (ratioInfo);
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function BuildCodonFrequencies (obsF)
-{
-	PIStop = 1.0;
-	result = {ModelMatrixDimension,1};
-	hshift = 0;
-
-	for (h=0; h<64; h=h+1)
-	{
-		first = h$16;
-		second = h%16$4;
-		third = h%4;
-		if (_Genetic_Code[h]==10) 
-		{
-			hshift = hshift+1;
-			PIStop = PIStop-obsF[first][0]*obsF[second][1]*obsF[third][2];
-			continue; 
-		}
-		result[h-hshift][0]=obsF[first][0]*obsF[second][1]*obsF[third][2];
-	}
-	return result*(1.0/PIStop);
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------------*/
-
-
-SetDialogPrompt ("Please specify a codon data file:");
-
-DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
-dataFilePath = LAST_FILE_PATH;
-fprintf (stdout,"\n______________READ THE FOLLOWING DATA______________\n",ds);
-
-ExecuteAFile("TemplateModels/chooseGeneticCode.def");
-
-DataSetFilter filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
-
-HarvestFrequencies (observedFreq,	   filteredData,3,1,1);
-
-ExecuteAFile("queryTree.bf");
-
-UseModel 		  (USE_NO_MODEL);
-Tree inTree 	= treeString;
-_stringBLs      = BranchLength (inTree,-1);
-
-hasBLs = 1;
-for (k=0; k<Columns (_stringBLs); k=k+1)
-{
-	if (_stringBLs[k]<0)
-	{
-		hasBLs = 0;
-		break;
-	}
-}
-
-if (hasBLs)
-{
-	ChoiceList (branchLengths,"Branch Lengths",1,SKIP_NONE,
-				"Codon Model","Jointly optimize rate parameters and branch lengths (slow and thorough)",
-				"Nucleotide Model","Estimate branch lengths once, using an appropriate nucleotide model with a global tree scaling factor (quick and dirty).",
-				"Fixed (nucleotide)","Branch lengths (measured in expected substitutions per NUCLEOTIDE) are fixed at the values read from the tree string (quicker and dirtier).",
-				"Fixed (codon)","Branch lengths (measured in expected substitutions per CODON) are fixed at the values read from the tree string (quicker and dirtier)."
-			    );
-}
-else
-{
-	ChoiceList (branchLengths,"Branch Lengths",1,SKIP_NONE,
-				"Codon Model","Jointly optimize rate parameters and branch lengths (slow and thorough)",
-				"Nucleotide Model","Estimate branch lengths once, using an appropriate nucleotide model with a global tree scaling factor (quick and dirty).");
-
-}
-
-if (branchLengths<0)
-{
-	return;
-}
-
-modelConstraintString = "";
-
-if (branchLengths<2)
-{
-	ChoiceList (modelChoice, "Rate Matrix Options",1,SKIP_NONE,
-				"MG94",	 "Standard Muse-Gaut 94 model.",
-				"MG94xHKY85","MG94 with the transition/transverion ratio parameter kappa.",
-				"MG94xREV","MG94 with 5 additional parameters for each type of nucleotide substitution ratio. (Recommended Rate Matrix)",
-				"MG94xCustom","MG94 crossed with an arbitrary nucelotide reversible model, except F81.",
-				"GY94","Goldman-Yang 94 model (similar to MG94xHKY85)",
-				"MG94Multi","MG94 with multiple classes of non-synonymous substitutions in addition to being crossed with an arbitrary nucelotide reversible model, except F81.",
-				"MG94NMulti","MG94 with numerical bias corrections for various amino-acid substitution in addition to being crossed with an arbitrary nucelotide reversible model, except F81."
-			);
-}
-else
-{
-	if (branchLengths == 2)
-	{
-		_stringBLs = _stringBLs*3;
-	}
-	
-	ChoiceList (modelChoice, "Rate Matrix Options",1,SKIP_NONE,
-				"MG94",	 "Standard Muse-Gaut 94 model.",
-				"MG94xHKY85","MG94 with the transition/transverion ratio parameter kappa.",
-				"MG94xREV","MG94 with 5 additional parameters for each type of nucleotide substitution ratio. (Recommended Rate Matrix)",
-				"MG94xCustom","MG94 crossed with an arbitrary nucelotide reversible model, except F81.",
-				"GY94","Goldman-Yang 94 model (similar to MG94xHKY85)"
-   			   );
-}
-
-
-
-if (modelChoice<0)
-{
-	return;
-}
-
-marginalOutFile = "2RatesAnalyses/MG94xREV.mdl";
-if (modelChoice == 0)
-{
-	modelConstraintString = "AC:=1;AT:=1;CG:=1;CT:=1;GT:=1"; 
-	ModelTitle = "MG94";
-}
-else
-{
-	if (modelChoice == 1)
-	{
-		modelConstraintString = "CT:=1;AT:=AC;CG:=AC;GT:=AC"; 
-		ModelTitle = "MG94xHKY85";
-	}
-	else
-	{
-		if (modelChoice == 3 || modelChoice >= 5)
-		{
-			done = 0;
-			while (!done)
-			{
-				fprintf (stdout,"\nPlease enter a 6 character model designation (e.g:010010 defines HKY85):");
-				fscanf  (stdin,"String", modelDesc);
-				if (Abs(modelDesc)==6)
-				{	
-					done = 1;
-				}
-			}			
-			ModelTitle = "MG94x"+modelDesc[0];
-						
-			rateBiasTerms = {{"AC","1","AT","CG","CT","GT"}};
-			paramCount	  = 0;
-
-			modelConstraintString = "";
-
-			for (customLoopCounter2=1; customLoopCounter2<6; customLoopCounter2=customLoopCounter2+1)
-			{
-				for (customLoopCounter=0; customLoopCounter<customLoopCounter2; customLoopCounter=customLoopCounter+1)
-				{
-					if (modelDesc[customLoopCounter2]==modelDesc[customLoopCounter])
-					{
-						ModelTitle  = ModelTitle+modelDesc[customLoopCounter2];	
-						if (rateBiasTerms[customLoopCounter2] == "1")
-						{
-							modelConstraintString += rateBiasTerms[customLoopCounter]+":="+rateBiasTerms[customLoopCounter2]+";";
-						}
-						else
-						{
-							modelConstraintString += rateBiasTerms[customLoopCounter2]+":="+rateBiasTerms[customLoopCounter]+";";			
-						}
-						break;
-					}
-				}
-				if (customLoopCounter==customLoopCounter2)
-				{
-					ModelTitle += modelDesc[customLoopCounter2];	
-				}
-			}	
-			
-			if (modelChoice >= 5)
-			{
-				ModelTitle = "MG94xMulti";
-				if (modelChoice > 5)
-				{
-					_AA_RM_NUMERIC = 2;
-				}
-				ExecuteAFile("TemplateModels/MGwAA.ibf");
-				rateKeys = Rows (aaRateClassIDs);
-				userAARateMultipliers = {21,21};
-				if (modelChoice > 5)
-				{
-					_AA_RM_NUMERIC = 0;
-					for (h=0; h<21;h=h+1)
-					{
-						for (v=0; v<21; v=v+1)
-						{
-							userAARateMultipliers[h][v] = "R*" + aaRateMultipliers[h][v] + "*";
-							userAARateMultipliers[v][h] = "R*" + aaRateMultipliers[v][h] + "*";
-						}
-					}								
-				}
-				else
-				{
-					for (aaIndex = 0; aaIndex < Abs(aaRateClassIDs); aaIndex = aaIndex+1)
-					{
-						ExecuteCommands ("global DN_"+rateKeys[aaIndex]+" = 1;");
-					}
-					for (h=0; h<21;h=h+1)
-					{
-						for (v=0; v<21; v=v+1)
-						{
-							userAARateMultipliers[h][v] = "DN_" + aaRateMultipliers[h][v] + "*";
-							userAARateMultipliers[v][h] = "DN_" + aaRateMultipliers[v][h] + "*";
-						}
-					}								
-				}
-			}
-		}
-		else
-		{
-			if (modelChoice == 4)
-			{
-				marginalOutFile = "2RatesAnalyses/GY94.mdl";
-				ModelTitle = "GY94";
-			}
-			else
-			{
-				ModelTitle = "MG94xREV";
-			}
-		}			
-	}
-}
-
-_saveMatrixChoice = modelChoice;
-
-chosenModelList = {5,1};
-
-ChoiceList (modelChoice,"Rate Variation Options",1,SKIP_NONE,
-			"Run All","Run all available models.",
-			"Run Custom","Choose some of the available models.");
-			
-if (modelChoice<0)
-{
-	return;
-}
-
-if (modelChoice==0)
-{
-	for (mi = 0; mi<5; mi=mi+1)
-	{
-		chosenModelList[mi][0] = 1;
-	}
-}
-else
-{
-	ChoiceList (modelTypes,"Rate Variation Models",0,SKIP_NONE,
-				"Constant","Constant Rate Model: no rate variation across sites.", /* index 0 */
-				"Proportional","Proportional Variable Rates Model: dS and dN vary along the sequence, but dN = R*dS for every site",
-				"Nonsynonymous","Non-synonymous Variable Rates Model: dS = 1 for every site, while dN is drawn from a given distribution.",
-				"Dual","Dual Variable Rates Model: dS and dN are drawn from a bivariate distribution (independent or correlated components). Recommened model.",
-				"Lineage Dual","Lineage Dual Variable Rates Model:  dS and dN are drawn from a bivariate distribution (independent or correlated components), plus each lineage has an adjustment factor for the E[dN]/E[dS]."
-			    );
-			    
-	if (modelTypes[0]<0)
-	{
-		return;
-	}
-	
-	for (mi = 0; mi < Rows(modelTypes)*Columns(modelTypes); mi = mi + 1)
-	{
-		chosenModelList[modelTypes[mi]] = 1;
-	}	
-}
-
-modelNamesShort = {{"Constant","Proportional","Nonsynonymous","Dual","LineageDual"}};
-
-resp  = 1;
-resp2 = 1;
-
-ExecuteAFile ("Utility/GrabBag.bf");
-
-if (chosenModelList[3]+chosenModelList[4]+chosenModelList[1]+chosenModelList[2])
-{
-	ChoiceList (modelChoice, "Distribution Option",1,SKIP_NONE,
-				"Syn:Gamma, Non-syn:Gamma",	 "Both syn and non-syn rates are drawn from the gamma distributions for all models.",
-				"Syn:Gamma, Non-syn:Inv+Gamma","Syn and non-syn rates are drawn from the gamma distributions for Proportional and Nonsynonymous. For Dual and Local Dual, syn rates are drawn from the gamma distribution, and non-syn rates - from Inv+Gamma.",
-				"Independent Discrete", "Independent General Discrete Distributions (Recommended setting)",
-				"Correlated Discrete", "Correlated General Discrete Distributions",
-				"Non-positive Discrete", "General Discrete Distribution for dS, and dN, but constrained so that dN<=dS. Useful to perform a LRT for presence of selection in an alignment");
-				
-				
-	if (modelChoice < 0)
-	{
-		return;
-	}
-
-	ChoiceList (randomizeInitValues, "Initial Value Options",1,SKIP_NONE,
-				"Default",	 "Use default inital values for rate distribution parameters.",
-				"Randomized",	 "Select initial values for rate distribution parameters at random.");
-
-
-	if (randomizeInitValues < 0)
-	{
-		return;
-	}
-
-
-	resp = prompt_for_a_value ("Number of synonymous (and single variable rate modles) rate classes",3,2,32,1);
-
-	if (chosenModelList[3]+chosenModelList[4])
-	{
-		resp2 = prompt_for_a_value ("Number of non-synonymous rate classes",3,1,32,1);
-	}
-	else
-	{
-		resp2 = 1;
-	}
-				
-	fudgeFactor = 1.0;
-
-	if (modelChoice<2)
-	{
-		ExecuteAFile ("2RatesAnalyses/gamma1.def");
-
-		if (modelChoice == 0)
-		{
-			ExecuteAFile ("2RatesAnalyses/gamma2.def");
-		}
-		else
-		{
-			ExecuteAFile ("2RatesAnalyses/gamma2+Inv.def");
-		}
-	}
-	else
-	{
-		if (modelChoice < 4)
-		{
-			correlationOn = (modelChoice>2);
-			ExecuteAFile ("2RatesAnalyses/discreteGenerator.bf");
-		}
-		else
-		{
-			ExecuteAFile ("2RatesAnalyses/discreteGeneratorNoPS.bf");
-		}
-	}
-}
-
-ExecuteAFile (marginalOutFile);
-
-if (Abs(modelConstraintString))
-{
-	ExecuteCommands (modelConstraintString);
-}
-
-
-SetDialogPrompt ("Save summary result file to:");
-fprintf (PROMPT_FOR_FILE,CLEAR_FILE);
-baselineOutput = LAST_FILE_PATH;
-
-distribOutput = baselineOutput + ".distributions";
-fprintf (distribOutput,CLEAR_FILE);
-
-if (chosenModelList[4])
-{
-    ChoiceList (regExpForLocalFlag,"Lineage specific model filter",1,SKIP_NONE,
-				"None",         "Every branch has it's own mean dN/dS",
-				"Regex",        "Only branches whose names match a regular expression are given a separate dN/dS (all other branches share a single dN/dS)",
-                "Regex Global", "Branches whose names match a regular expression are given a separate (global) dN/dS, while all other branches share another single dN/dS");
-                
-    if (regExpForLocalFlag < 0)
-    {
-        return 0;
-    }
-    if (regExpForLocalFlag > 0)
-    {
-        fprintf (stdout, "Enter the filtering regular expression:");
-        fscanf (stdin, "String", regExpForLocal);
-    }
-    else
-    {
-        regExpForLocal = "";
+    function load_file (prefix) {
+        datasets = prefix+".codon_data";
+        codon_data_info = alignments.PromptForGeneticCodeAndAlignment(datasets, prefix+".codon_filter");
+        
+        // Check use-tree option
+        if (utility.GetEnvVariable("IS_TREE_PRESENT_IN_DATA")) {
+            use_tree = io.SelectAnOption ({"Yes": "Use tree in data file if present", "No": "Do not use tree in data file"}, "Use tree in data file if present");
+            if (use_tree == "No") {
+                utility.SetEnvVariable("IS_TREE_PRESENT_IN_DATA", FALSE);
+            }
+        }
+        
+        annotate_codon_info (codon_data_info, prefix+".codon_filter");
+        utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"),
+                               codon_data_info[utility.getGlobalValue("terms.data.datafilter")]);
+        partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (codon_data_info[utility.getGlobalValue("terms.data.partitions")], name_mapping);
+        
+        for (_key_, _value_; in; partitions_and_trees) {
+            (partitions_and_trees[_key_])[utility.getGlobalValue("terms.data.filter_string")] = 
+                    selection.io.adjust_partition_string (_value_[utility.getGlobalValue("terms.data.filter_string")], 3*codon_data_info[utility.getGlobalValue("terms.data.sites")]);
+        }
+        
+        utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"), None);
+        partition_count = Abs (partitions_and_trees);
+        
+        // Branch selector logic is ignored for this analysis
+        selected_branches = {};
+        selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.tested"), selected_branches);
+        
+        filter_specification = alignments.DefineFiltersForPartitions (partitions_and_trees, datasets , "`prefix`.filter.", codon_data_info);
+        store_tree_information ();
     }
 
-}
-	
+    function computeExpSubWeights (dum) {
+        rateTypeWeights     = {6,2};
+        rateTypeWeightsGY94 = {6,2};
+            
+        hshift = 0;
 
-separator =      "+---------------------+---------------------+---------------+-------------------+-------------------+---------------+-----+-----------+\n";
-
-fprintf (stdout, "\n\nRUNNING ",ModelTitle," MODEL COMPARISONS on ",dataFilePath, "\n\n",
-				 "\n\n########### ",resp,"x",resp2," CLASSES ###########\n\n",
-				 separator,
-				 "|       Model         |   Log Likelihood    | Synonymous CV |  NS Exp and CV    |  N/S Exp and CV   |    P-Value    | Prm |    AIC    |\n",
-				 separator);
-
-fprintf (baselineOutput,  "\n\nRUNNING ",ModelTitle," MODEL COMPARISONS on ",dataFilePath, "\n\n",
-						   "\n\n########### ",resp,"x",resp2," CLASSES ###########\n\n",
-				 separator,
-				 "|       Model         |   Log Likelihood    | Synonymous CV |  NS Exp and CV    |  N/S Exp and CV   |    P-Value    | Prm |    AIC    |\n",
-				 separator);
-
-lastLikValue = 0;
-R = 1;
-
-modelNames = {{"| Constant Rates      |",
-			   "| Prop. Var. Rates    |",
-			   "| Var. N.Syn. Rates   |",
-			   "| Dual Variable Rates |",
-			   "| Dual V.R. + Lineage |"}};
-			   
-
-if (MPI_NODE_COUNT>1 && MPI_NODE_ID == 0)
-/* Check to see if we are running with more than one MPI node.
-   If not - bail to single CPU execution */			   
-{
-	MPINodeState = {MPI_NODE_COUNT-1,2};
-	
-	/* One of the nodes (0) will be the dispatcher, and
-	   for every other node, we need to store two values:
-	   whether it is busy or not (0 or 1), and 
-	   an integer (from 0 to 5) to indicate which model
-	   (M0-M5) the node is working on */
-	   
-	OPTIMIZE_SUMMATION_ORDER = 0;
-	
-	/* the master node will be creating likelihood functions, 
-	but not evaluating them - thus there is no need to perform
-	the extra step of optimizing data column ordering for faster
-	likelihood evaluations */
-}
-
-doNucFit = (branchLengths<2);
-
-
-for (mi = 0; mi<5; mi=mi+1)
-{
-	if (chosenModelList[mi])
-	{
-		theRateMatrix = 0;
-
-		MULTIPLY_BY_FREQS = PopulateModelMatrix ("theRateMatrix", observedFreq, mi);
-		vectorOfFrequencies = BuildCodonFrequencies (observedFreq);
-		
-		if (doNucFit)
-		{
-			HarvestFrequencies 					   (observedFreqSingle,filteredData,1,1,1);
-			DataSetFilter nucFilter = CreateFilter (filteredData,1);
-			ExecuteCommands (nucModelString+"\nModel nucModel = (nucModelMatrix,observedFreqSingle);");
-
-			Tree  nucTree = treeString;
-			LikelihoodFunction nuc_lf = (nucFilter,nucTree);
-			Optimize (nuc_res, nuc_lf);
-			
-			computeExpSubWeights (0);		
-			global codonFactor = 0.33;
-						
-			doNucFit = 0;
-		}
-			
-		Model MG94model = (theRateMatrix,vectorOfFrequencies,MULTIPLY_BY_FREQS);
-		Tree  givenTree = treeString;
-
-        bnames = BranchName (givenTree,-1);
-        lbc    = Columns    (bnames) - 1;
-
-		if (branchLengths == 1)
-		{
-			ClearConstraints (givenTree);
-			ReplicateConstraint ("this1.?.synRate:=this2.?.t__/codonFactor",givenTree,nucTree);
-		}
-		else
-		{
-			if (branchLengths == 0)
-			{					
-				initString = "";
-				for (lc = 0; lc < lbc; lc = lc+1)
-				{
-					initString += "givenTree." + bnames[lc] + ".synRate=nucTree." + bnames[lc] + ".t/codonFactor;";
-				}	
-				ExecuteCommands (initString);
-				initString = "";
-			}
-			else
-			{
-				computeExpSubWeights (0);
-				if (_saveMatrixChoice < 4) /* MG94 */
-				{
-					rateBiasTermsMx  = {{"AC*","","AT*","CG*","CT*","GT*"}};
-					rw = rateTypeWeights;
-				}
-				else
-				{
-					rateBiasTermsMx  = {{"kappa*","","kappa*","kappa*","","kappa*"}};	
-					rw = rateTypeWeightsGY94;			
-				}
-				s1s = rateBiasTermsMx[0]+rw[0][0];
-				s2s = rateBiasTermsMx[0]+rw[0][1];
-				for (lc = 1; lc < 6; lc = lc+1)
-				{
-					s1s = s1s + "+" + rateBiasTermsMx[lc]+rw[lc][0];
-					s2s = s2s + "+" + rateBiasTermsMx[lc]+rw[lc][1];
-				}
-				
-				if (mi < 4)
-				{
-					for (lc = 0; lc < lbc; lc = lc+1)
-					{
-						ExecuteCommands ("givenTree." + bnames[lc] + ".synRate:="+_stringBLs[lc]+"/("+s1s+"+R("+s2s+"));");
-					}	
-				}
-				else
-				{
-					for (lc = 0; lc < lbc; lc = lc+1)
-					{
-						ExecuteCommands ("givenTree." + bnames[lc] + ".synRate:="+_stringBLs[lc]+"/("+s1s+"+givenTree."+bnames[lc]+".r("+s2s+"));");
-					}				
+        for (h=0; h<64; h += 1) {
+            if (_Genetic_Code[h]==10) {
+                continue; 
+            }
+            for (h=0; h<64; h += 1) {
+                if (_Genetic_Code[h]==10) {
+                    hshift += 1;
+                    continue; 
                 }
-			}
-		}
+                vshift = hshift;
+                for (v = h+1; v<64; v += 1) {
+                    diff = v-h;
+                    if (_Genetic_Code[v]==10) {
+                        vshift += 1;
+                        continue; 
+                    }
+                    nucPosInCodon = 2;
+                    if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0)) {
+                        if (h$4==v$4) {
+                            transition = v%4;
+                            transition2= h%4;
+                        }
+                        else {
+                            if(diff%16==0) {
+                                transition = v$16;
+                                transition2= h$16;
+                                nucPosInCodon = 0;
+                            }
+                            else {
+                                transition = v%16$4;
+                                transition2= h%16$4;
+                                nucPosInCodon = 1;
+                            }
+                        }
+                        
+                        mxIndex = 0;
+                        if (transition<transition2) {
+                            t1 = transition;
+                            t2 = transition2;
+                        }
+                        else {
+                            t1 = transition2;
+                            t2 = transition;
+                        }
+                        
+                        if (t1 == 0) {
+                            mxIndex = t2-1;
+                        }
+                        else {
+                            if (t1 == 1) {
+                                mxIndex = 1+t2;
+                            }
+                            else {
+                                mxIndex = 5;
+                            }
+                        }
+                        
+                        t1 = (_Genetic_Code[0][h]!=_Genetic_Code[0][v]);
+                        rateTypeWeights[mxIndex][t1] += vectorOfFrequencies[h-hshift]*observedFreq[transition][nucPosInCodon]+
+                                                       vectorOfFrequencies[v-vshift]*observedFreq[transition2][nucPosInCodon];
+                        rateTypeWeightsGY94[mxIndex][t1] += 2*vectorOfFrequencies[h-hshift]*vectorOfFrequencies[v-vshift];
+                    }
+               }
+            }		
+        }
+        return 0;		
+    }
 
-        if (Abs(regExpForLocal) > 0 && mi == 4)
-        {
-            fprintf (stdout, "\n");
-            global shared_R  = 1;
-            if (regExpForLocalFlag == 2)
-            {
-                global shared_FR = 1;
+    function echoCatVar (distrInfo) {
+        DD = Columns(distrInfo);
+        EE = 0.0;
+        sampleVar = 0.0;
+        for (k=0; k<DD; k += 1) {
+            EE = distrInfo[0][k]*distrInfo[1][k]+EE;
+            sampleVar += distrInfo[0][k]*distrInfo[0][k]*distrInfo[1][k];
+        }
+            
+        sampleVar = sampleVar-EE*EE;
+        
+        fprintf  (distribOutput,"\n\n------------------------------------------------\n\nSample mean = ",EE, " (sample variance = ",sampleVar,")\n");
+        for (k=0; k<DD; k += 1) {
+            fprintf (distribOutput,"\nRate[",Format(k,0,0),"]=",Format(distrInfo[0][k],12,8), " (weight=", 
+                              Format(distrInfo[1][k],9,7),")");
+        }
+        return EE;
+    }
+
+    function echoRatio (distrInfo, distrInfo2) {
+        D1 = Columns(distrInfo);
+        D2 = Columns(distrInfo2);
+            
+        ratioInfo = {3,D1*D2};
+        
+        for (k=0; k<D1; k += 1) {
+            EE = k*D2;
+            for (k2 = 0; k2<D2; k2 += 1) {
+                ratioInfo [0][EE+k2] = distrInfo[0][k]/distrInfo2[0][k2];
+                ratioInfo [1][EE+k2] = distrInfo[1][k]*distrInfo2[1][k2];
+                ratioInfo [2][EE+k2] = k2*D1+k;
+            }
+        }
+        
+        done = 0;
+        EE = D1*D2;
+        while (!done) {
+            done = 1;
+            for (k=1; k<EE; k += 1) {
+                if (ratioInfo [0][k] < ratioInfo[0][k-1]) {
+                    DD = ratioInfo [0][k];
+                    ratioInfo [0][k] = ratioInfo [0][k-1];
+                    ratioInfo [0][k-1] = DD;
+                    DD = ratioInfo [1][k];
+                    ratioInfo [1][k] = ratioInfo [1][k-1];
+                    ratioInfo [1][k-1] = DD;
+                    DD = ratioInfo [2][k];
+                    ratioInfo [2][k] = ratioInfo [2][k-1];
+                    ratioInfo [2][k-1] = DD;
+                    done = 0;
+                }
+            }
+        }
+        return echoCatVar (ratioInfo);
+    }
+
+    function BuildCodonFrequencies (obsF) {
+        PIStop = 1.0;
+        result = {ModelMatrixDimension,1};
+        hshift = 0;
+
+        for (h=0; h<64; h += 1) {
+            first = h$16;
+            second = h%16$4;
+            third = h%4;
+            if (_Genetic_Code[h]==10) {
+                hshift += 1;
+                PIStop = PIStop-obsF[first][0]*obsF[second][1]*obsF[third][2];
+                continue; 
+            }
+            result[h-hshift][0]=obsF[first][0]*obsF[second][1]*obsF[third][2];
+        }
+        return result*(1.0/PIStop);
+    }
+
+    function ReceiveJobs (sendOrNot) {
+        if (MPI_NODE_COUNT>1 && MPI_NODE_ID == 0) {
+            MPIReceive (-1, fromNode, result_String);
+            modelIndex = MPINodeState[fromNode-1][1];
+            
+            if (sendOrNot) {
+                /* send the likelihood function to the node which just finished */
+                MPISend (fromNode,^"lf");
+                MPINodeState[fromNode-1][1] = mi;
+            }
+            else {
+                /* mark the node as idle */
+                MPINodeState[fromNode-1][0] = 0;
+                MPINodeState[fromNode-1][1] = 0;
             }
             
-            for (lc = 0; lc < lbc; lc = lc+1)
-            {
-                if ((bnames[lc]$regExpForLocal)[0] < 0)
-                {
-                    ExecuteCommands ("givenTree." + bnames[lc] + ".r:=shared_R");
+            /* reset category variables */
+            if (modelIndex) {
+                ClearConstraints (c);
+            }
+            if (modelIndex>2) {
+                ClearConstraints (d);
+            }
+            
+            /* build the likelihood function lf with MLE parameter values
+               just returned from an MPI node. MLE matrix is returned 
+               in lf_MLES. */
+                    
+            ExecuteCommands (result_String);
+                    
+            /* store the result matrix */
+            res = lf_MLES;
+        }
+        
+        fprintf (stdout, "DEBUG inside ReceiveJobs: codonFactor = ", codonFactor, "\n");
+        if (branchLengths) {
+            res[1][1] += TipCount (givenTree) + BranchCount (givenTree) - 1;
+        }
+
+        LIKELIHOOD_FUNCTION_OUTPUT = 6;
+
+        fprintf (stdout, modelNames[modelIndex], " ", Format (res[1][0],19,5));
+        fprintf (baselineOutput, modelNames[modelIndex], " ", Format (res[1][0],19,5));
+        
+        marginalOutFile = baselineOutput + "." + modelNamesShort[modelIndex] + ".fit";
+        
+        fprintf (marginalOutFile,CLEAR_FILE,^"lf");
+
+        if (modelIndex) {
+            marginalOutFile = baselineOutput + "." + modelNamesShort[modelIndex] + ".marginals";
+            fprintf (marginalOutFile,CLEAR_FILE);
+        }
+        
+        fprintf (distribOutput, "\n", modelNames[modelIndex]);
+        if (modelIndex==0) {
+            EE = 0;
+            sampleVar = 0;
+            fprintf (stdout, " |      N/A      | ", Format (R,8,5) , ",", Format (sampleVar,8,5), " | ", Format (R,8,5) , ",", Format (sampleVar,8,5), " | ");
+            fprintf (baselineOutput, " |      N/A      | ", Format (R,8,5) , ",", Format (sampleVar,8,5), " | ", Format (R,8,5) , ",", Format (sampleVar,8,5), " | ");
+        }
+        else {
+            GetInformation(dI,c);
+            if (modelIndex==2) {
+                DD = Columns (dI);
+                for (EE=0; EE<DD; EE += 1) {
+                    dI[0][EE] = R*dI[0][EE];
                 }
-                else
-                {
-                    if (regExpForLocalFlag == 2)
-                    {
-                        ExecuteCommands ("givenTree." + bnames[lc] + ".r:=shared_FR");
-                   }
-                    //fprintf (stdout, bnames[lc], " => local dN/dS \n");
+                
+                NVRMLL = res[1][0];
+                NVRMPC = res[1][1];
+                
+                EE  = echoCatVar (dI);
+                fprintf (marginalOutFile, dI);
+                
+                fprintf (stdout, " |      N/A      | ", Format (EE,8,5) , ",", Format (Sqrt(sampleVar)/EE,8,5), " | ", Format (EE,8,5) , ",", Format (Sqrt(sampleVar)/EE,8,5), " | ");
+                fprintf (baselineOutput, " |      N/A      | ", Format (EE,8,5) , ",", Format (Sqrt(sampleVar)/EE,8,5), " | ", Format (EE,8,5) , ",", Format (Sqrt(sampleVar)/EE,8,5), " | ");
+            }  
+            else {
+                fprintf (marginalOutFile, dI);
+                EE  = echoCatVar (dI);
+                fprintf (stdout, " | ",Format (Sqrt(sampleVar),13,8)," | ");
+                fprintf (baselineOutput, " | ",Format (Sqrt(sampleVar),13,8)," | ");
+                
+                if (modelIndex>=3) {
+                    GetInformation(dI2,d);
+                    if (modelIndex!=5) {
+                        DD = Columns (dI2);
+                        for (EE=0; EE<DD; EE += 1) {
+                            dI2[0][EE] = R*dI2[0][EE];
+                        }
+                    }
+                    fprintf (marginalOutFile, dI2);
+                    EEN  = echoCatVar (dI2);
+                    varN = sampleVar;
+                    EER  = echoRatio  (dI2,dI);
+                    varR = sampleVar;
+                    
+                    fprintf (stdout,  Format (EEN,8,5) , ",", Format (Sqrt(varN)/EEN,8,5), " | ",Format (EER,8,5) , ",", Format (Sqrt(varR)/EER,8,5), " | ");	
+                    fprintf (baselineOutput, Format (EEN,8,5) , ",", Format (Sqrt(varN)/EEN,8,5), " | ",Format (EER,8,5) , ",", Format (Sqrt(varR)/EER,8,5), " | ");	
+                        
+                    if (modelIndex==3) {
+                        DVRMLL = res[1][0];
+                        DVRMPC = res[1][1];
+                        /* we don't know that DVRM returned before M4, so we won't print the p-value in the MPI mode */
+                        if ((chosenModelList[2])&&(MPI_NODE_COUNT<=1 || MPI_NODE_ID == 0)) {
+                            pVal = 1-CChi2(2*(DVRMLL-NVRMLL),DVRMPC-NVRMPC);
+                            fprintf (stdout, Format (pVal,13,8), " |");
+                            fprintf (baselineOutput, Format (pVal,13,8), " |");
+                        }
+                        else {
+                            fprintf (stdout,"     N/A      |");
+                            fprintf (baselineOutput, "     N/A      |");
+                        }
+                    }
                 }
-             }				
+                else {
+                    fprintf (stdout, Format (EE*R,8,5) , ",", Format (Sqrt(sampleVar)/EE,8,5), " | ", Format (R,8,5) , ",", Format (0,8,5), " | ");
+                    fprintf (baselineOutput, Format (EE*R,8,5) , ",", Format (Sqrt(sampleVar)/EE,8,5), " | ", Format (R,8,5) , ",", Format (0,8,5), " | ");
+                }
+            }
+        }
+            
+        if (modelIndex==4) /* local rates */ {
+            /* we don't know that DVRM returned before M4, so we won't print the p-value in the MPI mode */
+            if ((chosenModelList[3])&&(MPI_NODE_COUNT<=1 || MPI_NODE_ID == 0)) {
+                fprintf (stdout, Format (1-CChi2(2*(res[1][0]-DVRMLL),res[1][1]-DVRMPC),13,8), " |");
+                fprintf (baselineOutput, Format (1-CChi2(2*(res[1][0]-DVRMLL),res[1][1]-DVRMPC),13,8), " |");
+            }
+            else {
+                fprintf (stdout,"     N/A      |");
+                fprintf (baselineOutput, "     N/A      |");
+            }
+        }
+        else {
+            if (modelIndex < 3) {
+                fprintf (stdout,"     N/A      |");
+                fprintf (baselineOutput,"     N/A      |");
+            }
+        }
+        
+        fprintf (stdout, Format (res[1][1],5,0), "|", Format (2*(res[1][1]-res[1][0]),11,2),"|");
+        fprintf (baselineOutput, Format (res[1][1],5,0), "|", Format (2*(res[1][1]-res[1][0]),11,2),"|");
+        fprintf (stdout, "\n",separator);
+        fprintf (baselineOutput, "\n",separator);
+        if (modelIndex) {
+            ConstructCategoryMatrix(marginals,^"lf",COMPLETE);
+            
+            if (modelIndex>=3) {
+                GetInformation (categVarIDs,^"lf");
+                if (categVarIDs[0]!="c") {
+                    marginalsCorrected = marginals;
+                    fprintf (MESSAGE_LOG,"Adjusting marginal matrix rows.\n"); 
+                    for (h=0; h<Columns(marginals); h += 1) {
+                        transition = 0;
+                        for (diff=0; diff<resp; diff += 1) {
+                            for (v=diff; v<Rows(marginals); v += resp) {
+                                marginalsCorrected[transition][h] = marginals[v][h];
+                                transition += 1;
+                            }
+                        }
+                    }
+                    marginals = marginalsCorrected;
+                }
+            }
+
+            fprintf (marginalOutFile,marginals);
+        }
+        lastLikValue = res[1][0];	
+        
+        return fromNode-1;
+    }
+
+    load_file ("dnds");
+
+    // Define global variables for legacy models
+    ^"_Genetic_Code" = codon_data_info[^"terms.code"];
+    ^"GeneticCodeExclusions" = codon_data_info[^"terms.stop_codons"];
+
+    _Genetic_Code = ^"_Genetic_Code";
+    GeneticCodeExclusions = ^"GeneticCodeExclusions";
+
+    codonFactor = 0.33;
+    global codonFactor = 0.33;
+
+    DataSetFilter filteredData = CreateFilter(codon_data, 3, "", "", GeneticCodeExclusions);
+    dataFilePath = codon_data_info[^"terms.data.file"];
+
+    HarvestFrequencies (observedFreq, filteredData, 3, 1, 1);
+
+    partition_tree_info = partitions_and_trees["0"];
+    tree_info = partition_tree_info[^"terms.data.tree"];
+    abs_branch_lengths = Abs(tree_info[^"terms.branch_length"]);
+
+    if (abs_branch_lengths == 0) {
+        treeString = tree_info[^"terms.trees.newick"];
+    } else {
+        treeString = tree_info[^"terms.trees.newick_with_lengths"];
+    }
+
+    Tree inTree = treeString;
+    _stringBLs = BranchLength (inTree, -1);
+
+    hasBLs = 1;
+    for (k=0; k<Columns (_stringBLs); k += 1) {
+        if (_stringBLs[k]<0) {
+            hasBLs = 0;
+            break;
+        }
+    }
+
+    KeywordArgument("branch-lengths", "Branch Lengths", "Nucleotide Model", "Branch Lengths");
+    if (hasBLs) {
+        branchLengthsOption = io.SelectAnOption ({
+            "Codon Model": "Jointly optimize rate parameters and branch lengths (slow and thorough)",
+            "Nucleotide Model": "Estimate branch lengths once, using an appropriate nucleotide model with a global tree scaling factor (quick and dirty).",
+            "Fixed (nucleotide)": "Branch lengths (measured in expected substitutions per NUCLEOTIDE) are fixed at the values read from the tree string (quicker and dirtier).",
+            "Fixed (codon)": "Branch lengths (measured in expected substitutions per CODON) are fixed at the values read from the tree string (quicker and dirtier)."
+        }, "Branch Lengths");
+    } else {
+        branchLengthsOption = io.SelectAnOption ({
+            "Codon Model": "Jointly optimize rate parameters and branch lengths (slow and thorough)",
+            "Nucleotide Model": "Estimate branch lengths once, using an appropriate nucleotide model with a global tree scaling factor (quick and dirty)."
+        }, "Branch Lengths");
+    }
+
+    branchLengths = 0;
+    if (branchLengthsOption == "Nucleotide Model") {
+        branchLengths = 1;
+    }
+    if (branchLengthsOption == "Fixed (nucleotide)") {
+        branchLengths = 2;
+    }
+    if (branchLengthsOption == "Fixed (codon)") {
+        branchLengths = 3;
+    }
+
+    modelConstraintString = "";
+
+    KeywordArgument("model", "Rate Matrix Options", "MG94xREV", "Rate Matrix Options");
+    if (branchLengths < 2) {
+        modelChoiceOption = io.SelectAnOption ({
+            "MG94": "Standard Muse-Gaut 94 model.",
+            "MG94xHKY85": "MG94 with the transition/transverion ratio parameter kappa.",
+            "MG94xREV": "MG94 with 5 additional parameters for each type of nucleotide substitution ratio. (Recommended Rate Matrix)",
+            "MG94xCustom": "MG94 crossed with an arbitrary nucelotide reversible model, except F81.",
+            "GY94": "Goldman-Yang 94 model (similar to MG94xHKY85)",
+            "MG94Multi": "MG94 with multiple classes of non-synonymous substitutions in addition to being crossed with an arbitrary nucelotide reversible model, except F81.",
+            "MG94NMulti": "MG94 with numerical bias corrections for various amino-acid substitution in addition to being crossed with an arbitrary nucelotide reversible model, except F81."
+        }, "Rate Matrix Options");
+    } else {
+        if (branchLengths == 2) {
+            _stringBLs = _stringBLs*3;
+        }
+        modelChoiceOption = io.SelectAnOption ({
+            "MG94": "Standard Muse-Gaut 94 model.",
+            "MG94xHKY85": "MG94 with the transition/transverion ratio parameter kappa.",
+            "MG94xREV": "MG94 with 5 additional parameters for each type of nucleotide substitution ratio. (Recommended Rate Matrix)",
+            "MG94xCustom": "MG94 crossed with an arbitrary nucelotide reversible model, except F81.",
+            "GY94": "Goldman-Yang 94 model (similar to HKY85)"
+        }, "Rate Matrix Options");
+    }
+
+    modelChoice = 0;
+    if (modelChoiceOption == "MG94xHKY85") {
+        modelChoice = 1;
+    }
+    if (modelChoiceOption == "MG94xREV") {
+        modelChoice = 2;
+    }
+    if (modelChoiceOption == "MG94xCustom") {
+        modelChoice = 3;
+    }
+    if (modelChoiceOption == "GY94") {
+        modelChoice = 4;
+    }
+    if (modelChoiceOption == "MG94Multi") {
+        modelChoice = 5;
+    }
+    if (modelChoiceOption == "MG94NMulti") {
+        modelChoice = 6;
+    }
+
+    marginalOutFile = "2RatesAnalyses/MG94xREV.mdl";
+    if (modelChoice == 0) {
+        modelConstraintString = "AC:=1;AT:=1;CG:=1;CT:=1;GT:=1"; 
+        ModelTitle = "MG94";
+    }
+    else {
+        if (modelChoice == 1) {
+            modelConstraintString = "CT:=1;AT:=AC;CG:=AC;GT:=AC"; 
+            ModelTitle = "MG94xHKY85";
+        }
+        else {
+            if (modelChoice == 3 || modelChoice >= 5) {
+                done = 0;
+                while (!done) {
+                    KeywordArgument("model-designation", "Please enter a 6 character model designation", "012345");
+                    modelDesc = io.PromptUserForString("Please enter a 6 character model designation");
+                    if (Abs(modelDesc)==6) {
+                        done = 1;
+                    }
+                }			
+                ModelTitle = "MG94x"+modelDesc[0];
+                            
+                rateBiasTerms = {{"AC","1","AT","CG","CT","GT"}};
+                paramCount	  = 0;
+
+                modelConstraintString = "";
+
+                for (customLoopCounter2=1; customLoopCounter2<6; customLoopCounter2 += 1) {
+                    for (customLoopCounter=0; customLoopCounter<customLoopCounter2; customLoopCounter += 1) {
+                        if (modelDesc[customLoopCounter2]==modelDesc[customLoopCounter]) {
+                            ModelTitle += modelDesc[customLoopCounter2];	
+                            if (rateBiasTerms[customLoopCounter2] == "1") {
+                                modelConstraintString += rateBiasTerms[customLoopCounter]+":="+rateBiasTerms[customLoopCounter2]+";";
+                            }
+                            else {
+                                modelConstraintString += rateBiasTerms[customLoopCounter2]+":="+rateBiasTerms[customLoopCounter]+";";			
+                            }
+                            break;
+                        }
+                    }
+                    if (customLoopCounter==customLoopCounter2) {
+                        ModelTitle += modelDesc[customLoopCounter2];	
+                    }
+                }	
+                
+                if (modelChoice >= 5) {
+                    ModelTitle = "MG94xMulti";
+                    if (modelChoice > 5) {
+                        _AA_RM_NUMERIC = 2;
+                    }
+                    ExecuteAFile("TemplateModels/MGwAA.ibf");
+                    rateKeys = Rows (aaRateClassIDs);
+                    userAARateMultipliers = {21,21};
+                    if (modelChoice > 5) {
+                        _AA_RM_NUMERIC = 0;
+                        for (h=0; h<21;h += 1) {
+                            for (v=0; v<21; v += 1) {
+                                userAARateMultipliers[h][v] = "R*" + aaRateMultipliers[h][v] + "*";
+                                userAARateMultipliers[v][h] = "R*" + aaRateMultipliers[v][h] + "*";
+                            }
+                        }								
+                    }
+                    else {
+                        for (aaIndex = 0; aaIndex < Abs(aaRateClassIDs); aaIndex += 1) {
+                            ExecuteCommands ("global DN_"+rateKeys[aaIndex]+" = 1;");
+                        }
+                        for (h=0; h<21;h += 1) {
+                            for (v=0; v<21; v += 1) {
+                                userAARateMultipliers[h][v] = "DN_" + aaRateMultipliers[h][v] + "*";
+                                userAARateMultipliers[v][h] = "DN_" + aaRateMultipliers[v][h] + "*";
+                            }
+                        }								
+                    }
+                }
+            }
+            else {
+                if (modelChoice == 4) {
+                    marginalOutFile = "2RatesAnalyses/GY94.mdl";
+                    ModelTitle = "GY94";
+                }
+                else {
+                    ModelTitle = "MG94xREV";
+                }
+            }			
+        }
+    }
+
+    _saveMatrixChoice = modelChoice;
+
+    chosenModelList = {5,1};
+
+    KeywordArgument("rate-variation", "Rate Variation Options", "Run All", "Rate Variation Options");
+    rateVarOption = io.SelectAnOption ({
+        "Run All": "Run all available models.",
+        "Run Custom": "Choose some of the available models."
+    }, "Rate Variation Options");
+            
+    if (rateVarOption == "Run All") {
+        for (mi = 0; mi<5; mi += 1) {
+            chosenModelList[mi][0] = 1;
+        }
+    }
+    else {
+        KeywordArgument("rate-models", "Rate Variation Models", "Constant,Proportional,Nonsynonymous,Dual,Lineage Dual");
+        selectedModels = io.MultiSelectOptions ({
+            "Constant": "Constant Rate Model: no rate variation across sites.",
+            "Proportional": "Proportional Variable Rates Model: dS and dN vary along the sequence, but dN = R*dS for every site",
+            "Nonsynonymous": "Non-synonymous Variable Rates Model: dS = 1 for every site, while dN is drawn from a given distribution.",
+            "Dual": "Dual Variable Rates Model: dS and dN are drawn from a bivariate distribution (independent or correlated components). Recommened model.",
+            "Lineage Dual": "Lineage Dual Variable Rates Model:  dS and dN are drawn from a bivariate distribution (independent or correlated components), plus each lineage has an adjustment factor for the E[dN]/E[dS]."
+        }, "Rate Variation Models", 0);
+
+        for (k = 0; k < Rows(selectedModels); k += 1) {
+            val = selectedModels[k];
+            if (val == "Constant") { chosenModelList[0] = 1; }
+            if (val == "Proportional") { chosenModelList[1] = 1; }
+            if (val == "Nonsynonymous") { chosenModelList[2] = 1; }
+            if (val == "Dual") { chosenModelList[3] = 1; }
+            if (val == "Lineage Dual") { chosenModelList[4] = 1; }
+        }
+    }
+
+    modelNamesShort = {{"Constant","Proportional","Nonsynonymous","Dual","LineageDual"}};
+
+    resp  = 1;
+    resp2 = 1;
+
+    ExecuteAFile ("Utility/GrabBag.bf");
+
+} // Close namespace dnds
+
+// Copy/alias variables to global namespace to simplify execution after setup
+MPINodeState = dnds.MPINodeState;
+chosenModelList = dnds.chosenModelList;
+branchLengths = dnds.branchLengths;
+modelNames = dnds.modelNames;
+baselineOutput = dnds.baselineOutput;
+modelNamesShort = dnds.modelNamesShort;
+distribOutput = dnds.distribOutput;
+R = dnds.R;
+separator = dnds.separator;
+observedFreq = dnds.observedFreq;
+observedFreqSingle = dnds.observedFreqSingle;
+DataSetFilter filteredData = CreateFilter(dnds.codon_data, 3, "", "", GeneticCodeExclusions);
+treeString = dnds.treeString;
+_saveMatrixChoice = dnds._saveMatrixChoice;
+regExpForLocal = dnds.regExpForLocal;
+regExpForLocalFlag = dnds.regExpForLocalFlag;
+modelChoice = dnds.modelChoice;
+_stringBLs = dnds._stringBLs;
+rateTypeWeights = dnds.rateTypeWeights;
+rateTypeWeightsGY94 = dnds.rateTypeWeightsGY94;
+ModelTitle = dnds.ModelTitle;
+dataFilePath = dnds.dataFilePath;
+resp = dnds.resp;
+resp2 = dnds.resp2;
+nucModelString = dnds.nucModelString;
+marginalOutFile = dnds.marginalOutFile;
+modelConstraintString = dnds.modelConstraintString;
+
+if (chosenModelList[3]+chosenModelList[4]+chosenModelList[1]+chosenModelList[2]) {
+        KeywordArgument("distribution", "Distribution Option", "Independent Discrete", "Distribution Option");
+        distributionOption = io.SelectAnOption ({
+            "Syn:Gamma, Non-syn:Gamma": "Both syn and non-syn rates are drawn from the gamma distributions for all models.",
+            "Syn:Gamma, Non-syn:Inv+Gamma": "Syn and non-syn rates are drawn from the gamma distributions for Proportional and Nonsynonymous. For Dual and Local Dual, syn rates are drawn from the gamma distribution, and non-syn - from Inv+Gamma.",
+            "Independent Discrete": "Independent General Discrete Distributions (Recommended setting)",
+            "Correlated Discrete": "Correlated General Discrete Distributions",
+            "Non-positive Discrete": "General Discrete Distribution for dS, and dN, but constrained so that dN<=dS. Useful to perform a LRT for presence of selection in an alignment"
+        }, "Distribution Option");
+
+        modelChoice = 2;
+        if (distributionOption == "Syn:Gamma, Non-syn:Gamma") {
+            modelChoice = 0;
+        }
+        if (distributionOption == "Syn:Gamma, Non-syn:Inv+Gamma") {
+            modelChoice = 1;
+        }
+        if (distributionOption == "Independent Discrete") {
+            modelChoice = 2;
+        }
+        if (distributionOption == "Correlated Discrete") {
+            modelChoice = 3;
+        }
+        if (distributionOption == "Non-positive Discrete") {
+            modelChoice = 4;
+        }
+
+        KeywordArgument("initial-values", "Initial Value Options", "Default", "Initial Value Options");
+        initValOption = io.SelectAnOption ({
+            "Default": "Use default inital values for rate distribution parameters.",
+            "Randomized": "Select initial values for rate distribution parameters at random."
+        }, "Initial Value Options");
+
+        randomizeInitValues = 0;
+        if (initValOption == "Randomized") {
+            randomizeInitValues = 1;
+        }
+
+        KeywordArgument("syn-rates", "Number of synonymous rate classes", "3");
+        resp = io.PromptUser ("Number of synonymous (and single variable rate models) rate classes", 3, 2, 32, 1);
+
+        if (chosenModelList[3]+chosenModelList[4]) {
+            KeywordArgument("nonsyn-rates", "Number of non-synonymous rate classes", "3");
+            resp2 = io.PromptUser ("Number of non-synonymous rate classes", 3, 1, 32, 1);
+        }
+        else {
+            resp2 = 1;
+        }
+                    
+        fudgeFactor = 1.0;
+
+        if (modelChoice<2) {
+            ExecuteAFile ("2RatesAnalyses/gamma1.def");
+
+            if (modelChoice == 0) {
+                ExecuteAFile ("2RatesAnalyses/gamma2.def");
+            }
+            else {
+                ExecuteAFile ("2RatesAnalyses/gamma2+Inv.def");
+            }
+        }
+        else {
+            if (modelChoice < 4) {
+                correlationOn = (modelChoice>2);
+                ExecuteAFile ("2RatesAnalyses/discreteGenerator.bf");
+            }
+            else {
+                ExecuteAFile ("2RatesAnalyses/discreteGeneratorNoPS.bf");
+            }
+        }
+    }
+
+    ExecuteAFile (marginalOutFile);
+
+    if (Abs(modelConstraintString)) {
+        ExecuteCommands (modelConstraintString);
+    }
+
+    KeywordArgument("output", "Save summary result file to:", dataFilePath + ".dNdS.txt", "Save summary result file to");
+    baselineOutput = io.PromptUserForFilePath("Save summary result file to");
+
+    distribOutput = baselineOutput + ".distributions";
+    fprintf (distribOutput,CLEAR_FILE);
+    dnds.baselineOutput = baselineOutput;
+    dnds.distribOutput = distribOutput;
+
+    if (chosenModelList[4]) {
+        KeywordArgument("lineage-model", "Lineage specific model filter", "None", "Lineage specific model filter");
+        lineageModelOption = io.SelectAnOption ({
+            "None": "Every branch has it's own mean dN/dS",
+            "Regex": "Only branches whose names match a regular expression are given a separate dN/dS (all other branches share a single dN/dS)",
+            "Regex Global": "Branches whose names match a regular expression are given a separate (global) dN/dS, while all other branches share another single dN/dS"
+        }, "Lineage specific model filter");
+
+        regExpForLocalFlag = 0;
+        if (lineageModelOption == "Regex") {
+            regExpForLocalFlag = 1;
+        }
+        if (lineageModelOption == "Regex Global") {
+            regExpForLocalFlag = 2;
+        }
+
+        if (regExpForLocalFlag > 0) {
+            KeywordArgument("lineage-regex", "Filtering regular expression", "");
+            regExpForLocal = io.PromptUserForString("Enter the filtering regular expression");
+        }
+        else {
+            regExpForLocal = "";
+        }
+    }
+        
+    separator =      "+---------------------+---------------------+---------------+-------------------+-------------------+---------------+-----+-----------+\n";
+
+    fprintf (stdout, "\n\nRUNNING ",ModelTitle," MODEL COMPARISONS on ",dataFilePath, "\n\n",
+                     "\n\n########### ",resp,"x",resp2," CLASSES ###########\n\n",
+                     separator,
+                     "|       Model         |   Log Likelihood    | Synonymous CV |  NS Exp and CV    |  N/S Exp and CV   |    P-Value    | Prm |    AIC    |\n",
+                     separator);
+
+    fprintf (baselineOutput,  "\n\nRUNNING ",ModelTitle," MODEL COMPARISONS on ",dataFilePath, "\n\n",
+                               "\n\n########### ",resp,"x",resp2," CLASSES ###########\n\n",
+                     separator,
+                     "|       Model         |   Log Likelihood    | Synonymous CV |  NS Exp and CV    |  N/S Exp and CV   |    P-Value    | Prm |    AIC    |\n",
+                     separator);
+
+    lastLikValue = 0;
+    R = 1;
+
+    modelNames = {{"| Constant Rates      |",
+                   "| Prop. Var. Rates    |",
+                   "| Var. N.Syn. Rates   |",
+                   "| Dual Variable Rates |",
+                   "| Dual V.R. + Lineage |"}};
+    dnds.modelNames = modelNames;
+                   
+
+    if (MPI_NODE_COUNT>1 && MPI_NODE_ID == 0)
+    /* Check to see if we are running with more than one MPI node.
+       If not - bail to single CPU execution */ {
+        MPINodeState = {MPI_NODE_COUNT-1,2};
+        
+        /* One of the nodes (0) will be the dispatcher, and
+           for every other node, we need to store two values:
+           whether it is busy or not (0 or 1), and 
+           an integer (from 0 to 5) to indicate which model
+           (M0-M5) the node is working on */
+           
+        OPTIMIZE_SUMMATION_ORDER = 0;
+        
+        /* the master node will be creating likelihood functions, 
+        but not evaluating them - thus there is no need to perform
+        the extra step of optimizing data column ordering for faster
+        likelihood evaluations */
+    }
+
+    doNucFit = (branchLengths<2);
+
+
+    for (mi = 0; mi<5; mi += 1) {
+        if (chosenModelList[mi]) {
+            theRateMatrix = 0;
+
+            MULTIPLY_BY_FREQS = PopulateModelMatrix ("theRateMatrix", observedFreq, mi);
+            dnds.ModelMatrixDimension = ModelMatrixDimension;
+            vectorOfFrequencies = dnds.BuildCodonFrequencies (observedFreq);
+            dnds.vectorOfFrequencies = vectorOfFrequencies;
+            
+            if (doNucFit) {
+                HarvestFrequencies 					   (observedFreqSingle,filteredData,1,1,1);
+                DataSetFilter nucFilter = CreateFilter (filteredData,1);
+                ExecuteCommands (nucModelString+"\nModel nucModel = (nucModelMatrix,observedFreqSingle);");
+
+                Tree  nucTree = treeString;
+                LikelihoodFunction nuc_lf = (nucFilter,nucTree);
+                Optimize (nuc_res, nuc_lf);
+                
+                dnds.computeExpSubWeights (0);		
+                global codonFactor = 0.33;
+                            
+                doNucFit = 0;
+            }
+                
+            Model MG94model = (theRateMatrix,vectorOfFrequencies,MULTIPLY_BY_FREQS);
+            Tree  givenTree = treeString;
+            dnds.givenTree = givenTree;
+
+            bnames = BranchName (givenTree,-1);
+            lbc    = Columns    (bnames) - 1;
+
+            if (branchLengths == 1) {
+                fprintf (stdout, "DEBUG: codonFactor = ", codonFactor, "\n");
+                ClearConstraints (givenTree);
+                ReplicateConstraint ("this1.?.synRate:=this2.?.t__/codonFactor", givenTree, nucTree);
+            }
+            else {
+                if (branchLengths == 0) {
+                    initString = "";
+                    for (lc = 0; lc < lbc; lc += 1) {
+                        initString += "givenTree." + bnames[lc] + ".synRate=nucTree." + bnames[lc] + ".t/codonFactor;";
+                    }	
+                    ExecuteCommands (initString);
+                    initString = "";
+                }
+                else {
+                    dnds.computeExpSubWeights (0);
+                    if (_saveMatrixChoice < 4) /* MG94 */ {
+                        rateBiasTermsMx  = {{"AC*","","AT*","CG*","CT*","GT*"}};
+                        rw = rateTypeWeights;
+                    }
+                    else {
+                        rateBiasTermsMx  = {{"kappa*","","kappa*","kappa*","","kappa*"}};	
+                        rw = rateTypeWeightsGY94;			
+                    }
+                    s1s = rateBiasTermsMx[0]+rw[0][0];
+                    s2s = rateBiasTermsMx[0]+rw[0][1];
+                    for (lc = 1; lc < 6; lc += 1) {
+                        s1s += "+" + rateBiasTermsMx[lc]+rw[lc][0];
+                        s2s += "+" + rateBiasTermsMx[lc]+rw[lc][1];
+                    }
+                    
+                    if (mi < 4) {
+                        for (lc = 0; lc < lbc; lc += 1) {
+                            ExecuteCommands ("givenTree." + bnames[lc] + ".synRate:="+_stringBLs[lc]+"/("+s1s+"+R("+s2s+"));");
+                        }	
+                    }
+                    else {
+                        for (lc = 0; lc < lbc; lc += 1) {
+                            ExecuteCommands ("givenTree." + bnames[lc] + ".synRate:="+_stringBLs[lc]+"/("+s1s+"+givenTree."+bnames[lc]+".r("+s2s+"));");
+                        }				
+                    }
+                }
+            }
+
+            if (Abs(regExpForLocal) > 0 && mi == 4) {
+                fprintf (stdout, "\n");
+                global shared_R  = 1;
+                if (regExpForLocalFlag == 2) {
+                    global shared_FR = 1;
+                }
+                
+                for (lc = 0; lc < lbc; lc += 1) {
+                    if ((bnames[lc]$regExpForLocal)[0] < 0) {
+                        ExecuteCommands ("givenTree." + bnames[lc] + ".r:=shared_R");
+                    }
+                    else {
+                        if (regExpForLocalFlag == 2) {
+                            ExecuteCommands ("givenTree." + bnames[lc] + ".r:=shared_FR");
+                       }
+                    }
+                 }				
+            }	
+
+
+            LikelihoodFunction lf = (filteredData,givenTree);
+            dnds.lf = lf;
+            
+            if (modelChoice > 3) {
+                R:=1;
+            }	
+            
+            if (MPI_NODE_COUNT>1 && MPI_NODE_ID == 0) {
+                /* look for an idle node */
+                for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode += 1) {
+                    if (MPINodeState[mpiNode][0]==0) {
+                        break;	
+                    }
+                }
+                
+                if (mpiNode==MPI_NODE_COUNT-1)
+                /* all nodes busy */ {
+                    /* wait for some node to complete and send out current job */
+                    dnds.res = res;
+                    dnds.mi = mi;
+                    dnds.R = R;
+                    dnds.c = c;
+                    dnds.d = d;
+                    mpiNode = dnds.ReceiveJobs (1);
+                    res = dnds.res;
+                }
+                else {
+                    /* send the job to an idle node; update node state */
+                    MPISend (mpiNode+1,lf);
+                    MPINodeState[mpiNode][0] = 1;
+                    MPINodeState[mpiNode][1] = mi;
+                }
+            }
+            else {
+                /* Non-MPI execution */
+                dnds.res = res;
+                dnds.mi = mi;
+                dnds.R = R;
+                dnds.c = c;
+                dnds.d = d;
+                Optimize (res,lf);
+                dnds.res = res;
+                dnds.modelIndex = mi;
+                dnds.ReceiveJobs (0);
+                res = dnds.res;
+            }
+        }
+    }
+
+    if (MPI_NODE_COUNT>1 && MPI_NODE_ID == 0)
+    /* wait for all the jobs to finish, process their results */ {
+        while (1) {
+            for (nodeCounter = 0; nodeCounter < MPI_NODE_COUNT-1; nodeCounter += 1) {
+                if (MPINodeState[nodeCounter][0]==1) {
+                    dnds.res = res;
+                    dnds.mi = mi;
+                    dnds.R = R;
+                    dnds.c = c;
+                    dnds.d = d;
+                    fromNode = dnds.ReceiveJobs (0);
+                    res = dnds.res;
+                    break;	
+                }
+            }
+            if (nodeCounter == MPI_NODE_COUNT-1) {
+                break;
+            }
         }	
-
-
-		LikelihoodFunction lf = (filteredData,givenTree);
-		
-		if (modelChoice > 3)
-		{
-			R:=1;
-		}	
-		
-		if (MPI_NODE_COUNT>1 && MPI_NODE_ID == 0)
-		{
-			/* look for an idle node */
-			for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode = mpiNode+1)
-			{
-				if (MPINodeState[mpiNode][0]==0)
-				{
-					break;	
-				}
-			}
-			
-			if (mpiNode==MPI_NODE_COUNT-1)
-			/* all nodes busy */
-			{
-				/* wait for some node to complete and send out current job */
-				mpiNode = ReceiveJobs (1);
-			}
-			else
-			{
-				/* send the job to an idle node; update node state */
-				MPISend (mpiNode+1,lf);
-				MPINodeState[mpiNode][0] = 1;
-				MPINodeState[mpiNode][1] = mi;
-			}
-		}
-		else
-		{
-			/* Non-MPI execution */
-			Optimize (res,lf);
-			modelIndex = mi;
-			ReceiveJobs (0);
-		}
-	}
-}
-
-if (MPI_NODE_COUNT>1 && MPI_NODE_ID == 0)
-/* wait for all the jobs to finish, process their results */
-{
-	while (1)
-	{
-		for (nodeCounter = 0; nodeCounter < MPI_NODE_COUNT-1; nodeCounter = nodeCounter+1)
-		{
-			if (MPINodeState[nodeCounter][0]==1)
-			{
-				fromNode = ReceiveJobs (0);
-				break;	
-			}
-		}
-		if (nodeCounter == MPI_NODE_COUNT-1)
-		{
-			break;
-		}
-	}	
-	OPTIMIZE_SUMMATION_ORDER = 1;
-}
-
-/* ____________________________________________________________________________________________________________________*/
-
-function ReceiveJobs (sendOrNot)
-
-/* This function receieves and processes 
-   model results. The parameter is a boolean,
-   set to 1 if there are jobs waiting to be sent to
-   an MPI node */
-{
-	if (MPI_NODE_COUNT>1 && MPI_NODE_ID == 0)
-	{
-		MPIReceive (-1, fromNode, result_String);
-		modelIndex = MPINodeState[fromNode-1][1];
-		
-		if (sendOrNot)
-		{
-			/* send the likelihood function to the node which just finished */
-			MPISend (fromNode,lf);
-			MPINodeState[fromNode-1][1] = mi;
-		}
-		else
-		{
-			/* mark the node as idle */
-			MPINodeState[fromNode-1][0] = 0;
-			MPINodeState[fromNode-1][1] = 0;
-		}
-		
-		/* reset category variables */
-		if (modelIndex)
-		{
-			ClearConstraints (c);
-		}
-		if (modelIndex>2)
-		{
-			ClearConstraints (d);
-		}
-		
-		/* build the likelihood function lf with MLE parameter values
-		   just returned from an MPI node. MLE matrix is returned 
-		   in lf_MLES. */
-		   		
-		ExecuteCommands (result_String);
-				
-		/* store the result matrix */
-		res = lf_MLES;
-	}
-	
-	
-	if (branchLengths)
-	{
-		res[1][1] = res[1][1] + TipCount (givenTree) + BranchCount (givenTree) - 1;
-	}
-
-	LIKELIHOOD_FUNCTION_OUTPUT = 6;
-
-	fprintf (stdout, modelNames[modelIndex], " ", Format (res[1][0],19,5));
-	fprintf (baselineOutput, modelNames[modelIndex], " ", Format (res[1][0],19,5));
-	
-	marginalOutFile = baselineOutput + "." + modelNamesShort[modelIndex] + ".fit";
-	
-	fprintf (marginalOutFile,CLEAR_FILE,lf);
-
-	if (modelIndex)
-	{
-		marginalOutFile = baselineOutput + "." + modelNamesShort[modelIndex] + ".marginals";
-		fprintf (marginalOutFile,CLEAR_FILE);
-	}
-	
-	fprintf (distribOutput, "\n", modelNames[modelIndex]);
-	if (modelIndex==0)
-	{
-		EE = 0;
-		sampleVar = 0;
-		fprintf (stdout, " |      N/A      | ", Format (R,8,5) , ",", Format (sampleVar,8,5), " | ", Format (R,8,5) , ",", Format (sampleVar,8,5), " | ");
-		fprintf (baselineOutput, " |      N/A      | ", Format (R,8,5) , ",", Format (sampleVar,8,5), " | ", Format (R,8,5) , ",", Format (sampleVar,8,5), " | ");
-	}
-	else
-	{
-		GetInformation(dI,c);
-		if (modelIndex==2)
-		{
-			DD = Columns (dI);
-			for (EE=0; EE<DD; EE=EE+1)
-			{
-				dI[0][EE] = R*dI[0][EE];
-			}
-			
-			NVRMLL = res[1][0];
-			NVRMPC = res[1][1];
-			
-			EE  = echoCatVar (dI);
-			fprintf (marginalOutFile, dI);
-			
-			fprintf (stdout, " |      N/A      | ", Format (EE,8,5) , ",", Format (Sqrt(sampleVar)/EE,8,5), " | ", Format (EE,8,5) , ",", Format (Sqrt(sampleVar)/EE,8,5), " | ");
-			fprintf (baselineOutput, " |      N/A      | ", Format (EE,8,5) , ",", Format (Sqrt(sampleVar)/EE,8,5), " | ", Format (EE,8,5) , ",", Format (Sqrt(sampleVar)/EE,8,5), " | ");
-		}  
-		else
-		{
-			fprintf (marginalOutFile, dI);
-			EE  = echoCatVar (dI);
-			fprintf (stdout, " | ",Format (Sqrt(sampleVar),13,8)," | ");
-			fprintf (baselineOutput, " | ",Format (Sqrt(sampleVar),13,8)," | ");
-			
-			if (modelIndex>=3)
-			{
-				GetInformation(dI2,d);
-				if (modelIndex!=5)
-				{
-					DD = Columns (dI2);
-					for (EE=0; EE<DD; EE=EE+1)
-					{
-						dI2[0][EE] = R*dI2[0][EE];
-					}
-				}
-				fprintf (marginalOutFile, dI2);
-				EEN  = echoCatVar (dI2);
-				varN = sampleVar;
-				EER  = echoRatio  (dI2,dI);
-				varR = sampleVar;
-				
-				fprintf (stdout,  Format (EEN,8,5) , ",", Format (Sqrt(varN)/EEN,8,5), " | ",Format (EER,8,5) , ",", Format (Sqrt(varR)/EER,8,5), " | ");	
-				fprintf (baselineOutput, Format (EEN,8,5) , ",", Format (Sqrt(varN)/EEN,8,5), " | ",Format (EER,8,5) , ",", Format (Sqrt(varR)/EER,8,5), " | ");	
-					
-				if (modelIndex==3)
-				{
-					DVRMLL = res[1][0];
-					DVRMPC = res[1][1];
-					/* we don't know that DVRM returned before M4, so we won't print the p-value in the MPI mode */
-					if ((chosenModelList[2])&&(MPI_NODE_COUNT<=1 || MPI_NODE_ID == 0))
-					{
-						pVal = 1-CChi2(2*(DVRMLL-NVRMLL),DVRMPC-NVRMPC);
-						fprintf (stdout, Format (pVal,13,8), " |");
-						fprintf (baselineOutput, Format (pVal,13,8), " |");
-					}
-					else
-					{
-						fprintf (stdout,"     N/A      |");
-						fprintf (baselineOutput, "     N/A      |");
-					}
-				}
-			}
-			else
-			{
-				fprintf (stdout, Format (EE*R,8,5) , ",", Format (Sqrt(sampleVar)/EE,8,5), " | ", Format (R,8,5) , ",", Format (0,8,5), " | ");
-				fprintf (baselineOutput, Format (EE*R,8,5) , ",", Format (Sqrt(sampleVar)/EE,8,5), " | ", Format (R,8,5) , ",", Format (0,8,5), " | ");
-			}
-		}
-	}
-		
-	if (modelIndex==4) /* local rates */
-	{
-		/* we don't know that DVRM returned before M4, so we won't print the p-value in the MPI mode */
-		if ((chosenModelList[3])&&(MPI_NODE_COUNT<=1 || MPI_NODE_ID == 0))
-		{
-			fprintf (stdout, Format (1-CChi2(2*(res[1][0]-DVRMLL),res[1][1]-DVRMPC),13,8), " |");
-			fprintf (baselineOutput, Format (1-CChi2(2*(res[1][0]-DVRMLL),res[1][1]-DVRMPC),13,8), " |");
-		}
-		else
-		{
-			fprintf (stdout,"     N/A      |");
-			fprintf (baselineOutput, "     N/A      |");
-		}
-	}
-	else
-	{
-		if (modelIndex < 3)
-		{
-			fprintf (stdout,"     N/A      |");
-			fprintf (baselineOutput,"     N/A      |");
-		}
-	}
-	
-	fprintf (stdout, Format (res[1][1],5,0), "|", Format (2*(res[1][1]-res[1][0]),11,2),"|");
-	fprintf (baselineOutput, Format (res[1][1],5,0), "|", Format (2*(res[1][1]-res[1][0]),11,2),"|");
-	fprintf (stdout, "\n",separator);
-	fprintf (baselineOutput, "\n",separator);
-	if (modelIndex)
-	{
-		ConstructCategoryMatrix(marginals,lf,COMPLETE);
-		
-		if (modelIndex>=3)
-		{
-			GetInformation (categVarIDs,lf);
-			if (categVarIDs[0]!="c")
-			{
-				marginalsCorrected = marginals;
-				fprintf (MESSAGE_LOG,"Adjusting marginal matrix rows.\n"); 
-				for (h=0; h<Columns(marginals); h=h+1)
-				{
-					transition = 0;
-					for (diff=0; diff<resp; diff = diff+1)
-					{
-						for (v=diff; v<Rows(marginals); v=v+resp)
-						{
-							marginalsCorrected[transition][h] = marginals[v][h];
-							transition = transition+1;
-						}
-					}
-				}
-				marginals = marginalsCorrected;
-			}
-		}
-
-		fprintf (marginalOutFile,marginals);
-	}
-	lastLikValue = res[1][0];	
-	
-	return fromNode-1;
-}
+        OPTIMIZE_SUMMATION_ORDER = 1;
+    }
 LoadFunctionLibrary("PS_Plotters.bf");
 
 distributionM1 		= {{0}};
@@ -113423,6 +113495,7 @@ namespace terms{
     substitutions       = "substitutions";
     search_grid         = "search_grid";
     search_restarts     = "search_restarts";
+    custom_simplex_init = "custom_simplex_init";
     multiple_files      = "multiple files";
 
     parameters     = "parameters";
@@ -130198,14 +130271,19 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         //console.log (run_options [utility.getGlobalValue("terms.search_grid")]);
         //console.log (grid_results);
         
-        if (utility.Has (run_options, utility.getGlobalValue("terms.search_restarts"),"Number")) {
+        restarts = 0;
+        if (utility.Has (run_options, utility.getGlobalValue("terms.search_restarts"), "Number")) {
             restarts = run_options[utility.getGlobalValue("terms.search_restarts")];
-            if (restarts > 1) {
-                grid_results    = utility.DictToSortedArray (grid_results);
-                can_do_restarts = {};
-                for (i = 1; i <= restarts; i += 1) {
-                    can_do_restarts + (run_options [utility.getGlobalValue("terms.search_grid")])[grid_results[Rows(grid_results)-i][1]];
-                }
+        } else {
+            if (utility.Has (run_options, utility.getGlobalValue("terms.search_restarts"), "String")) {
+                restarts = 0 + run_options[utility.getGlobalValue("terms.search_restarts")];
+            }
+        }
+        if (restarts > 1) {
+            grid_results    = utility.DictToSortedArray (grid_results);
+            can_do_restarts = {};
+            for (i = 1; i <= restarts; i += 1) {
+                can_do_restarts + (run_options [utility.getGlobalValue("terms.search_grid")])[grid_results[Rows(grid_results)-i][1]];
             }
         }
         if (null == can_do_restarts) {
@@ -130228,41 +130306,101 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 101);
     //console.log (run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
     
-    if (Type (can_do_restarts) == "AssociativeList") {
-        io.ReportProgressBar("", "Working on crude initial optimizations");
-        bestlog    = -1e100;
-        for (i = 0; i < Abs (can_do_restarts); i += 1) {
-  
-            parameters.SetValues (can_do_restarts[i]);        
-            ^"estimators._global_do_not_set" = can_do_restarts[i];
+    use_custom_simplex_init = FALSE;
+    if (utility.Has (run_options, utility.getGlobalValue("terms.custom_simplex_init"), "String")) {
+        if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"), "AssociativeList")) {
+            if (restarts > 1) {
+                use_custom_simplex_init = TRUE;
+            }
+        }
+    }
 
+    if (use_custom_simplex_init) {
+        io.ReportProgressBar("", "Working on crude initial optimizations");
+        if (utility.Has (run_options, utility.getGlobalValue("terms.run_options.optimization_settings"), "AssociativeList")) {
+             opt_settings = run_options[utility.getGlobalValue("terms.run_options.optimization_settings")];
+        } else {
+             opt_settings = {};
+        }
+        
+        num_grid_points = Rows(grid_results);
+        grid_values = {};
+        for (i = 1; i <= num_grid_points; i += 1) {
+            grid_idx = grid_results[num_grid_points - i][1];
+            grid_values + {
+                "point": (run_options [utility.getGlobalValue("terms.search_grid")])[grid_idx],
+                "logL": grid_results[num_grid_points - i][0]
+            };
+        }
+        
+        custom_init_fn = run_options[utility.getGlobalValue("terms.custom_simplex_init")];
+        
+        bestlog = -1e100;
+        for (r = 0; r < restarts; r += 1) {
+            opt_settings = {};
+            if (utility.Has (run_options, utility.getGlobalValue("terms.run_options.optimization_settings"), "AssociativeList")) {
+                orig_settings = run_options[utility.getGlobalValue("terms.run_options.optimization_settings")];
+                for (key, val; in; orig_settings) {
+                    opt_settings[key] = val;
+                }
+            }
+            
+            Call (custom_init_fn, grid_values, r, opt_settings);
+            
+            idx = r % num_grid_points;
+            key = "" + idx;
+            grid_entry = grid_values[key];
+            start_point = grid_entry["point"];
+            
+            parameters.SetValues (start_point);        
+            ^"estimators._global_do_not_set" = start_point;
             estimators.ApplyExistingEstimatesOverride (&likelihoodFunction, model_objects, initial_values,  run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
             ^"estimators._global_do_not_set" = {};
-            if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
-                 Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
-            } else {
-                Optimize (mles, likelihoodFunction);
-            }
-            if (mles[1][0] > bestlog) {
 
-                //console.log ("\n\n**BEST LOG**\n\n");
+            Optimize (mles, likelihoodFunction, opt_settings);
+            
+            if (mles[1][0] > bestlog) {
                 bestlog = mles[1][0];
                 results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
                 results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
             }
-            io.ReportProgressBar("", "Starting point " + (i+1) + "/" + Abs (can_do_restarts) + ". Best LogL = " + bestlog);
-            
+            io.ReportProgressBar("", "Starting point " + (r+1) + "/" + restarts + ". Best LogL = " + bestlog);
         }
         io.ClearProgressBar();
     } else {
+        if (Type (can_do_restarts) == "AssociativeList") {
+            io.ReportProgressBar("", "Working on crude initial optimizations");
+            bestlog    = -1e100;
+            for (i = 0; i < Abs (can_do_restarts); i += 1) {
+      
+                parameters.SetValues (can_do_restarts[i]);        
+                ^"estimators._global_do_not_set" = can_do_restarts[i];
 
-        if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
-            Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+                estimators.ApplyExistingEstimatesOverride (&likelihoodFunction, model_objects, initial_values,  run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
+                ^"estimators._global_do_not_set" = {};
+                if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
+                     Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+                } else {
+                    Optimize (mles, likelihoodFunction);
+                }
+                if (mles[1][0] > bestlog) {
+                    bestlog = mles[1][0];
+                    results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
+                    results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
+                }
+                io.ReportProgressBar("", "Starting point " + (i+1) + "/" + Abs (can_do_restarts) + ". Best LogL = " + bestlog);
+                
+            }
+            io.ClearProgressBar();
         } else {
-            Optimize (mles, likelihoodFunction);
+            if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
+                Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+            } else {
+                Optimize (mles, likelihoodFunction);
+            }
+            results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
+            results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
         }
-        results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
-        results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
     }
     
 
@@ -130896,7 +131034,10 @@ lfunction estimators.LHC (ranges, samples) {
         for (v = 0; v < var_count; v += 1) {
             entry [var_names[v]] = {};
             (entry [var_names[v]])[^"terms.id"] = var_names[v];
-            (entry [var_names[v]])[^"terms.fit.MLE"] = var_def[v][0] + (var_samplers[v])[i] * var_def[v][1];
+            val = var_def[v][0] + ((var_samplers[v])[i] + Random(0,1)) * var_def[v][1];
+            ub = (ranges[var_names[v]])[^"terms.upper_bound"];
+            if (val > ub) { val = ub; }
+            (entry [var_names[v]])[^"terms.fit.MLE"] = val;
         }
         result + entry;
     }
