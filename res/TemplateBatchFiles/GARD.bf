@@ -605,12 +605,7 @@ lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFil
         if (!lastPartition) {
             currentEnd = breakPoints[p];
         } else {
-            if (^"gard.dataType" == ^"terms.gard.codon") {
-                currentEnd = ^"gard.filter.sites" * 3;
-            } else {
-                currentEnd = ^"gard.filter.sites";
-            }
-            currentEnd = currentEnd - 1;
+            currentEnd = ^"gard.filter.sites" - 1;
         }
         lfComponents [2*p] = "gard.filter.part_" + p;
         lfComponents [2*p+1] = "gard.tree.part_" + p;
@@ -781,13 +776,13 @@ function gard.setBestModelTreeInfoToJson(bestModel) {
             gard.bestModelBps[i] = {1,2};
             if(i == 0){
                 (gard.bestModelBps[i])[0] = 1;
-                (gard.bestModelBps[i])[1] = gard.bestModelBreakPoints[i];
+                (gard.bestModelBps[i])[1] = gard.bestModelBreakPoints[i] + 1;
              } else {
                 if(i < gard.bestModelNumberBreakPoints) {
-                    (gard.bestModelBps[i])[0] = gard.bestModelBreakPoints[i-1]+1;
-                    (gard.bestModelBps[i])[1] = gard.bestModelBreakPoints[i];
+                    (gard.bestModelBps[i])[0] = gard.bestModelBreakPoints[i-1] + 2;
+                    (gard.bestModelBps[i])[1] = gard.bestModelBreakPoints[i] + 1;
                 } else {
-                    (gard.bestModelBps[i])[0] = gard.bestModelBreakPoints[i-1]+1;
+                    (gard.bestModelBps[i])[0] = gard.bestModelBreakPoints[i-1] + 2;
                     (gard.bestModelBps[i])[1] = gard.numSites;
                 }
             }
