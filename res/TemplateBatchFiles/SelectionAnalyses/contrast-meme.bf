@@ -405,7 +405,7 @@ c_meme.report.pairwise = {{"" + (1+((c_meme.filter_specification[c_meme.report.p
 
 c_meme.report.overall = {{"" + (1+((c_meme.filter_specification[c_meme.report.partition])[terms.data.coverage])[c_meme.report.site]),
                                     Format(c_meme.report.row[0],0,2),
-ormat(c_meme.report.row[c_meme.report.rate1_index],0,2) + " : " + Format(c_meme.report.row[c_meme.report.rate2_index],0,2),
+                                    Format(c_meme.report.row[c_meme.report.rate1_index],0,2) + " : " + Format(c_meme.report.row[c_meme.report.rate2_index],0,2),
                                     Format(c_meme.report.row[c_meme.report.rate1_index+1],0,2) + " : " + Format(c_meme.report.row[c_meme.report.rate2_index+1],0,2),
                                     Format(c_meme.report.row[c_meme.report.rate1_index+2],0,2) + " : " + Format(c_meme.report.row[c_meme.report.rate2_index+2],0,2),                                    c_meme.report.substitutions,
                                     c_meme.report.test,
