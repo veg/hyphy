@@ -1134,26 +1134,27 @@ lfunction alignment.ExportPartitionedNEXUS (filter, breakPoints, trees, file, is
     breakPointsCount = utility.Array1D (breakPoints);
     partCount      = breakPointsCount + 1;
     currentStart    = 0;
-    step            = 1;
-    if (isCodon) {
-        step = 3;
-    }
 
     fprintf (file, "\nBEGIN ASSUMPTIONS;\n");
 
     for (p = 0; p < partCount; p += 1) {
         lastPartition = p >= breakPointsCount;
         if (!lastPartition) {
-            currentEnd = (breakPoints[p] + 1) * step - 1;
+            currentEnd = breakPoints[p];
         } else {
-            currentEnd = ^(filter+".sites") * step - 1;
+            if (isCodon) {
+                currentEnd = ^(filter+".sites") * 3;
+            } else {
+                currentEnd = ^(filter+".sites");
+            }
+            currentEnd = currentEnd - 1;
         }
 
         fprintf (file, "\tCHARSET span_", p + 1, " = ", currentStart + 1, "-", currentEnd + 1, ";\n");
 
 
         if (!lastPartition) {
-            currentStart = currentEnd + 1;
+            currentStart = breakPoints[p] + 1;
         }
     }
 
