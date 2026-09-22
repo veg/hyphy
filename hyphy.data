@@ -22013,7 +22013,7 @@ io.ReportProgressMessage ("", ">Minimum size of a partition is set to be `gard.m
 
 /* 1d. Check that there are enough sites to permit cAIC
 ------------------------------------------------------------------------------*/
-io.CheckAssertion("gard.minExpectedSites <= gard.numSites", "The alignment is too short to permit c-AIC based model comparison. Need at least `gard.minExpectedSites` sites for `gard.numSeqs` sequences to fit a two-partiton model.");
+io.CheckAssertion("gard.minExpectedSites <= gard.numSites", "The alignment is too short to permit c-AIC based model comparison. Need at least `gard.minExpectedSites` sites for `gard.numSeqs` sequences to fit a two-partition model.");
 
 
 /* 1e. Baseline fit on entire alignment
@@ -60114,7 +60114,7 @@ c_meme.report.pairwise = {{"" + (1+((c_meme.filter_specification[c_meme.report.p
 
 c_meme.report.overall = {{"" + (1+((c_meme.filter_specification[c_meme.report.partition])[terms.data.coverage])[c_meme.report.site]),
                                     Format(c_meme.report.row[0],0,2),
-ormat(c_meme.report.row[c_meme.report.rate1_index],0,2) + " : " + Format(c_meme.report.row[c_meme.report.rate2_index],0,2),
+                                    Format(c_meme.report.row[c_meme.report.rate1_index],0,2) + " : " + Format(c_meme.report.row[c_meme.report.rate2_index],0,2),
                                     Format(c_meme.report.row[c_meme.report.rate1_index+1],0,2) + " : " + Format(c_meme.report.row[c_meme.report.rate2_index+1],0,2),
                                     Format(c_meme.report.row[c_meme.report.rate1_index+2],0,2) + " : " + Format(c_meme.report.row[c_meme.report.rate2_index+2],0,2),                                    c_meme.report.substitutions,
                                     c_meme.report.test,
