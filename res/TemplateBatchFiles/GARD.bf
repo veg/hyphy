@@ -276,7 +276,7 @@ io.ReportProgressMessage ("", ">Minimum size of a partition is set to be `gard.m
 
 /* 1d. Check that there are enough sites to permit cAIC
 ------------------------------------------------------------------------------*/
-io.CheckAssertion("gard.minExpectedSites <= gard.numSites", "The alignment is too short to permit c-AIC based model comparison. Need at least `gard.minExpectedSites` sites for `gard.numSeqs` sequences to fit a two-partiton model.");
+io.CheckAssertion("gard.minExpectedSites <= gard.numSites", "The alignment is too short to permit c-AIC based model comparison. Need at least `gard.minExpectedSites` sites for `gard.numSeqs` sequences to fit a two-partition model.");
 
 
 /* 1e. Baseline fit on entire alignment
