@@ -144,9 +144,15 @@ for (partition, info; in; CS.busted_ph [terms.json.branch_attributes]) {
         CS.table_output_options[terms.table_options.header] = FALSE;
 
         for (clade, weight; in; CS.clades) {
-            CS.weight = weight / CS.total;
+            if (CS.total > 0) {
+                CS.weight = weight / CS.total;
+            } else {
+                CS.weight = 0;
+            }
             ((CS.results[partition])['weights'])[clade] = CS.weight;
-            CS.entropy += Log (CS.weight) * CS.weight;
+            if (CS.weight > 0) {
+                CS.entropy += Log (CS.weight) * CS.weight;
+            }
             
             CS.stats = CS.clade_stats[clade];
             
