@@ -161,18 +161,68 @@ console.log ('
 =====================================================================================================
 ');
 
-   estimators.ApplyExistingEstimates (busted.full_model[terms.likelihood_function], busted.model_object_map,  busted.full_model, {});
-   
+parameters.RemoveConstraint (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes)));
+parameters.RemoveConstraint (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes)));
+
+estimators.ApplyExistingEstimates (busted.full_model[terms.likelihood_function], busted.model_object_map,  busted.full_model, {});
+
+busted.tree_lengths = {busted.FG : 0, busted.BG : 0};
+busted.branch_counts = {busted.FG : 0, busted.BG : 0};
+
+for (p = 0; p < busted.partition_count; p += 1) {
+    _bl = selection.io.extract_branch_info((busted.full_model[terms.branch_length])[p], "selection.io.branch.length");
+    for (_b, _type; in; busted.selected_branches[p]) {
+        if (_type == terms.tree_attributes.test) {
+            busted.tree_lengths[busted.FG] += _bl[_b];
+            busted.branch_counts[busted.FG] += 1;
+        } else {
+            busted.tree_lengths[busted.BG] += _bl[_b];
+            busted.branch_counts[busted.BG] += 1;
+        }
+    }
+}
+
+_total_tree_len = busted.tree_lengths[busted.FG] + busted.tree_lengths[busted.BG];
+if (_total_tree_len > 0) {
+    _w_FG = busted.tree_lengths[busted.FG] / _total_tree_len;
+    _w_BG = busted.tree_lengths[busted.BG] / _total_tree_len;
+} else {
+    _w_FG = 0.5;
+    _w_BG = 0.5;
+}
+
+if (busted.tree_lengths[busted.FG] > busted.tree_lengths[busted.BG] || (busted.tree_lengths[busted.FG] == busted.tree_lengths[busted.BG] && busted.branch_counts[busted.FG] >= busted.branch_counts[busted.BG])) {
+    master_dist = busted.distribution;
+    slave_dist  = busted.background_distribution;
+} else {
+    master_dist = busted.background_distribution;
+    slave_dist  = busted.distribution;
+}
+
+// Initialize master parameters with tree-length weighted average of unconstrained estimates
+for (i, p; in; master_dist[terms.parameters.rates]) {
+    _fg_r = Eval((busted.distribution[terms.parameters.rates])[i]);
+    _bg_r = Eval((busted.background_distribution[terms.parameters.rates])[i]);
+    _init_r = Max(1e-4, _w_FG * _fg_r + _w_BG * _bg_r);
+    parameters.SetValue(p, _init_r);
+}
+
+for (i, p; in; master_dist[terms.parameters.weights]) {
+    _fg_w = Eval((busted.distribution[terms.parameters.weights])[i]);
+    _bg_w = Eval((busted.background_distribution[terms.parameters.weights])[i]);
+    _init_w = Min(0.999, Max(0.001, _w_FG * _fg_w + _w_BG * _bg_w));
+    parameters.SetValue(p, _init_w);
+}
 
 busted.same_df = 0;
 
-for (i,p; in; busted.distribution[terms.parameters.rates]) {
-     parameters.SetConstraint ((busted.background_distribution[terms.parameters.rates])[i], p, terms.global);
+for (i,p; in; master_dist[terms.parameters.rates]) {
+     parameters.SetConstraint ((slave_dist[terms.parameters.rates])[i], p, terms.global);
      busted.same_df += 1;
 }
 
-for (i,p; in; busted.distribution[terms.parameters.weights]) {
-     parameters.SetConstraint ((busted.background_distribution[terms.parameters.weights])[i], p, terms.global);
+for (i,p; in; master_dist[terms.parameters.weights]) {
+     parameters.SetConstraint ((slave_dist[terms.parameters.weights])[i], p, terms.global);
      busted.same_df += 1;
 }
 
@@ -191,7 +241,7 @@ utility.ForEachPair (busted.filter_specification, "_key_", "_value_",
 
 
 io.ReportProgressMessageMD("BUSTED", "same", "* For single distributions model, the following rate distribution for branch-site combinations was inferred");
-busted.inferred_test_distribution_raw = parameters.GetStickBreakingDistribution (busted.distribution);
+busted.inferred_test_distribution_raw = parameters.GetStickBreakingDistribution (master_dist);
 busted.inferred_test_distribution = busted.inferred_test_distribution_raw  % 0;
 
 busted.distribution_for_json = {busted.FG : utility.Map (utility.Range (busted.rate_classes, 0, 1),
@@ -200,7 +250,7 @@ busted.distribution_for_json = {busted.FG : utility.Map (utility.Range (busted.r
                                                        terms.json.proportion : busted.inferred_test_distribution_raw [_index_][1]}")};
 
 busted.report_multi_hit  (busted.background_same_results, busted.distribution_for_json, "MultiHit", "null-mh",busted.branch_length_string, busted.model_parameters);
-busted.null_distro_raw = parameters.GetStickBreakingDistribution (busted.distribution);
+busted.null_distro_raw = parameters.GetStickBreakingDistribution (master_dist);
 
 if (busted.error_sink) {
     selection.io.report_dnds_with_sink (busted.null_distro_raw % 0, busted.null_distro_raw[0][0], busted.null_distro_raw[0][1]);
@@ -241,7 +291,7 @@ bustedph.test_results = {
 
 bustedph.p1 = (bustedph.test_results [terms.json.uncorrected_pvalue ])['FG'];
 bustedph.p2 = (bustedph.test_results [terms.json.uncorrected_pvalue ])['BG'];
-bustedph.p3 = (bustedph.test_results [terms.json.uncorrected_pvalue ])['DIFF'];
+bustedph.p3 = (bustedph.test_results [terms.json.uncorrected_pvalue ])['Comparative'];
 
 
 console.log ("----\n## Branch-site unrestricted statistical test of episodic diversification and association with phenotype/trait [BUSTED-PH]");
@@ -254,14 +304,14 @@ console.log ("\n\n## Analysis summary (p = " + bustedph.test_results['Level'] + 
 bustedph.summary = "";
 
 if (Max (bustedph.p1, bustedph.p3) <= busted.p_value ) {
-    bustedph.summary =  ("The composite null hypothesis for no selection on foreground or no difference between background and background has been rejected.");
+    bustedph.summary =  ("The composite null hypothesis for no selection on foreground or no difference between foreground and background has been rejected.");
     if (bustedph.p2 > 0.068) {
         bustedph.summary += " The neutral model of evolution for background branches is sufficiently supported. There is **statistical evidence that the selection is associated with the trait**";
     } else {
         bustedph.summary += " The neutral model of evolution for background branches is **not** sufficiently supported. Selection is acting broadly on the tree, not just of branches with the trait";
     }
 } else {
-    bustedph.summary = ("The composite null hypothesis for no selection on foreground or no difference between background and background could not be rejected. There is **no** statistical evidence that the selection is associated with the trait.");
+    bustedph.summary = ("The composite null hypothesis for no selection on foreground or no difference between foreground and background could not be rejected. There is **no** statistical evidence that the selection is associated with the trait.");
 }
 
 console.log (bustedph.summary);
