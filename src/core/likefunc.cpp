@@ -8510,6 +8510,7 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
           initial_value = maxSoFar,
           currentPrecision = localOnly ? step_precision : .01;
   (void)is_final_pass;
+  _Matrix initial_params(bestVal);
 
   // printf ("\n\n_LikelihoodFunction::ConjugateGradientDescent ==> %d (%lg)\n",
   // usedCachedResults, maxSoFar);
@@ -8689,11 +8690,20 @@ hyFloat _LikelihoodFunction::ConjugateGradientDescent(
   if (maxSoFar < initial_value &&
       CheckEqual(maxSoFar, initial_value, kMachineEpsilon * errorTolerance) ==
           false) {
-    HandleApplicationError(
+    _String errorStr =
         _String("Internal optimization error in "
                 "_LikelihoodFunction::ConjugateGradientDescent. Worsened "
                 "likelihood score from ") &
-        initial_value & " to " & maxSoFar);
+        initial_value & " to " & maxSoFar;
+
+    if (hy_env::EnvVariableTrue(hy_env::tolerate_numerical_errors)) {
+      ReportWarningConsole(errorStr);
+      bestVal = initial_params;
+      SetAllIndependent(&bestVal);
+      maxSoFar = initial_value;
+    } else {
+      HandleApplicationError(errorStr);
+    }
   }
 
   if (verbosity_level > 1) {
