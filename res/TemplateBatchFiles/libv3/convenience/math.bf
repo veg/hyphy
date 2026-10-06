@@ -21,6 +21,9 @@ lfunction math.Int (float) {
 * @param samples
 */
 lfunction math.GetIC(logl,params,samples) {
+  if (samples <= params + 1) {
+    return ^"math.Infinity";
+  }
   return -2*logl + 2*samples/(samples-params-1)*params;
 }
 

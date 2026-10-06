@@ -263,7 +263,15 @@ io.ReportProgressMessage ("", ">Loaded a `gard.dataType` multiple sequence align
 
 gard.baselineParameters     = (gard.model[terms.parameters])[terms.model.empirical] + // empirical parameters
                               utility.Array1D ((gard.model[terms.parameters])[terms.global]) + // global parameters
-                              utility.Array1D ((gard.model[terms.parameters])[terms.local]) * (2*gard.numSeqs-5) * 2; // local parameters X number of branches x at least 2 partitions
+                              utility.Array1D ((gard.model[terms.parameters])[terms.local]) * (2*gard.numSeqs-3) * 2; // local parameters X number of branches x at least 2 partitions
+
+if (gard.rateVariation == "Gamma") {
+    gard.baselineParameters += 2;
+} else {
+    if (gard.rateVariation == "GDD") {
+        gard.baselineParameters += (2 * gard.rateClasses - 1) * 2;
+    }
+}
 
 gard.minExpectedSites     = (gard.baselineParameters + 2);
 gard.minPartitionSize       = 2*gard.numSeqs-3;
@@ -429,9 +437,8 @@ namespace gard {
 
     maxGenerationsAllowedWithNoNewModelsAdded = maxGenerationsAllowedAtStagnant_cAIC $ 4; // TODO: Not in the GARD paper. use 10?
     
-    // GA.2: Loop over increasing number of break points
-    addingBreakPointsImproves_cAIC = TRUE;
     if (startWithBP > 0) {
+        addingBreakPointsImproves_cAIC = TRUE;
         numberOfBreakPointsBeingEvaluated = startWithBP;
 
         bestOverallModelSoFar = {1, startWithBP};
@@ -443,11 +450,12 @@ namespace gard {
             }
         }
     } else {
+        addingBreakPointsImproves_cAIC = (gard.bestOverallModelSoFar != null);
         numberOfBreakPointsBeingEvaluated = 1;
     }
     
     
-   while(addingBreakPointsImproves_cAIC && numberOfBreakPointsBeingEvaluated < max_breakpoints) {
+   while(addingBreakPointsImproves_cAIC && numberOfBreakPointsBeingEvaluated < max_breakpoints && (numberOfBreakPointsBeingEvaluated + 2) * gard.minPartitionSize <= gard.numSites) {
         //#profile START;
        // GA.2.a Setup for n number of break points
         numberOfBreakPointsBeingEvaluated+=1;
