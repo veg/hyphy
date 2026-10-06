@@ -277,7 +277,7 @@ endif()
 
 if(BLAS_FOUND AND NOT NOBLAS)
     target_link_libraries(hyphy PRIVATE ${BLAS_LIBRARIES})
-    target_compile_definitions(hyphy PRIVATE _SLKP_USE_APPLE_BLAS)
+    target_compile_definitions(hyphy PRIVATE _SLKP_USE_APPLE_BLAS _SLKP_USE_APPLE_BLAS_2)
 endif()
 
 if(OPENMP_FOUND)

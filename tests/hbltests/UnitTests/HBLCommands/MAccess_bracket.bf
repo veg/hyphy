@@ -77,14 +77,17 @@ function runTest () {
   // callback on associative lists
   //---------------------------------------------------------------------------------------------------------
 
+
   sum = 0;
   exampleList["dict_callback_action"][""];
   assert(sum == 10, 'Incorrect result using dict callback exampleList["dict_callback_action"]');
-   
+
+
   sum = 0;
   exampleList["dict_callback_action"]["dict_callback_filter"];
   assert(sum == 8, 'Incorrect result using dict callback exampleList["dict_callback_action"]["dict_callback_filter"]');
   
+
 
   //---------------------------------------------------------------------------------------------------------
   // ERROR HANDLING
@@ -93,8 +96,10 @@ function runTest () {
   // TODO: error handling for trying element access lists or numbers should be improved.
   
   assert (runCommandWithSoftErrors ('exampleList["getTestName"][""]', 'The first argument in an iterator call for Associative Arrays must be a valid identifier of a function taking two arguments \(key, value\)'), "Failed to return the expected error when providing an invalid callback");
+
   
   assert (runCommandWithSoftErrors ('exampleList["dict_callback_action"]["getTestName"]', 'The second argument in an iterator call for Associative Arrays must be either empty or a valid identifier of a function taking a single argument'), "Failed to return the expected error when providing an invalid callback");
+
 
   // Test for current behaviour for list (return 0 when trying element access on list)
   assert(exampleList[0] == 0, "Failed to return zero when trying element access on list");

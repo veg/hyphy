@@ -3717,15 +3717,31 @@ void _Matrix::AddMatrix(_Matrix &storage, _Matrix &secondArg, bool subtract)
           CELL_OP2(idx + 12, r4);
         }
 #elif defined _SLKP_USE_ARM_NEON
-
-#pragma unroll 4
-        for (long idx = 0; idx < upto; idx += 4) {
-          float64x2_t s1 =
+        for (long idx = 0; idx < upto; idx += 16) {
+          float64x2_t s0 =
               vsubq_f64(vld1q_f64(stData + idx), vld1q_f64(argData + idx));
-          float64x2_t s2 = vsubq_f64(vld1q_f64(stData + idx + 2),
+          float64x2_t s1 = vsubq_f64(vld1q_f64(stData + idx + 2),
                                      vld1q_f64(argData + idx + 2));
-          vst1q_f64(stData + idx, s1);
-          vst1q_f64(stData + idx + 2, s2);
+          float64x2_t s2 = vsubq_f64(vld1q_f64(stData + idx + 4),
+                                     vld1q_f64(argData + idx + 4));
+          float64x2_t s3 = vsubq_f64(vld1q_f64(stData + idx + 6),
+                                     vld1q_f64(argData + idx + 6));
+          float64x2_t s4 = vsubq_f64(vld1q_f64(stData + idx + 8),
+                                     vld1q_f64(argData + idx + 8));
+          float64x2_t s5 = vsubq_f64(vld1q_f64(stData + idx + 10),
+                                     vld1q_f64(argData + idx + 10));
+          float64x2_t s6 = vsubq_f64(vld1q_f64(stData + idx + 12),
+                                     vld1q_f64(argData + idx + 12));
+          float64x2_t s7 = vsubq_f64(vld1q_f64(stData + idx + 14),
+                                     vld1q_f64(argData + idx + 14));
+          vst1q_f64(stData + idx, s0);
+          vst1q_f64(stData + idx + 2, s1);
+          vst1q_f64(stData + idx + 4, s2);
+          vst1q_f64(stData + idx + 6, s3);
+          vst1q_f64(stData + idx + 8, s4);
+          vst1q_f64(stData + idx + 10, s5);
+          vst1q_f64(stData + idx + 12, s6);
+          vst1q_f64(stData + idx + 14, s7);
         }
 #else
         for (long idx = 0; idx < upto; idx += 4) {
@@ -3753,14 +3769,31 @@ void _Matrix::AddMatrix(_Matrix &storage, _Matrix &secondArg, bool subtract)
         }
 
 #elif defined _SLKP_USE_ARM_NEON
-#pragma unroll 4
-        for (long idx = 0; idx < upto; idx += 4) {
-          float64x2_t s1 =
+        for (long idx = 0; idx < upto; idx += 16) {
+          float64x2_t s0 =
               vaddq_f64(vld1q_f64(stData + idx), vld1q_f64(argData + idx));
-          float64x2_t s2 = vaddq_f64(vld1q_f64(stData + idx + 2),
+          float64x2_t s1 = vaddq_f64(vld1q_f64(stData + idx + 2),
                                      vld1q_f64(argData + idx + 2));
-          vst1q_f64(stData + idx, s1);
-          vst1q_f64(stData + idx + 2, s2);
+          float64x2_t s2 = vaddq_f64(vld1q_f64(stData + idx + 4),
+                                     vld1q_f64(argData + idx + 4));
+          float64x2_t s3 = vaddq_f64(vld1q_f64(stData + idx + 6),
+                                     vld1q_f64(argData + idx + 6));
+          float64x2_t s4 = vaddq_f64(vld1q_f64(stData + idx + 8),
+                                     vld1q_f64(argData + idx + 8));
+          float64x2_t s5 = vaddq_f64(vld1q_f64(stData + idx + 10),
+                                     vld1q_f64(argData + idx + 10));
+          float64x2_t s6 = vaddq_f64(vld1q_f64(stData + idx + 12),
+                                     vld1q_f64(argData + idx + 12));
+          float64x2_t s7 = vaddq_f64(vld1q_f64(stData + idx + 14),
+                                     vld1q_f64(argData + idx + 14));
+          vst1q_f64(stData + idx, s0);
+          vst1q_f64(stData + idx + 2, s1);
+          vst1q_f64(stData + idx + 4, s2);
+          vst1q_f64(stData + idx + 6, s3);
+          vst1q_f64(stData + idx + 8, s4);
+          vst1q_f64(stData + idx + 10, s5);
+          vst1q_f64(stData + idx + 12, s6);
+          vst1q_f64(stData + idx + 14, s7);
         }
 
 #else
@@ -4003,14 +4036,32 @@ void _Matrix::Multiply(_Matrix &storage, hyFloat c)
 
       float64x2_t value_op = vdupq_n_f64(c);
       for (k = 0L; k < lDimM16; k += 16) {
-        CELL_OPM(k);
-        CELL_OPM(k + 2);
-        CELL_OPM(k + 4);
-        CELL_OPM(k + 6);
-        CELL_OPM(k + 8);
-        CELL_OPM(k + 10);
-        CELL_OPM(k + 12);
-        CELL_OPM(k + 14);
+        float64x2_t s0 = vld1q_f64(source + k);
+        float64x2_t s1 = vld1q_f64(source + k + 2);
+        float64x2_t s2 = vld1q_f64(source + k + 4);
+        float64x2_t s3 = vld1q_f64(source + k + 6);
+        float64x2_t s4 = vld1q_f64(source + k + 8);
+        float64x2_t s5 = vld1q_f64(source + k + 10);
+        float64x2_t s6 = vld1q_f64(source + k + 12);
+        float64x2_t s7 = vld1q_f64(source + k + 14);
+
+        float64x2_t d0 = vmulq_f64(value_op, s0);
+        float64x2_t d1 = vmulq_f64(value_op, s1);
+        float64x2_t d2 = vmulq_f64(value_op, s2);
+        float64x2_t d3 = vmulq_f64(value_op, s3);
+        float64x2_t d4 = vmulq_f64(value_op, s4);
+        float64x2_t d5 = vmulq_f64(value_op, s5);
+        float64x2_t d6 = vmulq_f64(value_op, s6);
+        float64x2_t d7 = vmulq_f64(value_op, s7);
+
+        vst1q_f64(destination + k, d0);
+        vst1q_f64(destination + k + 2, d1);
+        vst1q_f64(destination + k + 4, d2);
+        vst1q_f64(destination + k + 6, d3);
+        vst1q_f64(destination + k + 8, d4);
+        vst1q_f64(destination + k + 10, d5);
+        vst1q_f64(destination + k + 12, d6);
+        vst1q_f64(destination + k + 14, d7);
       }
 
       for (; k < lDimM2; k += 2) {
@@ -4058,6 +4109,154 @@ void _Matrix::Multiply(_Matrix &storage, hyFloat c)
       }
       DeleteObject(cc);
     }
+  }
+}
+
+//_____________________________________________________________________________________________
+
+void _Matrix::ScaleAndAdd(_Matrix &result, hyFloat scale) {
+  if (is_numeric() && result.is_numeric()) {
+    hyFloat *destination = result.theData;
+    hyFloat *source = theData;
+
+    if (theIndex) {
+      for (long k = 0L; k < lDim; k++) {
+        long idx = theIndex[k];
+        if (idx != -1) {
+          source[k] *= scale;
+          destination[idx] += source[k];
+        }
+      }
+    } else {
+      long k = 0L;
+#ifdef _SLKP_USE_AVX_INTRINSICS
+      __m256d scale_vec = _mm256_set1_pd(scale);
+      long lDimM16 = lDim >> 4 << 4;
+
+#if defined _SLKP_USE_FMA3_INTRINSICS
+      for (; k < lDimM16; k += 16) {
+        __m256d s0 = _mm256_loadu_pd(source + k);
+        __m256d s1 = _mm256_loadu_pd(source + k + 4);
+        __m256d s2 = _mm256_loadu_pd(source + k + 8);
+        __m256d s3 = _mm256_loadu_pd(source + k + 12);
+
+        __m256d d0 = _mm256_loadu_pd(destination + k);
+        __m256d d1 = _mm256_loadu_pd(destination + k + 4);
+        __m256d d2 = _mm256_loadu_pd(destination + k + 8);
+        __m256d d3 = _mm256_loadu_pd(destination + k + 12);
+
+        __m256d val0 = _mm256_mul_pd(s0, scale_vec);
+        __m256d val1 = _mm256_mul_pd(s1, scale_vec);
+        __m256d val2 = _mm256_mul_pd(s2, scale_vec);
+        __m256d val3 = _mm256_mul_pd(s3, scale_vec);
+
+        __m256d new_d0 = _mm256_fmadd_pd(s0, scale_vec, d0);
+        __m256d new_d1 = _mm256_fmadd_pd(s1, scale_vec, d1);
+        __m256d new_d2 = _mm256_fmadd_pd(s2, scale_vec, d2);
+        __m256d new_d3 = _mm256_fmadd_pd(s3, scale_vec, d3);
+
+        _mm256_storeu_pd(source + k, val0);
+        _mm256_storeu_pd(source + k + 4, val1);
+        _mm256_storeu_pd(source + k + 8, val2);
+        _mm256_storeu_pd(source + k + 12, val3);
+
+        _mm256_storeu_pd(destination + k, new_d0);
+        _mm256_storeu_pd(destination + k + 4, new_d1);
+        _mm256_storeu_pd(destination + k + 8, new_d2);
+        _mm256_storeu_pd(destination + k + 12, new_d3);
+      }
+#else
+      for (; k < lDimM16; k += 16) {
+        __m256d s0 = _mm256_loadu_pd(source + k);
+        __m256d s1 = _mm256_loadu_pd(source + k + 4);
+        __m256d s2 = _mm256_loadu_pd(source + k + 8);
+        __m256d s3 = _mm256_loadu_pd(source + k + 12);
+
+        __m256d d0 = _mm256_loadu_pd(destination + k);
+        __m256d d1 = _mm256_loadu_pd(destination + k + 4);
+        __m256d d2 = _mm256_loadu_pd(destination + k + 8);
+        __m256d d3 = _mm256_loadu_pd(destination + k + 12);
+
+        __m256d val0 = _mm256_mul_pd(s0, scale_vec);
+        __m256d val1 = _mm256_mul_pd(s1, scale_vec);
+        __m256d val2 = _mm256_mul_pd(s2, scale_vec);
+        __m256d val3 = _mm256_mul_pd(s3, scale_vec);
+
+        __m256d new_d0 = _mm256_add_pd(d0, val0);
+        __m256d new_d1 = _mm256_add_pd(d1, val1);
+        __m256d new_d2 = _mm256_add_pd(d2, val2);
+        __m256d new_d3 = _mm256_add_pd(d3, val3);
+
+        _mm256_storeu_pd(source + k, val0);
+        _mm256_storeu_pd(source + k + 4, val1);
+        _mm256_storeu_pd(source + k + 8, val2);
+        _mm256_storeu_pd(source + k + 12, val3);
+
+        _mm256_storeu_pd(destination + k, new_d0);
+        _mm256_storeu_pd(destination + k + 4, new_d1);
+        _mm256_storeu_pd(destination + k + 8, new_d2);
+        _mm256_storeu_pd(destination + k + 12, new_d3);
+      }
+#endif
+#elif defined _SLKP_USE_ARM_NEON
+      float64x2_t scale_v = vdupq_n_f64(scale);
+      long upto = lDim >> 4 << 4;
+      for (; k < upto; k += 16) {
+        float64x2_t s0 = vld1q_f64(source + k);
+        float64x2_t s1 = vld1q_f64(source + k + 2);
+        float64x2_t s2 = vld1q_f64(source + k + 4);
+        float64x2_t s3 = vld1q_f64(source + k + 6);
+        float64x2_t s4 = vld1q_f64(source + k + 8);
+        float64x2_t s5 = vld1q_f64(source + k + 10);
+        float64x2_t s6 = vld1q_f64(source + k + 12);
+        float64x2_t s7 = vld1q_f64(source + k + 14);
+
+        float64x2_t d0 = vld1q_f64(destination + k);
+        float64x2_t d1 = vld1q_f64(destination + k + 2);
+        float64x2_t d2 = vld1q_f64(destination + k + 4);
+        float64x2_t d3 = vld1q_f64(destination + k + 6);
+        float64x2_t d4 = vld1q_f64(destination + k + 8);
+        float64x2_t d5 = vld1q_f64(destination + k + 10);
+        float64x2_t d6 = vld1q_f64(destination + k + 12);
+        float64x2_t d7 = vld1q_f64(destination + k + 14);
+
+        float64x2_t s0_scaled = vmulq_f64(s0, scale_v);
+        float64x2_t s1_scaled = vmulq_f64(s1, scale_v);
+        float64x2_t s2_scaled = vmulq_f64(s2, scale_v);
+        float64x2_t s3_scaled = vmulq_f64(s3, scale_v);
+        float64x2_t s4_scaled = vmulq_f64(s4, scale_v);
+        float64x2_t s5_scaled = vmulq_f64(s5, scale_v);
+        float64x2_t s6_scaled = vmulq_f64(s6, scale_v);
+        float64x2_t s7_scaled = vmulq_f64(s7, scale_v);
+
+        vst1q_f64(source + k, s0_scaled);
+        vst1q_f64(source + k + 2, s1_scaled);
+        vst1q_f64(source + k + 4, s2_scaled);
+        vst1q_f64(source + k + 6, s3_scaled);
+        vst1q_f64(source + k + 8, s4_scaled);
+        vst1q_f64(source + k + 10, s5_scaled);
+        vst1q_f64(source + k + 12, s6_scaled);
+        vst1q_f64(source + k + 14, s7_scaled);
+
+        vst1q_f64(destination + k, vaddq_f64(d0, s0_scaled));
+        vst1q_f64(destination + k + 2, vaddq_f64(d1, s1_scaled));
+        vst1q_f64(destination + k + 4, vaddq_f64(d2, s2_scaled));
+        vst1q_f64(destination + k + 6, vaddq_f64(d3, s3_scaled));
+        vst1q_f64(destination + k + 8, vaddq_f64(d4, s4_scaled));
+        vst1q_f64(destination + k + 10, vaddq_f64(d5, s5_scaled));
+        vst1q_f64(destination + k + 12, vaddq_f64(d6, s6_scaled));
+        vst1q_f64(destination + k + 14, vaddq_f64(d7, s7_scaled));
+      }
+#endif
+
+      for (; k < lDim; k++) {
+        source[k] *= scale;
+        destination[k] += source[k];
+      }
+    }
+  } else {
+    Multiply(*this, scale);
+    result += *this;
   }
 }
 
@@ -5703,12 +5902,13 @@ _Matrix *_Matrix::Exponentiate(hyFloat scale_to, bool check_transition,
         do {
           temp.MultbyS(*this, false, &tempS, nil);
           // after this call, temp and tempS are gonna swap pointers to theData
+          hyFloat scale;
           if (i > 2) {
-            temp *= 1.0 / (mmax * i);
+            scale = 1.0 / (mmax * i);
           } else {
-            temp *= 0.5 / (mmax * mmax);
+            scale = 0.5 / (mmax * mmax);
           }
-          (*result) += temp;
+          temp.ScaleAndAdd(*result, scale);
           i++;
           /*
           #ifndef _OPENMP
@@ -5738,12 +5938,13 @@ _Matrix *_Matrix::Exponentiate(hyFloat scale_to, bool check_transition,
         _Matrix tempS(hDim, vDim, false, temp.storageType);
         do {
           temp.MultbyS(*this, theIndex != nil, &tempS, stash);
+          hyFloat scale;
           if (i > 2) {
-            temp *= 1.0 / (mmax * i);
+            scale = 1.0 / (mmax * i);
           } else {
-            temp *= 1.0 / (mmax * mmax * i);
+            scale = 1.0 / (mmax * mmax * i);
           }
-          (*result) += temp;
+          temp.ScaleAndAdd(*result, scale);
           i++;
           /*
               #ifndef _OPENMP

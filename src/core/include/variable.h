@@ -108,6 +108,7 @@ public:
   void SetValue(HBLObjectRef, bool duplicate_value, bool do_checks,
                 _AVLList *keep_track_of_changes);
   void SetValue(hyFloat); // set the value of the variable
+  void SetValue(hyFloat, bool, _AVLList *);
   void SetNumericValue(hyFloat);
   void CheckAndSet(hyFloat, bool, _AVLList *keep_track_of_changed);
   // set the value of the variable

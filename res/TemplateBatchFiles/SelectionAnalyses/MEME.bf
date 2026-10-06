@@ -1321,7 +1321,8 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
                       
     Optimize (results, ^lf_bsrel, {
             "OPTIMIZATION_METHOD" : "nedler-mead",
-            "OPTIMIZATION_START_GRID" : initial_guess_grid
+            "OPTIMIZATION_START_GRID" : initial_guess_grid,
+            "LF_GRID_EXPONENTIATION_PRECISION" : 1e-8
             //,"OPTIMIZATION_PRECISION" : 1e-5,
         });
  

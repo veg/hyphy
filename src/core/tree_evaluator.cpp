@@ -593,6 +593,18 @@ inline void __ll_loop_handle_leaf_case(hyFloat *_hprestrict_ pp,
       pp[setBranchTo[siteOrdering.list_data[k]]] = localScalingFactor[k];
     }
   } else {
+#if defined(_SLKP_USE_ARM_NEON)
+    for (long k = siteFrom; k < siteTo; k++, pp += D) {
+      float64x2_t v_lsf = vdupq_n_f64(localScalingFactor[k]);
+      long s = 0;
+      for (; s < D - 1; s += 2) {
+        vst1q_f64(pp + s, v_lsf);
+      }
+      if (s < D) {
+        pp[s] = localScalingFactor[k];
+      }
+    }
+#else
     for (long k = siteFrom; k < siteTo; k++, pp += D) {
       hyFloat lsf = localScalingFactor[k];
 // #pragma unroll(4)
@@ -601,6 +613,7 @@ inline void __ll_loop_handle_leaf_case(hyFloat *_hprestrict_ pp,
         pp[s] = lsf;
       }
     }
+#endif
   }
 }
 
@@ -1856,58 +1869,38 @@ bool echo_avx_sum_4_non_zero (__m256d const x) {
 */
 
 void _mx_vect_4x4(__m256d &cv, double const *M, double const *V, int stride) {
+  __m256d col = _mm256_loadu_pd(V);
 
-  __m256d col, accumulator, accumulator2, accumulator3, accumulator4;
+  __m256d p0 = _mm256_mul_pd(col, _mm256_loadu_pd(M));
+  __m256d p1 = _mm256_mul_pd(col, _mm256_loadu_pd(M + stride));
+  __m256d p2 = _mm256_mul_pd(col, _mm256_loadu_pd(M + 2 * stride));
+  __m256d p3 = _mm256_mul_pd(col, _mm256_loadu_pd(M + 3 * stride));
 
-  col = _mm256_loadu_pd(V);
+  __m256d sum01 = _mm256_hadd_pd(p0, p1);
+  __m256d sum23 = _mm256_hadd_pd(p2, p3);
 
-  accumulator = _mm256_mul_pd(col, _mm256_loadu_pd(M));           // 0,1,2,3
-  accumulator2 = _mm256_mul_pd(col, _mm256_loadu_pd(M + stride)); // 4,5,6,7
-  accumulator3 =
-      _mm256_mul_pd(col, _mm256_loadu_pd(M + 2 * stride)); // 8,9,10,11
-  accumulator4 =
-      _mm256_mul_pd(col, _mm256_loadu_pd(M + 3 * stride)); // 12,13,14,15
+  __m256d perm01 = _mm256_permute2f128_pd(sum01, sum23, 0x20);
+  __m256d perm23 = _mm256_permute2f128_pd(sum01, sum23, 0x31);
 
-  //  Need to transpose the 4x4 then add them to storage
-
-  __m256d t0 = _mm256_unpacklo_pd(accumulator, accumulator2), // 0,4,2,6
-      t1 = _mm256_unpackhi_pd(accumulator, accumulator2),     // 1,5,3,7
-      t2 = _mm256_unpacklo_pd(accumulator3, accumulator4),    // 8,12,10,14
-      t3 = _mm256_unpackhi_pd(accumulator3, accumulator4);    // 9,13,11,15
-
-  accumulator = _mm256_permute2f128_pd(t0, t2, 2 * 16);      // 0,4,8,12
-  accumulator2 = _mm256_permute2f128_pd(t1, t3, 2 * 16);     // 1,5,9,13
-  accumulator3 = _mm256_permute2f128_pd(t0, t2, 1 + 3 * 16); // 2,6,19,14
-  accumulator4 = _mm256_permute2f128_pd(t1, t3, 1 + 3 * 16); // 3,7,11,15
-
-  cv = _mm256_add_pd(_mm256_add_pd(accumulator, accumulator2),
-                     _mm256_add_pd(accumulator3, accumulator4));
+  cv = _mm256_add_pd(perm01, perm23);
 }
 
 void _mx_vect_4x4_add(__m256d &cv, double const *_hprestrict_ M,
                       double const *_hprestrict_ V, int stride) {
-  __m256d col, accumulator, accumulator2, accumulator3, accumulator4;
+  __m256d col = _mm256_loadu_pd(V);
 
-  col = _mm256_loadu_pd(V);
+  __m256d p0 = _mm256_mul_pd(col, _mm256_loadu_pd(M));
+  __m256d p1 = _mm256_mul_pd(col, _mm256_loadu_pd(M + stride));
+  __m256d p2 = _mm256_mul_pd(col, _mm256_loadu_pd(M + 2 * stride));
+  __m256d p3 = _mm256_mul_pd(col, _mm256_loadu_pd(M + 3 * stride));
 
-  accumulator = _mm256_mul_pd(col, _mm256_loadu_pd(M));
-  accumulator2 = _mm256_mul_pd(col, _mm256_loadu_pd(M + stride));
-  accumulator3 = _mm256_mul_pd(col, _mm256_loadu_pd(M + 2 * stride));
-  accumulator4 = _mm256_mul_pd(col, _mm256_loadu_pd(M + 3 * stride));
+  __m256d sum01 = _mm256_hadd_pd(p0, p1);
+  __m256d sum23 = _mm256_hadd_pd(p2, p3);
 
-  __m256d t0 = _mm256_unpacklo_pd(accumulator, accumulator2), // 0,4,2,6
-      t1 = _mm256_unpackhi_pd(accumulator, accumulator2),     // 1,5,3,7
-      t2 = _mm256_unpacklo_pd(accumulator3, accumulator4),    // 8,12,10,14
-      t3 = _mm256_unpackhi_pd(accumulator3, accumulator4);    // 9,13,11,15
+  __m256d perm01 = _mm256_permute2f128_pd(sum01, sum23, 0x20);
+  __m256d perm23 = _mm256_permute2f128_pd(sum01, sum23, 0x31);
 
-  accumulator = _mm256_permute2f128_pd(t0, t2, 2 * 16);      // 0,4,8,12
-  accumulator2 = _mm256_permute2f128_pd(t1, t3, 2 * 16);     // 1,5,9,13
-  accumulator3 = _mm256_permute2f128_pd(t0, t2, 1 + 3 * 16); // 2,6,19,14
-  accumulator4 = _mm256_permute2f128_pd(t1, t3, 1 + 3 * 16); // 3,7,11,15
-
-  cv = _mm256_add_pd(cv,
-                     _mm256_add_pd(_mm256_add_pd(accumulator, accumulator2),
-                                   _mm256_add_pd(accumulator3, accumulator4)));
+  cv = _mm256_add_pd(cv, _mm256_add_pd(perm01, perm23));
 }
 
 void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
@@ -2250,7 +2243,269 @@ void _hy_mvp_blocked(double *C, double const *M, double const *V) {
   }
 }
 
+template <>
+inline void _hy_mvp_blocked<20>(double *C, double const *M, double const *V) {
+  __m256d v0 = _mm256_loadu_pd(V + 0);
+  __m256d v1 = _mm256_loadu_pd(V + 4);
+  __m256d v2 = _mm256_loadu_pd(V + 8);
+  __m256d v3 = _mm256_loadu_pd(V + 12);
+  __m256d v4 = _mm256_loadu_pd(V + 16);
+
+  for (int i = 0; i < 20; ++i) {
+    double const *M_row = M + i * 20;
+#if defined _SLKP_USE_FMA3_INTRINSICS
+    __m256d acc = _mm256_mul_pd(_mm256_loadu_pd(M_row + 0), v0);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 4), v1, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 8), v2, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 12), v3, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 16), v4, acc);
+#else
+    __m256d acc = _mm256_mul_pd(_mm256_loadu_pd(M_row + 0), v0);
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 4), v1));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 8), v2));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 12), v3));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 16), v4));
+#endif
+    C[i] = _avx_sum_4(acc);
+  }
+}
+
+template <>
+inline void _hy_mvp_blocked<60>(double *C, double const *M, double const *V) {
+  __m256d v0 = _mm256_loadu_pd(V + 0);
+  __m256d v1 = _mm256_loadu_pd(V + 4);
+  __m256d v2 = _mm256_loadu_pd(V + 8);
+  __m256d v3 = _mm256_loadu_pd(V + 12);
+  __m256d v4 = _mm256_loadu_pd(V + 16);
+  __m256d v5 = _mm256_loadu_pd(V + 20);
+  __m256d v6 = _mm256_loadu_pd(V + 24);
+  __m256d v7 = _mm256_loadu_pd(V + 28);
+  __m256d v8 = _mm256_loadu_pd(V + 32);
+  __m256d v9 = _mm256_loadu_pd(V + 36);
+  __m256d v10 = _mm256_loadu_pd(V + 40);
+  __m256d v11 = _mm256_loadu_pd(V + 44);
+  __m256d v12 = _mm256_loadu_pd(V + 48);
+  __m256d v13 = _mm256_loadu_pd(V + 52);
+  __m256d v14 = _mm256_loadu_pd(V + 56);
+
+  for (int i = 0; i < 60; ++i) {
+    double const *M_row = M + i * 60;
+#if defined _SLKP_USE_FMA3_INTRINSICS
+    __m256d acc = _mm256_mul_pd(_mm256_loadu_pd(M_row + 0), v0);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 4), v1, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 8), v2, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 12), v3, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 16), v4, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 20), v5, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 24), v6, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 28), v7, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 32), v8, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 36), v9, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 40), v10, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 44), v11, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 48), v12, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 52), v13, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 56), v14, acc);
+#else
+    __m256d acc = _mm256_mul_pd(_mm256_loadu_pd(M_row + 0), v0);
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 4), v1));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 8), v2));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 12), v3));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 16), v4));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 20), v5));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 24), v6));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 28), v7));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 32), v8));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 36), v9));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 40), v10));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 44), v11));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 48), v12));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 52), v13));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 56), v14));
+#endif
+    C[i] = _avx_sum_4(acc);
+  }
+}
+
+template <>
+inline void _hy_mvp_blocked<61>(double *C, double const *M, double const *V) {
+  __m256d v0 = _mm256_loadu_pd(V + 0);
+  __m256d v1 = _mm256_loadu_pd(V + 4);
+  __m256d v2 = _mm256_loadu_pd(V + 8);
+  __m256d v3 = _mm256_loadu_pd(V + 12);
+  __m256d v4 = _mm256_loadu_pd(V + 16);
+  __m256d v5 = _mm256_loadu_pd(V + 20);
+  __m256d v6 = _mm256_loadu_pd(V + 24);
+  __m256d v7 = _mm256_loadu_pd(V + 28);
+  __m256d v8 = _mm256_loadu_pd(V + 32);
+  __m256d v9 = _mm256_loadu_pd(V + 36);
+  __m256d v10 = _mm256_loadu_pd(V + 40);
+  __m256d v11 = _mm256_loadu_pd(V + 44);
+  __m256d v12 = _mm256_loadu_pd(V + 48);
+  __m256d v13 = _mm256_loadu_pd(V + 52);
+  __m256d v14 = _mm256_loadu_pd(V + 56);
+  double v60 = V[60];
+
+  for (int i = 0; i < 61; ++i) {
+    double const *M_row = M + i * 61;
+#if defined _SLKP_USE_FMA3_INTRINSICS
+    __m256d acc = _mm256_mul_pd(_mm256_loadu_pd(M_row + 0), v0);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 4), v1, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 8), v2, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 12), v3, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 16), v4, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 20), v5, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 24), v6, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 28), v7, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 32), v8, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 36), v9, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 40), v10, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 44), v11, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 48), v12, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 52), v13, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 56), v14, acc);
+#else
+    __m256d acc = _mm256_mul_pd(_mm256_loadu_pd(M_row + 0), v0);
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 4), v1));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 8), v2));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 12), v3));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 16), v4));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 20), v5));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 24), v6));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 28), v7));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 32), v8));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 36), v9));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 40), v10));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 44), v11));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 48), v12));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 52), v13));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 56), v14));
+#endif
+    C[i] = _avx_sum_4(acc) + M_row[60] * v60;
+  }
+}
+
+template <>
+inline void _hy_mvp_blocked<62>(double *C, double const *M, double const *V) {
+  __m256d v0 = _mm256_loadu_pd(V + 0);
+  __m256d v1 = _mm256_loadu_pd(V + 4);
+  __m256d v2 = _mm256_loadu_pd(V + 8);
+  __m256d v3 = _mm256_loadu_pd(V + 12);
+  __m256d v4 = _mm256_loadu_pd(V + 16);
+  __m256d v5 = _mm256_loadu_pd(V + 20);
+  __m256d v6 = _mm256_loadu_pd(V + 24);
+  __m256d v7 = _mm256_loadu_pd(V + 28);
+  __m256d v8 = _mm256_loadu_pd(V + 32);
+  __m256d v9 = _mm256_loadu_pd(V + 36);
+  __m256d v10 = _mm256_loadu_pd(V + 40);
+  __m256d v11 = _mm256_loadu_pd(V + 44);
+  __m256d v12 = _mm256_loadu_pd(V + 48);
+  __m256d v13 = _mm256_loadu_pd(V + 52);
+  __m256d v14 = _mm256_loadu_pd(V + 56);
+  double v60 = V[60];
+  double v61 = V[61];
+
+  for (int i = 0; i < 62; ++i) {
+    double const *M_row = M + i * 62;
+#if defined _SLKP_USE_FMA3_INTRINSICS
+    __m256d acc = _mm256_mul_pd(_mm256_loadu_pd(M_row + 0), v0);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 4), v1, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 8), v2, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 12), v3, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 16), v4, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 20), v5, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 24), v6, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 28), v7, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 32), v8, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 36), v9, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 40), v10, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 44), v11, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 48), v12, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 52), v13, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 56), v14, acc);
+#else
+    __m256d acc = _mm256_mul_pd(_mm256_loadu_pd(M_row + 0), v0);
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 4), v1));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 8), v2));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 12), v3));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 16), v4));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 20), v5));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 24), v6));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 28), v7));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 32), v8));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 36), v9));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 40), v10));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 44), v11));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 48), v12));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 52), v13));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 56), v14));
+#endif
+    C[i] = _avx_sum_4(acc) + M_row[60] * v60 + M_row[61] * v61;
+  }
+}
+
+template <>
+inline void _hy_mvp_blocked<63>(double *C, double const *M, double const *V) {
+  __m256d v0 = _mm256_loadu_pd(V + 0);
+  __m256d v1 = _mm256_loadu_pd(V + 4);
+  __m256d v2 = _mm256_loadu_pd(V + 8);
+  __m256d v3 = _mm256_loadu_pd(V + 12);
+  __m256d v4 = _mm256_loadu_pd(V + 16);
+  __m256d v5 = _mm256_loadu_pd(V + 20);
+  __m256d v6 = _mm256_loadu_pd(V + 24);
+  __m256d v7 = _mm256_loadu_pd(V + 28);
+  __m256d v8 = _mm256_loadu_pd(V + 32);
+  __m256d v9 = _mm256_loadu_pd(V + 36);
+  __m256d v10 = _mm256_loadu_pd(V + 40);
+  __m256d v11 = _mm256_loadu_pd(V + 44);
+  __m256d v12 = _mm256_loadu_pd(V + 48);
+  __m256d v13 = _mm256_loadu_pd(V + 52);
+  __m256d v14 = _mm256_loadu_pd(V + 56);
+  double v60 = V[60];
+  double v61 = V[61];
+  double v62 = V[62];
+
+  for (int i = 0; i < 63; ++i) {
+    double const *M_row = M + i * 63;
+#if defined _SLKP_USE_FMA3_INTRINSICS
+    __m256d acc = _mm256_mul_pd(_mm256_loadu_pd(M_row + 0), v0);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 4), v1, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 8), v2, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 12), v3, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 16), v4, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 20), v5, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 24), v6, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 28), v7, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 32), v8, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 36), v9, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 40), v10, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 44), v11, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 48), v12, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 52), v13, acc);
+    acc = _mm256_fmadd_pd(_mm256_loadu_pd(M_row + 56), v14, acc);
+#else
+    __m256d acc = _mm256_mul_pd(_mm256_loadu_pd(M_row + 0), v0);
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 4), v1));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 8), v2));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 12), v3));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 16), v4));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 20), v5));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 24), v6));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 28), v7));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 32), v8));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 36), v9));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 40), v10));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 44), v11));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 48), v12));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 52), v13));
+    acc = _mm256_add_pd(acc, _mm256_mul_pd(_mm256_loadu_pd(M_row + 56), v14));
+#endif
+    C[i] = _avx_sum_4(acc) + M_row[60] * v60 + M_row[61] * v61 + M_row[62] * v62;
+  }
+}
+
 inline double _handle4x4_pruning_case_direct(double const *childVector, void *T,
+
                                              double *parentConditionals) {
 
   __m256d *TM = (__m256d *)T;
@@ -2322,26 +2577,38 @@ double _hy_vvmult_sum_generic(double *C, double const *M, int D) {
       sum += (C[D - 3] *= M[D - 3]) + (C[D - 2] *= M[D - 2]) +
              (C[D - 1] *= M[D - 1]);
       break;
-    case 4:
-      sum += (C[D - 4] *= M[D - 4]) + (C[D - 3] *= M[D - 3]) +
-             (C[D - 2] *= M[D - 2]) + (C[D - 1] *= M[D - 1]);
+    case 4: {
+      __m256d cv = _mm256_loadu_pd(C + D - 4);
+      __m256d mv = _mm256_loadu_pd(M + D - 4);
+      __m256d rv = _mm256_mul_pd(cv, mv);
+      _mm256_storeu_pd(C + D - 4, rv);
+      sum += _avx_sum_4(rv);
       break;
-    case 5:
-      sum += (C[D - 5] *= M[D - 5]) + (C[D - 4] *= M[D - 4]) +
-             (C[D - 3] *= M[D - 3]) + (C[D - 2] *= M[D - 2]) +
-             (C[D - 1] *= M[D - 1]);
+    }
+    case 5: {
+      __m256d cv = _mm256_loadu_pd(C + D - 5);
+      __m256d mv = _mm256_loadu_pd(M + D - 5);
+      __m256d rv = _mm256_mul_pd(cv, mv);
+      _mm256_storeu_pd(C + D - 5, rv);
+      sum += _avx_sum_4(rv) + (C[D - 1] *= M[D - 1]);
       break;
-    case 6:
-      sum += (C[D - 6] *= M[D - 6]) + (C[D - 5] *= M[D - 5]) +
-             (C[D - 4] *= M[D - 4]) + (C[D - 3] *= M[D - 3]) +
-             (C[D - 2] *= M[D - 2]) + (C[D - 1] *= M[D - 1]);
+    }
+    case 6: {
+      __m256d cv = _mm256_loadu_pd(C + D - 6);
+      __m256d mv = _mm256_loadu_pd(M + D - 6);
+      __m256d rv = _mm256_mul_pd(cv, mv);
+      _mm256_storeu_pd(C + D - 6, rv);
+      sum += _avx_sum_4(rv) + (C[D - 2] *= M[D - 2]) + (C[D - 1] *= M[D - 1]);
       break;
-    case 7:
-      sum += (C[D - 7] *= M[D - 7]) + (C[D - 6] *= M[D - 6]) +
-             (C[D - 5] *= M[D - 5]) + (C[D - 4] *= M[D - 4]) +
-             (C[D - 3] *= M[D - 3]) + (C[D - 2] *= M[D - 2]) +
-             (C[D - 1] *= M[D - 1]);
+    }
+    case 7: {
+      __m256d cv = _mm256_loadu_pd(C + D - 7);
+      __m256d mv = _mm256_loadu_pd(M + D - 7);
+      __m256d rv = _mm256_mul_pd(cv, mv);
+      _mm256_storeu_pd(C + D - 7, rv);
+      sum += _avx_sum_4(rv) + (C[D - 3] *= M[D - 3]) + (C[D - 2] *= M[D - 2]) + (C[D - 1] *= M[D - 1]);
       break;
+    }
     }
   }
 
@@ -2397,30 +2664,313 @@ template <int D> double _hy_vvmult_sum(double *C, double const *M) {
       sum += (C[D - 3] *= M[D - 3]) + (C[D - 2] *= M[D - 2]) +
              (C[D - 1] *= M[D - 1]);
       break;
-    case 4:
-      sum += (C[D - 4] *= M[D - 4]) + (C[D - 3] *= M[D - 3]) +
-             (C[D - 2] *= M[D - 2]) + (C[D - 1] *= M[D - 1]);
+    case 4: {
+      __m256d cv = _mm256_loadu_pd(C + D - 4);
+      __m256d mv = _mm256_loadu_pd(M + D - 4);
+      __m256d rv = _mm256_mul_pd(cv, mv);
+      _mm256_storeu_pd(C + D - 4, rv);
+      sum += _avx_sum_4(rv);
       break;
-    case 5:
-      sum += (C[D - 5] *= M[D - 5]) + (C[D - 4] *= M[D - 4]) +
-             (C[D - 3] *= M[D - 3]) + (C[D - 2] *= M[D - 2]) +
-             (C[D - 1] *= M[D - 1]);
+    }
+    case 5: {
+      __m256d cv = _mm256_loadu_pd(C + D - 5);
+      __m256d mv = _mm256_loadu_pd(M + D - 5);
+      __m256d rv = _mm256_mul_pd(cv, mv);
+      _mm256_storeu_pd(C + D - 5, rv);
+      sum += _avx_sum_4(rv) + (C[D - 1] *= M[D - 1]);
       break;
-    case 6:
-      sum += (C[D - 6] *= M[D - 6]) + (C[D - 5] *= M[D - 5]) +
-             (C[D - 4] *= M[D - 4]) + (C[D - 3] *= M[D - 3]) +
-             (C[D - 2] *= M[D - 2]) + (C[D - 1] *= M[D - 1]);
+    }
+    case 6: {
+      __m256d cv = _mm256_loadu_pd(C + D - 6);
+      __m256d mv = _mm256_loadu_pd(M + D - 6);
+      __m256d rv = _mm256_mul_pd(cv, mv);
+      _mm256_storeu_pd(C + D - 6, rv);
+      sum += _avx_sum_4(rv) + (C[D - 2] *= M[D - 2]) + (C[D - 1] *= M[D - 1]);
       break;
-    case 7:
-      sum += (C[D - 7] *= M[D - 7]) + (C[D - 6] *= M[D - 6]) +
-             (C[D - 5] *= M[D - 5]) + (C[D - 4] *= M[D - 4]) +
-             (C[D - 3] *= M[D - 3]) + (C[D - 2] *= M[D - 2]) +
-             (C[D - 1] *= M[D - 1]);
+    }
+    case 7: {
+      __m256d cv = _mm256_loadu_pd(C + D - 7);
+      __m256d mv = _mm256_loadu_pd(M + D - 7);
+      __m256d rv = _mm256_mul_pd(cv, mv);
+      _mm256_storeu_pd(C + D - 7, rv);
+      sum += _avx_sum_4(rv) + (C[D - 3] *= M[D - 3]) + (C[D - 2] *= M[D - 2]) + (C[D - 1] *= M[D - 1]);
       break;
+    }
     }
   }
 
   return sum;
+}
+
+template <>
+inline double _hy_vvmult_sum<20>(double *C, double const *M) {
+  __m256d c0 = _mm256_loadu_pd(C + 0), m0 = _mm256_loadu_pd(M + 0);
+  __m256d c1 = _mm256_loadu_pd(C + 4), m1 = _mm256_loadu_pd(M + 4);
+  __m256d c2 = _mm256_loadu_pd(C + 8), m2 = _mm256_loadu_pd(M + 8);
+  __m256d c3 = _mm256_loadu_pd(C + 12), m3 = _mm256_loadu_pd(M + 12);
+  __m256d c4 = _mm256_loadu_pd(C + 16), m4 = _mm256_loadu_pd(M + 16);
+
+  __m256d r0 = _mm256_mul_pd(c0, m0);
+  __m256d r1 = _mm256_mul_pd(c1, m1);
+  __m256d r2 = _mm256_mul_pd(c2, m2);
+  __m256d r3 = _mm256_mul_pd(c3, m3);
+  __m256d r4 = _mm256_mul_pd(c4, m4);
+
+  _mm256_storeu_pd(C + 0, r0);
+  _mm256_storeu_pd(C + 4, r1);
+  _mm256_storeu_pd(C + 8, r2);
+  _mm256_storeu_pd(C + 12, r3);
+  _mm256_storeu_pd(C + 16, r4);
+
+  __m256d acc0 = _mm256_add_pd(_mm256_add_pd(r0, r1), _mm256_add_pd(r2, r3));
+  return _avx_sum_4(_mm256_add_pd(acc0, r4));
+}
+
+template <>
+inline double _hy_vvmult_sum<60>(double *C, double const *M) {
+  __m256d c0 = _mm256_loadu_pd(C + 0), m0 = _mm256_loadu_pd(M + 0);
+  __m256d c1 = _mm256_loadu_pd(C + 4), m1 = _mm256_loadu_pd(M + 4);
+  __m256d c2 = _mm256_loadu_pd(C + 8), m2 = _mm256_loadu_pd(M + 8);
+  __m256d c3 = _mm256_loadu_pd(C + 12), m3 = _mm256_loadu_pd(M + 12);
+  __m256d c4 = _mm256_loadu_pd(C + 16), m4 = _mm256_loadu_pd(M + 16);
+  __m256d c5 = _mm256_loadu_pd(C + 20), m5 = _mm256_loadu_pd(M + 20);
+  __m256d c6 = _mm256_loadu_pd(C + 24), m6 = _mm256_loadu_pd(M + 24);
+  __m256d c7 = _mm256_loadu_pd(C + 28), m7 = _mm256_loadu_pd(M + 28);
+  __m256d c8 = _mm256_loadu_pd(C + 32), m8 = _mm256_loadu_pd(M + 32);
+  __m256d c9 = _mm256_loadu_pd(C + 36), m9 = _mm256_loadu_pd(M + 36);
+  __m256d c10 = _mm256_loadu_pd(C + 40), m10 = _mm256_loadu_pd(M + 40);
+  __m256d c11 = _mm256_loadu_pd(C + 44), m11 = _mm256_loadu_pd(M + 44);
+  __m256d c12 = _mm256_loadu_pd(C + 48), m12 = _mm256_loadu_pd(M + 48);
+  __m256d c13 = _mm256_loadu_pd(C + 52), m13 = _mm256_loadu_pd(M + 52);
+  __m256d c14 = _mm256_loadu_pd(C + 56), m14 = _mm256_loadu_pd(M + 56);
+
+  __m256d r0 = _mm256_mul_pd(c0, m0);
+  __m256d r1 = _mm256_mul_pd(c1, m1);
+  __m256d r2 = _mm256_mul_pd(c2, m2);
+  __m256d r3 = _mm256_mul_pd(c3, m3);
+  __m256d r4 = _mm256_mul_pd(c4, m4);
+  __m256d r5 = _mm256_mul_pd(c5, m5);
+  __m256d r6 = _mm256_mul_pd(c6, m6);
+  __m256d r7 = _mm256_mul_pd(c7, m7);
+  __m256d r8 = _mm256_mul_pd(c8, m8);
+  __m256d r9 = _mm256_mul_pd(c9, m9);
+  __m256d r10 = _mm256_mul_pd(c10, m10);
+  __m256d r11 = _mm256_mul_pd(c11, m11);
+  __m256d r12 = _mm256_mul_pd(c12, m12);
+  __m256d r13 = _mm256_mul_pd(c13, m13);
+  __m256d r14 = _mm256_mul_pd(c14, m14);
+
+  _mm256_storeu_pd(C + 0, r0);
+  _mm256_storeu_pd(C + 4, r1);
+  _mm256_storeu_pd(C + 8, r2);
+  _mm256_storeu_pd(C + 12, r3);
+  _mm256_storeu_pd(C + 16, r4);
+  _mm256_storeu_pd(C + 20, r5);
+  _mm256_storeu_pd(C + 24, r6);
+  _mm256_storeu_pd(C + 28, r7);
+  _mm256_storeu_pd(C + 32, r8);
+  _mm256_storeu_pd(C + 36, r9);
+  _mm256_storeu_pd(C + 40, r10);
+  _mm256_storeu_pd(C + 44, r11);
+  _mm256_storeu_pd(C + 48, r12);
+  _mm256_storeu_pd(C + 52, r13);
+  _mm256_storeu_pd(C + 56, r14);
+
+  __m256d acc0 = _mm256_add_pd(_mm256_add_pd(_mm256_add_pd(r0, r1), _mm256_add_pd(r2, r3)),
+                               _mm256_add_pd(_mm256_add_pd(r4, r5), _mm256_add_pd(r6, r7)));
+  __m256d acc1 = _mm256_add_pd(_mm256_add_pd(_mm256_add_pd(r8, r9), _mm256_add_pd(r10, r11)),
+                               _mm256_add_pd(r12, _mm256_add_pd(r13, r14)));
+
+  return _avx_sum_4(_mm256_add_pd(acc0, acc1));
+}
+
+template <>
+inline double _hy_vvmult_sum<61>(double *C, double const *M) {
+  __m256d c0 = _mm256_loadu_pd(C + 0), m0 = _mm256_loadu_pd(M + 0);
+  __m256d c1 = _mm256_loadu_pd(C + 4), m1 = _mm256_loadu_pd(M + 4);
+  __m256d c2 = _mm256_loadu_pd(C + 8), m2 = _mm256_loadu_pd(M + 8);
+  __m256d c3 = _mm256_loadu_pd(C + 12), m3 = _mm256_loadu_pd(M + 12);
+  __m256d c4 = _mm256_loadu_pd(C + 16), m4 = _mm256_loadu_pd(M + 16);
+  __m256d c5 = _mm256_loadu_pd(C + 20), m5 = _mm256_loadu_pd(M + 20);
+  __m256d c6 = _mm256_loadu_pd(C + 24), m6 = _mm256_loadu_pd(M + 24);
+  __m256d c7 = _mm256_loadu_pd(C + 28), m7 = _mm256_loadu_pd(M + 28);
+  __m256d c8 = _mm256_loadu_pd(C + 32), m8 = _mm256_loadu_pd(M + 32);
+  __m256d c9 = _mm256_loadu_pd(C + 36), m9 = _mm256_loadu_pd(M + 36);
+  __m256d c10 = _mm256_loadu_pd(C + 40), m10 = _mm256_loadu_pd(M + 40);
+  __m256d c11 = _mm256_loadu_pd(C + 44), m11 = _mm256_loadu_pd(M + 44);
+  __m256d c12 = _mm256_loadu_pd(C + 48), m12 = _mm256_loadu_pd(M + 48);
+  __m256d c13 = _mm256_loadu_pd(C + 52), m13 = _mm256_loadu_pd(M + 52);
+  __m256d c14 = _mm256_loadu_pd(C + 56), m14 = _mm256_loadu_pd(M + 56);
+
+  __m256d r0 = _mm256_mul_pd(c0, m0);
+  __m256d r1 = _mm256_mul_pd(c1, m1);
+  __m256d r2 = _mm256_mul_pd(c2, m2);
+  __m256d r3 = _mm256_mul_pd(c3, m3);
+  __m256d r4 = _mm256_mul_pd(c4, m4);
+  __m256d r5 = _mm256_mul_pd(c5, m5);
+  __m256d r6 = _mm256_mul_pd(c6, m6);
+  __m256d r7 = _mm256_mul_pd(c7, m7);
+  __m256d r8 = _mm256_mul_pd(c8, m8);
+  __m256d r9 = _mm256_mul_pd(c9, m9);
+  __m256d r10 = _mm256_mul_pd(c10, m10);
+  __m256d r11 = _mm256_mul_pd(c11, m11);
+  __m256d r12 = _mm256_mul_pd(c12, m12);
+  __m256d r13 = _mm256_mul_pd(c13, m13);
+  __m256d r14 = _mm256_mul_pd(c14, m14);
+
+  _mm256_storeu_pd(C + 0, r0);
+  _mm256_storeu_pd(C + 4, r1);
+  _mm256_storeu_pd(C + 8, r2);
+  _mm256_storeu_pd(C + 12, r3);
+  _mm256_storeu_pd(C + 16, r4);
+  _mm256_storeu_pd(C + 20, r5);
+  _mm256_storeu_pd(C + 24, r6);
+  _mm256_storeu_pd(C + 28, r7);
+  _mm256_storeu_pd(C + 32, r8);
+  _mm256_storeu_pd(C + 36, r9);
+  _mm256_storeu_pd(C + 40, r10);
+  _mm256_storeu_pd(C + 44, r11);
+  _mm256_storeu_pd(C + 48, r12);
+  _mm256_storeu_pd(C + 52, r13);
+  _mm256_storeu_pd(C + 56, r14);
+
+  __m256d acc0 = _mm256_add_pd(_mm256_add_pd(_mm256_add_pd(r0, r1), _mm256_add_pd(r2, r3)),
+                               _mm256_add_pd(_mm256_add_pd(r4, r5), _mm256_add_pd(r6, r7)));
+  __m256d acc1 = _mm256_add_pd(_mm256_add_pd(_mm256_add_pd(r8, r9), _mm256_add_pd(r10, r11)),
+                               _mm256_add_pd(r12, _mm256_add_pd(r13, r14)));
+
+  double last_c = C[60] * M[60];
+  C[60] = last_c;
+
+  return _avx_sum_4(_mm256_add_pd(acc0, acc1)) + last_c;
+}
+
+template <>
+inline double _hy_vvmult_sum<62>(double *C, double const *M) {
+  __m256d c0 = _mm256_loadu_pd(C + 0), m0 = _mm256_loadu_pd(M + 0);
+  __m256d c1 = _mm256_loadu_pd(C + 4), m1 = _mm256_loadu_pd(M + 4);
+  __m256d c2 = _mm256_loadu_pd(C + 8), m2 = _mm256_loadu_pd(M + 8);
+  __m256d c3 = _mm256_loadu_pd(C + 12), m3 = _mm256_loadu_pd(M + 12);
+  __m256d c4 = _mm256_loadu_pd(C + 16), m4 = _mm256_loadu_pd(M + 16);
+  __m256d c5 = _mm256_loadu_pd(C + 20), m5 = _mm256_loadu_pd(M + 20);
+  __m256d c6 = _mm256_loadu_pd(C + 24), m6 = _mm256_loadu_pd(M + 24);
+  __m256d c7 = _mm256_loadu_pd(C + 28), m7 = _mm256_loadu_pd(M + 28);
+  __m256d c8 = _mm256_loadu_pd(C + 32), m8 = _mm256_loadu_pd(M + 32);
+  __m256d c9 = _mm256_loadu_pd(C + 36), m9 = _mm256_loadu_pd(M + 36);
+  __m256d c10 = _mm256_loadu_pd(C + 40), m10 = _mm256_loadu_pd(M + 40);
+  __m256d c11 = _mm256_loadu_pd(C + 44), m11 = _mm256_loadu_pd(M + 44);
+  __m256d c12 = _mm256_loadu_pd(C + 48), m12 = _mm256_loadu_pd(M + 48);
+  __m256d c13 = _mm256_loadu_pd(C + 52), m13 = _mm256_loadu_pd(M + 52);
+  __m256d c14 = _mm256_loadu_pd(C + 56), m14 = _mm256_loadu_pd(M + 56);
+
+  __m256d r0 = _mm256_mul_pd(c0, m0);
+  __m256d r1 = _mm256_mul_pd(c1, m1);
+  __m256d r2 = _mm256_mul_pd(c2, m2);
+  __m256d r3 = _mm256_mul_pd(c3, m3);
+  __m256d r4 = _mm256_mul_pd(c4, m4);
+  __m256d r5 = _mm256_mul_pd(c5, m5);
+  __m256d r6 = _mm256_mul_pd(c6, m6);
+  __m256d r7 = _mm256_mul_pd(c7, m7);
+  __m256d r8 = _mm256_mul_pd(c8, m8);
+  __m256d r9 = _mm256_mul_pd(c9, m9);
+  __m256d r10 = _mm256_mul_pd(c10, m10);
+  __m256d r11 = _mm256_mul_pd(c11, m11);
+  __m256d r12 = _mm256_mul_pd(c12, m12);
+  __m256d r13 = _mm256_mul_pd(c13, m13);
+  __m256d r14 = _mm256_mul_pd(c14, m14);
+
+  _mm256_storeu_pd(C + 0, r0);
+  _mm256_storeu_pd(C + 4, r1);
+  _mm256_storeu_pd(C + 8, r2);
+  _mm256_storeu_pd(C + 12, r3);
+  _mm256_storeu_pd(C + 16, r4);
+  _mm256_storeu_pd(C + 20, r5);
+  _mm256_storeu_pd(C + 24, r6);
+  _mm256_storeu_pd(C + 28, r7);
+  _mm256_storeu_pd(C + 32, r8);
+  _mm256_storeu_pd(C + 36, r9);
+  _mm256_storeu_pd(C + 40, r10);
+  _mm256_storeu_pd(C + 44, r11);
+  _mm256_storeu_pd(C + 48, r12);
+  _mm256_storeu_pd(C + 52, r13);
+  _mm256_storeu_pd(C + 56, r14);
+
+  __m256d acc0 = _mm256_add_pd(_mm256_add_pd(_mm256_add_pd(r0, r1), _mm256_add_pd(r2, r3)),
+                               _mm256_add_pd(_mm256_add_pd(r4, r5), _mm256_add_pd(r6, r7)));
+  __m256d acc1 = _mm256_add_pd(_mm256_add_pd(_mm256_add_pd(r8, r9), _mm256_add_pd(r10, r11)),
+                               _mm256_add_pd(r12, _mm256_add_pd(r13, r14)));
+
+  double last_c0 = C[60] * M[60];
+  double last_c1 = C[61] * M[61];
+  C[60] = last_c0;
+  C[61] = last_c1;
+
+  return _avx_sum_4(_mm256_add_pd(acc0, acc1)) + last_c0 + last_c1;
+}
+
+template <>
+inline double _hy_vvmult_sum<63>(double *C, double const *M) {
+  __m256d c0 = _mm256_loadu_pd(C + 0), m0 = _mm256_loadu_pd(M + 0);
+  __m256d c1 = _mm256_loadu_pd(C + 4), m1 = _mm256_loadu_pd(M + 4);
+  __m256d c2 = _mm256_loadu_pd(C + 8), m2 = _mm256_loadu_pd(M + 8);
+  __m256d c3 = _mm256_loadu_pd(C + 12), m3 = _mm256_loadu_pd(M + 12);
+  __m256d c4 = _mm256_loadu_pd(C + 16), m4 = _mm256_loadu_pd(M + 16);
+  __m256d c5 = _mm256_loadu_pd(C + 20), m5 = _mm256_loadu_pd(M + 20);
+  __m256d c6 = _mm256_loadu_pd(C + 24), m6 = _mm256_loadu_pd(M + 24);
+  __m256d c7 = _mm256_loadu_pd(C + 28), m7 = _mm256_loadu_pd(M + 28);
+  __m256d c8 = _mm256_loadu_pd(C + 32), m8 = _mm256_loadu_pd(M + 32);
+  __m256d c9 = _mm256_loadu_pd(C + 36), m9 = _mm256_loadu_pd(M + 36);
+  __m256d c10 = _mm256_loadu_pd(C + 40), m10 = _mm256_loadu_pd(M + 40);
+  __m256d c11 = _mm256_loadu_pd(C + 44), m11 = _mm256_loadu_pd(M + 44);
+  __m256d c12 = _mm256_loadu_pd(C + 48), m12 = _mm256_loadu_pd(M + 48);
+  __m256d c13 = _mm256_loadu_pd(C + 52), m13 = _mm256_loadu_pd(M + 52);
+  __m256d c14 = _mm256_loadu_pd(C + 56), m14 = _mm256_loadu_pd(M + 56);
+
+  __m256d r0 = _mm256_mul_pd(c0, m0);
+  __m256d r1 = _mm256_mul_pd(c1, m1);
+  __m256d r2 = _mm256_mul_pd(c2, m2);
+  __m256d r3 = _mm256_mul_pd(c3, m3);
+  __m256d r4 = _mm256_mul_pd(c4, m4);
+  __m256d r5 = _mm256_mul_pd(c5, m5);
+  __m256d r6 = _mm256_mul_pd(c6, m6);
+  __m256d r7 = _mm256_mul_pd(c7, m7);
+  __m256d r8 = _mm256_mul_pd(c8, m8);
+  __m256d r9 = _mm256_mul_pd(c9, m9);
+  __m256d r10 = _mm256_mul_pd(c10, m10);
+  __m256d r11 = _mm256_mul_pd(c11, m11);
+  __m256d r12 = _mm256_mul_pd(c12, m12);
+  __m256d r13 = _mm256_mul_pd(c13, m13);
+  __m256d r14 = _mm256_mul_pd(c14, m14);
+
+  _mm256_storeu_pd(C + 0, r0);
+  _mm256_storeu_pd(C + 4, r1);
+  _mm256_storeu_pd(C + 8, r2);
+  _mm256_storeu_pd(C + 12, r3);
+  _mm256_storeu_pd(C + 16, r4);
+  _mm256_storeu_pd(C + 20, r5);
+  _mm256_storeu_pd(C + 24, r6);
+  _mm256_storeu_pd(C + 28, r7);
+  _mm256_storeu_pd(C + 32, r8);
+  _mm256_storeu_pd(C + 36, r9);
+  _mm256_storeu_pd(C + 40, r10);
+  _mm256_storeu_pd(C + 44, r11);
+  _mm256_storeu_pd(C + 48, r12);
+  _mm256_storeu_pd(C + 52, r13);
+  _mm256_storeu_pd(C + 56, r14);
+
+  __m256d acc0 = _mm256_add_pd(_mm256_add_pd(_mm256_add_pd(r0, r1), _mm256_add_pd(r2, r3)),
+                               _mm256_add_pd(_mm256_add_pd(r4, r5), _mm256_add_pd(r6, r7)));
+  __m256d acc1 = _mm256_add_pd(_mm256_add_pd(_mm256_add_pd(r8, r9), _mm256_add_pd(r10, r11)),
+                               _mm256_add_pd(r12, _mm256_add_pd(r13, r14)));
+
+  double last_c0 = C[60] * M[60];
+  double last_c1 = C[61] * M[61];
+  double last_c2 = C[62] * M[62];
+  C[60] = last_c0;
+  C[61] = last_c1;
+  C[62] = last_c2;
+
+  return _avx_sum_4(_mm256_add_pd(acc0, acc1)) + last_c0 + last_c1 + last_c2;
 }
 
 #endif // AVX
@@ -2518,12 +3068,13 @@ void _mx_vect_4x4_add(float64x2x2_t &cv, double const *__restrict M,
 
   // 4. Horizontal Reduction.
 
-  // --- Optimization 2: Efficient Horizontal Summation ---
-  // Use AArch64 specialized pairwise addition (FADDP instruction) via
-  // vpaddq_f64. vpaddq_f64(A, B) calculates {A0+A1, B0+B1}. This replaces the
-  // slower vzip1/vzip2/vadd sequence.
-  const float64x2_t sum12 = vpaddq_f64(dp1, dp2);
-  const float64x2_t sum34 = vpaddq_f64(dp3, dp4);
+  // --- Optimization 2: High-Throughput Horizontal Summation ---
+  // Use vzip/vadd sequence which has higher throughput and lower execution
+  // latency on AArch64 than the pairwise vpaddq_f64 (FADDP) instruction.
+  const float64x2_t sum12 =
+      vaddq_f64(vzip1q_f64(dp1, dp2), vzip2q_f64(dp1, dp2));
+  const float64x2_t sum34 =
+      vaddq_f64(vzip1q_f64(dp3, dp4), vzip2q_f64(dp3, dp4));
 
   // 5. Accumulate into the result vector cv.
   cv.val[0] = vaddq_f64(cv.val[0], sum12);
@@ -2681,17 +3232,20 @@ inline double _handle4x4_pruning_case_direct(double const *childVector,
                          vld1q_f64_x2((hyFloat *)tMatrix + 4),
                          vld1q_f64_x2((hyFloat *)tMatrix + 8)};
 
-  float64x2_t c0 = vdupq_n_f64(childVector[0] - childVector[3]),
-              c1 = vdupq_n_f64(childVector[1] - childVector[3]),
-              c2 = vdupq_n_f64(childVector[2] - childVector[3]),
-              c3 = vdupq_n_f64(childVector[3]);
+  float64x2x2_t v_child = vld1q_f64_x2(childVector);
+  float64x2_t v_c3 = vdupq_laneq_f64(v_child.val[1], 1);
+  float64x2_t c0_c1 = vsubq_f64(v_child.val[0], v_c3);
+
+  float64x2_t c0 = vdupq_laneq_f64(c0_c1, 0);
+  float64x2_t c1 = vdupq_laneq_f64(c0_c1, 1);
+  float64x2_t c2 = vdupq_laneq_f64(vsubq_f64(v_child.val[1], v_c3), 0);
 
   float64x2_t t[4];
 
   t[0] = vfmaq_f64(vmulq_f64(c1, TM[1].val[0]), c0, TM[0].val[0]);
   t[1] = vfmaq_f64(vmulq_f64(c1, TM[1].val[1]), c0, TM[0].val[1]);
-  t[2] = vfmaq_f64(c3, c2, TM[2].val[0]);
-  t[3] = vfmaq_f64(c3, c2, TM[2].val[1]);
+  t[2] = vfmaq_f64(v_c3, c2, TM[2].val[0]);
+  t[3] = vfmaq_f64(v_c3, c2, TM[2].val[1]);
 
   float64x2x2_t pc_vec = vld1q_f64_x2(parentConditionals);
   pc_vec.val[0] = vmulq_f64(pc_vec.val[0], vaddq_f64(t[0], t[2]));
@@ -2788,7 +3342,7 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
     }
 
     C[D - 1] = M[D - 1] * V[D - 1] +
-               vaddvq_f64(vpaddq_f64(accumulator.val[0], accumulator.val[1]));
+               vaddvq_f64(vaddq_f64(accumulator.val[0], accumulator.val[1]));
     break;
   }
 
@@ -2862,9 +3416,9 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
           vfmaq_f64(accumulator2.val[1], row2.val[1], col.val[1]);
     }
     C[D - 2] = M[D - 2] * V[D - 2] + M[D - 1] * V[D - 1] +
-               vaddvq_f64(vpaddq_f64(accumulator.val[0], accumulator.val[1]));
+               vaddvq_f64(vaddq_f64(accumulator.val[0], accumulator.val[1]));
     C[D - 1] = M[2 * D - 2] * V[D - 2] + M[2 * D - 1] * V[D - 1] +
-               vaddvq_f64(vpaddq_f64(accumulator2.val[0], accumulator2.val[1]));
+               vaddvq_f64(vaddq_f64(accumulator2.val[0], accumulator2.val[1]));
 
     break;
   }
@@ -2954,14 +3508,14 @@ void _hy_matrix_vector_product_blocked_4x4(double *C, double const *M,
           vfmaq_f64(accumulator3.val[1], row3.val[1], col.val[1]);
     }
     C[D - 3] = M[D - 3] * V[D - 3] + M[D - 2] * V[D - 2] + M[D - 1] * V[D - 1] +
-               vaddvq_f64(vpaddq_f64(accumulator.val[0], accumulator.val[1]));
+               vaddvq_f64(vaddq_f64(accumulator.val[0], accumulator.val[1]));
     ;
     C[D - 2] = M[2 * D - 3] * V[D - 3] + M[2 * D - 2] * V[D - 2] +
                M[2 * D - 1] * V[D - 1] +
-               vaddvq_f64(vpaddq_f64(accumulator2.val[0], accumulator2.val[1]));
+               vaddvq_f64(vaddq_f64(accumulator2.val[0], accumulator2.val[1]));
     C[D - 1] = M[3 * D - 3] * V[D - 3] + M[3 * D - 2] * V[D - 2] +
                M[3 * D - 1] * V[D - 1] +
-               vaddvq_f64(vpaddq_f64(accumulator3.val[0], accumulator3.val[1]));
+               vaddvq_f64(vaddq_f64(accumulator3.val[0], accumulator3.val[1]));
 
     break;
   }
@@ -3036,7 +3590,7 @@ void _hy_mvp_blocked_4x4(double *C, double const *M, double const *V) {
     }
 
     C[D - 1] = M[D - 1] * V[D - 1] +
-               vaddvq_f64(vpaddq_f64(accumulator.val[0], accumulator.val[1]));
+               vaddvq_f64(vaddq_f64(accumulator.val[0], accumulator.val[1]));
     break;
   }
 
@@ -3101,9 +3655,9 @@ void _hy_mvp_blocked_4x4(double *C, double const *M, double const *V) {
           vfmaq_f64(accumulator2.val[1], row2.val[1], col.val[1]);
     }
     C[D - 2] = M[D - 2] * V[D - 2] + M[D - 1] * V[D - 1] +
-               vaddvq_f64(vpaddq_f64(accumulator.val[0], accumulator.val[1]));
+               vaddvq_f64(vaddq_f64(accumulator.val[0], accumulator.val[1]));
     C[D - 1] = M[2 * D - 2] * V[D - 2] + M[2 * D - 1] * V[D - 1] +
-               vaddvq_f64(vpaddq_f64(accumulator2.val[0], accumulator2.val[1]));
+               vaddvq_f64(vaddq_f64(accumulator2.val[0], accumulator2.val[1]));
 
     break;
   }
@@ -3183,14 +3737,14 @@ void _hy_mvp_blocked_4x4(double *C, double const *M, double const *V) {
           vfmaq_f64(accumulator3.val[1], row3.val[1], col.val[1]);
     }
     C[D - 3] = M[D - 3] * V[D - 3] + M[D - 2] * V[D - 2] + M[D - 1] * V[D - 1] +
-               vaddvq_f64(vpaddq_f64(accumulator.val[0], accumulator.val[1]));
+               vaddvq_f64(vaddq_f64(accumulator.val[0], accumulator.val[1]));
     ;
     C[D - 2] = M[2 * D - 3] * V[D - 3] + M[2 * D - 2] * V[D - 2] +
                M[2 * D - 1] * V[D - 1] +
-               vaddvq_f64(vpaddq_f64(accumulator2.val[0], accumulator2.val[1]));
+               vaddvq_f64(vaddq_f64(accumulator2.val[0], accumulator2.val[1]));
     C[D - 1] = M[3 * D - 3] * V[D - 3] + M[3 * D - 2] * V[D - 2] +
                M[3 * D - 1] * V[D - 1] +
-               vaddvq_f64(vpaddq_f64(accumulator3.val[0], accumulator3.val[1]));
+               vaddvq_f64(vaddq_f64(accumulator3.val[0], accumulator3.val[1]));
 
     break;
   }
@@ -3284,6 +3838,31 @@ void _hy_mvp_blocked(double *C, double const *M, double const *V) {
   }
 }
 
+template <>
+inline void _hy_mvp_blocked<20>(double *C, double const *M, double const *V) {
+  _hy_mvp_blocked_4x4<20>(C, M, V);
+}
+
+template <>
+inline void _hy_mvp_blocked<60>(double *C, double const *M, double const *V) {
+  _hy_mvp_blocked_4x4<60>(C, M, V);
+}
+
+template <>
+inline void _hy_mvp_blocked<61>(double *C, double const *M, double const *V) {
+  _hy_mvp_blocked_4x4<61>(C, M, V);
+}
+
+template <>
+inline void _hy_mvp_blocked<62>(double *C, double const *M, double const *V) {
+  _hy_mvp_blocked_4x4<62>(C, M, V);
+}
+
+template <>
+inline void _hy_mvp_blocked<63>(double *C, double const *M, double const *V) {
+  _hy_mvp_blocked_4x4<63>(C, M, V);
+}
+
 // ddot multiply in and accumulate
 
 template <int D> double _hy_vvmult_sum(double *C, double const *M) {
@@ -3321,8 +3900,8 @@ template <int D> double _hy_vvmult_sum(double *C, double const *M) {
 
     // accumulator.val[0] = vaddq_f64 (accumulator.val[0], accumulator.val[1]);
     sum = vaddvq_f64(
-        vpaddq_f64(vpaddq_f64(accumulator.val[0], accumulator.val[1]),
-                   vpaddq_f64(accumulator.val[2], accumulator.val[3])));
+        vaddq_f64(vaddq_f64(accumulator.val[0], accumulator.val[1]),
+                  vaddq_f64(accumulator.val[2], accumulator.val[3])));
   }
 
   if (remainder) {
@@ -3345,7 +3924,7 @@ template <int D> double _hy_vvmult_sum(double *C, double const *M) {
 
       vst1q_f64_x2(C + D - 4, CA);
 
-      sum += vaddvq_f64(vpaddq_f64(CA.val[0], CA.val[1]));
+      sum += vaddvq_f64(vaddq_f64(CA.val[0], CA.val[1]));
       break;
     }
     case 5: {
@@ -3358,7 +3937,7 @@ template <int D> double _hy_vvmult_sum(double *C, double const *M) {
       vst1q_f64_x2(C + D - 5, CA);
 
       sum +=
-          (C[D - 1] *= M[D - 1]) + vaddvq_f64(vpaddq_f64(CA.val[0], CA.val[1]));
+          (C[D - 1] *= M[D - 1]) + vaddvq_f64(vaddq_f64(CA.val[0], CA.val[1]));
       break;
     }
     case 6: {
@@ -3373,7 +3952,7 @@ template <int D> double _hy_vvmult_sum(double *C, double const *M) {
       vst1q_f64_x2(C + D - 6, CA);
       vst1q_f64(C + D - 2, CA2);
 
-      sum += vaddvq_f64(vpaddq_f64(CA.val[0], CA.val[1])) + vaddvq_f64(CA2);
+      sum += vaddvq_f64(vaddq_f64(CA.val[0], CA.val[1])) + vaddvq_f64(CA2);
       break;
     }
     case 7:
@@ -3423,8 +4002,8 @@ double _hy_vvmult_sum_generic(double *C, double const *M, int D) {
 
     // accumulator.val[0] = vaddq_f64 (accumulator.val[0], accumulator.val[1]);
     sum = vaddvq_f64(
-        vpaddq_f64(vpaddq_f64(accumulator.val[0], accumulator.val[1]),
-                   vpaddq_f64(accumulator.val[2], accumulator.val[3])));
+        vaddq_f64(vaddq_f64(accumulator.val[0], accumulator.val[1]),
+                  vaddq_f64(accumulator.val[2], accumulator.val[3])));
   }
 
   if (remainder) {
@@ -3447,7 +4026,7 @@ double _hy_vvmult_sum_generic(double *C, double const *M, int D) {
 
       vst1q_f64_x2(C + D - 4, CA);
 
-      sum += vaddvq_f64(vpaddq_f64(CA.val[0], CA.val[1]));
+      sum += vaddvq_f64(vaddq_f64(CA.val[0], CA.val[1]));
       break;
     }
     case 5: {
@@ -3460,7 +4039,7 @@ double _hy_vvmult_sum_generic(double *C, double const *M, int D) {
       vst1q_f64_x2(C + D - 5, CA);
 
       sum +=
-          (C[D - 1] *= M[D - 1]) + vaddvq_f64(vpaddq_f64(CA.val[0], CA.val[1]));
+          (C[D - 1] *= M[D - 1]) + vaddvq_f64(vaddq_f64(CA.val[0], CA.val[1]));
       break;
     }
     case 6: {
@@ -3475,7 +4054,7 @@ double _hy_vvmult_sum_generic(double *C, double const *M, int D) {
       vst1q_f64_x2(C + D - 6, CA);
       vst1q_f64(C + D - 2, CA2);
 
-      sum += vaddvq_f64(vpaddq_f64(CA.val[0], CA.val[1])) + vaddvq_f64(CA2);
+      sum += vaddvq_f64(vaddq_f64(CA.val[0], CA.val[1])) + vaddvq_f64(CA2);
       break;
     }
     case 7:
@@ -3827,12 +4406,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
         parentConditionals[k], childVector[k]);
         }*/
 
-#ifdef _SLKP_USE_APPLE_BLAS_2
-        cblas_dgemv(CblasRowMajor, CblasNoTrans, 20, 20, 1., tMatrix, 20,
-                    childVector, 1, 0., mvs, 1);
-#else
         _hy_mvp_blocked<20>(mvs, tMatrix, childVector);
-#endif
         sum += _hy_vvmult_sum<20>(parentConditionals, mvs);
 
         __ll_loop_handle_scaling<20L, true>(
@@ -3910,12 +4484,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
                     }
         */
 
-#ifdef _SLKP_USE_APPLE_BLAS_2
-        cblas_dgemv(CblasRowMajor, CblasNoTrans, 61, 61, 1., tMatrix, 61,
-                    childVector, 1, 0., mvs, 1);
-#else
         _hy_mvp_blocked<61>(mvs, tMatrix, childVector);
-#endif
         sum += _hy_vvmult_sum<61>(parentConditionals, mvs);
 
         /*
@@ -3960,12 +4529,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
           continue;
         }
 
-#ifdef _SLKP_USE_APPLE_BLAS_2
-        cblas_dgemv(CblasRowMajor, CblasNoTrans, 62, 62, 1., tMatrix, 62,
-                    childVector, 1, 0., mvs, 1);
-#else
         _hy_mvp_blocked<62>(mvs, tMatrix, childVector);
-#endif
         sum += _hy_vvmult_sum<62>(parentConditionals, mvs);
         __ll_loop_handle_scaling<62L, true>(
             sum, parentConditionals, scalingAdjustments, didScale, parentCode,
@@ -3988,12 +4552,7 @@ hyFloat _TheTree::ComputeTreeBlockByBranch(
           continue;
         }
 
-#ifdef _SLKP_USE_APPLE_BLAS_2
-        cblas_dgemv(CblasRowMajor, CblasNoTrans, 63, 63, 1., tMatrix, 63,
-                    childVector, 1, 0., mvs, 1);
-#else
         _hy_mvp_blocked<63>(mvs, tMatrix, childVector);
-#endif
 
         sum += _hy_vvmult_sum<63>(parentConditionals, mvs);
 

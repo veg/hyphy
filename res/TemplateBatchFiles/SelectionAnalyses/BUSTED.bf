@@ -670,7 +670,7 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
 */
 
   
-busted.nm.precision = Max (-0.0001*busted.final_partitioned_mg_results[terms.fit.log_likelihood],0.5);
+busted.nm.precision = Max (-0.001*busted.final_partitioned_mg_results[terms.fit.log_likelihood],1.0);
 
 debug.checkpoint = utility.GetEnvVariable ("DEBUG_CHECKPOINT");
 
@@ -838,11 +838,13 @@ while (!busted.converged) {
                             {
                                 "OPTIMIZATION_METHOD" : "nedler-mead",
                                 "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
-                                "OPTIMIZATION_PRECISION" : busted.nm.precision
+                                "OPTIMIZATION_PRECISION" : busted.nm.precision,
+                                "LF_GRID_EXPONENTIATION_PRECISION" : 1e-8
                             } ,
                                                      
                         terms.search_grid     : busted.initial_grid,
-                        terms.search_restarts : busted.N.initial_guesses
+                        terms.search_restarts : busted.N.initial_guesses,
+                        terms.custom_simplex_init : "busted.custom_simplex_init"
                                                 
                 });
                 
@@ -873,11 +875,13 @@ while (!busted.converged) {
                             {
                                 "OPTIMIZATION_METHOD" : "nedler-mead",
                                 "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
-                                "OPTIMIZATION_PRECISION" : busted.nm.precision
+                                "OPTIMIZATION_PRECISION" : busted.nm.precision,
+                                "LF_GRID_EXPONENTIATION_PRECISION" : 1e-8
                             } ,
                                                      
                         terms.search_grid     : busted.initial_grid,
-                        terms.search_restarts : busted.N.initial_guesses
+                        terms.search_restarts : busted.N.initial_guesses,
+                        terms.custom_simplex_init : "busted.custom_simplex_init"
                     }
                 );
                 
@@ -1770,4 +1774,39 @@ function busted.report_srv_fit (compute_sites) {
             }
         }
     }
+}
+
+//------------------------------------------------------------------------------
+
+lfunction busted.custom_simplex_init (grid_values, restart_index, opt_settings) {
+    simplex_vertices = {};
+    first_grid_val = grid_values["0"];
+    first_point = first_grid_val["point"];
+    num_vars = Abs (first_point);
+    num_grid_points = Abs (grid_values);
+    
+    for (offset = 0; offset < num_vars; offset += 1) {
+        idx = (restart_index + offset) % num_grid_points;
+        key = "" + idx;
+        grid_entry = grid_values[key];
+        point = grid_entry["point"];
+        
+        new_point = {};
+        point_keys = Rows(point);
+        for (p = 0; p < Columns(point_keys); p += 1) {
+            pk = point_keys[p];
+            val_obj = point[pk];
+            if (Type(val_obj) == "AssociativeList") {
+                if (val_obj["MLE"] != null) {
+                    new_point[pk] = val_obj["MLE"];
+                } else {
+                    new_point[pk] = val_obj["Value"];
+                }
+            } else {
+                new_point[pk] = val_obj;
+            }
+        }
+        simplex_vertices[offset] = new_point;
+    }
+    opt_settings["SIMPLEX_INITIAL_VERTICES"] = simplex_vertices;
 }

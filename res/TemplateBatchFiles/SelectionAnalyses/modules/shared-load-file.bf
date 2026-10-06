@@ -384,8 +384,8 @@ function store_tree_information () {
         */
 
 
-    t = (partitions_and_trees["0"])[utility.getGlobalValue("terms.data.tree")];
-    abs_branch_lengths = Abs(t[utility.getGlobalValue("terms.branch_length")]);
+    shared_load_file_tree_info = (partitions_and_trees["0"])[utility.getGlobalValue("terms.data.tree")];
+    abs_branch_lengths = Abs(shared_load_file_tree_info[utility.getGlobalValue("terms.branch_length")]);
 
     if (abs_branch_lengths == 0){
         selection.io.json_store_key_value_pair (json,

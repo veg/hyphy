@@ -198,7 +198,7 @@ afd.global_table_options[terms.table_options.header] = FALSE;
 
 globals = lfInfo["Global Independent"];
 global_params = {};
-for (k = 0; k < Columns(globals); k = k + 1) {
+for (k = 0; k < Columns(globals); k += 1) {
     global_params[globals[k]] = Eval(globals[k]);
     val = Format(Eval(globals[k]), 8, 6);
     fprintf (stdout, io.FormatTableRow({"0": globals[k], "1": val}, afd.global_table_options));
@@ -214,7 +214,7 @@ fprintf (stdout, io.FormatTableRow({"0": "Branch", "1": "Length"}, afd.branch_ta
 afd.branch_table_options[terms.table_options.header] = FALSE;
 
 branch_names = BranchName(givenTree, -1);
-for (k = 0; k < Columns(branch_names) - 1; k = k + 1) {
+for (k = 0; k < Columns(branch_names) - 1; k += 1) {
     val = Format(BranchLength(givenTree, branch_names[k]), 8, 6);
     fprintf (stdout, io.FormatTableRow({"0": branch_names[k], "1": val}, afd.branch_table_options));
 }
@@ -231,7 +231,7 @@ afd.freq_table_options[terms.table_options.header] = FALSE;
 HarvestFrequencies (obsFreq, filteredData, 1, 1, 1);
 nucs = {{"A", "C", "G", "T"}};
 freq_results = {};
-for (k = 0; k < 4; k = k + 1) {
+for (k = 0; k < 4; k += 1) {
     est_val = vectorOfFrequencies[k];
     obs_val = obsFreq[k];
     freq_results[nucs[k]] = {"estimated": est_val, "observed": obs_val};
@@ -240,7 +240,7 @@ for (k = 0; k < 4; k = k + 1) {
 
 local_params = {};
 locals = lfInfo["Local Independent"];
-for (k = 0; k < Columns(locals); k = k + 1) {
+for (k = 0; k < Columns(locals); k += 1) {
     local_params[locals[k]] = Eval(locals[k]);
 }
 

@@ -304,14 +304,14 @@ console.log ("\n\n## Analysis summary (p = " + bustedph.test_results['Level'] + 
 bustedph.summary = "";
 
 if (Max (bustedph.p1, bustedph.p3) <= busted.p_value ) {
-    bustedph.summary =  ("The composite null hypothesis for no selection on foreground or no difference between foreground and background has been rejected.");
+    bustedph.summary =  ("The composite null hypothesis for no selection on foreground or no difference between background and foreground has been rejected.");
     if (bustedph.p2 > 0.068) {
         bustedph.summary += " The neutral model of evolution for background branches is sufficiently supported. There is **statistical evidence that the selection is associated with the trait**";
     } else {
         bustedph.summary += " The neutral model of evolution for background branches is **not** sufficiently supported. Selection is acting broadly on the tree, not just of branches with the trait";
     }
 } else {
-    bustedph.summary = ("The composite null hypothesis for no selection on foreground or no difference between foreground and background could not be rejected. There is **no** statistical evidence that the selection is associated with the trait.");
+    bustedph.summary = ("The composite null hypothesis for no selection on foreground or no difference between background and foreground could not be rejected. There is **no** statistical evidence that the selection is associated with the trait.");
 }
 
 console.log (bustedph.summary);

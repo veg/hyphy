@@ -43,6 +43,10 @@ filteringOption = io.SelectAnOption ({"No/No" :  "Keep all sequences and sites",
                                                                   "Yes/Yes" :  "Filter duplicate sequences and sites with nothing but gaps",
                                                                   "Disallow stops" : "Filter duplicate sequences and all sequences that have stop codons"},"Filter duplicates/gaps?");
 
+cln.filter_duplicates = (filteringOption == "Yes/No" || filteringOption == "Yes/Yes" || filteringOption == "Disallow stops");
+cln.filter_gaps       = (filteringOption == "No/Yes" || filteringOption == "Yes/Yes");
+cln.disallow_stops    = (filteringOption == "Disallow stops");
+
 
 KeywordArgument ("output", "Write the resulting alignment to");
 
@@ -144,7 +148,7 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex += 1) {
             stopCodonCount  += 1;
         }
         
-        if (filteringOption % 2) {
+        if (cln.filter_gaps) {
             if (haveInfoAtSites[siteIndex] == 0) {
                 if (siteInfo1[0]+siteInfo2[0] > 0) {
                     haveInfoAtSites[siteIndex] = 1;
@@ -154,7 +158,7 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex += 1) {
     }
     
     if (stopCodonCount > 0) {
-        if (filterinOption == 4) {
+        if (cln.disallow_stops) {
          continue;
         }
         fprintf (stdout, "\nSequence ", sequenceNames[sequenceIndex], ":");
@@ -179,7 +183,7 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex += 1) {
     
     
     
-    if (filteringOption >= 2) {
+    if (cln.filter_duplicates) {
         if (duplicateChecker[sequenceData[sequenceIndex]] == 0) {
             duplicateChecker[sequenceData[sequenceIndex]] = 1;
             notDuplicate[sequenceIndex] = 1;
@@ -193,7 +197,7 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex += 1) {
 
 filterSites = 0;
 
-if (filteringOption%2) {
+if (cln.filter_gaps) {
     filterSites = Abs(haveInfoAtSites)<all64.unique_sites;
 	doSomething = doSomething || filterSites;
 }

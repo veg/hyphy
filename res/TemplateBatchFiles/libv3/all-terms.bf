@@ -46,6 +46,7 @@ namespace terms{
     substitutions       = "substitutions";
     search_grid         = "search_grid";
     search_restarts     = "search_restarts";
+    custom_simplex_init = "custom_simplex_init";
     multiple_files      = "multiple files";
 
     parameters     = "parameters";

@@ -115,7 +115,7 @@ _String const kEmptyString, kPromptForFilePlaceholder("PROMPT_FOR_FILE"),
                     "\"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line "
                     "argument. This often resolves the issue, which is "
                     "indicative of numerical instability."),
-    kHyPhyVersion = _String("2.5.100"),
+    kHyPhyVersion = _String("2.5.101"),
 
     kNoneToken = "None", kNullToken = "null",
     kNoKWMatch = "__input_value_not_given__",
@@ -448,6 +448,11 @@ bool GlobalStartup(void) {
   if (hy_env::cli_env_settings.nonempty()) {
     _StringBuffer code(hy_env::cli_env_settings);
     _ExecutionList(code).Execute();
+    hyFloat rs = EnvVariableGetNumber(random_seed, hy_random_seed);
+    if (!CheckEqual(rs, hy_random_seed)) {
+      hy_random_seed = rs;
+      init_genrand(hy_random_seed);
+    }
   }
   return hy_error_log_file && hy_message_log_file;
 }

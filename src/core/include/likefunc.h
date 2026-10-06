@@ -54,6 +54,7 @@ struct DynamicBlockTracker {
   std::vector<long> variables;
   hyFloat max_logl_at_last_cg;
   std::vector<hyFloat> values_at_last_cg;
+  long last_triggered_iteration = -2L;
 };
 
 // #define   NUMERICAL_INFINITY          INFINITY
@@ -478,7 +479,9 @@ public:
   hyFloat SimplexMethod(hyFloat &precision,
                         unsigned long max_iterations = 100000UL,
                         unsigned long max_evals = 0xFFFFFF,
-                        _SimpleList *only_these_parameters = nil);
+                        _SimpleList *only_these_parameters = nil,
+                        _List *stepHistory = nil,
+                        _AssociativeList *initial_vertices = nil);
   /**
    * @brief Anneal the likelihood function
    *
@@ -874,7 +877,8 @@ protected:
                              unsigned char lastConvergenceMode,
                              _SimpleList &variables_that_dont_change,
                              unsigned char &convergenceMode,
-                             hyFloat &shrink_factor, hyFloat *diffs);
+                             hyFloat &shrink_factor, hyFloat *diffs,
+                             bool do_large_change_only = false);
 
   bool ProcessStandardCGPass(
       unsigned char &convergenceMode, long &last_gradient_search,
@@ -921,12 +925,12 @@ protected:
   bool should_skip_cg_for_group(
       _SimpleList const *group,
       std::vector<DynamicBlockTracker> &dynamic_block_trackers,
-      hyFloat maxSoFar, hyFloat opt_precision);
+      hyFloat maxSoFar, hyFloat opt_precision, long loopCounter);
 
   void update_tracker_for_group(
       _SimpleList const *group,
       std::vector<DynamicBlockTracker> &dynamic_block_trackers,
-      hyFloat current_max);
+      hyFloat current_max, long loopCounter);
 
   void ExecuteConjugateGradient(
       _SimpleList *cg_list, hyFloat *diffs, hyFloat opt_precision, long inCount,

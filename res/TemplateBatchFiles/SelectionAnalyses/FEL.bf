@@ -729,7 +729,8 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         , {
             "OPTIMIZATION_METHOD" : "nedler-mead", 
             "OPTIMIZATION_PRECISION" : 1e-3,
-            "OPTIMIZATION_START_GRID" : start.grid             
+            "OPTIMIZATION_START_GRID" : start.grid,
+            "LF_GRID_EXPONENTIATION_PRECISION" : 1e-8
            }
     );
     

@@ -331,8 +331,73 @@ void _Variable::CompileListOfDependents(_SimpleList &rec) {
 
 //__________________________________________________________________________________
 void _Variable::SetValue(hyFloat new_value) {
-  // set the value of the var
-  this->SetValue(new _Constant(new_value), false, true, NULL);
+  this->SetValue(new_value, true, NULL);
+}
+
+//__________________________________________________________________________________
+void _Variable::SetValue(hyFloat new_value, bool do_checks,
+                         _AVLList *keep_track_of_changes) {
+  if (varFlags & HY_VARIABLE_COMPUTING) {
+    HandleApplicationError(
+        _String("A recursive dependency error in _Variable::SetValue; this is "
+                "an HBL implementation bug; offending variable is ") &
+        GetName()->Enquote());
+    return;
+  }
+
+  varFlags &= HY_VARIABLE_SET;
+  varFlags |= HY_VARIABLE_CHANGED;
+
+  if (keep_track_of_changes) {
+    keep_track_of_changes->InsertNumber(get_index());
+  }
+
+  if (varFormula) {
+    if (do_checks) {
+      if (deferClearConstraint) {
+        deferClearConstraint->InsertNumber(theIndex);
+      } else {
+        DoForEachVariable([this](_Variable *v, long) -> void {
+          if (v->IsContainer()) {
+            if (!((_VariableContainer *)v)->RemoveDependance(this->theIndex)) {
+              ReportWarning(
+                  (_String("Can't make variable ") & GetName()->Enquote() &
+                   " independent in the context of " & *v->GetName() &
+                   " because its template variable is not independent."));
+            }
+          }
+        });
+
+        for (unsigned long i = 0UL; i < likeFuncList.lLength; i++)
+          if (((_String *)likeFuncNamesList(i))->nonempty()) {
+            ((_LikelihoodFunction *)likeFuncList(i))->UpdateDependent(theIndex);
+          }
+      }
+    }
+
+    delete varFormula;
+    varFormula = nil;
+  }
+
+  theValue = new_value;
+
+  if (theValue < lowerBound || theValue > upperBound) {
+    if (theValue < lowerBound) {
+      if (theValue <= lowerBound + 1e-50) {
+        theValue = lowerBound;
+      }
+    } else {
+      theValue = upperBound;
+    }
+  }
+
+  if (varValue) {
+    if (varValue->ObjectClass() == NUMBER && varValue->SingleReference()) {
+      ((_Constant *)varValue)->SetValue(theValue);
+    } else {
+      DeleteAndZeroObject(varValue);
+    }
+  }
 }
 
 //__________________________________________________________________________________

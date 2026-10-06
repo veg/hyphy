@@ -652,6 +652,7 @@ if (relax.model_set == "All") { // run all the models
              
                     terms.search_grid : relax.initial_grid,
                     terms.search_restarts : relax.N.initial_guesses,
+                    terms.custom_simplex_init : "relax.custom_simplex_init",
                     terms.run_options.optimization_log : relax.optimization_log_file (".GE-1-log.json")
                 }
             );
@@ -1165,7 +1166,8 @@ function relax.FitMainTestPair (prompt) {
                                             } ,
                                  
                                         terms.search_grid : relax.initial_grid,
-                                        terms.search_restarts : relax.N.initial_guesses
+                                        terms.search_restarts : relax.N.initial_guesses,
+                                        terms.custom_simplex_init : "relax.custom_simplex_init"
                         
                                     }
         );
@@ -2289,4 +2291,39 @@ lfunction relax.report_multi_hit (model_fit, json, l1, l2) {
             json[^'terms.parameters.triple_hit_rate'] = double_rates;            
         }       
     }
+}
+
+//------------------------------------------------------------------------------
+
+lfunction relax.custom_simplex_init (grid_values, restart_index, opt_settings) {
+    simplex_vertices = {};
+    first_grid_val = grid_values["0"];
+    first_point = first_grid_val["point"];
+    num_vars = Abs (first_point);
+    num_grid_points = Abs (grid_values);
+    
+    for (offset = 0; offset < num_vars; offset += 1) {
+        idx = (restart_index + offset) % num_grid_points;
+        key = "" + idx;
+        grid_entry = grid_values[key];
+        point = grid_entry["point"];
+        
+        new_point = {};
+        point_keys = Rows(point);
+        for (p = 0; p < Columns(point_keys); p += 1) {
+            pk = point_keys[p];
+            val_obj = point[pk];
+            if (Type(val_obj) == "AssociativeList") {
+                if (val_obj["MLE"] != null) {
+                    new_point[pk] = val_obj["MLE"];
+                } else {
+                    new_point[pk] = val_obj["Value"];
+                }
+            } else {
+                new_point[pk] = val_obj;
+            }
+        }
+        simplex_vertices[offset] = new_point;
+    }
+    opt_settings["SIMPLEX_INITIAL_VERTICES"] = simplex_vertices;
 }

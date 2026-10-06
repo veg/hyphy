@@ -3616,7 +3616,7 @@ void _hy_matrix_multiply_3x4x3(double *C, double *A, double *B, int stride,
 void _hy_matrix_multiply_NxN_blocked4(double *C, double *A, double *B, int D) {
 
 #ifdef _SLKP_USE_APPLE_BLAS_2
-  if (D >= 16) {
+  if (D >= 32) {
     // printf ("HERE\n");
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, D, D, D, 1., A, D, B,
                 D, 0.0, C, D);
@@ -3631,6 +3631,164 @@ void _hy_matrix_multiply_NxN_blocked4(double *C, double *A, double *B, int D) {
 
   switch (remainder) {
   case 0: {
+#if defined _SLKP_USE_AVX_INTRINSICS
+    for (int i = 0; i < blocks; i++) {
+      int j = 0;
+      for (; j < blocks - 1; j += 2) {
+        __m256d c0_0 = _mm256_setzero_pd();
+        __m256d c0_1 = _mm256_setzero_pd();
+        __m256d c0_2 = _mm256_setzero_pd();
+        __m256d c0_3 = _mm256_setzero_pd();
+
+        __m256d c1_0 = _mm256_setzero_pd();
+        __m256d c1_1 = _mm256_setzero_pd();
+        __m256d c1_2 = _mm256_setzero_pd();
+        __m256d c1_3 = _mm256_setzero_pd();
+
+        for (int k = 0; k < blocks; k++) {
+          double *A_ptr = A + offset(i, k);
+          __m256d a_r0 = _mm256_loadu_pd(A_ptr);
+          __m256d a_r1 = _mm256_loadu_pd(A_ptr + D);
+          __m256d a_r2 = _mm256_loadu_pd(A_ptr + (D << 1));
+          __m256d a_r3 = _mm256_loadu_pd(A_ptr + (D << 1) + D);
+
+          double *B_ptr_0 = B + offset(k, j);
+          double *B_ptr_1 = B + offset(k, j + 1);
+
+          __m256d b0_0 = _mm256_loadu_pd(B_ptr_0);
+          __m256d b0_1 = _mm256_loadu_pd(B_ptr_1);
+          __m256d a_bcast = _mm256_permute4x64_pd(a_r0, 0x00);
+          c0_0 = _hy_matrix_handle_axv_mfma(c0_0, a_bcast, b0_0);
+          c1_0 = _hy_matrix_handle_axv_mfma(c1_0, a_bcast, b0_1);
+
+          a_bcast = _mm256_permute4x64_pd(a_r1, 0x00);
+          c0_1 = _hy_matrix_handle_axv_mfma(c0_1, a_bcast, b0_0);
+          c1_1 = _hy_matrix_handle_axv_mfma(c1_1, a_bcast, b0_1);
+
+          a_bcast = _mm256_permute4x64_pd(a_r2, 0x00);
+          c0_2 = _hy_matrix_handle_axv_mfma(c0_2, a_bcast, b0_0);
+          c1_2 = _hy_matrix_handle_axv_mfma(c1_2, a_bcast, b0_1);
+
+          a_bcast = _mm256_permute4x64_pd(a_r3, 0x00);
+          c0_3 = _hy_matrix_handle_axv_mfma(c0_3, a_bcast, b0_0);
+          c1_3 = _hy_matrix_handle_axv_mfma(c1_3, a_bcast, b0_1);
+
+          __m256d b1_0 = _mm256_loadu_pd(B_ptr_0 + D);
+          __m256d b1_1 = _mm256_loadu_pd(B_ptr_1 + D);
+          a_bcast = _mm256_permute4x64_pd(a_r0, 0x55);
+          c0_0 = _hy_matrix_handle_axv_mfma(c0_0, a_bcast, b1_0);
+          c1_0 = _hy_matrix_handle_axv_mfma(c1_0, a_bcast, b1_1);
+
+          a_bcast = _mm256_permute4x64_pd(a_r1, 0x55);
+          c0_1 = _hy_matrix_handle_axv_mfma(c0_1, a_bcast, b1_0);
+          c1_1 = _hy_matrix_handle_axv_mfma(c1_1, a_bcast, b1_1);
+
+          a_bcast = _mm256_permute4x64_pd(a_r2, 0x55);
+          c0_2 = _hy_matrix_handle_axv_mfma(c0_2, a_bcast, b1_0);
+          c1_2 = _hy_matrix_handle_axv_mfma(c1_2, a_bcast, b1_1);
+
+          a_bcast = _mm256_permute4x64_pd(a_r3, 0x55);
+          c0_3 = _hy_matrix_handle_axv_mfma(c0_3, a_bcast, b1_0);
+          c1_3 = _hy_matrix_handle_axv_mfma(c1_3, a_bcast, b1_1);
+
+          __m256d b2_0 = _mm256_loadu_pd(B_ptr_0 + (D << 1));
+          __m256d b2_1 = _mm256_loadu_pd(B_ptr_1 + (D << 1));
+          a_bcast = _mm256_permute4x64_pd(a_r0, 0xAA);
+          c0_0 = _hy_matrix_handle_axv_mfma(c0_0, a_bcast, b2_0);
+          c1_0 = _hy_matrix_handle_axv_mfma(c1_0, a_bcast, b2_1);
+
+          a_bcast = _mm256_permute4x64_pd(a_r1, 0xAA);
+          c0_1 = _hy_matrix_handle_axv_mfma(c0_1, a_bcast, b2_0);
+          c1_1 = _hy_matrix_handle_axv_mfma(c1_1, a_bcast, b2_1);
+
+          a_bcast = _mm256_permute4x64_pd(a_r2, 0xAA);
+          c0_2 = _hy_matrix_handle_axv_mfma(c0_2, a_bcast, b2_0);
+          c1_2 = _hy_matrix_handle_axv_mfma(c1_2, a_bcast, b2_1);
+
+          a_bcast = _mm256_permute4x64_pd(a_r3, 0xAA);
+          c0_3 = _hy_matrix_handle_axv_mfma(c0_3, a_bcast, b2_0);
+          c1_3 = _hy_matrix_handle_axv_mfma(c1_3, a_bcast, b2_1);
+
+          __m256d b3_0 = _mm256_loadu_pd(B_ptr_0 + (D << 1) + D);
+          __m256d b3_1 = _mm256_loadu_pd(B_ptr_1 + (D << 1) + D);
+          a_bcast = _mm256_permute4x64_pd(a_r0, 0xFF);
+          c0_0 = _hy_matrix_handle_axv_mfma(c0_0, a_bcast, b3_0);
+          c1_0 = _hy_matrix_handle_axv_mfma(c1_0, a_bcast, b3_1);
+
+          a_bcast = _mm256_permute4x64_pd(a_r1, 0xFF);
+          c0_1 = _hy_matrix_handle_axv_mfma(c0_1, a_bcast, b3_0);
+          c1_1 = _hy_matrix_handle_axv_mfma(c1_1, a_bcast, b3_1);
+
+          a_bcast = _mm256_permute4x64_pd(a_r2, 0xFF);
+          c0_2 = _hy_matrix_handle_axv_mfma(c0_2, a_bcast, b3_0);
+          c1_2 = _hy_matrix_handle_axv_mfma(c1_2, a_bcast, b3_1);
+
+          a_bcast = _mm256_permute4x64_pd(a_r3, 0xFF);
+          c0_3 = _hy_matrix_handle_axv_mfma(c0_3, a_bcast, b3_0);
+          c1_3 = _hy_matrix_handle_axv_mfma(c1_3, a_bcast, b3_1);
+        }
+
+        double *C_ptr_0 = C + offset(i, j);
+        double *C_ptr_1 = C + offset(i, j + 1);
+
+        _mm256_storeu_pd(C_ptr_0, c0_0);
+        _mm256_storeu_pd(C_ptr_0 + D, c0_1);
+        _mm256_storeu_pd(C_ptr_0 + (D << 1), c0_2);
+        _mm256_storeu_pd(C_ptr_0 + (D << 1) + D, c0_3);
+
+        _mm256_storeu_pd(C_ptr_1, c1_0);
+        _mm256_storeu_pd(C_ptr_1 + D, c1_1);
+        _mm256_storeu_pd(C_ptr_1 + (D << 1), c1_2);
+        _mm256_storeu_pd(C_ptr_1 + (D << 1) + D, c1_3);
+      }
+
+      for (; j < blocks; j++) {
+        __m256d c0 = _mm256_setzero_pd();
+        __m256d c1 = _mm256_setzero_pd();
+        __m256d c2 = _mm256_setzero_pd();
+        __m256d c3 = _mm256_setzero_pd();
+
+        for (int k = 0; k < blocks; k++) {
+          double *A_ptr = A + offset(i, k);
+          __m256d a_r0 = _mm256_loadu_pd(A_ptr);
+          __m256d a_r1 = _mm256_loadu_pd(A_ptr + D);
+          __m256d a_r2 = _mm256_loadu_pd(A_ptr + (D << 1));
+          __m256d a_r3 = _mm256_loadu_pd(A_ptr + (D << 1) + D);
+
+          double *B_ptr = B + offset(k, j);
+          __m256d b0 = _mm256_loadu_pd(B_ptr);
+          c0 = _hy_matrix_handle_axv_mfma(c0, _mm256_permute4x64_pd(a_r0, 0x00), b0);
+          c1 = _hy_matrix_handle_axv_mfma(c1, _mm256_permute4x64_pd(a_r1, 0x00), b0);
+          c2 = _hy_matrix_handle_axv_mfma(c2, _mm256_permute4x64_pd(a_r2, 0x00), b0);
+          c3 = _hy_matrix_handle_axv_mfma(c3, _mm256_permute4x64_pd(a_r3, 0x00), b0);
+
+          __m256d b1 = _mm256_loadu_pd(B_ptr + D);
+          c0 = _hy_matrix_handle_axv_mfma(c0, _mm256_permute4x64_pd(a_r0, 0x55), b1);
+          c1 = _hy_matrix_handle_axv_mfma(c1, _mm256_permute4x64_pd(a_r1, 0x55), b1);
+          c2 = _hy_matrix_handle_axv_mfma(c2, _mm256_permute4x64_pd(a_r2, 0x55), b1);
+          c3 = _hy_matrix_handle_axv_mfma(c3, _mm256_permute4x64_pd(a_r3, 0x55), b1);
+
+          __m256d b2 = _mm256_loadu_pd(B_ptr + (D << 1));
+          c0 = _hy_matrix_handle_axv_mfma(c0, _mm256_permute4x64_pd(a_r0, 0xAA), b2);
+          c1 = _hy_matrix_handle_axv_mfma(c1, _mm256_permute4x64_pd(a_r1, 0xAA), b2);
+          c2 = _hy_matrix_handle_axv_mfma(c2, _mm256_permute4x64_pd(a_r2, 0xAA), b2);
+          c3 = _hy_matrix_handle_axv_mfma(c3, _mm256_permute4x64_pd(a_r3, 0xAA), b2);
+
+          __m256d b3 = _mm256_loadu_pd(B_ptr + (D << 1) + D);
+          c0 = _hy_matrix_handle_axv_mfma(c0, _mm256_permute4x64_pd(a_r0, 0xFF), b3);
+          c1 = _hy_matrix_handle_axv_mfma(c1, _mm256_permute4x64_pd(a_r1, 0xFF), b3);
+          c2 = _hy_matrix_handle_axv_mfma(c2, _mm256_permute4x64_pd(a_r2, 0xFF), b3);
+          c3 = _hy_matrix_handle_axv_mfma(c3, _mm256_permute4x64_pd(a_r3, 0xFF), b3);
+        }
+
+        double *C_ptr = C + offset(i, j);
+        _mm256_storeu_pd(C_ptr, c0);
+        _mm256_storeu_pd(C_ptr + D, c1);
+        _mm256_storeu_pd(C_ptr + (D << 1), c2);
+        _mm256_storeu_pd(C_ptr + (D << 1) + D, c3);
+      }
+    }
+#else
     for (int i = 0; i < blocks; i++) {
       for (int k = 0; k < blocks; k++) {
         for (int j = 0; j < blocks; j++) {
@@ -3639,11 +3797,202 @@ void _hy_matrix_multiply_NxN_blocked4(double *C, double *A, double *B, int D) {
         }
       }
     }
+#endif
     break;
   }
   case 1: {
 
     if (blocks >= 1) {
+#if defined _SLKP_USE_AVX_INTRINSICS
+      for (int i = 0; i < blocks; i++) {
+        int j = 0;
+        for (; j < blocks - 1; j += 2) {
+          __m256d c0_0 = _mm256_setzero_pd();
+          __m256d c0_1 = _mm256_setzero_pd();
+          __m256d c0_2 = _mm256_setzero_pd();
+          __m256d c0_3 = _mm256_setzero_pd();
+
+          __m256d c1_0 = _mm256_setzero_pd();
+          __m256d c1_1 = _mm256_setzero_pd();
+          __m256d c1_2 = _mm256_setzero_pd();
+          __m256d c1_3 = _mm256_setzero_pd();
+
+          for (int k = 0; k < blocks; k++) {
+            double *A_ptr = A + offset(i, k);
+            __m256d a_r0 = _mm256_loadu_pd(A_ptr);
+            __m256d a_r1 = _mm256_loadu_pd(A_ptr + D);
+            __m256d a_r2 = _mm256_loadu_pd(A_ptr + (D << 1));
+            __m256d a_r3 = _mm256_loadu_pd(A_ptr + (D << 1) + D);
+
+            double *B_ptr_0 = B + offset(k, j);
+            double *B_ptr_1 = B + offset(k, j + 1);
+
+            __m256d b0_0 = _mm256_loadu_pd(B_ptr_0);
+            __m256d b0_1 = _mm256_loadu_pd(B_ptr_1);
+            __m256d a_bcast = _mm256_permute4x64_pd(a_r0, 0x00);
+            c0_0 = _hy_matrix_handle_axv_mfma(c0_0, a_bcast, b0_0);
+            c1_0 = _hy_matrix_handle_axv_mfma(c1_0, a_bcast, b0_1);
+
+            a_bcast = _mm256_permute4x64_pd(a_r1, 0x00);
+            c0_1 = _hy_matrix_handle_axv_mfma(c0_1, a_bcast, b0_0);
+            c1_1 = _hy_matrix_handle_axv_mfma(c1_1, a_bcast, b0_1);
+
+            a_bcast = _mm256_permute4x64_pd(a_r2, 0x00);
+            c0_2 = _hy_matrix_handle_axv_mfma(c0_2, a_bcast, b0_0);
+            c1_2 = _hy_matrix_handle_axv_mfma(c1_2, a_bcast, b0_1);
+
+            a_bcast = _mm256_permute4x64_pd(a_r3, 0x00);
+            c0_3 = _hy_matrix_handle_axv_mfma(c0_3, a_bcast, b0_0);
+            c1_3 = _hy_matrix_handle_axv_mfma(c1_3, a_bcast, b0_1);
+
+            __m256d b1_0 = _mm256_loadu_pd(B_ptr_0 + D);
+            __m256d b1_1 = _mm256_loadu_pd(B_ptr_1 + D);
+            a_bcast = _mm256_permute4x64_pd(a_r0, 0x55);
+            c0_0 = _hy_matrix_handle_axv_mfma(c0_0, a_bcast, b1_0);
+            c1_0 = _hy_matrix_handle_axv_mfma(c1_0, a_bcast, b1_1);
+
+            a_bcast = _mm256_permute4x64_pd(a_r1, 0x55);
+            c0_1 = _hy_matrix_handle_axv_mfma(c0_1, a_bcast, b1_0);
+            c1_1 = _hy_matrix_handle_axv_mfma(c1_1, a_bcast, b1_1);
+
+            a_bcast = _mm256_permute4x64_pd(a_r2, 0x55);
+            c0_2 = _hy_matrix_handle_axv_mfma(c0_2, a_bcast, b1_0);
+            c1_2 = _hy_matrix_handle_axv_mfma(c1_2, a_bcast, b1_1);
+
+            a_bcast = _mm256_permute4x64_pd(a_r3, 0x55);
+            c0_3 = _hy_matrix_handle_axv_mfma(c0_3, a_bcast, b1_0);
+            c1_3 = _hy_matrix_handle_axv_mfma(c1_3, a_bcast, b1_1);
+
+            __m256d b2_0 = _mm256_loadu_pd(B_ptr_0 + (D << 1));
+            __m256d b2_1 = _mm256_loadu_pd(B_ptr_1 + (D << 1));
+            a_bcast = _mm256_permute4x64_pd(a_r0, 0xAA);
+            c0_0 = _hy_matrix_handle_axv_mfma(c0_0, a_bcast, b2_0);
+            c1_0 = _hy_matrix_handle_axv_mfma(c1_0, a_bcast, b2_1);
+
+            a_bcast = _mm256_permute4x64_pd(a_r1, 0xAA);
+            c0_1 = _hy_matrix_handle_axv_mfma(c0_1, a_bcast, b2_0);
+            c1_1 = _hy_matrix_handle_axv_mfma(c1_1, a_bcast, b2_1);
+
+            a_bcast = _mm256_permute4x64_pd(a_r2, 0xAA);
+            c0_2 = _hy_matrix_handle_axv_mfma(c0_2, a_bcast, b2_0);
+            c1_2 = _hy_matrix_handle_axv_mfma(c1_2, a_bcast, b2_1);
+
+            a_bcast = _mm256_permute4x64_pd(a_r3, 0xAA);
+            c0_3 = _hy_matrix_handle_axv_mfma(c0_3, a_bcast, b2_0);
+            c1_3 = _hy_matrix_handle_axv_mfma(c1_3, a_bcast, b2_1);
+
+            __m256d b3_0 = _mm256_loadu_pd(B_ptr_0 + (D << 1) + D);
+            __m256d b3_1 = _mm256_loadu_pd(B_ptr_1 + (D << 1) + D);
+            a_bcast = _mm256_permute4x64_pd(a_r0, 0xFF);
+            c0_0 = _hy_matrix_handle_axv_mfma(c0_0, a_bcast, b3_0);
+            c1_0 = _hy_matrix_handle_axv_mfma(c1_0, a_bcast, b3_1);
+
+            a_bcast = _mm256_permute4x64_pd(a_r1, 0xFF);
+            c0_1 = _hy_matrix_handle_axv_mfma(c0_1, a_bcast, b3_0);
+            c1_1 = _hy_matrix_handle_axv_mfma(c1_1, a_bcast, b3_1);
+
+            a_bcast = _mm256_permute4x64_pd(a_r2, 0xFF);
+            c0_2 = _hy_matrix_handle_axv_mfma(c0_2, a_bcast, b3_0);
+            c1_2 = _hy_matrix_handle_axv_mfma(c1_2, a_bcast, b3_1);
+
+            a_bcast = _mm256_permute4x64_pd(a_r3, 0xFF);
+            c0_3 = _hy_matrix_handle_axv_mfma(c0_3, a_bcast, b3_0);
+            c1_3 = _hy_matrix_handle_axv_mfma(c1_3, a_bcast, b3_1);
+          }
+
+          // remainder: 4x1x4 logic for k = blocks
+          double *A_rem = A + offset(i, blocks);
+          __m256d a_rem0 = _mm256_broadcast_sd(A_rem);
+          __m256d a_rem1 = _mm256_broadcast_sd(A_rem + D);
+          __m256d a_rem2 = _mm256_broadcast_sd(A_rem + (D << 1));
+          __m256d a_rem3 = _mm256_broadcast_sd(A_rem + (D << 1) + D);
+
+          __m256d b_rem_0 = _mm256_loadu_pd(B + offset(blocks, j));
+          __m256d b_rem_1 = _mm256_loadu_pd(B + offset(blocks, j + 1));
+
+          c0_0 = _hy_matrix_handle_axv_mfma(c0_0, a_rem0, b_rem_0);
+          c0_1 = _hy_matrix_handle_axv_mfma(c0_1, a_rem1, b_rem_0);
+          c0_2 = _hy_matrix_handle_axv_mfma(c0_2, a_rem2, b_rem_0);
+          c0_3 = _hy_matrix_handle_axv_mfma(c0_3, a_rem3, b_rem_0);
+
+          c1_0 = _hy_matrix_handle_axv_mfma(c1_0, a_rem0, b_rem_1);
+          c1_1 = _hy_matrix_handle_axv_mfma(c1_1, a_rem1, b_rem_1);
+          c1_2 = _hy_matrix_handle_axv_mfma(c1_2, a_rem2, b_rem_1);
+          c1_3 = _hy_matrix_handle_axv_mfma(c1_3, a_rem3, b_rem_1);
+
+          double *C_ptr_0 = C + offset(i, j);
+          double *C_ptr_1 = C + offset(i, j + 1);
+
+          _mm256_storeu_pd(C_ptr_0, c0_0);
+          _mm256_storeu_pd(C_ptr_0 + D, c0_1);
+          _mm256_storeu_pd(C_ptr_0 + (D << 1), c0_2);
+          _mm256_storeu_pd(C_ptr_0 + (D << 1) + D, c0_3);
+
+          _mm256_storeu_pd(C_ptr_1, c1_0);
+          _mm256_storeu_pd(C_ptr_1 + D, c1_1);
+          _mm256_storeu_pd(C_ptr_1 + (D << 1), c1_2);
+          _mm256_storeu_pd(C_ptr_1 + (D << 1) + D, c1_3);
+        }
+
+        for (; j < blocks; ++j) {
+          __m256d c0 = _mm256_setzero_pd();
+          __m256d c1 = _mm256_setzero_pd();
+          __m256d c2 = _mm256_setzero_pd();
+          __m256d c3 = _mm256_setzero_pd();
+
+          for (int k = 0; k < blocks; ++k) {
+            double *A_ptr = A + offset(i, k);
+            __m256d a_r0 = _mm256_loadu_pd(A_ptr);
+            __m256d a_r1 = _mm256_loadu_pd(A_ptr + D);
+            __m256d a_r2 = _mm256_loadu_pd(A_ptr + (D << 1));
+            __m256d a_r3 = _mm256_loadu_pd(A_ptr + (D << 1) + D);
+
+            double *B_ptr = B + offset(k, j);
+            __m256d b0 = _mm256_loadu_pd(B_ptr);
+            c0 = _hy_matrix_handle_axv_mfma(c0, _mm256_permute4x64_pd(a_r0, 0x00), b0);
+            c1 = _hy_matrix_handle_axv_mfma(c1, _mm256_permute4x64_pd(a_r1, 0x00), b0);
+            c2 = _hy_matrix_handle_axv_mfma(c2, _mm256_permute4x64_pd(a_r2, 0x00), b0);
+            c3 = _hy_matrix_handle_axv_mfma(c3, _mm256_permute4x64_pd(a_r3, 0x00), b0);
+
+            __m256d b1 = _mm256_loadu_pd(B_ptr + D);
+            c0 = _hy_matrix_handle_axv_mfma(c0, _mm256_permute4x64_pd(a_r0, 0x55), b1);
+            c1 = _hy_matrix_handle_axv_mfma(c1, _mm256_permute4x64_pd(a_r1, 0x55), b1);
+            c2 = _hy_matrix_handle_axv_mfma(c2, _mm256_permute4x64_pd(a_r2, 0x55), b1);
+            c3 = _hy_matrix_handle_axv_mfma(c3, _mm256_permute4x64_pd(a_r3, 0x55), b1);
+
+            __m256d b2 = _mm256_loadu_pd(B_ptr + (D << 1));
+            c0 = _hy_matrix_handle_axv_mfma(c0, _mm256_permute4x64_pd(a_r0, 0xAA), b2);
+            c1 = _hy_matrix_handle_axv_mfma(c1, _mm256_permute4x64_pd(a_r1, 0xAA), b2);
+            c2 = _hy_matrix_handle_axv_mfma(c2, _mm256_permute4x64_pd(a_r2, 0xAA), b2);
+            c3 = _hy_matrix_handle_axv_mfma(c3, _mm256_permute4x64_pd(a_r3, 0xAA), b2);
+
+            __m256d b3 = _mm256_loadu_pd(B_ptr + (D << 1) + D);
+            c0 = _hy_matrix_handle_axv_mfma(c0, _mm256_permute4x64_pd(a_r0, 0xFF), b3);
+            c1 = _hy_matrix_handle_axv_mfma(c1, _mm256_permute4x64_pd(a_r1, 0xFF), b3);
+            c2 = _hy_matrix_handle_axv_mfma(c2, _mm256_permute4x64_pd(a_r2, 0xFF), b3);
+            c3 = _hy_matrix_handle_axv_mfma(c3, _mm256_permute4x64_pd(a_r3, 0xFF), b3);
+          }
+
+          double *A_rem = A + offset(i, blocks);
+          __m256d a_rem0 = _mm256_broadcast_sd(A_rem);
+          __m256d a_rem1 = _mm256_broadcast_sd(A_rem + D);
+          __m256d a_rem2 = _mm256_broadcast_sd(A_rem + (D << 1));
+          __m256d a_rem3 = _mm256_broadcast_sd(A_rem + (D << 1) + D);
+
+          __m256d b_rem = _mm256_loadu_pd(B + offset(blocks, j));
+          c0 = _hy_matrix_handle_axv_mfma(c0, a_rem0, b_rem);
+          c1 = _hy_matrix_handle_axv_mfma(c1, a_rem1, b_rem);
+          c2 = _hy_matrix_handle_axv_mfma(c2, a_rem2, b_rem);
+          c3 = _hy_matrix_handle_axv_mfma(c3, a_rem3, b_rem);
+
+          double *C_ptr = C + offset(i, j);
+          _mm256_storeu_pd(C_ptr, c0);
+          _mm256_storeu_pd(C_ptr + D, c1);
+          _mm256_storeu_pd(C_ptr + (D << 1), c2);
+          _mm256_storeu_pd(C_ptr + (D << 1) + D, c3);
+        }
+      }
+#else
       for (int i = 0; i < blocks; i++) {
         for (int k = 0; k < blocks; k++) {
           for (int j = 0; j < blocks; j++) {
@@ -3656,6 +4005,7 @@ void _hy_matrix_multiply_NxN_blocked4(double *C, double *A, double *B, int D) {
           }
         }
       }
+#endif
     } else {
       C[0] = A[0] * B[0];
       return;
@@ -3983,7 +4333,7 @@ void _hy_matrix_multiply_NxN_float(float *C, const float *A, const float *B,
                                    int D, bool add) {
 
 #ifdef _SLKP_USE_APPLE_BLAS_2
-  if (D >= 16) {
+  if (D >= 32) {
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, D, D, D, 1.f, A, D,
                 B, D, add ? 1.f : 0.f, C, D);
     return;

@@ -59,22 +59,17 @@ inline void _matrix_kernel_multiply_by_compressed_sparse_T<61>(
   hyFloat *res = resBase;
 
   // N = 61
-  // 61 doubles = 30.5 vectors of 2 doubles
-  // We use 30 vector registers + 1 scalar
-  // Regs: v0..v29 for vector data, v30 for scalar part (or scalar reg)
-  // We need 1 register for 'val' splat, and 1 temp for loading 'secArg'.
-  // ARM64 has 32 vector registers v0-v31.
-  // So:
-  // v0..v29 : Accumulators (60 doubles)
-  // scalar_acc : Last double
-  // v30 : temp load
-  // v31 : val splat
+  // We divide the computation into two passes of 15 vectors each.
+  // This reduces register pressure (only 15 vector accumulators + 1 value
+  // vector = 16 registers held in any pass) and frees up 16 registers. The free
+  // registers allow us to group-load transition matrix columns to completely
+  // hide load-to-use latency (3-4 cycles) on AArch64.
 
   for (long i = 0; i < 61; i++) {
     long up = compIdx[i];
 
     if (currentXIndex < up) {
-      // 1. Load all 61 elements into registers
+      // --- PASS 1: Elements 0..29 (15 vectors) ---
       float64x2_t acc0 = vld1q_f64(res + 0);
       float64x2_t acc1 = vld1q_f64(res + 2);
       float64x2_t acc2 = vld1q_f64(res + 4);
@@ -90,6 +85,72 @@ inline void _matrix_kernel_multiply_by_compressed_sparse_T<61>(
       float64x2_t acc12 = vld1q_f64(res + 24);
       float64x2_t acc13 = vld1q_f64(res + 26);
       float64x2_t acc14 = vld1q_f64(res + 28);
+
+      for (long cxi = currentXIndex; cxi < up; cxi++) {
+        long currentXColumn = compIdx[cxi + 61];
+        const hyFloat *secArg = secondArgBase + currentXColumn * 61;
+        float64x2_t val_vec = vdupq_n_f64(theDataPtr[cxi]);
+
+        // Group 1: load 5 vectors
+        float64x2_t C0 = vld1q_f64(secArg + 0);
+        float64x2_t C1 = vld1q_f64(secArg + 2);
+        float64x2_t C2 = vld1q_f64(secArg + 4);
+        float64x2_t C3 = vld1q_f64(secArg + 6);
+        float64x2_t C4 = vld1q_f64(secArg + 8);
+
+        // Group 2: load 5 vectors
+        float64x2_t C5 = vld1q_f64(secArg + 10);
+        float64x2_t C6 = vld1q_f64(secArg + 12);
+        float64x2_t C7 = vld1q_f64(secArg + 14);
+        float64x2_t C8 = vld1q_f64(secArg + 16);
+        float64x2_t C9 = vld1q_f64(secArg + 18);
+
+        // Group 3: load 5 vectors
+        float64x2_t C10 = vld1q_f64(secArg + 20);
+        float64x2_t C11 = vld1q_f64(secArg + 22);
+        float64x2_t C12 = vld1q_f64(secArg + 24);
+        float64x2_t C13 = vld1q_f64(secArg + 26);
+        float64x2_t C14 = vld1q_f64(secArg + 28);
+
+        // Accumulate Group 1
+        acc0 = vfmaq_f64(acc0, val_vec, C0);
+        acc1 = vfmaq_f64(acc1, val_vec, C1);
+        acc2 = vfmaq_f64(acc2, val_vec, C2);
+        acc3 = vfmaq_f64(acc3, val_vec, C3);
+        acc4 = vfmaq_f64(acc4, val_vec, C4);
+
+        // Accumulate Group 2
+        acc5 = vfmaq_f64(acc5, val_vec, C5);
+        acc6 = vfmaq_f64(acc6, val_vec, C6);
+        acc7 = vfmaq_f64(acc7, val_vec, C7);
+        acc8 = vfmaq_f64(acc8, val_vec, C8);
+        acc9 = vfmaq_f64(acc9, val_vec, C9);
+
+        // Accumulate Group 3
+        acc10 = vfmaq_f64(acc10, val_vec, C10);
+        acc11 = vfmaq_f64(acc11, val_vec, C11);
+        acc12 = vfmaq_f64(acc12, val_vec, C12);
+        acc13 = vfmaq_f64(acc13, val_vec, C13);
+        acc14 = vfmaq_f64(acc14, val_vec, C14);
+      }
+
+      vst1q_f64(res + 0, acc0);
+      vst1q_f64(res + 2, acc1);
+      vst1q_f64(res + 4, acc2);
+      vst1q_f64(res + 6, acc3);
+      vst1q_f64(res + 8, acc4);
+      vst1q_f64(res + 10, acc5);
+      vst1q_f64(res + 12, acc6);
+      vst1q_f64(res + 14, acc7);
+      vst1q_f64(res + 16, acc8);
+      vst1q_f64(res + 18, acc9);
+      vst1q_f64(res + 20, acc10);
+      vst1q_f64(res + 22, acc11);
+      vst1q_f64(res + 24, acc12);
+      vst1q_f64(res + 26, acc13);
+      vst1q_f64(res + 28, acc14);
+
+      // --- PASS 2: Elements 30..59 (15 vectors) + Scalar (Element 60) ---
       float64x2_t acc15 = vld1q_f64(res + 30);
       float64x2_t acc16 = vld1q_f64(res + 32);
       float64x2_t acc17 = vld1q_f64(res + 34);
@@ -107,94 +168,57 @@ inline void _matrix_kernel_multiply_by_compressed_sparse_T<61>(
       float64x2_t acc29 = vld1q_f64(res + 58);
       hyFloat acc30_scalar = res[60];
 
-      // 2. Accumulate
       for (long cxi = currentXIndex; cxi < up; cxi++) {
         long currentXColumn = compIdx[cxi + 61];
         const hyFloat *secArg = secondArgBase + currentXColumn * 61;
-
         hyFloat val = theDataPtr[cxi];
         float64x2_t val_vec = vdupq_n_f64(val);
 
-        float64x2_t C;
-        C = vld1q_f64(secArg + 0);
-        acc0 = vfmaq_f64(acc0, val_vec, C);
-        C = vld1q_f64(secArg + 2);
-        acc1 = vfmaq_f64(acc1, val_vec, C);
-        C = vld1q_f64(secArg + 4);
-        acc2 = vfmaq_f64(acc2, val_vec, C);
-        C = vld1q_f64(secArg + 6);
-        acc3 = vfmaq_f64(acc3, val_vec, C);
-        C = vld1q_f64(secArg + 8);
-        acc4 = vfmaq_f64(acc4, val_vec, C);
-        C = vld1q_f64(secArg + 10);
-        acc5 = vfmaq_f64(acc5, val_vec, C);
-        C = vld1q_f64(secArg + 12);
-        acc6 = vfmaq_f64(acc6, val_vec, C);
-        C = vld1q_f64(secArg + 14);
-        acc7 = vfmaq_f64(acc7, val_vec, C);
-        C = vld1q_f64(secArg + 16);
-        acc8 = vfmaq_f64(acc8, val_vec, C);
-        C = vld1q_f64(secArg + 18);
-        acc9 = vfmaq_f64(acc9, val_vec, C);
-        C = vld1q_f64(secArg + 20);
-        acc10 = vfmaq_f64(acc10, val_vec, C);
-        C = vld1q_f64(secArg + 22);
-        acc11 = vfmaq_f64(acc11, val_vec, C);
-        C = vld1q_f64(secArg + 24);
-        acc12 = vfmaq_f64(acc12, val_vec, C);
-        C = vld1q_f64(secArg + 26);
-        acc13 = vfmaq_f64(acc13, val_vec, C);
-        C = vld1q_f64(secArg + 28);
-        acc14 = vfmaq_f64(acc14, val_vec, C);
-        C = vld1q_f64(secArg + 30);
-        acc15 = vfmaq_f64(acc15, val_vec, C);
-        C = vld1q_f64(secArg + 32);
-        acc16 = vfmaq_f64(acc16, val_vec, C);
-        C = vld1q_f64(secArg + 34);
-        acc17 = vfmaq_f64(acc17, val_vec, C);
-        C = vld1q_f64(secArg + 36);
-        acc18 = vfmaq_f64(acc18, val_vec, C);
-        C = vld1q_f64(secArg + 38);
-        acc19 = vfmaq_f64(acc19, val_vec, C);
-        C = vld1q_f64(secArg + 40);
-        acc20 = vfmaq_f64(acc20, val_vec, C);
-        C = vld1q_f64(secArg + 42);
-        acc21 = vfmaq_f64(acc21, val_vec, C);
-        C = vld1q_f64(secArg + 44);
-        acc22 = vfmaq_f64(acc22, val_vec, C);
-        C = vld1q_f64(secArg + 46);
-        acc23 = vfmaq_f64(acc23, val_vec, C);
-        C = vld1q_f64(secArg + 48);
-        acc24 = vfmaq_f64(acc24, val_vec, C);
-        C = vld1q_f64(secArg + 50);
-        acc25 = vfmaq_f64(acc25, val_vec, C);
-        C = vld1q_f64(secArg + 52);
-        acc26 = vfmaq_f64(acc26, val_vec, C);
-        C = vld1q_f64(secArg + 54);
-        acc27 = vfmaq_f64(acc27, val_vec, C);
-        C = vld1q_f64(secArg + 56);
-        acc28 = vfmaq_f64(acc28, val_vec, C);
-        C = vld1q_f64(secArg + 58);
-        acc29 = vfmaq_f64(acc29, val_vec, C);
+        // Group 1: load 5 vectors
+        float64x2_t C0 = vld1q_f64(secArg + 30);
+        float64x2_t C1 = vld1q_f64(secArg + 32);
+        float64x2_t C2 = vld1q_f64(secArg + 34);
+        float64x2_t C3 = vld1q_f64(secArg + 36);
+        float64x2_t C4 = vld1q_f64(secArg + 38);
+
+        // Group 2: load 5 vectors
+        float64x2_t C5 = vld1q_f64(secArg + 40);
+        float64x2_t C6 = vld1q_f64(secArg + 42);
+        float64x2_t C7 = vld1q_f64(secArg + 44);
+        float64x2_t C8 = vld1q_f64(secArg + 46);
+        float64x2_t C9 = vld1q_f64(secArg + 48);
+
+        // Group 3: load 5 vectors
+        float64x2_t C10 = vld1q_f64(secArg + 50);
+        float64x2_t C11 = vld1q_f64(secArg + 52);
+        float64x2_t C12 = vld1q_f64(secArg + 54);
+        float64x2_t C13 = vld1q_f64(secArg + 56);
+        float64x2_t C14 = vld1q_f64(secArg + 58);
+
+        // Accumulate Group 1
+        acc15 = vfmaq_f64(acc15, val_vec, C0);
+        acc16 = vfmaq_f64(acc16, val_vec, C1);
+        acc17 = vfmaq_f64(acc17, val_vec, C2);
+        acc18 = vfmaq_f64(acc18, val_vec, C3);
+        acc19 = vfmaq_f64(acc19, val_vec, C4);
+
+        // Accumulate Group 2
+        acc20 = vfmaq_f64(acc20, val_vec, C5);
+        acc21 = vfmaq_f64(acc21, val_vec, C6);
+        acc22 = vfmaq_f64(acc22, val_vec, C7);
+        acc23 = vfmaq_f64(acc23, val_vec, C8);
+        acc24 = vfmaq_f64(acc24, val_vec, C9);
+
+        // Accumulate Group 3
+        acc25 = vfmaq_f64(acc25, val_vec, C10);
+        acc26 = vfmaq_f64(acc26, val_vec, C11);
+        acc27 = vfmaq_f64(acc27, val_vec, C12);
+        acc28 = vfmaq_f64(acc28, val_vec, C13);
+        acc29 = vfmaq_f64(acc29, val_vec, C14);
+
         acc30_scalar += val * secArg[60];
       }
 
-      // 3. Store all 61 elements
-      vst1q_f64(res + 0, acc0);
-      vst1q_f64(res + 2, acc1);
-      vst1q_f64(res + 4, acc2);
-      vst1q_f64(res + 6, acc3);
-      vst1q_f64(res + 8, acc4);
-      vst1q_f64(res + 10, acc5);
-      vst1q_f64(res + 12, acc6);
-      vst1q_f64(res + 14, acc7);
-      vst1q_f64(res + 16, acc8);
-      vst1q_f64(res + 18, acc9);
-      vst1q_f64(res + 20, acc10);
-      vst1q_f64(res + 22, acc11);
-      vst1q_f64(res + 24, acc12);
-      vst1q_f64(res + 26, acc13);
-      vst1q_f64(res + 28, acc14);
       vst1q_f64(res + 30, acc15);
       vst1q_f64(res + 32, acc16);
       vst1q_f64(res + 34, acc17);
