@@ -101,6 +101,8 @@ const char hy_help_message[] =
     "statements\n"
     "                           for example "
     "ENV='DEBUG_MESSAGES=1;WRITE_LOGS=1'\n"
+    "                           use ENV='SUPPRESS_STATUS_UPDATES=1;' to turn off "
+    "progress/status lines on stderr\n"
     "  batch file to run        if specified, execute this file, otherwise "
     "drop into an interactive mode\n"
     "  analysis arguments       if batch file is present, all remaining "

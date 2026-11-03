@@ -1,0 +1,64 @@
+/*
+    Regression guard for FUBAR Phase 1 (nucleotide GTR fit) quality (veg/hyphy#2037).
+
+    FUBAR holds the Phase 1 branch lengths fixed while it evaluates the alpha/beta grid, so a
+    Phase 1 fit that stalls in a bad region silently corrupts every downstream site call.
+
+    The data set (79 taxa, 600 codons, deliberately mismatched random topology, one taxon with
+    ~50% gaps) is a case where the optimizer in 2.5.100 - 2.5.103 gets a single terminal branch
+    (t168) trapped at a saturated length (~4245 subs/site) with logL ~ -25520, while 2.5.98/2.5.99
+    reach the global optimum at logL ~ -24695 and a total tree length of ~6.05 subs/site.
+    The outcome is sensitive to optimizer heuristics AND to the thread count: on affected builds
+    the stall happens with CPU=1 only (CPU=4 and CPU=16 reach the optimum), so this test MUST be
+    run as   hyphy CPU=1 tests/hbltests/libv3/FUBAR-phase1.wbf   (the CMake/ctest entry does this).
+    Any optimizer tweak that re-introduces a stalled/saturated Phase 1 fit will trip this test.
+*/
+
+GetString (version, HYPHY_VERSION, 0);
+
+if (+version >= 2.4) {
+    LoadFunctionLibrary ("shared.bf");
+
+    // overwrite the cache if it's there
+    fprintf (PATH_TO_CURRENT_BF + "data/FUBAR-phase1.fas.FUBAR.cache", CLEAR_FILE);
+
+    // fixed seed (the MCMC/VB steps are not under test here, but keep runs reproducible)
+    SetParameter (RANDOM_SEED, 20260601, 0);
+
+    LoadFunctionLibrary ("SelectionAnalyses/FUBAR.bf",
+        {"--code" : "Universal",
+         "--alignment" : PATH_TO_CURRENT_BF + "data/FUBAR-phase1.fas",
+         "--tree" : PATH_TO_CURRENT_BF + "data/FUBAR-phase1.nwk",
+         "--grid" : "5",
+         "--method" : "Variational-Bayes",
+         "--output" : PATH_TO_CURRENT_BF + "data/FUBAR-phase1.fas.FUBAR.json"});
+
+    // known-good global optimum (2.5.98 / 2.5.99): logL = -24695.4, tree length = 6.05
+    phase1.logL = ((fubar.json["fits"])["Nucleotide GTR"])["Log Likelihood"];
+    phase1.expected_logL = -24695.4;
+
+    // logL must be within 10 units of the known-good optimum (a stalled fit is ~825 units worse)
+    assert (phase1.logL > phase1.expected_logL - 10,
+            "FUBAR Phase 1 GTR fit stalled: logL = " + phase1.logL + ", expected >= " + (phase1.expected_logL - 10));
+
+    // ... and not implausibly better either (would indicate the test data/model changed)
+    assert (phase1.logL < phase1.expected_logL + 10,
+            "FUBAR Phase 1 GTR logL unexpectedly high: " + phase1.logL);
+
+    // no saturated branches: the total tree length must stay near 6.05 subs/site (stalled fit: ~4250)
+    phase1.bl = (fubar.json["branch attributes"])["0"];
+    phase1.tl = 0;
+    phase1.max_bl = 0;
+    for (phase1.k, phase1.v; in; phase1.bl) {
+        phase1.l = phase1.v["Nucleotide GTR"];
+        phase1.tl += phase1.l;
+        if (phase1.l > phase1.max_bl) { phase1.max_bl = phase1.l; }
+    }
+
+    assert (phase1.tl > 5.5 && phase1.tl < 6.6,
+            "FUBAR Phase 1 total tree length out of range: " + phase1.tl + " (expected ~6.05)");
+    assert (phase1.max_bl < 1,
+            "FUBAR Phase 1 has a saturated branch: max branch length = " + phase1.max_bl);
+} else {
+    return 0;
+}
