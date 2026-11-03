@@ -1,9 +1,34 @@
+> [!IMPORTANT]
+> ### ⚠️ Maintenance Mode Notice — Active Development Has Moved to [**HyPhy 3 (`veg/hyphy-3`)**](https://github.com/veg/hyphy-3)
+> **HyPhy 2.5.x is now in pure maintenance mode, with only critical bug fixes expected.** All new evolutionary models, high-performance algorithms, and active feature development are taking place in **[HyPhy 3](https://github.com/veg/hyphy-3)**. We strongly encourage all users and developers to transition to **[HyPhy 3](https://github.com/veg/hyphy-3)**!
+
+<div align="center">
+
+<a href="https://github.com/veg/hyphy-3">
+  <img src="https://raw.githubusercontent.com/veg/hyphy-3/main/assets/hyphy3-icon.png" width="140" height="140" alt="HyPhy 3 Logo" />
+</a>
+
+### 🚀 [**Switch to HyPhy 3 — Next-Generation Differentiable Phylogenetics & Molecular Evolution →**](https://github.com/veg/hyphy-3)
+
+**Modern C++20 • Analytical Inside-Outside Adjoints (20×–87× Faster) • Native Autograd • Zero-Copy Python & PyTorch Bindings**
+
+[**Explore HyPhy 3 (`github.com/veg/hyphy-3`)**](https://github.com/veg/hyphy-3) | [**Quick Start**](https://github.com/veg/hyphy-3#-quick-start-from-zero-to-results-in-60-seconds) | [**Benchmarks**](https://github.com/veg/hyphy-3#-performance-benchmarks) | [**Python API**](https://github.com/veg/hyphy-3#-python-api--pytorch-integration)
+
+</div>
+
+> **What's waiting for you in [HyPhy 3](https://github.com/veg/hyphy-3):**
+> - **20×–87× Speedups via Differentiable Inside-Outside Adjoints:** Computes exact analytical tree log-likelihood gradients $\partial \ln L / \partial t_b$ across all $B$ branches in a single $O(B)$ traversal, replacing $O(B^2)$ coordinate-wise Brent searches with joint L-BFGS and SQUAREM EM acceleration.
+> - **Complete Suite of Classic & Next-Generation Selection Analyses (100% Parity Verified):** `FEL`, `MEME`, `BUSTED` (including **`BUSTED --auto`** 4-gate surprisal & score model selection, synonymous rate variation `BUSTED-S`, multi-hit `BUSTED-MH`, and saturation `--error-sink`), `aBSREL`, `RELAX`, `Contrast-FEL`, `FUBAR` (`VB0`), `PRIME`, `SLAC`, `GARD`, and **`Directional-FEL` (`dFEL`)** for non-stationary base-composition drift and maximum-likelihood auto-rooting.
+> - **First-Class Python, Autograd & Machine Learning Integration:** Header-only modular C++20 engine with zero-copy `nanobind` Python bindings (`import hyphy3`), native reverse-mode autograd, and direct **PyTorch / JAX** interoperability.
+
+---
+
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/hyphy/README.html)
 ![https://anaconda.org/bioconda/hyphy/badges/version.svg](https://anaconda.org/bioconda/hyphy/badges/version.svg)
 ![https://anaconda.org/bioconda/hyphy/badges/latest_release_date.svg](https://anaconda.org/bioconda/hyphy/badges/latest_release_date.svg)
 ![https://anaconda.org/bioconda/hyphy/badges/downloads.svg](https://anaconda.org/bioconda/hyphy/badges/downloads.svg)
 
-# HyPhy - Hypothesis testing using Phylogenies
+# HyPhy 2.5 (Legacy) - Hypothesis testing using Phylogenies
 
 HyPhy is an open-source software package for the analysis of genetic sequences using techniques in phylogenetics, molecular evolution, and machine learning. It features a complete graphical user interface (GUI) and a rich scripting language for limitless customization of analyses. Additionally, HyPhy features support for parallel computing environments (via message passing interface (MPI)) and it can be compiled as a shared library and called from other programming environments such as Python and R. HyPhy is the computational backbone powering datamonkey.org. Additional information is available at hyphy.org.
 
