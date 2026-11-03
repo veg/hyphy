@@ -402,7 +402,13 @@ bool GlobalStartup(void) {
   if (hy_mpi_node_rank == 0L) {
     struct stat sb;
     fstat(STDERR_FILENO, &sb);
-    has_terminal_stderr = (sb.st_mode & S_IFMT) == S_IFIFO;
+    // mpirun always interposes a pipe on rank 0's stderr, so isatty() is
+    // useless here. A pipe is only treated as a terminal if the environment
+    // looks interactive (TERM set and not "dumb"); batch jobs (e.g. Galaxy,
+    // SLURM) usually have no TERM, and must not get ANSI progress on stderr.
+    const char *mpi_term_env = getenv("TERM");
+    has_terminal_stderr = (sb.st_mode & S_IFMT) == S_IFIFO && mpi_term_env &&
+                          mpi_term_env[0] && strcmp(mpi_term_env, "dumb") != 0;
 #endif
 
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
