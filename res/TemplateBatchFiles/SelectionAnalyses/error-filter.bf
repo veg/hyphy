@@ -108,6 +108,15 @@ for (p = 0; p < efilter.input[terms.json.partition_count]; p+=1) {
     efilter.branch_data =  utility.GetByKey (efilter.json, {{terms.json.branch_attributes,p}}, "AssociativeList");
     efilter.tested_branches = utility.GetByKey (efilter.json, {{terms.json.tested,p}}, "AssociativeList");
     efilter.tree = utility.GetByKey (efilter.input, {{terms.json.trees,p}}, "String");
+    efilter.root_match = efilter.tree $ "\\)(\\:[0-9\\.eE\\+\\-]+)?\\;?$";
+    if (efilter.root_match[0] >= 0) {
+        efilter.root_pos = efilter.root_match[0];
+        if (efilter.root_pos == Abs (efilter.tree) - 1) {
+            efilter.tree = efilter.tree + "_efilter_root_";
+        } else {
+            efilter.tree = efilter.tree[0][efilter.root_pos] + "_efilter_root_" + efilter.tree[efilter.root_pos + 1][Abs (efilter.tree) - 1];
+        }
+    }
     efilter.subs = utility.GetByKey (efilter.json, {{terms.substitutions,p}}, "AssociativeList");
     Topology efilter.T = efilter.tree;
     efilter.sites = utility.Array1D (efilter.subs );
