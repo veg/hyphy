@@ -22192,13 +22192,24 @@ namespace gard {
     }
     
     
-   while(addingBreakPointsImproves_cAIC && numberOfBreakPointsBeingEvaluated < max_breakpoints && (numberOfBreakPointsBeingEvaluated + 2) * gard.minPartitionSize <= gard.numSites) {
+    // NB: inside 'namespace gard' identifiers are resolved relative to the namespace,
+    // so 'minPartitionSize' here IS gard.minPartitionSize; writing 'gard.minPartitionSize'
+    // would resolve to the (undefined, zero-valued) gard.gard.minPartitionSize and
+    // disable this feasibility check (veg/hyphy#2016).
+   while(addingBreakPointsImproves_cAIC && numberOfBreakPointsBeingEvaluated < max_breakpoints && (numberOfBreakPointsBeingEvaluated + 2) * minPartitionSize <= numSites) {
         //#profile START;
        // GA.2.a Setup for n number of break points
         numberOfBreakPointsBeingEvaluated+=1;
         generationsAtCurrentBest_cAIC = 0;
         generationsNoNewModelsAdded = 0;
         parentModels = gard.GA.initializeModels(numberOfBreakPointsBeingEvaluated, populationSize, numberOfPotentialBreakPoints, bestOverallModelSoFar);
+        if (Abs (parentModels) == 0) {
+            // no placement of this many breakpoints on variable sites satisfies the
+            // minimum partition size; adding breakpoints is impossible, so stop here
+            io.ReportProgressMessageMD('GARD', 'multi-breakpoint', "No valid placement of " + numberOfBreakPointsBeingEvaluated + " breakpoints exists given the minimum partition size of " + minPartitionSize + " sites; stopping the genetic algorithm.");
+            numberOfBreakPointsBeingEvaluated += -1;
+            break;
+        }
 
         // GA.2.b Loop over increasing generations for particular number of break points
         terminationCondition = FALSE;
@@ -22588,6 +22599,19 @@ lfunction gard.GA.initializeModels (numberOfBreakPoints, populationSize, numberO
     initializedModels = {};
     modelNumber       = 0;
 
+    // The rejection-sampling loops below never terminate if no valid model exists
+    // (veg/hyphy#2016), so check feasibility deterministically first. These checks
+    // draw no random numbers, so feasible runs are unaffected.
+    if (gard.GA.unseededModelExists (numberOfBreakPoints, numberOfPotentialBreakPoints) == FALSE) {
+        return initializedModels;
+    }
+
+    if (null != seed) {
+        if (gard.GA.seededModelExists (numberOfBreakPoints, numberOfPotentialBreakPoints, seed) == FALSE) {
+            seed = null;
+        }
+    }
+
     if (null != seed) {
        for (; modelNumber < populationSize$2; modelNumber += 1) {
          do {
@@ -22615,6 +22639,52 @@ lfunction gard.GA.initializeModels (numberOfBreakPoints, populationSize, numberO
 }
 
 /**
+ * @name gard.GA.unseededModelExists
+ * Is there any placement of numberOfBreakPoints breakpoints on the candidate variable sites
+ * (gard.variableSiteMap[0..numberOfPotentialBreakPoints-1], sorted) that passes gard.validatePartititon?
+ * Greedy earliest placement is optimal for this check.
+ * @param {Number} numberOfBreakPoints
+ * @param {Number} numberOfPotentialBreakPoints
+ * @returns {Bool}
+ */
+lfunction gard.GA.unseededModelExists (numberOfBreakPoints, numberOfPotentialBreakPoints) {
+    minSize = ^"gard.minPartitionSize";
+    lastBP  = 0;
+    placed  = 0;
+    for (k = 0; k < numberOfPotentialBreakPoints && placed < numberOfBreakPoints; k += 1) {
+        site = (^"gard.variableSiteMap")[k];
+        if (site - lastBP + 1 >= minSize) {
+            lastBP = site;
+            placed += 1;
+        }
+    }
+    return (placed == numberOfBreakPoints) && ((^"gard.numSites") - lastBP >= minSize);
+}
+
+/**
+ * @name gard.GA.seededModelExists
+ * Can the first numberOfBreakPoints-1 breakpoints of seed be extended by one candidate
+ * variable site into a model that passes gard.validatePartititon?
+ * @param {Number} numberOfBreakPoints
+ * @param {Number} numberOfPotentialBreakPoints
+ * @param {Matrix} seed
+ * @returns {Bool}
+ */
+lfunction gard.GA.seededModelExists (numberOfBreakPoints, numberOfPotentialBreakPoints, seed) {
+    breakPoints = {numberOfBreakPoints, 1};
+    for (k = 0; k < numberOfBreakPoints - 1; k += 1) {
+        breakPoints[k] = seed[k];
+    }
+    for (k = 0; k < numberOfPotentialBreakPoints; k += 1) {
+        breakPoints[numberOfBreakPoints - 1] = (^"gard.variableSiteMap")[k];
+        if (gard.validatePartititon (gard.Helper.sortedMatrix(breakPoints), ^"gard.minPartitionSize", ^"gard.numSites")) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+/**
  * @name gard.GA.recombineModels
  Given a set of models create a new generation of models by iteratively recombining two random parent models.
  The child model will have a random subset of the breakpoints from the parents
@@ -22630,6 +22700,11 @@ lfunction gard.GA.recombineModels (parentModels, populationSize) {
     numberOfBreakPoints = utility.Array1D (firstModel);
 
     childModels = {};
+    if (numberOfParentModels < 2) {
+        // recombination needs two distinct parents; the parent selection loop
+        // below would never terminate (veg/hyphy#2016)
+        return childModels;
+    }
     for(modelIndex=0; modelIndex<populationSize; modelIndex+=1) {
 
         modelIsValid = FALSE;
@@ -60982,6 +61057,15 @@ for (p = 0; p < efilter.input[terms.json.partition_count]; p+=1) {
     efilter.branch_data =  utility.GetByKey (efilter.json, {{terms.json.branch_attributes,p}}, "AssociativeList");
     efilter.tested_branches = utility.GetByKey (efilter.json, {{terms.json.tested,p}}, "AssociativeList");
     efilter.tree = utility.GetByKey (efilter.input, {{terms.json.trees,p}}, "String");
+    efilter.root_match = efilter.tree $ "\\)(\\:[0-9\\.eE\\+\\-]+)?\\;?$";
+    if (efilter.root_match[0] >= 0) {
+        efilter.root_pos = efilter.root_match[0];
+        if (efilter.root_pos == Abs (efilter.tree) - 1) {
+            efilter.tree = efilter.tree + "_efilter_root_";
+        } else {
+            efilter.tree = efilter.tree[0][efilter.root_pos] + "_efilter_root_" + efilter.tree[efilter.root_pos + 1][Abs (efilter.tree) - 1];
+        }
+    }
     efilter.subs = utility.GetByKey (efilter.json, {{terms.substitutions,p}}, "AssociativeList");
     Topology efilter.T = efilter.tree;
     efilter.sites = utility.Array1D (efilter.subs );
