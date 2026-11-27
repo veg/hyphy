@@ -185,10 +185,26 @@ if (utility.Has (fade.cache, terms.fade.cache.root, "AssociativeList")) {
     fade.roots = {};
 }
 
-if (utility.Has (fade.roots,index,'String')) {
- (fade.partitions_and_trees[index])[terms.data.tree] = (trees.RootTree (_partition_[terms.data.tree], fade.roots[index]))[terms.data.tree];
+fade.prompted_for_roots = FALSE;
+
+for (fade.partition_index = 0; fade.partition_index < fade.partition_count; fade.partition_index += 1) {
+    if (utility.Has (fade.roots, fade.partition_index, 'String')) {
+        (fade.partitions_and_trees[fade.partition_index])[terms.data.tree] =
+            (trees.RootTree ((fade.partitions_and_trees[fade.partition_index])[terms.data.tree], fade.roots[fade.partition_index]))[terms.data.tree];
+    } else {
+        if ((((fade.partitions_and_trees[fade.partition_index])[terms.data.tree])[terms.trees.rooted]) == FALSE) {
+            KeywordArgument ("root", "FADE requires a rooted tree; root the input tree on this node or leaf ('None' to stop with an error instead)", "None");
+            fade.root_on = io.PromptUserForString ("FADE requires a rooted tree; root the input tree on this node or leaf ('None' to stop with an error instead)");
+            assert (fade.root_on != "None",
+                    "FADE requires a rooted input tree: its substitution model is directional (not time-reversible), so the results depend on the placement of the root. The tree supplied for partition " + (fade.partition_index + 1) + " is unrooted. Either supply a rooted Newick tree, or rerun with --root NODE_NAME to root the tree at a node of your choice.");
+            (fade.partitions_and_trees[fade.partition_index])[terms.data.tree] =
+                (trees.RootTree ((fade.partitions_and_trees[fade.partition_index])[terms.data.tree], fade.root_on))[terms.data.tree];
+            fade.roots[fade.partition_index] = fade.root_on;
+            fade.prompted_for_roots = TRUE;
+        }
+    }
+    assert ((((fade.partitions_and_trees[fade.partition_index])[terms.data.tree])[terms.trees.rooted]), "Input tree MUST be rooted");
 }
-assert (((fade.partitions_and_trees[index])[terms.data.tree])[terms.trees.rooted], "Input tree MUST be rooted");
 
 
 fade.name_mapping = fade.alignment_info[utility.getGlobalValue("terms.data.name_mapping")];
